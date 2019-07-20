@@ -1,10 +1,34 @@
 #!/bin/sh
 set -e
 
-MNT=$( mktemp -d /tmp/XXXXXX )
+OLDIFS="${IFS}"
+NEWLINE="
+"
+
+MNT=$( mktemp -d /tmp/zfs.XXXX )
 test -f /tmp/boot-menu && rm /tmp/boot-menu
 
 zpool import -f -N -a -R ${MNT}
+
+# Find our bootfs value
+# If a pool is preferred on the commandline, use that
+# Otherwise set the first-found value
+
+if [ "${root}" = "zfsbootmenu" ]; then
+  pool=
+else
+  pool="${root}"
+fi
+
+for dataset in $( zpool list -H -o bootfs ${pool} ); do
+  case "${dataset}" in
+    *)
+      IFS="${OLDIFS}"
+      BOOTFS="${dataset}"
+      ;;
+  esac
+done
+
 
 for fs in $( zfs list -H -o name,mountpoint | grep -E "${MNT}$" | cut -f1 ); do
     zfs mount ${fs}
