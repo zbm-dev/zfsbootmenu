@@ -10,13 +10,13 @@ NEWLINE="
 BE_SELECTED=0
 KERNEL_SELECTED=0
 
-ENV_HEADER="[ENTER] to boot\n[ALT+K] to select kernel\n[ALT+S] to select snapshot"
+ENV_HEADER="[ALT+K] select kernel [ENTER] boot\n[ALT+A] all snapshots [ALT+S] BE snapshots"
 
 ## Functions to move to an include
 draw_be() {
   env="${1}"
   selected="$( cat ${env} | fzf --prompt "BE > " \
-    --header-lines=3 --expect=alt-k,alt-s )"
+    --header-lines=2 --expect=alt-k,alt-s,alt-a )"
   ret=$?
   while read -r line; do
     if [ -z "$line" ]; then
@@ -31,7 +31,18 @@ draw_be() {
 draw_kernel() {
   benv="${1}"
   selected="$( cat ${benv} | fzf --prompt "Kernel > " --tac \
-    --header="[Enter] to boot" --with-nth=2)"
+    --with-nth=2 --header="[ENTER] boot
+[ESC] back")"
+  ret=$?
+  echo ${selected}
+  return ${ret}
+}
+
+draw_snapshots() {
+  benv="${1}"
+  selected="$( zfs list -t snapshot -H -o name ${benv} | fzf --prompt "Snapshot > " --tac \
+    --header="[ENTER] boot
+[ESC] back" )"
   ret=$?
   echo ${selected}
   return ${ret}
@@ -49,6 +60,13 @@ kexec_kernel() {
     --initrd=${BE}/${initramfs} \
     --command-line="root=zfs:${zfs} ${GRUB_CMDLINE_LINUX_DEFAULT}"
   zfs umount ${zfs}
+  zpool export -a
+  exit
+}
+
+kexec_snapshot() {
+  selected="${1}"
+  echo "Promoting snapshot: ${selected}"
   zpool export -a
   exit
 }
@@ -143,9 +161,25 @@ while true; do
         fi
         ;;
       "alt-s")
-        clear
-        echo "We need to select a snapshot"
-        exit
+        selected="$( draw_snapshots ${bootenv} )"
+        ret=$?
+
+
+        if [ $ret -eq 130 ]; then
+          BE_SELECTED=0 
+        elif [ $ret -eq 0 ] ; then
+          kexec_snapshot "${selected}"
+        fi
+        ;;
+      "alt-a")
+        selected="$( draw_snapshots )"
+        ret=$?
+
+        if [ $ret -eq 130 ]; then
+          BE_SELECTED=0 
+        elif [ $ret -eq 0 ] ; then
+          kexec_snapshot "${selected}"
+        fi
         ;;
     esac
   fi
