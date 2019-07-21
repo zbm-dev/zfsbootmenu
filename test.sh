@@ -3,20 +3,28 @@
 export FZF_DEFAULT_OPTS="--layout=reverse-list --cycle \
   --inline-info --tac --no-clear"
 
-OLDIFS="${IFS}"
-NEWLINE="
-"
-
 BE_SELECTED=0
 KERNEL_SELECTED=0
 
 ENV_HEADER="[ALT+K] select kernel [ENTER] boot\n[ALT+A] all snapshots [ALT+S] BE snapshots"
 
 ## Functions to move to an include
+
+underscore() {
+  bepath="${1}"
+  echo ${bepath} | sed 's,/,_,g'
+}
+
+slash() {
+  bepath="${1}"
+  echo ${bepath} | sed 's,_,/,g'
+}
+
+# Master menu of detected boot environments
 draw_be() {
   env="${1}"
   selected="$( cat ${env} | fzf --prompt "BE > " \
-    --header-lines=2 --expect=alt-k,alt-s,alt-a )"
+    --header-lines=2 --expect=alt-k,alt-s,alt-a,alt-r )"
   ret=$?
   while read -r line; do
     if [ -z "$line" ]; then
@@ -28,9 +36,15 @@ draw_be() {
   return ${ret}
 }
 
+# Menu of kernels available in a specified boot environment
 draw_kernel() {
   benv="${1}"
-  selected="$( cat ${benv} | fzf --prompt "Kernel > " --tac \
+
+  # Set a pretty benv for our prompt
+  pretty="$( slash ${benv})"
+  pretty="${pretty#${BASE}/}"
+
+  selected="$( cat ${benv} | fzf --prompt "${pretty} > " --tac \
     --with-nth=2 --header="[ENTER] boot
 [ESC] back")"
   ret=$?
@@ -38,6 +52,7 @@ draw_kernel() {
   return ${ret}
 }
 
+# Menu of all snapshots, or optionally snapshots of a specific boot environment
 draw_snapshots() {
   benv="${1}"
   selected="$( zfs list -t snapshot -H -o name ${benv} | fzf --prompt "Snapshot > " --tac \
@@ -50,18 +65,20 @@ draw_snapshots() {
 
 kexec_kernel() {
   selected="${1}"
-  zfs=$( echo ${selected} | cut -d ' ' -f 1 )
-  kernel=$( echo ${selected} | cut -d ' ' -f 2 )
-  initramfs=$( echo ${selected} | cut -d ' ' -f 3 )
 
-  zfs mount ${zfs}
+  # zfs filesystem
+  # kernel
+  # initramfs
+  IFS=' ' read -a response <<<"${selected}"
+
+  zfs mount ${response[0]}
   test -e ${BE}/etc/default/grub && . ${BE}/etc/default/grub
-  echo kexec -l ${BE}/boot/${kernel} \
-    --initrd=${BE}/${initramfs} \
-    --command-line="root=zfs:${zfs} ${GRUB_CMDLINE_LINUX_DEFAULT}"
-  zfs umount ${zfs}
+  kexec -l ${BE}${response[1]} \
+    --initrd=${BE}/${response[2]} \
+    --command-line="root=zfs:${response[1]} ${GRUB_CMDLINE_LINUX_DEFAULT}"
+  zfs umount ${response[0]}
   zpool export -a
-  exit
+  kexec -e
 }
 
 kexec_snapshot() {
@@ -78,11 +95,8 @@ BASE=$( mktemp -d /tmp/zfs.XXXX )
 BE="${BASE}/be"
 mkdir ${BE}
 
-SNAP="${BASE}/snap"
-mkdir ${SNAP}
-
 # Import all pools with a temporary mountpoint sent to ${BE}
-zpool import -f -N -a -R ${BE}
+zpool import -N -a -R ${BE}
 
 # Find our bootfs value, prefer a specific pool
 # otherwise find the first available
@@ -93,7 +107,7 @@ else
 fi
 
 datasets="$( zpool list -H -o bootfs ${pool} )"
-if [ -z "$dataset" ]; then
+if [ -z "$datasets" ]; then
   BOOTFS=
 else
   while read -r line; do
@@ -111,7 +125,7 @@ for fs in $( zfs list -H -o name,mountpoint | grep -E "${BE}$" | cut -f1 ); do
     continue
   fi
 
-  sane=$( echo ${fs} | sed 's,/,_,g' )
+  sane="$( underscore ${fs} )"
   echo ${fs} >> ${BASE}/env
 
   for kernel in $( ls ${BE}/boot/vmlinux-* ); do
@@ -121,7 +135,7 @@ for fs in $( zfs list -H -o name,mountpoint | grep -E "${BE}$" | cut -f1 ); do
       "initrd-${version}" "initramfs-${version}.img"; do
       
       if test -e "${BE}/boot/${i}" ; then
-        initramfs="${i}"
+        initramfs="/boot/${i}"
         echo "${fs} ${kernel} ${initramfs}" >> ${BASE}/${sane}
         break
       fi
@@ -135,33 +149,34 @@ while true; do
     bootenv="$( draw_be "${BASE}/env" )"
     ret=$?
     
-    method="$( echo ${bootenv} | cut -d , -f 1 )"
-    bootenv="$( echo ${bootenv} | cut -d , -f 2 )"
-    sane=$( echo ${bootenv} | sed 's,/,_,g' )
-
+    # key
+    # bootenv
+    IFS=, read -a response <<<"${bootenv}"
+    
     if [ $ret -eq 0 ]; then
       BE_SELECTED=1
     fi
   fi
 
   if [ ${BE_SELECTED} -eq 1 ]; then
-    case "${method}" in
+    case "${response[0]}" in
       "enter")
-        kexec_kernel "$( cat ${BASE}/${sane} | tail -n1 )"
+        kexec_kernel "$( cat ${BASE}/$( underscore ${response[1]} ) | tail -n1 )"
         exit
         ;;
       "alt-k")
-        selected="$( draw_kernel ${BASE}/${sane} )"
+        selected="$( draw_kernel ${BASE}/$( underscore ${response[1]} ) )"
         ret=$?
 
         if [ $ret -eq 130 ]; then
           BE_SELECTED=0 
         elif [ $ret -eq 0 ] ; then
           kexec_kernel "${selected}"
+          exit
         fi
         ;;
       "alt-s")
-        selected="$( draw_snapshots ${bootenv} )"
+        selected="$( draw_snapshots ${response[1]} )"
         ret=$?
 
 
@@ -169,6 +184,7 @@ while true; do
           BE_SELECTED=0 
         elif [ $ret -eq 0 ] ; then
           kexec_snapshot "${selected}"
+          exit
         fi
         ;;
       "alt-a")
@@ -179,8 +195,12 @@ while true; do
           BE_SELECTED=0 
         elif [ $ret -eq 0 ] ; then
           kexec_snapshot "${selected}"
+          exit
         fi
         ;;
+      "alt-r")
+        echo "Entering recovery shell"
+        exit
     esac
   fi
 done

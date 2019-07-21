@@ -11,7 +11,7 @@ check() {
 	# Verify grep exists
 	which grep >/dev/null 2>&1 || return 1
 
-	return 255 
+	return 0 
 }
 
 depends() {
@@ -71,8 +71,9 @@ install() {
 	dracut_install reset
 	dracut_install lsblk
 	dracut_install cut
-	dracut install timeout
-  dracut_install mkdir
+	dracut_install /usr/bin/timeout
+  dracut_install /usr/bin/mkdir
+  dracut_install /usr/bin/tail
 	dracut_install /usr/lib/udev/zvol_id
 	inst_hook cmdline 95 "${moddir}/parse-zfs.sh"
 	inst_hook pre-mount 90 "${moddir}/zfs-bootmenu.sh"
