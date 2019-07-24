@@ -2,6 +2,8 @@
 clear
 reset
 
+OLDIFS="$IFS"
+
 export FZF_DEFAULT_OPTS="--layout=reverse-list --cycle \
   --inline-info --tac"
 
@@ -49,11 +51,12 @@ umount_zfs() {
 
 # Master menu of detected boot environments
 draw_be() {
-  local env selected ret
+  local env header selected ret
 
   env="${1}"
+  header="${2}"
 
-  selected="$( cat ${env} | fzf -0 --prompt "BE > " \
+  selected="$( cat ${header} ${env} | fzf -0 --prompt "BE > " \
     --header-lines=2 --expect=alt-k,alt-s,alt-a,alt-r )"
   ret=$?
   while read -r line; do
@@ -100,21 +103,21 @@ draw_snapshots() {
 }
 
 kexec_kernel() {
-  local selected
+  local selected fs kernel initramfs
 
   selected="${1}"
 
   # zfs filesystem
   # kernel
   # initramfs
-  IFS=' ' read -a response <<<"${selected}"
+  IFS=' ' read fs kernel initramfs <<<"${selected}"
 
-  zfs mount ${response[0]}
+  zfs mount ${fs}
   test -e ${BE}/etc/default/grub && . ${BE}/etc/default/grub
-  kexec -l ${BE}${response[1]} \
-    --initrd=${BE}/${response[2]} \
-    --command-line="root=zfs:${response[0]} ${GRUB_CMDLINE_LINUX_DEFAULT}"
-  zfs umount ${response[0]}
+  kexec -l ${BE}${kernel} \
+    --initrd=${BE}/${initramfs]} \
+    --command-line="root=zfs:${fs} ${GRUB_CMDLINE_LINUX_DEFAULT}"
+  zfs umount ${fs}
   zpool export -a
   kexec -e
 }
@@ -140,11 +143,12 @@ kexec_snapshot() {
   IFS=',' read -a pairs <<<"${response}"
   last="${pairs[-1]}"
   IFS=';' read kernel initramfs <<<"${last}"
-  echo "Found $kernel and $initramfs"
+  echo "kexec: ${target} - $kernel - $initramfs"
   exit
 
 }
 
+# Return code is the number of kernels that can be used
 find_valid_kernels() {
   local mnt
   mnt="${1}"
@@ -172,8 +176,40 @@ find_valid_kernels() {
 
   # kernel1;initramfs1,kernel2;initramfs2,...
   (IFS=',' ; printf '%s' "${pairs[*]}")
+  return "${#pairs[@]}"
 }
 
+# Return code is the number of pools that can be imported
+find_online_pools() {
+  local importable pool state junk
+  importable=()
+  while read -r line; do
+    case "$line" in
+      pool*)
+        pool="${line#pool: }"
+        ;;
+      state*)
+        state="${line#state: }"
+        if [ "${state}" == "ONLINE" ]; then
+          importable+=("${pool}")
+        fi
+        ;;
+    esac
+  done <<<"$( zpool import )"
+  (IFS=',' ; printf '%s' "${importable[*]}")
+  return "${#importable[@]}"
+}
+
+import_pool() {
+  local pool
+  pool="${1}"
+
+  status=$( zpool import -f -N ${pool} )
+  ret=$?
+
+  return ${ret}
+}
+        
 ## End functions
 
 BASE=$( mktemp -d /tmp/zfs.XXXX )
@@ -181,10 +217,27 @@ BASE=$( mktemp -d /tmp/zfs.XXXX )
 BE="${BASE}/be"
 mkdir ${BE}
 
-ZPOOLS=()
 
-# Import all pools with a temporary mountpoint sent to ${BE}
-zpool import -f -N -a
+# Find all pools by name that are listed as ONLINE, then import them
+response="$( find_online_pools )"
+ret=$?
+if [ $ret -gt 0 ]; then
+  IFS=',' read -a zpools <<<"${response}"
+  for pool in "${zpools[@]}"; do
+    import_pool ${pool}
+    ret=$?
+    if [ $ret -eq 0 ]; then
+      import_success=1
+    fi
+  done
+  if [ $import_success != 1 ]; then
+    echo "Unable to successfully import a pool, launching an emergency shell"
+    /bin/bash
+  fi
+else
+  echo "Unable to successfully import a pool, launching an emergency shell"
+  /bin/bash
+fi
 
 # Find our bootfs value, prefer a specific pool
 # otherwise find the first available
@@ -193,6 +246,8 @@ if [ "${root}" = "zfsbootmenu" ]; then
 else
   pool="${root}"
 fi
+
+pool="zroot"
 
 datasets="$( zpool list -H -o bootfs ${pool} )"
 if [ -z "$datasets" ]; then
@@ -204,7 +259,29 @@ else
   done <<< "${datasets}"
 fi
 
-echo -e ${ENV_HEADER} > ${BASE}/env  
+
+if [ ${BOOTFS} != '' ]; then
+    IFS=''
+    echo -e "[ENTER] to boot ${BOOTFS}\n[ESC] to access boot menu\n"
+    for (( i=10; i>0; i--)); do
+      printf "\rBooting in %0.2d seconds" $i
+      read -s -N 1 -t 1 key
+      if [ "$key" = $'\e' ]; then
+        IFS="${OLDIFS}"
+        break
+      elif [ "$key" = $'\x0a' ]; then
+        IFS="${OLDIFS}"
+        mount_zfs ${BOOTFS} ${BE}
+        response="$( find_valid_kernels ${BE} )"
+        IFS=',' read -a pairs <<<"${response}"
+        last="${pairs[-1]}"
+        IFS=';' read kernel initramfs <<<"${last}"
+        kexec_kernel "${BOOTFS} ${kernel} ${initramfs}"
+      fi
+    done
+fi
+
+echo -e ${ENV_HEADER} > ${BASE}/env_header
 
 for fs in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
   mount_zfs ${fs} ${BE}
@@ -223,7 +300,6 @@ for fs in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
 
   # Iterate over pairs and write: fs kernel initramfs to a flat file 
   for line in "${pairs[@]}"; do
-    local kernel initramfs
     IFS=';' read -a kernel initramfs <<<"${line}"
     echo ${fs} ${kernel} ${initramfs} >> ${BASE}/${sane}
   done
@@ -232,7 +308,7 @@ done
 
 while true; do
   if [ ${BE_SELECTED} -eq 0 ]; then
-    bootenv="$( draw_be "${BASE}/env" )"
+    bootenv="$( draw_be "${BASE}/env" "${BASE}/env_header")"
     ret=$?
     
     # key
