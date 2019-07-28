@@ -1,6 +1,6 @@
 #!/bin/bash
-clear
 reset
+clear
 
 OLDIFS="$IFS"
 
@@ -55,6 +55,9 @@ draw_be() {
 
   env="${1}"
   header="${2}"
+
+  test -f ${env} || return 130
+  test -f ${header} || return 130
 
   selected="$( cat ${header} ${env} | fzf -0 --prompt "BE > " \
     --header-lines=2 --expect=alt-k,alt-s,alt-a,alt-r )"
@@ -112,12 +115,18 @@ kexec_kernel() {
   # initramfs
   IFS=' ' read fs kernel initramfs <<<"${selected}"
 
-  zfs mount ${fs}
+  mount_zfs ${fs} ${BE}
+  ret=$?
+  if [ $ret != 0 ]; then
+    echo "Unable to mount ${fs}, launching recovery shell"
+    /bin/bash
+  fi
+
   test -e ${BE}/etc/default/grub && . ${BE}/etc/default/grub
   kexec -l ${BE}${kernel} \
-    --initrd=${BE}/${initramfs]} \
+    --initrd=${BE}/${initramfs} \
     --command-line="root=zfs:${fs} ${GRUB_CMDLINE_LINUX_DEFAULT}"
-  zfs umount ${fs}
+  umount_zfs ${fs}
   zpool export -a
   kexec -e
 }
@@ -127,10 +136,7 @@ kexec_snapshot() {
   local kernel initramfs
 
   selected="${1}"
-  echo "Promoting snapshot: ${selected}"
   IFS='@' read -a response <<<"${selected}"
-  echo "Snapshot: ${response[0]}"
-  echo "Date: ${response[1]}"
   target="${response[0]}_clone"
 
   zfs clone -o mountpoint=/ \
@@ -143,9 +149,8 @@ kexec_snapshot() {
   IFS=',' read -a pairs <<<"${response}"
   last="${pairs[-1]}"
   IFS=';' read kernel initramfs <<<"${last}"
-  echo "kexec: ${target} - $kernel - $initramfs"
-  exit
 
+  kexec_kernel "${target} $kernel $initramfs"
 }
 
 # Return code is the number of kernels that can be used
@@ -168,7 +173,7 @@ find_valid_kernels() {
       "initrd-${version}" "initramfs-${version}.img"; do
 
       if test -e "${mnt}/boot/${i}" ; then
-        pairs+=("${kernel};${i}")
+        pairs+=("${kernel};/boot/${i}")
         break
       fi
     done
@@ -213,6 +218,7 @@ import_pool() {
 ## End functions
 
 BASE=$( mktemp -d /tmp/zfs.XXXX )
+echo -e ${ENV_HEADER} > ${BASE}/env_header
 
 BE="${BASE}/be"
 mkdir ${BE}
@@ -256,33 +262,38 @@ else
   while read -r line; do
     BOOTFS="${line}"
     break
-  done <<< "${datasets}"
+  done <<<"${datasets}"
 fi
 
-
-if [ ${BOOTFS} != '' ]; then
-    IFS=''
-    echo -e "[ENTER] to boot ${BOOTFS}\n[ESC] to access boot menu\n"
-    for (( i=10; i>0; i--)); do
-      printf "\rBooting in %0.2d seconds" $i
-      read -s -N 1 -t 1 key
-      if [ "$key" = $'\e' ]; then
-        IFS="${OLDIFS}"
-        break
-      elif [ "$key" = $'\x0a' ]; then
-        IFS="${OLDIFS}"
-        mount_zfs ${BOOTFS} ${BE}
-        response="$( find_valid_kernels ${BE} )"
-        IFS=',' read -a pairs <<<"${response}"
-        last="${pairs[-1]}"
-        IFS=';' read kernel initramfs <<<"${last}"
-        kexec_kernel "${BOOTFS} ${kernel} ${initramfs}"
-      fi
-    done
+fast_boot=0
+if [[ ! -z "${BOOTFS}" ]]; then
+  IFS=''
+  echo -e "[ENTER] to boot ${BOOTFS}\n[ESC] to access boot menu\n"
+  for (( i=10; i>0; i--)); do
+    printf "\rBooting in %0.2d seconds" $i
+    read -s -N 1 -t 1 key
+    if [ "$key" = $'\e' ]; then
+      break
+    elif [ "$key" = $'\x0a' ]; then
+      fast_boot=1
+      break
+    fi
+  done
+  IFS="${OLDIFS}"
+  
+  # Boot up if we timed out, or if the enter key was pressed
+  if [[ ${fast_boot} -eq 1 || $i -eq 0 ]]; then
+    mount_zfs ${BOOTFS} ${BE}
+    response="$( find_valid_kernels ${BE} )"
+    IFS=',' read -a pairs <<<"${response}"
+    last="${pairs[-1]}"
+    IFS=';' read kernel initramfs <<<"${last}"
+    umount_zfs ${BOOTFS}
+    kexec_kernel "${BOOTFS} ${kernel} ${initramfs}"
+  fi
 fi
 
-echo -e ${ENV_HEADER} > ${BASE}/env_header
-
+# Find any filesystems that mount to /, see if there are any kernels present
 for fs in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
   mount_zfs ${fs} ${BE}
   if [ ! -d ${BE}/boot ] ; then
@@ -300,11 +311,16 @@ for fs in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
 
   # Iterate over pairs and write: fs kernel initramfs to a flat file 
   for line in "${pairs[@]}"; do
-    IFS=';' read -a kernel initramfs <<<"${line}"
+    IFS=';' read kernel initramfs <<<"${line}"
     echo ${fs} ${kernel} ${initramfs} >> ${BASE}/${sane}
   done
   umount_zfs ${fs}
 done
+
+if [ ! -f ${BASE}/env ]; then
+  echo "No boot environments with kernels found, launching an emergency shell"
+  /bin/bash
+fi
 
 while true; do
   if [ ${BE_SELECTED} -eq 0 ]; then
@@ -313,50 +329,50 @@ while true; do
     
     # key
     # bootenv
-    IFS=, read -a response <<<"${bootenv}"
-    
+    IFS=, read key selected_be <<<"${bootenv}"
+
     if [ $ret -eq 0 ]; then
       BE_SELECTED=1
     fi
   fi
 
   if [ ${BE_SELECTED} -eq 1 ]; then
-    case "${response[0]}" in
+    case "${key}" in
       "enter")
-        kexec_kernel "$( cat ${BASE}/$( underscore ${response[1]} ) | tail -n1 )"
+        kexec_kernel "$( cat ${BASE}/$( underscore ${selected_be} ) | tail -n1 )"
         exit
         ;;
       "alt-k")
-        selected="$( draw_kernel ${BASE}/$( underscore ${response[1]} ) )"
+        selected_kernel="$( draw_kernel ${BASE}/$( underscore ${selected_be} ) )"
         ret=$?
 
         if [ $ret -eq 130 ]; then
           BE_SELECTED=0 
         elif [ $ret -eq 0 ] ; then
-          kexec_kernel "${selected}"
+          kexec_kernel "${selected_kernel}"
           exit
         fi
         ;;
       "alt-s")
-        selected="$( draw_snapshots ${response[1]} )"
+        selected_snap="$( draw_snapshots ${selected_be} )"
         ret=$?
 
 
         if [ $ret -eq 130 ]; then
           BE_SELECTED=0 
         elif [ $ret -eq 0 ] ; then
-          kexec_snapshot "${selected}"
+          kexec_snapshot "${selected_snap}"
           exit
         fi
         ;;
       "alt-a")
-        selected="$( draw_snapshots )"
+        selected_snap="$( draw_snapshots )"
         ret=$?
 
         if [ $ret -eq 130 ]; then
           BE_SELECTED=0 
         elif [ $ret -eq 0 ] ; then
-          kexec_snapshot "${selected}"
+          kexec_snapshot "${selected_snap}"
           exit
         fi
         ;;
