@@ -110,6 +110,8 @@ kexec_kernel() {
 
   selected="${1}"
 
+  clear
+
   # zfs filesystem
   # kernel
   # initramfs
@@ -150,7 +152,7 @@ kexec_snapshot() {
   last="${pairs[-1]}"
   IFS=';' read kernel initramfs <<<"${last}"
 
-  kexec_kernel "${target} $kernel $initramfs"
+  kexec_kernel "${target} ${kernel} ${initramfs}"
 }
 
 # Return code is the number of kernels that can be used
@@ -209,7 +211,7 @@ import_pool() {
   local pool
   pool="${1}"
 
-  status=$( zpool import -f -N ${pool} )
+  status=$( zpool import ${import_args} ${pool} )
   ret=$?
 
   return ${ret}
@@ -252,8 +254,6 @@ if [ "${root}" = "zfsbootmenu" ]; then
 else
   pool="${root}"
 fi
-
-pool="zroot"
 
 datasets="$( zpool list -H -o bootfs ${pool} )"
 if [ -z "$datasets" ]; then
