@@ -1,3 +1,4 @@
 *.img
 *.swp
 */*.swp
+releases/*
