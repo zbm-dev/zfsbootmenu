@@ -1,6 +1,7 @@
 #!/bin/bash
 reset
 clear
+$( zpool export -a > /dev/null )
 
 OLDIFS="$IFS"
 
@@ -120,8 +121,7 @@ kexec_kernel() {
   mount_zfs ${fs} ${BE}
   ret=$?
   if [ $ret != 0 ]; then
-    echo "Unable to mount ${fs}, launching recovery shell"
-    /bin/bash
+    emergency_shell "Unable to mount ${fs}"
   fi
 
   test -e ${BE}/etc/default/grub && . ${BE}/etc/default/grub
@@ -216,7 +216,61 @@ import_pool() {
 
   return ${ret}
 }
-        
+
+be_key_needed() {
+  local fs pool encroot
+  fs="${1}"
+  pool="$( echo ${fs} | cut -d '/' -f 1 )"
+
+  if [ $( zpool list -H -o feature@encryption ${pool}) == "active" ]; then
+    encroot="$( zfs get -H -o value encryptionroot ${fs} )"
+    if [ "${encroot}" == "-" ]; then
+      echo ""
+      return 0
+    else
+      echo "${encroot}"
+      return 1
+    fi
+  else
+    echo ""
+    return 0
+  fi
+}
+
+be_key_status() {
+  local encroot keystatus
+  encroot="${1}"
+
+  keystatus="$( zfs get -H -o value keystatus ${encroot} )"
+  case "${keystatus}" in
+    unavailable)
+      return 0;
+      ;;
+    available)
+      return 1;
+      ;;
+  esac
+}
+
+load_key() {
+  local encroot ret
+  encroot="${1}"
+
+  zfs load-key ${encroot}
+  ret=$?
+
+  return ${ret}
+}
+
+emergency_shell() {
+  local message
+  message=${1}
+  echo "$0\n"
+  echo -n "Launching emergency shell: "
+  echo ${message}
+  echo "Reboot after maintenance has been completed\n"
+  /bin/bash
+}
 ## End functions
 
 BASE=$( mktemp -d /tmp/zfs.XXXX )
@@ -239,12 +293,10 @@ if [ $ret -gt 0 ]; then
     fi
   done
   if [ $import_success != 1 ]; then
-    echo "Unable to successfully import a pool, launching an emergency shell"
-    /bin/bash
+    emergency_shell "unable to successfully import a pool"
   fi
 else
-  echo "Unable to successfully import a pool, launching an emergency shell"
-  /bin/bash
+  emergency_shell "unable to successfully import a pool"
 fi
 
 # Find our bootfs value, prefer a specific pool
@@ -276,6 +328,7 @@ if [[ ! -z "${BOOTFS}" ]]; then
       break
     elif [ "$key" = $'\x0a' ]; then
       fast_boot=1
+      clear
       break
     fi
   done
@@ -283,6 +336,15 @@ if [[ ! -z "${BOOTFS}" ]]; then
   
   # Boot up if we timed out, or if the enter key was pressed
   if [[ ${fast_boot} -eq 1 || $i -eq 0 ]]; then
+    encroot="$( be_key_needed ${BOOTFS})"
+    if [ $? -eq 1 ]; then
+      if be_key_status ${encroot} ; then
+        if ! load_key ${encroot} ; then
+          emergency_shell "unable to load required key for ${encroot}"
+        fi
+      fi
+    fi
+
     mount_zfs ${BOOTFS} ${BE}
     response="$( find_valid_kernels ${BE} )"
     IFS=',' read -a pairs <<<"${response}"
@@ -318,8 +380,7 @@ for fs in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
 done
 
 if [ ! -f ${BASE}/env ]; then
-  echo "No boot environments with kernels found, launching an emergency shell"
-  /bin/bash
+  emergency_shell "no boot environments with kernels found"
 fi
 
 while true; do
@@ -377,8 +438,7 @@ while true; do
         fi
         ;;
       "alt-r")
-        echo "Entering recovery shell"
-        exit
+        emergency_shell "alt-r invoked"
     esac
   fi
 done
