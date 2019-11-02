@@ -71,6 +71,7 @@ install() {
 	dracut_install reset
 	dracut_install lsblk
 	dracut_install cut
+	dracut_install tput
 	dracut_install /usr/bin/timeout
   dracut_install /usr/bin/mkdir
   dracut_install /usr/bin/tail

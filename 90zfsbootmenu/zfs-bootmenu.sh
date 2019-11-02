@@ -1,6 +1,9 @@
 #!/bin/bash
-reset
-clear
+echo "Loading boot menu"
+TERM=linux
+tput reset
+sleep 1
+
 $( zpool export -a > /dev/null )
 
 OLDIFS="$IFS"
@@ -256,7 +259,10 @@ load_key() {
   local encroot ret
   encroot="${1}"
 
-  zfs load-key ${encroot}
+  tput clear
+  tput cup 0 0
+
+  zfs load-key -L prompt ${encroot}
   ret=$?
 
   return ${ret}
@@ -265,12 +271,11 @@ load_key() {
 emergency_shell() {
   local message
   message=${1}
-  echo "$0\n"
   echo -n "Launching emergency shell: "
-  echo ${message}
-  echo "Reboot after maintenance has been completed\n"
+  echo -e "${message}\n"
   /bin/bash
 }
+
 ## End functions
 
 BASE=$( mktemp -d /tmp/zfs.XXXX )
@@ -296,7 +301,7 @@ if [ $ret -gt 0 ]; then
     emergency_shell "unable to successfully import a pool"
   fi
 else
-  emergency_shell "unable to successfully import a pool"
+  emergency_shell "no pools available to import"
 fi
 
 # Find our bootfs value, prefer a specific pool
@@ -319,16 +324,38 @@ fi
 
 fast_boot=0
 if [[ ! -z "${BOOTFS}" ]]; then
+  tput civis
+  HEIGHT=$(tput lines)
+  WIDTH=$(tput cols)
+  tput clear
+
+  mes="[ENTER] to boot"
+  x=$(( ($HEIGHT - 0) / 2 ))
+  y=$(( ($WIDTH - ${#mes}) / 2 ))
+  tput cup $x $y
+  echo -n ${mes}
+
+  mes="[ESC] boot menu"
+  x=$(( $x + 1 ))
+  y=$(( ($WIDTH - ${#mes}) / 2 ))
+  tput cup $x $y
+  echo -n ${mes}
+
+  x=$(( $x + 1 ))
+  tput cup $x $y
+
   IFS=''
-  echo -e "[ENTER] to boot ${BOOTFS}\n[ESC] to access boot menu\n"
   for (( i=10; i>0; i--)); do
-    printf "\rBooting in %0.2d seconds" $i
+    mes="$( printf 'Booting %s in %0.2d seconds' ${BOOTFS} ${i} )"
+    y=$(( ($WIDTH - ${#mes}) / 2 ))
+    tput cup $x $y
+    echo -ne "${mes}"
+
     read -s -N 1 -t 1 key
     if [ "$key" = $'\e' ]; then
       break
     elif [ "$key" = $'\x0a' ]; then
       fast_boot=1
-      clear
       break
     fi
   done
@@ -357,10 +384,23 @@ fi
 
 # Find any filesystems that mount to /, see if there are any kernels present
 for fs in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
-  mount_zfs ${fs} ${BE}
-  if [ ! -d ${BE}/boot ] ; then
-    umount_zfs ${fs}
-    continue
+  encroot="$( be_key_needed ${fs})"
+  if [ $? -eq 1 ]; then
+    if be_key_status ${encroot} ; then
+      if load_key ${encroot} ; then
+        mount_zfs ${fs} ${BE}
+        if [ ! -d ${BE}/boot ] ; then
+          umount_zfs ${fs}
+          continue
+        fi
+      fi
+    else
+      mount_zfs ${fs} ${BE}
+      if [ ! -d ${BE}/boot ] ; then
+        umount_zfs ${fs}
+        continue
+      fi
+    fi
   fi
   
   sane="$( underscore ${fs} )"
