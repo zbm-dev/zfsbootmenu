@@ -158,7 +158,6 @@ kexec_snapshot() {
   zfs clone -o mountpoint=/ \
     -o canmount=noauto \
     ${selected} ${target}
-
   mount_zfs ${target} ${BE}
 
   response="$( find_valid_kernels ${BE} )"
@@ -166,6 +165,7 @@ kexec_snapshot() {
   last="${pairs[-1]}"
   IFS=';' read kernel initramfs <<<"${last}"
 
+  umount_zfs ${target}
   kexec_kernel "${target} ${kernel} ${initramfs}"
 }
 
