@@ -1,8 +1,12 @@
 #!/bin/bash
+if [ ${rootok} -eq 1 ]; then
+  modprobe zfs 2>/dev/null
+  udevadm settle
+fi
+
 echo "Loading boot menu"
 TERM=linux
 tput reset
-sleep 1
 
 $( zpool export -a > /dev/null )
 
@@ -136,7 +140,7 @@ kexec_kernel() {
   umount_zfs ${fs}
 
   zpool export -a
-  if [ $? != = ]; then
+  if ! [ $? -eq 0 ]; then
     emergency_shell "unable to export pools"
   fi
 

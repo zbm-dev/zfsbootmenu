@@ -19,8 +19,7 @@ else
 fi
 
 # Force import pools only when explicitly told to do so
-force_import=$(getarg force_import=)
-if [[ -n "${force_import}" && "${force_import}" -eq 1 ]] ; then
+if getargbool 0 force_import ; then
   info "ZFSBootMenu: Enabling force import of ZFS pools"
   import_args="-f -N"
 else
@@ -46,11 +45,6 @@ case "${root}" in
 		info "ZFSBootMenu: Preferring ${root} for bootfs"
 		;;
 esac
-
-# Probe ZFS kernel modules
-if [ ${rootok} -eq 1 ]; then
-	modprobe zfs
-fi
 
 # Make sure Dracut is happy that we have a root and will wait for ZFS
 # modules to settle before mounting.
