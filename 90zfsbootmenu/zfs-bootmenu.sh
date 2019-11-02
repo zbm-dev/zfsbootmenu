@@ -114,7 +114,7 @@ kexec_kernel() {
 
   selected="${1}"
 
-  clear
+  tput clear
 
   # zfs filesystem
   # kernel
@@ -124,15 +124,22 @@ kexec_kernel() {
   mount_zfs ${fs} ${BE}
   ret=$?
   if [ $ret != 0 ]; then
-    emergency_shell "Unable to mount ${fs}"
+    emergency_shell "unable to mount ${fs}"
   fi
 
   test -e ${BE}/etc/default/grub && . ${BE}/etc/default/grub
+
   kexec -l ${BE}${kernel} \
     --initrd=${BE}/${initramfs} \
     --command-line="root=zfs:${fs} ${GRUB_CMDLINE_LINUX_DEFAULT}"
+
   umount_zfs ${fs}
+
   zpool export -a
+  if [ $? != = ]; then
+    emergency_shell "unable to export pools"
+  fi
+
   kexec -e
 }
 
@@ -387,19 +394,24 @@ for fs in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
   encroot="$( be_key_needed ${fs})"
   if [ $? -eq 1 ]; then
     if be_key_status ${encroot} ; then
-      if load_key ${encroot} ; then
-        mount_zfs ${fs} ${BE}
-        if [ ! -d ${BE}/boot ] ; then
-          umount_zfs ${fs}
-          continue
-        fi
+      # Key is not loaded
+      if ! load_key ${encroot} ; then
+        # Key could not be loaded
+        continue
       fi
-    else
+      # Key is loaded
       mount_zfs ${fs} ${BE}
       if [ ! -d ${BE}/boot ] ; then
         umount_zfs ${fs}
         continue
       fi
+    fi
+  # No encryption key is needed
+  else
+    mount_zfs ${fs} ${BE}
+    if [ ! -d ${BE}/boot ] ; then
+      umount_zfs ${fs}
+      continue
     fi
   fi
   
