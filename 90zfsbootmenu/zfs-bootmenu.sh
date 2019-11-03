@@ -267,14 +267,24 @@ be_key_status() {
 }
 
 load_key() {
-  local encroot ret
+  local encroot ret key keyformat keylocation
   encroot="${1}"
-
   tput clear
   tput cup 0 0
 
-  zfs load-key -L prompt ${encroot}
-  ret=$?
+  keylocation="$( zfs get -H -o value keylocation ${encroot} )"
+  if [ "${keylocation}" = "prompt" ]; then
+    zfs load-key -L prompt ${encroot}
+    ret=$?
+  else
+    key="${keylocation#file://}"
+    keyformat="$( zfs get -H -o value keyformat ${encroot} )"
+    if [[ -f "${key}" ]]; then
+      zfs load-key ${encroot}
+    elif [ "${keyformat}" = "passphrase" ]; then
+      zfs load-key -L prompt ${encroot}
+    fi
+  fi
 
   return ${ret}
 }
