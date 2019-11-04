@@ -1,0 +1,36 @@
+--- mount-zfs.sh.orig	2019-11-03 22:46:45.397068338 -0600
++++ mount-zfs.sh	2019-11-03 23:07:34.458656627 -0600
+@@ -62,11 +62,28 @@
+ 		# if the root dataset has encryption enabled
+ 		ENCRYPTIONROOT="$(zfs get -H -o value encryptionroot "${ZFS_DATASET}")"
+ 		if ! [ "${ENCRYPTIONROOT}" = "-" ]; then
+-			# decrypt them
+-			ask_for_password \
+-				--tries 5 \
+-				--prompt "Encrypted ZFS password for ${ENCRYPTIONROOT}: " \
+-				--cmd "zfs load-key '${ENCRYPTIONROOT}'"
++      KEYLOCATION="$(zfs get -H -o value keylocation "${ENCRYPTIONROOT}")"
++      if [ "${KEYLOCATION}" = "prompt" ]; then
++			  ask_for_password \
++				  --tries 5 \
++				  --prompt "Encrypted ZFS password for ${ENCRYPTIONROOT}: " \
++				  --cmd "zfs load-key '${ENCRYPTIONROOT}'"
++      else
++        KEY="${KEYLOCATION#file://}"
++        KEYFORMAT="$(zfs get -H -o value keyformat "${ENCRYPTIONROOT}")"
++        # Load the key from the initramfs
++        if [[ -f "${KEY}" ]]; then
++          zfs load-key ${ENCRYPTIONROOT}
++        # If the keyfile doesn't exist, and it's a passphrase, prompt
++        elif [ "${KEYFORMAT}" = "passphrase" ]; then
++			    ask_for_password \
++				    --tries 5 \
++				    --prompt "Encrypted ZFS password for ${ENCRYPTIONROOT}: " \
++				    --cmd "zfs load-key '${ENCRYPTIONROOT}'"
++        else
++          warn "Keyfile at ${KEY} is missing, keyformat is not passphrase"
++        fi
++      fi
+ 		fi
+ 	fi
+ 	# Let us tell the initrd to run on shutdown.
