@@ -4,7 +4,7 @@ if [ ${rootok} -eq 1 ]; then
   udevadm settle
 fi
 
-echo "Loading boot menu"
+echo "Loading boot menu ..."
 TERM=linux
 tput reset
 
@@ -180,7 +180,7 @@ find_valid_kernels() {
   for kernel in $( ls ${mnt}/boot/vmlinux-* \
     ${mnt}/boot/vmlinuz-* \
     ${mnt}/boot/kernel-* \
-    ${mnt}/boot/linux-* 2>/dev/null ); do
+    ${mnt}/boot/linux-* 2>/dev/null | sort -V ); do
     
     kernel="${kernel#${mnt}}"
     version=$( echo $kernel | sed -e "s,^[^0-9]*-,,g" )
@@ -281,8 +281,10 @@ load_key() {
     keyformat="$( zfs get -H -o value keyformat ${encroot} )"
     if [[ -f "${key}" ]]; then
       zfs load-key ${encroot}
+      ret=$?
     elif [ "${keyformat}" = "passphrase" ]; then
       zfs load-key -L prompt ${encroot}
+      ret=$?
     fi
   fi
 
@@ -406,42 +408,41 @@ fi
 # Find any filesystems that mount to /, see if there are any kernels present
 for fs in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
   encroot="$( be_key_needed ${fs})"
+  # Encryption key is needed
   if [ $? -eq 1 ]; then
     if be_key_status ${encroot} ; then
       # Key is not loaded
       if ! load_key ${encroot} ; then
-        # Key could not be loaded
         continue
       fi
-      # Key is loaded
-      mount_zfs ${fs} ${BE}
-      if [ ! -d ${BE}/boot ] ; then
-        umount_zfs ${fs}
-        continue
-      fi
-    fi
-  # No encryption key is needed
-  else
-    mount_zfs ${fs} ${BE}
-    if [ ! -d ${BE}/boot ] ; then
-      umount_zfs ${fs}
-      continue
     fi
   fi
-  
-  sane="$( underscore ${fs} )"
-  echo ${fs} >> ${BASE}/env
 
+  # Mount the environment and confirm that /boot is present
+  mount_zfs ${fs} ${BE}
+  if [ ! -d ${BE}/boot ] ; then
+    umount_zfs ${fs}
+    continue
+  fi
+
+  # Check for kernels under the mountpoint
   response="$( find_valid_kernels ${BE} )"
 
-  # Build array of kernel;initramfs pairs
-  IFS=',' read -a pairs <<<"${response}"
+  # At least one kernel was found
+  if [ $? -gt 0 ]; then
+    echo ${fs} >> ${BASE}/env
 
-  # Iterate over pairs and write: fs kernel initramfs to a flat file 
-  for line in "${pairs[@]}"; do
-    IFS=';' read kernel initramfs <<<"${line}"
-    echo ${fs} ${kernel} ${initramfs} >> ${BASE}/${sane}
-  done
+    # Build array of kernel;initramfs pairs
+    IFS=',' read -a pairs <<<"${response}"
+
+    # Iterate over pairs and write: fs kernel initramfs to a flat file
+    SANE="$( underscore ${fs} )"
+    for line in "${pairs[@]}"; do
+      IFS=';' read kernel initramfs <<<"${line}"
+      echo ${fs} ${kernel} ${initramfs} >> ${BASE}/${SANE}
+    done
+  fi
+
   umount_zfs ${fs}
 done
 
