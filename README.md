@@ -1,5 +1,8 @@
 # Introduction
 
+
+[![asciicast](https://asciinema.org/a/FN4gWtVUPPXzgZPrCjd8mK6Vz.svg)](https://asciinema.org/a/FN4gWtVUPPXzgZPrCjd8mK6Vz)
+
 zfsbootmenu is implemented as a Dracut module to provide an experience similar to FreeBSD's bootloader, for Linux distributions. In broad strokes, it works as follows:
 
 * Via GRUB, direct EFI booting, etc, boot a Linux kernel along with an initramfs containing ZFS Boot Menu
