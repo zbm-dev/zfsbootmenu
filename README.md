@@ -118,4 +118,4 @@ When building a kernel command line to pass to the kexec'd kernel, the command l
 
 Both of the above issues are readily resolved by hopefully reading /etc/os-release from the boot environment and acting based on that.
 
-Because this is implemented as a full kernel and initramfs, it doesn't really fit into the way your distribution ships/installs packages. It doesn't make any sense for your OS to install these two files into `/boot`. They need to be placed in an implementation-dependenant location so that GRUB, EFI, etc can read them. This makes updating the boot menu on an installed system slightly more burdensome, since your normal package update process won't see updates.
+Because this is implemented as a full kernel and initramfs, it doesn't really fit into the way your distribution ships/installs packages. It doesn't make any sense for your OS to install these two files into `/boot`. They need to be placed in an implementation-dependent location so that GRUB, EFI, etc can read them. This makes updating the boot menu on an installed system slightly more burdensome, since your normal package update process won't see updates.
