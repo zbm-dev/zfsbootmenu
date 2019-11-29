@@ -398,7 +398,24 @@ if [[ ! -z "${BOOTFS}" ]]; then
     mount_zfs ${BOOTFS} ${BE}
     response="$( find_valid_kernels ${BE} )"
     IFS=',' read -a pairs <<<"${response}"
-    last="${pairs[-1]}"
+
+    local last
+
+    # Pull a specific kernel pattern from the pool
+    specific_kernel="$( zfs get -H -o value org.zfsbootmenu:kernel ${BOOTFS} )"
+    if [ "${specific_kernel}" = "-" ]; then
+      # If it's not set, use the last (highest versioned) kernel
+      last="${pairs[-1]}"
+    else
+      # Go through the list of kernels until one matches our pattern
+      # If nothing matches, we automatically boot the last/highest vesioned kernel
+      for last in "${pairs[@]}"; do
+        if [[ "${last}" =~ "${specific_kernel}" ]]; then
+          break
+        fi
+      done
+    fi
+
     IFS=';' read kernel initramfs <<<"${last}"
     umount_zfs ${BOOTFS}
     kexec_kernel "${BOOTFS} ${kernel} ${initramfs}"
