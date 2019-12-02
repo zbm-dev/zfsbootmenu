@@ -78,8 +78,9 @@ install() {
   dracut_install /usr/bin/mkdir
   dracut_install /usr/bin/tail
   dracut_install /usr/lib/udev/zvol_id
-  inst_hook cmdline 95 "${moddir}/parse-zfs.sh"
-  inst_hook pre-mount 90 "${moddir}/zfs-bootmenu.sh"
+  inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh"
+  inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh"
+  inst_hook pre-mount 90 "${moddir}/zfsbootmenu.sh"
 
   if [ -e /etc/zfs/zpool.cache ]; then
     inst /etc/zfs/zpool.cache

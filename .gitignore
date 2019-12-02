@@ -1,5 +1,4 @@
 *.img
 *.swp
-*.sh
 */*.swp
 releases/*
