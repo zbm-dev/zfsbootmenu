@@ -40,7 +40,7 @@ if [ $ret -gt 0 ]; then
       import_success=1
     fi
   done
-  if [ $import_success != 1 ]; then
+  if [ $import_success -ne 1 ]; then
     emergency_shell "unable to successfully import a pool"
   fi
 else
