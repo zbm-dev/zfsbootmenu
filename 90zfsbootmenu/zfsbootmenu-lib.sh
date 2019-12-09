@@ -150,12 +150,11 @@ kexec_kernel() {
 
   umount_zfs ${fs}
 
-  zpool export -a
   if ! [ $? -eq 0 ]; then
     emergency_shell "unable to export pools"
   fi
 
-  kexec -e
+  kexec -e -i
 }
 
 # arg1: snapshot name

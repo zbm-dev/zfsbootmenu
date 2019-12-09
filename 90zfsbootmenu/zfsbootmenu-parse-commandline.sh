@@ -21,9 +21,9 @@ fi
 # Force import pools only when explicitly told to do so
 if getargbool 0 force_import ; then
   info "ZFSBootMenu: Enabling force import of ZFS pools"
-  import_args="-f -N"
+  import_args="-o readonly=on -f -N"
 else
-  import_args="-N"
+  import_args="-o readonly=on -N"
 fi
 
 wait_for_zfs=0
