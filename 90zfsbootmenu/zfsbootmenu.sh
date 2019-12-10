@@ -56,14 +56,14 @@ fi
 
 # Attempt to find the bootfs property 
 datasets="$( zpool list -H -o bootfs ${pool} )"
-if [ "$datasets" = "-" ]; then
-  BOOTFS=
-else
-  while read -r line; do
+while read -r line; do
+  if [ "${line}" = "-" ]; then
+    BOOTFS=
+  else
     BOOTFS="${line}"
     break
-  done <<<"${datasets}"
-fi
+  fi
+done <<<"${datasets}"
 
 # If BOOTFS is not empty display the fast boot menu
 fast_boot=0

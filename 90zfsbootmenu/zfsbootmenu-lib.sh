@@ -150,10 +150,6 @@ kexec_kernel() {
 
   umount_zfs ${fs}
 
-  if ! [ $? -eq 0 ]; then
-    emergency_shell "unable to export pools"
-  fi
-
   kexec -e -i
 }
 
@@ -239,13 +235,14 @@ find_be_kernels() {
 # returns: nothing
 
 select_kernel() {
-  local fs
-  fs="${1}"
+  local zfsbe
+  zfsbe="${1}"
 
   local sane specific_kernel kexec_args
-  sane="$( underscore ${fs} )"
+  sane="$( underscore ${zfsbe} )"
   
-  specific_kernel="$( zfs get -H -o value org.zfsbootmenu:kernel ${BOOTFS} )"
+  specific_kernel="$( zfs get -H -o value org.zfsbootmenu:kernel ${zfsbe} )"
+
   # No value set, pick the last kernel entry
   if [ "${specific_kernel}" = "-" ]; then
     kexec_args="$( tail -1 ${BASE}/${sane} )"

@@ -74,6 +74,7 @@ install() {
   dracut_install tput
   dracut_install mount
   dracut_install df
+  dracut_install ip
   dracut_install /usr/bin/timeout
   dracut_install /usr/bin/mkdir
   dracut_install /usr/bin/tail
