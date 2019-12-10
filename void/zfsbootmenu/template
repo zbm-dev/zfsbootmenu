@@ -1,0 +1,25 @@
+# Template file for 'zfsbootmenu'
+pkgname=zfsbootmenu
+version=0.7.2
+revision=1
+conf_files="/etc/default/zfsbootmenu
+	/etc/zfsbootmenu/dracut.conf.d/zfsbootmenu.conf"
+archs=noarch
+short_desc="ZFSBootMenu implemented in Dracut"
+maintainer="Zach Dykstra <dykstra.zachary@gmail.com>"
+license="MIT"
+homepage="https://github.com/zdykstra/zfsbootmenu"
+distfiles="https://github.com/zdykstra/zfsbootmenu/archive/v${version}.tar.gz"
+checksum=@554e31860459c51c10d2fb908b55dd024db2b10b5d360b5ea6426cdbed5161e6
+
+do_install() {
+	vmkdir usr/lib/dracut/modules.d
+	vmkdir etc/zfsbootmenu
+	vmkdir etc/default
+
+	vcopy 90zfsbootmenu usr/lib/dracut/modules.d
+	vcopy etc/zfsbootmenu etc
+	vcopy etc/default etc
+
+	vlicense LICENSE
+}
