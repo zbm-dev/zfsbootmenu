@@ -26,6 +26,14 @@ else
   import_args="-o readonly=on -N"
 fi
 
+# Set a menu timeout, to allow immediate booting
+menu_timeout=$( getarg timeout=)
+if [ -n "${menu_timeout}" ]; then
+  info "ZFSBootMenu: Setting menu timeout from command line: ${menu_timeout}"
+else
+  menu_timeout=10
+fi
+
 wait_for_zfs=0
 case "${root}" in
   ""|zfsbootmenu|zfsbootmenu:)
