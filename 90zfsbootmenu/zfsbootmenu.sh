@@ -70,50 +70,57 @@ done <<<"${datasets}"
 # If BOOTFS is not empty display the fast boot menu
 fast_boot=0
 if [[ ! -z "${BOOTFS}" ]]; then
-
-  # Clear the screen
-  tput civis
-  HEIGHT=$(tput lines)
-  WIDTH=$(tput cols)
-  tput clear
-
-  # Draw the line centered on the screen
-  mes="[ENTER] to boot"
-  x=$(( ($HEIGHT - 0) / 2 ))
-  y=$(( ($WIDTH - ${#mes}) / 2 ))
-  tput cup $x $y
-  echo -n ${mes}
-
-  # Draw the line centered on the screen
-  mes="[ESC] boot menu"
-  x=$(( $x + 1 ))
-  y=$(( ($WIDTH - ${#mes}) / 2 ))
-  tput cup $x $y
-  echo -n ${mes}
-
-  x=$(( $x + 1 ))
-  tput cup $x $y
-
-  IFS=''
   # Draw a countdown menu
-  for (( i=10; i>0; i--)); do
-    mes="$( printf 'Booting %s in %0.2d seconds' ${BOOTFS} ${i} )"
+  if [[ ${menu_timeout} -gt 0 ]]; then
+    # Clear the screen
+    tput civis
+    HEIGHT=$(tput lines)
+    WIDTH=$(tput cols)
+    tput clear
+
+    # Draw the line centered on the screen
+    mes="[ENTER] to boot"
+    x=$(( ($HEIGHT - 0) / 2 ))
     y=$(( ($WIDTH - ${#mes}) / 2 ))
     tput cup $x $y
-    echo -ne "${mes}"
+    echo -n ${mes}
 
-    # Wait 1 second for input
-    read -s -N 1 -t 1 key
-    # Escape key
-    if [ "$key" = $'\e' ]; then
-      break
-    # Enter key
-    elif [ "$key" = $'\x0a' ]; then
-      fast_boot=1
-      break
-    fi
-  done
-  IFS="${OLDIFS}"
+    # Draw the line centered on the screen
+    mes="[ESC] boot menu"
+    x=$(( $x + 1 ))
+    y=$(( ($WIDTH - ${#mes}) / 2 ))
+    tput cup $x $y
+    echo -n ${mes}
+
+    x=$(( $x + 1 ))
+    tput cup $x $y
+
+    IFS=''
+    for (( i=${menu_timeout}; i>0; i--)); do
+      mes="$( printf 'Booting %s in %0.2d seconds' ${BOOTFS} ${i} )"
+      y=$(( ($WIDTH - ${#mes}) / 2 ))
+      tput cup $x $y
+      echo -ne "${mes}"
+
+      # Wait 1 second for input
+      read -s -N 1 -t 1 key
+      # Escape key
+      if [ "$key" = $'\e' ]; then
+        break
+      # Enter key
+      elif [ "$key" = $'\x0a' ]; then
+        fast_boot=1
+        break
+      fi
+    done
+    IFS="${OLDIFS}"
+  elif [[ ${menu_timeout} -eq 0 ]]; then
+    # Bypass the menu, immediately boot $BOOTFS
+    fast_boot=1
+  else
+    # Make sure we bypass the other fastboot check
+    i=1
+  fi
   
   # Boot up if we timed out, or if the enter key was pressed
   if [[ ${fast_boot} -eq 1 || $i -eq 0 ]]; then
