@@ -31,7 +31,9 @@ fi
 # Find all pools by name that are listed as ONLINE, then import them
 response="$( find_online_pools )"
 ret=$?
+
 if [ $ret -gt 0 ]; then
+  import_success=0
   IFS=',' read -a zpools <<<"${response}"
   for pool in "${zpools[@]}"; do
     import_pool ${pool}
