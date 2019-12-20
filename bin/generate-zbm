@@ -21,6 +21,7 @@ sub latestKernel;
 sub createInitramfs;
 sub unifiedEFI;
 sub execute;
+sub safeCopy;
 
 my ( %runConf, %config, %components );
 
@@ -124,8 +125,10 @@ if ( defined( $config{EFI}{Copies} ) and ( $config{EFI}{Copies} gt 0 ) ) {
     unlink $image;
   }
 
-  copy $runConf{unified_efi}, $runConf{efi_target};
-  printf "Created a unified EFI at %s\n", $runConf{efi_target};
+  make_path $config{EFI}{ImageDir};
+  if ( safeCopy( $runConf{unified_efi}, $runConf{efi_target} ) ) {
+    printf "Created a unified EFI at %s\n", $runConf{efi_target};
+  }
 }
 
 if ( defined( $config{Components}{Copies} ) and ( $config{Components}{Copies} gt 0 ) ) {
@@ -165,15 +168,20 @@ if ( defined( $config{Components}{Copies} ) and ( $config{Components}{Copies} gt
     $runConf{initramfs_backup} = sprintf( "%s/initramfs-bootmenu-backup.img", $config{Components}{ImageDir} );
 
     if ( -f $runConf{kernel_target} ) {
-      copy $runConf{kernel_target},    $runConf{kernel_backup};
-      copy $runConf{initramfs_target}, $runConf{initramfs_backup};
-      printf "Created %s, %s\n", $runConf{kernel_backup}, $runConf{initramfs_backup};
+      if (  safeCopy( $runConf{kernel_target}, $runConf{kernel_backup} )
+        and safeCopy( $runConf{initramfs_target}, $runConf{initramfs_backup} ) )
+      {
+        printf "Created %s, %s\n", $runConf{kernel_backup}, $runConf{initramfs_backup};
+      }
     }
   }
 
-  copy $runConf{kernel},    $runConf{kernel_target};
-  copy $runConf{initramfs}, $runConf{initramfs_target};
-  printf "Created %s, %s\n", $runConf{kernel_target}, $runConf{initramfs_target};
+  make_path $config{Components}{ImageDir};
+  if (  safeCopy( $runConf{kernel}, $runConf{kernel_target} )
+    and safeCopy( $runConf{initramfs}, $runConf{initramfs_target} ) )
+  {
+    printf "Created %s, %s\n", $runConf{kernel_target}, $runConf{initramfs_target};
+  }
 }
 
 # Finds the latest kernel in /boot
@@ -237,4 +245,14 @@ sub unifiedEFI {
 
 sub execute {
   ( $_ = qx{@_ 2>&1}, $? >> 8 );
+}
+
+sub safeCopy {
+  my ( $source, $dest ) = @_;
+
+  unless ( copy( $source, $dest ) ) {
+    printf "Unable to copy %s to %s: %s\n", $source, $dest, $!;
+    return 0;
+  }
+  return 1;
 }
