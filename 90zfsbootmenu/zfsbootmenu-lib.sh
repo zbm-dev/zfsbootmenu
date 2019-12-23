@@ -161,8 +161,17 @@ clone_snapshot() {
   local selected target response
 
   selected="${1}"
-  IFS='@' read -a response <<<"${selected}"
-  target="${response[0]}_${response[1]}"
+
+  pool="${selected%%/*}"
+
+  # If the pool is read-only, flip the import arg off and, export then import
+  if [ "$( zpool get -H -o value readonly ${pool} )" = "on" ]; then
+    export_pool "${pool}"
+    import_args="${import_args/readonly=on/readonly=off}"
+    import_pool "${pool}"
+  fi
+
+  target="${selected/@/_}"
 
   zfs clone -o mountpoint=/ \
     -o canmount=noauto \
@@ -173,6 +182,8 @@ clone_snapshot() {
     if output=$( find_be_kernels "${target}" "${BASE_MOUNT}" ); then
       echo "${target}" >> ${BASE}/env
       return 0
+    else
+      return 1
     fi
   else
     return $ret 
@@ -291,12 +302,25 @@ import_pool() {
   local pool
   pool="${1}"
 
-  status=$( zpool import ${import_args} ${pool} )
+  status="$( zpool import ${import_args} ${pool} )"
   ret=$?
 
   return ${ret}
 }
 
+# arg1: pool name
+# prints: nothing
+# returns: 0 on success, 1 on failure
+
+export_pool() {
+  local pool
+  pool="${1}"
+
+  status="$( zpool export ${pool} )"
+  ret=$?
+
+  return ${ret}
+}
 # arg1: ZFS filesystem
 # prints: name of encryption root, if present
 # returns: 1 if key is needed, 0 if not
