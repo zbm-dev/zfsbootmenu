@@ -150,6 +150,12 @@ kexec_kernel() {
 
   umount_zfs ${fs}
 
+  # Export if read-write, to ensure a clean pool
+  pool="${selected%%/*}"
+  if [ "$( zpool get -H -o value readonly ${pool} )" = "off" ]; then
+    export_pool "${pool}"
+  fi
+
   kexec -e -i
 }
 
@@ -161,8 +167,17 @@ clone_snapshot() {
   local selected target response
 
   selected="${1}"
-  IFS='@' read -a response <<<"${selected}"
-  target="${response[0]}_${response[1]}"
+
+  pool="${selected%%/*}"
+
+  # If the pool is read-only, flip the import arg off and, export then import
+  if [ "$( zpool get -H -o value readonly ${pool} )" = "on" ]; then
+    export_pool "${pool}"
+    import_args="${import_args/readonly=on/readonly=off}"
+    import_pool "${pool}"
+  fi
+
+  target="${selected/@/_}"
 
   zfs clone -o mountpoint=/ \
     -o canmount=noauto \
@@ -170,14 +185,23 @@ clone_snapshot() {
   ret=$?
 
   if [ $ret -eq 0 ]; then 
-    if output=$( find_be_kernels "${target}" "${BASE_MOUNT}" ); then
-      echo "${target}" >> ${BASE}/env
-      return 0
+    key_wrapper "${target}"
+    if [ $? -eq 0 ]; then
+      if output=$( find_be_kernels "${target}" "${BASE_MOUNT}" ); then
+        echo "${target}" >> ${BASE}/env
+        return 0
+      else
+        # No kernels were found
+        return 1
+      fi
+    else
+      # keys were needed, but not loaded
+      return 1
     fi
   else
+    # Clone failed
     return $ret 
   fi
-
 }
 
 # arg1: ZFS filesystem
@@ -195,6 +219,7 @@ find_be_kernels() {
 
   # Check if /boot even exists in the environment
   mount_zfs "${fs}" "${mnt}"
+
   if [ ! -d "${mnt}/boot" ]; then
     umount_zfs "${fs}"
     return
@@ -291,12 +316,25 @@ import_pool() {
   local pool
   pool="${1}"
 
-  status=$( zpool import ${import_args} ${pool} )
+  status="$( zpool import ${import_args} ${pool} )"
   ret=$?
 
   return ${ret}
 }
 
+# arg1: pool name
+# prints: nothing
+# returns: 0 on success, 1 on failure
+
+export_pool() {
+  local pool
+  pool="${1}"
+
+  status="$( zpool export ${pool} )"
+  ret=$?
+
+  return ${ret}
+}
 # arg1: ZFS filesystem
 # prints: name of encryption root, if present
 # returns: 1 if key is needed, 0 if not
@@ -347,11 +385,11 @@ be_key_status() {
 load_key() {
   local encroot ret key keyformat keylocation
   encroot="${1}"
-  tput clear
-  tput cup 0 0
 
   keylocation="$( zfs get -H -o value keylocation ${encroot} )"
   if [ "${keylocation}" = "prompt" ]; then
+    tput clear
+    tput cup 0 0
     zfs load-key -L prompt ${encroot}
     ret=$?
   else
@@ -361,6 +399,8 @@ load_key() {
       zfs load-key ${encroot}
       ret=$?
     elif [ "${keyformat}" = "passphrase" ]; then
+      tput clear
+      tput cup 0 0
       zfs load-key -L prompt ${encroot}
       ret=$?
     fi
@@ -369,6 +409,27 @@ load_key() {
   return ${ret}
 }
 
+# arg1: ZFS filesystem
+# prints: nothing
+# returns 0 on success, 1 on failure
+
+key_wrapper() {
+  local encroot fs ret
+  fs="${1}"
+  ret=0
+
+  encroot="$( be_key_needed ${fs})"
+
+  if [ $? -eq 1 ]; then
+    if be_key_status ${encroot} ; then
+      if ! load_key ${encroot} ; then
+        ret=1
+      fi
+    fi
+  fi
+
+  return ${ret}
+}
 # arg1: message
 # prints: nothing
 # returns: nothing

@@ -124,13 +124,8 @@ if [[ ! -z "${BOOTFS}" ]]; then
   
   # Boot up if we timed out, or if the enter key was pressed
   if [[ ${fast_boot} -eq 1 || $i -eq 0 ]]; then
-    encroot="$( be_key_needed ${BOOTFS})"
-    if [ $? -eq 1 ]; then
-      if be_key_status ${encroot} ; then
-        if ! load_key ${encroot} ; then
-          emergency_shell "unable to load required key for ${encroot}"
-        fi
-      fi
+    if ! key_wrapper "${encroot}" ; then
+      emergency_shell "unable to load required key for ${encroot}"
     fi
 
     # Generate a list of valid kernels for our bootfs
@@ -150,22 +145,14 @@ fi
 
 # Find any filesystems that mount to /, see if there are any kernels present
 for FS in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
-  encroot="$( be_key_needed ${FS})"
-  # Encryption key is needed
-  if [ $? -eq 1 ]; then
-    if be_key_status ${encroot} ; then
-      # Key is not loaded
-      if ! load_key ${encroot} ; then
-        continue
-      fi
-    fi
+  if ! key_wrapper "${encroot}" ; then
+    continue
   fi
 
   # Check for kernels under the mountpoint, add to our BE list
   if output=$( find_be_kernels "${FS}" "${BASE_MOUNT}" ); then
     echo ${FS} >> ${BASE}/env
   fi
-
 done
 
 if [ ! -f ${BASE}/env ]; then
@@ -207,7 +194,6 @@ while true; do
       "alt-s")
         selected_snap="$( draw_snapshots ${selected_be} )"
         ret=$?
-
 
         if [ $ret -eq 130 ]; then
           BE_SELECTED=0 
