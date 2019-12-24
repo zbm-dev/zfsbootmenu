@@ -26,6 +26,12 @@ else
   import_args="-o readonly=on -N"
 fi
 
+# Import pools by default in read-write mode
+if getargbool 0 read_write ; then
+  info "ZFSBootMenu: Enabling read-write ZFS pool import"
+  import_args="${import_args/readonly=on/readonly=off}"
+fi
+
 # Set a menu timeout, to allow immediate booting
 menu_timeout=$( getarg timeout=)
 if [ -n "${menu_timeout}" ]; then
