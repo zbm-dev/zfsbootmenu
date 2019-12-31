@@ -3,6 +3,8 @@
 use strict;
 use warnings;
 
+our $VERSION = '0.7.5';
+
 use Getopt::Long qw(:config no_ignore_case auto_version);
 use Pod::Usage qw(pod2usage);
 use File::Basename;
@@ -26,10 +28,10 @@ sub safeCopy;
 my ( %runConf, %config, %components );
 
 my $configfile   = "/etc/zfsbootmenu/config.ini";
-my $version_file = "/usr/share/zfsbootmenu/VERSION";
 
 $runConf{bootdir} = "/boot";
 $runConf{confd}   = "/usr/share/zfsbootmenu/dracut.conf.d";
+$runConf{version} = $VERSION;
 
 GetOptions(
   "version|v=s" => \$runConf{version},
@@ -59,19 +61,6 @@ unless ( ( defined $config{Global}{ManageImages} ) and ( $config{Global}{ManageI
 # Override the location of our specific dracut.conf.d directory
 if ( defined $config{Global}{DracutConfDir} ) {
   $runConf{confd} = $config{Global}{DracutConfDir};
-}
-
-# Sanity check that we can determine the version of zfsbootmenu
-unless ( defined $runConf{version} ) {
-  if ( -f $version_file ) {
-    open( my $fh, '<', $version_file );
-    read $fh, $runConf{version}, -s $fh;
-    close($fh);
-    chomp( $runConf{version} );
-  } else {
-    print "Unable to determine version\n";
-    exit;
-  }
 }
 
 # Create a temp directory
