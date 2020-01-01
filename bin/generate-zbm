@@ -173,6 +173,62 @@ if ( defined( $config{Components}{Copies} ) and ( $config{Components}{Copies} gt
   }
 }
 
+if ( defined( $config{syslinux}{Copies} ) and ( $config{syslinux}{Copies} gt 0 ) ) {
+    $runConf{kernel_target} =
+      sprintf( "%s/%s-%s", $config{syslinux}{ImageDir}, $runConf{kernel_prefix}, $runConf{version} );
+    $runConf{initramfs_target} = sprintf( "%s/initramfs-%s.img", $config{syslinux}{ImageDir}, $runConf{version} );
+
+    my $glob    = sprintf( "%s/%s-*", $config{syslinux}{ImageDir}, $runConf{kernel_prefix} );
+    my @listing = sort glob($glob);
+
+    printf "Found %s existing images, allowed to have a total of %s\n", scalar @listing, $config{syslinux}{Copies};
+    while ( scalar @listing > $config{syslinux}{Copies} ) {
+      my $kernel    = shift(@listing);
+      my $initramfs = sprintf( "%s.img", $kernel );
+      $initramfs =~ s/\Q$runConf{kernel_prefix}/initramfs/;
+      printf "Removing %s, %s\n", $kernel, $initramfs;
+      unlink $kernel;
+      unlink $initramfs;
+    }
+
+  make_path $config{syslinux}{ImageDir};
+  if (  safeCopy( $runConf{kernel}, $runConf{kernel_target} )
+    and safeCopy( $runConf{initramfs}, $runConf{initramfs_target} ) )
+  {
+    printf "Created %s, %s\n", $runConf{kernel_target}, $runConf{initramfs_target};
+  }
+
+  $glob    = sprintf( "%s/%s-*", $config{syslinux}{ImageDir}, $runConf{kernel_prefix} );
+  @listing = sort glob($glob);
+
+  $runConf{syslinux_temp} = join('/', $tempdir, 'syslinux.conf');
+  open CFG, '>',  $runConf{syslinux_temp};
+
+  my $add_default = 1;
+  while (@listing) {
+    my $entry = pop(@listing);
+
+    my $kernel = basename( $entry );
+    my (undef,$version) = split('-', basename( $kernel ));
+    my $label = "ZFSBootMenu-$version";
+
+    if ($add_default) {
+      print CFG "DEFAULT $label\n\n";
+      $add_default--;
+    }
+
+    print CFG "LABEL $label\n";
+    print CFG "KERNEL /$kernel\n";
+    print CFG "INITRD /initramfs-$version.img\n";
+    print CFG "APPEND $config{Kernel}{CommandLine}\n";
+    print CFG "\n";
+
+  }
+  close CFG;
+
+  make_path basename( $config{syslinux}{Config} );
+  safeCopy( $runConf{syslinux_temp}, $config{syslinux}{Config} );
+}
 # Finds the latest kernel in /boot
 sub latestKernel {
   my @prefixes = ( "vmlinux*", "vmlinuz*", "linux*", "kernel*" );
