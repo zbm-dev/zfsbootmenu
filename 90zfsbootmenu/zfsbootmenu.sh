@@ -124,8 +124,8 @@ if [[ ! -z "${BOOTFS}" ]]; then
   
   # Boot up if we timed out, or if the enter key was pressed
   if [[ ${fast_boot} -eq 1 || $i -eq 0 ]]; then
-    if ! key_wrapper "${encroot}" ; then
-      emergency_shell "unable to load required key for ${encroot}"
+    if ! key_wrapper "${BOOTFS}" ; then
+      emergency_shell "unable to load required key for ${BOOTFS}"
     fi
 
     # Generate a list of valid kernels for our bootfs
@@ -145,7 +145,7 @@ fi
 
 # Find any filesystems that mount to /, see if there are any kernels present
 for FS in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
-  if ! key_wrapper "${encroot}" ; then
+  if ! key_wrapper "${FS}" ; then
     continue
   fi
 
