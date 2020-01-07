@@ -2,26 +2,6 @@
 
 # ZFS boot menu functions
 
-# arg1: zroot/ROOT/bootenvironment
-# prints: zroot_ROOT_bootenvironment
-# returns: No return value
-
-underscore() {
-  local bepath
-  bepath="${1}"
-  echo ${bepath} | sed 's,/,_,g'
-}
-
-# arg1: zroot_ROOT_bootenvironment
-# prints: zroot/ROOT/bootenvironment
-# returns: No return value
-
-slash() {
-  local bepath
-  bepath="${1}"
-  echo ${bepath} | sed 's,_,/,g'
-}
-
 # arg1: ZFS filesystem name 
 # arg2: mountpoint
 # prints: No output
@@ -31,31 +11,18 @@ mount_zfs() {
   local fs mnt ret
 
   fs="${1}"
-  mnt="${2}"
 
-  test -d ${mnt} || return 1
-  mount -o zfsutil -t zfs ${fs} ${mnt}
+  mnt="${BASE}/${fs}/mnt"
+  test -d "${mnt}" || mkdir -p "${mnt}"
+
+  mount -o zfsutil -t zfs "${fs}" "${mnt}"
   ret=$?
 
+  echo "${mnt}"
   return ${ret}
 }
 
-# arg1: mount point 
-# prints: No output
-# returns: 0 on success
-
-umount_zfs() {
-  local mnt ret
-
-  mnt="${1}"
-  umount ${mnt}
-  ret=$?
-
-  return ${ret}
-}
-
-# arg1: Path to file with header/options text
-# arg2: Path to file with detected boot environments, 1 per line
+# arg1: Path to file with detected boot environments, 1 per line
 # prints: key pressed, boot environment 
 # returns: 130 on error, 0 otherwise
 
@@ -63,13 +30,14 @@ draw_be() {
   local env header selected ret
 
   env="${1}"
-  header="${2}"
 
   test -f ${env} || return 130
-  test -f ${header} || return 130
 
-  selected="$( cat ${header} ${env} | fzf -0 --prompt "BE > " \
-    --header-lines=2 --expect=alt-k,alt-s,alt-a,alt-r )"
+  selected="$( cat ${env} | fzf -0 --prompt "BE > " \
+    --expect=alt-k,alt-s,alt-a,alt-r,alt-d \
+    --preview-window=up:2 \
+    --header="[ENTER] boot [ALT+K] kernel [ALT+D] set bootfs [ALT+S] snapshots" \
+    --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}")"
   ret=$?
   while read -r line; do
     if [ -z "$line" ]; then
@@ -90,13 +58,8 @@ draw_kernel() {
 
   benv="${1}"
 
-  # Set a pretty benv for our prompt
-  pretty="$( slash ${benv})"
-  pretty="${pretty#${BASE}/}"
-
-  selected="$( cat ${benv} | fzf --prompt "${pretty} > " --tac \
-    --with-nth=2 --header="[ENTER] boot
-[ESC] back")"
+  selected="$( cat ${BASE}/${benv}/kernels | fzf --prompt "${benv} > " --tac \
+    --with-nth=2 --header="[ENTER] boot [ESC] back")"
   
   ret=$?
   echo "${selected}"
@@ -113,8 +76,7 @@ draw_snapshots() {
   benv="${1}"
 
   selected="$( zfs list -t snapshot -H -o name ${benv} | fzf --prompt "Snapshot > " --tac \
-    --header="[ENTER] clone 
-[ESC] back" )"
+    --header="[ENTER] clone [ESC] back" )"
   ret=$?
   echo "${selected}"
   return ${ret}
@@ -136,19 +98,23 @@ kexec_kernel() {
   # initramfs
   IFS=' ' read fs kernel initramfs <<<"${selected}"
 
-  mount_zfs ${fs} ${BASE_MOUNT}
+  mnt="$( mount_zfs "${fs}" )"
+
   ret=$?
   if [ $ret != 0 ]; then
     emergency_shell "unable to mount ${fs}"
   fi
 
-  test -e ${BASE_MOUNT}/etc/default/grub && . ${BASE_MOUNT}/etc/default/grub
+  while IFS= read -r line
+  do
+    cli_args="${line}"
+  done < "${BASE}/${fs}/default_args"
 
-  kexec -l ${BASE_MOUNT}${kernel} \
-    --initrd=${BASE_MOUNT}/${initramfs} \
-    --command-line="root=zfs:${fs} ${GRUB_CMDLINE_LINUX_DEFAULT}"
+  kexec -l ${mnt}${kernel} \
+    --initrd=${mnt}/${initramfs} \
+    --command-line="root=zfs:${fs} ${cli_args}"
 
-  umount_zfs ${fs}
+  umount ${mnt}
 
   # Export if read-write, to ensure a clean pool
   pool="${selected%%/*}"
@@ -170,7 +136,7 @@ clone_snapshot() {
 
   pool="${selected%%/*}"
 
-  # If the pool is read-only, flip the import arg off and, export then import
+  # If the pool is read-only, flip the arg off then export and import
   if [ "$( zpool get -H -o value readonly ${pool} )" = "on" ]; then
     export_pool "${pool}"
     import_args="${import_args/readonly=on/readonly=off}"
@@ -178,6 +144,16 @@ clone_snapshot() {
   fi
 
   target="${selected/@/_}"
+
+  if $( zfs list -H -o name | grep -q ${target} ); then
+    last_env="$( zfs list -H -o name | grep ${target} | tail -1 )"
+    index="${last_env##${target}_}"
+    index="$(( ${index} + 1 ))"
+  else
+    index="0"
+  fi
+
+  target="$( printf "%s_%0.3d" ${target} ${index} )"
 
   zfs clone -o mountpoint=/ \
     -o canmount=noauto \
@@ -187,7 +163,7 @@ clone_snapshot() {
   if [ $ret -eq 0 ]; then 
     key_wrapper "${target}"
     if [ $? -eq 0 ]; then
-      if output=$( find_be_kernels "${target}" "${BASE_MOUNT}" ); then
+      if output=$( find_be_kernels "${target}" ); then
         echo "${target}" >> ${BASE}/env
         return 0
       else
@@ -204,32 +180,46 @@ clone_snapshot() {
   fi
 }
 
+set_default_env() {
+  local selected
+  selected="${1}"
+
+  pool="${selected%%/*}"
+
+  # If the pool is read-only, flip the arg off then export and import
+  if [ "$( zpool get -H -o value readonly ${pool} )" = "on" ]; then
+    export_pool "${pool}"
+    import_args="${import_args/readonly=on/readonly=off}"
+    import_pool "${pool}"
+    key_wrapper "${pool}"
+  fi
+
+  if output="$( zpool set bootfs=${selected} ${pool} )"; then
+    BOOTFS="${selected}"
+  fi
+}
+
 # arg1: ZFS filesystem
 # arg2: mountpoint
 # prints: nothing
-# returns: number of kernels found 
+# returns: 0 if kernels were found
 
 find_be_kernels() {
   local fs mnt 
   fs="${1}"
-  mnt="${2}"
 
-  local sane kernel version pairs
+
+  local sane kernel version kernel_records
   pairs=()
 
   # Check if /boot even exists in the environment
-  mount_zfs "${fs}" "${mnt}"
+  mnt="$( mount_zfs "${fs}" )"
+  kernel_records="${mnt/mnt/kernels}"
 
   if [ ! -d "${mnt}/boot" ]; then
-    umount_zfs "${fs}"
-    return
+    umount "${mnt}"
+    return 1
   fi
-
-  # Create a filename with out /'s
-  sane="$( underscore ${fs} )"
-
-  # Remove this file if it already exists
-  test -f ${BASE}/${sane} && rm ${BASE}/${sane}
 
   for kernel in $( ls ${mnt}/boot/vmlinux-* \
     ${mnt}/boot/vmlinuz-* \
@@ -243,16 +233,26 @@ find_be_kernels() {
       "initrd-${version}" "initramfs-${version}.img"; do
 
       if test -e "${mnt}/boot/${i}" ; then
-        echo "${fs} ${kernel} /boot/${i}" >> ${BASE}/${sane}
+        echo "${fs} ${kernel} /boot/${i}" >> "${kernel_records}"
         break
       fi
     done
   done
 
-  umount_zfs "${fs}"
+  defaults="$( select_kernel "${fs}" )"
+  IFS=' ' read def_fs def_kernel def_initramfs <<<"${defaults}"
+  def_kernel="$( basename "${def_kernel}" )"
+  def_version=$( echo $def_kernel | sed -e "s,^[^0-9]*-,,g" )
 
-  # Return the number of kernels found 
-  return "${#pairs[@]}"
+  def_kernel_file="${mnt/mnt/default_kernel}"
+  echo "${def_version}" > "${def_kernel_file}"
+
+  def_args="$( find_kernel_args "${mnt}" )"
+  def_args_file="${mnt/mnt/default_args}"
+  echo "${def_args}" > "${def_args_file}"
+
+  umount "${mnt}"
+  return 0
 }
 
 # arg1: ZFS filesystem
@@ -264,13 +264,12 @@ select_kernel() {
   zfsbe="${1}"
 
   local sane specific_kernel kexec_args
-  sane="$( underscore ${zfsbe} )"
   
   specific_kernel="$( zfs get -H -o value org.zfsbootmenu:kernel ${zfsbe} )"
 
   # No value set, pick the last kernel entry
   if [ "${specific_kernel}" = "-" ]; then
-    kexec_args="$( tail -1 ${BASE}/${sane} )"
+    kexec_args="$( tail -1 ${BASE}/${zfsbe}/kernels )"
   else
     while read -r kexec_args; do
       local fs kernel initramfs
@@ -278,10 +277,28 @@ select_kernel() {
       if [[ "${kernel}" =~ "${specific_kernel}" ]]; then
         break
       fi
-    done <<<"$( cat ${BASE}/${sane} )"
+    done <<<"$( cat ${BASE}/${zfsbe}/kernels )"
   fi
 
   echo "${kexec_args}"
+}
+
+find_kernel_args() {
+  local zfsbe
+  zfsbe="${1}"
+
+  local arguments
+
+  if [ -f "${zfsbe}/etc/default/grub" ]; then
+    echo "$(
+      . "${zfsbe}/etc/default/grub" ;
+      echo "${GRUB_CMDLINE_LINUX_DEFAULT}"
+    )"
+    return
+  fi
+
+  # No arguments found, return something generic
+  echo "quiet loglevel=3"
 }
 
 # no arguments

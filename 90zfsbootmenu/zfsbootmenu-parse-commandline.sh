@@ -40,6 +40,10 @@ else
   menu_timeout=10
 fi
 
+if getargbool 1 die_on_import_failure ; then
+  info "ZFSBootMenu: Disabling die on import failure"
+fi
+
 wait_for_zfs=0
 case "${root}" in
   ""|zfsbootmenu|zfsbootmenu:)
