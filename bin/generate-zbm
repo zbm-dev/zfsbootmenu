@@ -238,7 +238,7 @@ EOF
   }
   close CFG;
 
-  make_path basename( $config{syslinux}{Config} );
+  make_path dirname( $config{syslinux}{Config} );
   safeCopy( $runConf{syslinux_temp}, $config{syslinux}{Config} );
 }
 # Finds the latest kernel in /boot
