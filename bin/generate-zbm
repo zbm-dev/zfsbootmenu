@@ -204,6 +204,16 @@ if ( defined( $config{syslinux}{Copies} ) and ( $config{syslinux}{Copies} gt 0 )
   $runConf{syslinux_temp} = join('/', $tempdir, 'syslinux.conf');
   open CFG, '>',  $runConf{syslinux_temp};
 
+  my $header = <<'EOF';
+UI menu.c32
+PROMPT 0
+
+MENU TITLE Boot Menu
+TIMEOUT 50
+EOF
+
+  print CFG $header;
+
   my $add_default = 1;
   while (@listing) {
     my $entry = pop(@listing);
@@ -211,6 +221,7 @@ if ( defined( $config{syslinux}{Copies} ) and ( $config{syslinux}{Copies} gt 0 )
     my $kernel = basename( $entry );
     my (undef,$version) = split('-', basename( $kernel ));
     my $label = "ZFSBootMenu-$version";
+    my $menu_label = "ZFS Boot Menu v$version";
 
     if ($add_default) {
       print CFG "DEFAULT $label\n\n";
@@ -218,6 +229,7 @@ if ( defined( $config{syslinux}{Copies} ) and ( $config{syslinux}{Copies} gt 0 )
     }
 
     print CFG "LABEL $label\n";
+    print CFG "MENU LABEL $menu_label\n";
     print CFG "KERNEL /$kernel\n";
     print CFG "INITRD /initramfs-$version.img\n";
     print CFG "APPEND $config{Kernel}{CommandLine}\n";
