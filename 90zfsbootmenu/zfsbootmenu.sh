@@ -1,6 +1,8 @@
 #!/bin/bash
 
-. /lib/zfsbootmenu-lib.sh
+test -f /lib/zfsbootmenu-lib.sh && source /lib/zfsbootmenu-lib.sh
+test -f zfsbootmenu-lib.sh && source zfsbootmenu-lib.sh
+
 
 echo "Loading boot menu ..."
 TERM=linux
@@ -11,15 +13,7 @@ OLDIFS="$IFS"
 export FZF_DEFAULT_OPTS="--layout=reverse-list --cycle \
   --inline-info --tac"
 
-BE_SELECTED=0
-KERNEL_SELECTED=0
-
 BASE="$( mktemp -d /tmp/zfs.XXXX )"
-BASE_MOUNT="${BASE}/be"
-mkdir ${BASE_MOUNT}
-
-ENV_HEADER="[ALT+K] select kernel [ENTER] boot\n[ALT+A] all snapshots [ALT+S] BE snapshots"
-echo -e ${ENV_HEADER} > ${BASE}/env_header
 
 # I should probably just modprobe zfs right off the bat
 # rootok is always 1 here, otherwise we wouldn't be here ...
@@ -46,7 +40,10 @@ if [ $ret -gt 0 ]; then
     emergency_shell "unable to successfully import a pool"
   fi
 else
-  emergency_shell "no pools available to import"
+  if [ ${die_on_import_failure} -eq 1 ]; then
+    emergency_shell "no pools available to import"
+    exit;
+  fi
 fi
 
 # Prefer a specific pool when checking for a bootfs value
@@ -129,7 +126,7 @@ if [[ ! -z "${BOOTFS}" ]]; then
     fi
 
     # Generate a list of valid kernels for our bootfs
-    if output=$( find_be_kernels "${BOOTFS}" "${BASE_MOUNT}" ); then
+    if output=$( find_be_kernels "${BOOTFS}" ); then
       # Automatically select a kernel and boot it
       kexec_kernel "$( select_kernel "${BOOTFS}" )"
     fi
@@ -150,7 +147,7 @@ for FS in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
   fi
 
   # Check for kernels under the mountpoint, add to our BE list
-  if output=$( find_be_kernels "${FS}" "${BASE_MOUNT}" ); then
+  if output="$( find_be_kernels "${FS}" )" ; then
     echo ${FS} >> ${BASE}/env
   fi
 done
@@ -160,9 +157,12 @@ if [ ! -f ${BASE}/env ]; then
 fi
 
 # This is the actual menuing system
+BE_SELECTED=0
+tput civis
+
 while true; do
   if [ ${BE_SELECTED} -eq 0 ]; then
-    bootenv="$( draw_be "${BASE}/env" "${BASE}/env_header")"
+    bootenv="$( draw_be "${BASE}/env" )"
     ret=$?
     
     # key press
@@ -181,7 +181,7 @@ while true; do
         exit
         ;;
       "alt-k")
-        selected_kernel="$( draw_kernel ${BASE}/$( underscore ${selected_be} ) )"
+        selected_kernel="$( draw_kernel "${selected_be}" )"
         ret=$?
 
         if [ $ret -eq 130 ]; then
@@ -190,6 +190,10 @@ while true; do
           kexec_kernel "${selected_kernel}"
           exit
         fi
+        ;;
+      "alt-d")
+        set_default_env "${selected_be}"
+        BE_SELECTED=0
         ;;
       "alt-s")
         selected_snap="$( draw_snapshots ${selected_be} )"

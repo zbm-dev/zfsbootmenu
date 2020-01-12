@@ -80,6 +80,7 @@ install() {
   dracut_install /usr/bin/tail
   dracut_install /usr/lib/udev/zvol_id
   inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh"
+  inst_simple "${moddir}/zfsbootmenu-preview.sh" "/bin/zfsbootmenu-preview.sh"
   inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh"
   inst_hook pre-mount 90 "${moddir}/zfsbootmenu.sh"
 
