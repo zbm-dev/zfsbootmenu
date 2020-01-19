@@ -8,8 +8,6 @@ our $VERSION = '0.8.0';
 use Getopt::Long qw(:config no_ignore_case auto_version);
 use Pod::Usage qw(pod2usage);
 use File::Basename;
-use Sys::Hostname;
-use Config::IniFiles;
 use File::Temp qw(tempfile tempdir);
 use File::Copy;
 use File::Path qw(make_path remove_tree);
@@ -20,11 +18,20 @@ $Data::Dumper::Indent   = 1;
 $Data::Dumper::Sortkeys = 1;
 $Data::Dumper::Purity   = 1;
 
+use Config::IniFiles;
+use Sort::Versions;
+
 sub latestKernel;
 sub createInitramfs;
 sub unifiedEFI;
 sub execute;
 sub safeCopy;
+sub cleanupMount;
+
+BEGIN {
+  $SIG{INT}   = \&cleanupMount;
+  $SIG{TERM}  = \&cleanupMount;
+}
 
 my ( %runConf, %config, %components );
 
@@ -51,6 +58,9 @@ unless ( -f $configfile ) {
   exit;
 }
 
+# Versions ending in .0 will be stripped by petitboots' syslinux parser
+$runConf{version} = $runConf{version} . "_1";
+
 # Read our config into a hash
 tie %config, 'Config::IniFiles', ( -file => $configfile );
 
@@ -62,6 +72,30 @@ unless ( ( defined $config{Global}{ManageImages} ) and ( $config{Global}{ManageI
 # Override the location of our specific dracut.conf.d directory
 if ( defined $config{Global}{DracutConfDir} ) {
   $runConf{confd} = $config{Global}{DracutConfDir};
+}
+
+# Ensure our bootloader partition is mounted
+$runConf{umount_on_exit} = 0;
+if ( ( defined $config{Global}{BootMountPoint} ) and ( length $config{Global}{BootMountPoint} ) ) {
+  my $mounted = 0;
+
+  my $cmd = "mount";
+  my @output = execute($cmd);
+  my $status = pop(@output);
+  foreach my $line (@output) {
+    chomp($line);
+    if ( $line =~ m/$config{Global}{BootMountPoint}/ ) {
+      $mounted = 1;
+      last;
+    }
+  }
+
+  unless ($mounted) {
+    print "Mounting $config{Global}{BootMountPoint}\n";
+    $cmd = "mount $config{Global}{BootMountPoint}";
+    execute($cmd);
+    $runConf{umount_on_exit} = 1;
+  }
 }
 
 # Create a temp directory
@@ -87,6 +121,7 @@ printf "Creating ZFS Boot Menu %s, with %s %s\n", $runConf{version}, $runConf{ke
 
 $runConf{initramfs} = createInitramfs( $tempdir, $runConf{kernel_version} );
 
+# Create a unified kernel/initramfs/command line EFI file
 if ( defined( $config{EFI}{Copies} ) and ( $config{EFI}{Copies} gt 0 ) ) {
   $runConf{unified_efi} = unifiedEFI( $tempdir, $runConf{kernel}, $runConf{initramfs} );
 
@@ -121,6 +156,7 @@ if ( defined( $config{EFI}{Copies} ) and ( $config{EFI}{Copies} gt 0 ) ) {
   }
 }
 
+# Create a separate kernel / initramfs. Used by syslinux/extlinux/grub.
 if ( defined( $config{Components}{Copies} ) and ( $config{Components}{Copies} gt 0 ) ) {
   if ( defined( $config{Components}{Versioned} ) and ( $config{Components}{Versioned} ) ) {
     $runConf{kernel_target} =
@@ -174,33 +210,19 @@ if ( defined( $config{Components}{Copies} ) and ( $config{Components}{Copies} gt
   }
 }
 
-if ( defined( $config{syslinux}{Copies} ) and ( $config{syslinux}{Copies} gt 0 ) ) {
-    $runConf{kernel_target} =
-      sprintf( "%s/%s-%s", $config{syslinux}{ImageDir}, $runConf{kernel_prefix}, $runConf{version} );
-    $runConf{initramfs_target} = sprintf( "%s/initramfs-%s.img", $config{syslinux}{ImageDir}, $runConf{version} );
+# Generate syslinux.cfg, requires components to be built
+if ( defined( $config{syslinux}{CreateConfig} ) and ( $config{syslinux}{CreateConfig} eq 1 ) ) { 
+  my $glob    = sprintf( "%s/%s-*", $config{Components}{ImageDir}, $runConf{kernel_prefix} );
+  my @listing = sort glob($glob);
 
-    my $glob    = sprintf( "%s/%s-*", $config{syslinux}{ImageDir}, $runConf{kernel_prefix} );
-    my @listing = sort glob($glob);
-
-    printf "Found %s existing images, allowed to have a total of %s\n", scalar @listing, $config{syslinux}{Copies};
-    while ( scalar @listing > $config{syslinux}{Copies} ) {
-      my $kernel    = shift(@listing);
-      my $initramfs = sprintf( "%s.img", $kernel );
-      $initramfs =~ s/\Q$runConf{kernel_prefix}/initramfs/;
-      printf "Removing %s, %s\n", $kernel, $initramfs;
-      unlink $kernel;
-      unlink $initramfs;
+  # Filter EFI files, in case they're in the same directory
+  my @components;
+  foreach my $entry (@listing) {
+    if ( $entry =~ /EFI$/i ) {
+      next;
     }
-
-  make_path $config{syslinux}{ImageDir};
-  if (  safeCopy( $runConf{kernel}, $runConf{kernel_target} )
-    and safeCopy( $runConf{initramfs}, $runConf{initramfs_target} ) )
-  {
-    printf "Created %s, %s\n", $runConf{kernel_target}, $runConf{initramfs_target};
+    push( @components, $entry );
   }
-
-  $glob    = sprintf( "%s/%s-*", $config{syslinux}{ImageDir}, $runConf{kernel_prefix} );
-  @listing = sort glob($glob);
 
   $runConf{syslinux_temp} = join('/', $tempdir, 'syslinux.conf');
   open CFG, '>',  $runConf{syslinux_temp};
@@ -216,11 +238,15 @@ EOF
   print CFG $header;
 
   my $add_default = 1;
-  while (@listing) {
-    my $entry = pop(@listing);
+  while (@components) {
+    my $entry = pop(@components);
+
+    my $directory = dirname( $entry );
+    # Strip the mountpoint prefix out to generate a correct path based on /
+    $directory =~ s/\Q$config{Global}{BootMountPoint}//;
 
     my $kernel = basename( $entry );
-    my (undef,$version) = split('-', basename( $kernel ));
+    my (undef,$version) = split('-', $kernel );
     my $label = "ZFSBootMenu-$version";
     my $menu_label = "ZFS Boot Menu v$version";
 
@@ -231,8 +257,8 @@ EOF
 
     print CFG "LABEL $label\n";
     print CFG "MENU LABEL $menu_label\n";
-    print CFG "KERNEL /$kernel\n";
-    print CFG "INITRD /initramfs-$version.img\n";
+    print CFG "KERNEL $directory/$kernel\n";
+    print CFG "INITRD $directory/initramfs-$version.img\n";
     print CFG "APPEND $config{Kernel}{CommandLine}\n";
     print CFG "\n";
 
@@ -242,6 +268,11 @@ EOF
   make_path dirname( $config{syslinux}{Config} );
   safeCopy( $runConf{syslinux_temp}, $config{syslinux}{Config} );
 }
+
+END {
+  cleanupMount;
+}
+
 # Finds the latest kernel in /boot
 sub latestKernel {
   my @prefixes = ( "vmlinux*", "vmlinuz*", "linux*", "kernel*" );
@@ -251,21 +282,22 @@ sub latestKernel {
     next if !@kernels;
     for (sort { versioncmp($b, $a) } @kernels ) {
       return $_;
-    };
+    }
   }
 }
 
-# Returns the path to an  initramfs, or dies with an error
+# Returns the path to an initramfs, or dies with an error
 sub createInitramfs {
   my ( $temp, $kver ) = @_;
 
   my $output_file = join( '/', $temp, "zfsbootmenu" );
   my @cmd         = ( qw(dracut -q -f --confdir), $runConf{confd}, $output_file, qw(--kver), $kver, );
-  my ( $output, $status ) = execute(@cmd);
+  my @output = execute(@cmd);
+  my $status = pop(@output);
   if ( $status eq 0 ) {
     return $output_file;
   } else {
-    print $output;
+    print Dumper(@output);
     die "Failed to create $output_file";
   }
 }
@@ -294,17 +326,18 @@ sub unifiedEFI {
     $output_file
   );
 
-  my ( $output, $status ) = execute(@cmd);
+  my @output = execute(@cmd);
+  my $status = pop(@output);
   if ( $status eq 0 ) {
     return $output_file;
   } else {
-    print $output;
+    print Dumper(@output);
     die "Failed to create $output_file";
   }
 }
 
 sub execute {
-  ( $_ = qx{@_ 2>&1}, $? >> 8 );
+  ( @_ = qx{@_ 2>&1}, $? >> 8 );
 }
 
 sub safeCopy {
@@ -315,4 +348,12 @@ sub safeCopy {
     return 0;
   }
   return 1;
+}
+
+sub cleanupMount {
+  if ( $runConf{umount_on_exit} ) {
+    print "Unmounting $config{Global}{BootMountPoint}\n";
+    my $cmd = "umount $config{Global}{BootMountPoint}";
+    execute($cmd);
+  }
 }
