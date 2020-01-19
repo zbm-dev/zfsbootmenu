@@ -13,6 +13,7 @@ use Config::IniFiles;
 use File::Temp qw(tempfile tempdir);
 use File::Copy;
 use File::Path qw(make_path remove_tree);
+use Sort::Versions;
 
 use Data::Dumper;
 $Data::Dumper::Indent   = 1;
@@ -246,9 +247,11 @@ sub latestKernel {
   my @prefixes = ( "vmlinux*", "vmlinuz*", "linux*", "kernel*" );
   for my $prefix (@prefixes) {
     my $glob    = join( '/', ( $runConf{bootdir}, $prefix ) );
-    my @kernels = sort glob($glob);
+    my @kernels = glob($glob);
     next if !@kernels;
-    return pop @kernels;
+    for (sort { versioncmp($b, $a) } @kernels ) {
+      return $_;
+    };
   }
 }
 
