@@ -47,7 +47,7 @@ It's out of the scope of this guide to cover all of the pool creation options us
 * Create our initial file systems
 ```
 zfs create -o mountpoint=none zroot/ROOT
-zfs create -o mountpoint=/ zroot/ROOT/void.$( date +%Y.%m.%d)
+zfs create -o mountpoint=/ zroot/ROOT/void.$( date +%Y.%m.%d )
 zfs create -o mountpoint=/home zroot/home
 ```
 * Export, then reimport with a temporary mountpoint of /mnt
@@ -56,12 +56,19 @@ zpool export zroot
 zpool import -l -R /mnt zroot
 ```
 
+* Verify that everything is mounted correctly
+```
+# mount | grep mnt
+zroot/ROOT/void.2020.01.30 on /mnt type zfs (rw,relatime,xattr,posixacl)
+zroot/home on /mnt/home type zfs (rw,relatime,xattr,posixacl)
+```
+
 # Install Void
 * Adjust the mirror / libc / package selection as you see fit
 ```
-xbps-install -S -R https://mirrors.servercentral.com/voidlinux/current -r /mnt base-system zfs vim efibootmgr pigz
+xbps-install -S -R https://mirrors.servercentral.com/voidlinux/current -r /mnt base-system zfs vim efibootmgr gptfdisk
 ```
-* Copy a few files into the chroot
+* Copy our pool key, hostid and resolv.conf into the new install
 ```
 cp /etc/hostid /mnt/etc
 cp /etc/resolv.conf /mnt/etc/
@@ -76,23 +83,20 @@ mount -t devpts pts /mnt/dev/pts
 chroot /mnt
 ```
 # Basic Void configuration
-* Set a keymap
+* Set the keymap, timezone and hardware clock
 ```
-echo "KEYMAP=\"us\"" >> /etc/rc.conf
-```
-* Set a time zone
-```
-echo "TIMEZONE=\"America/Chicago\"" >> /etc/rc.conf
-```
-* Configure the hardware clock
-```
-echo "HARDWARECLOCK=\"UTC\"" >> /etc/rc.conf
+cat << EOF >> /etc/rc.conf
+KEYMAP="us"
+TIMEZONE="America/Chicago"
+HARDWARECLOCK="UTC"
+EOF
 ```
 * Configure your glibc locale
 ```
-cp /etc/default/libc-locales /etc/default/libc-locales.dist
-echo "en_US.UTF-8 UTF-8" > /etc/default/libc-locales
-echo "en_US ISO-8859-1" >> /etc/default/libc-locales
+cat << EOF >> /etc/default/libc-locales
+en_US.UTF-8 UTF-8
+en_US ISO-8859-1
+EOF
 xbps-reconfigure -f glibc-locales
 ```
 * Set a root password
@@ -107,7 +111,7 @@ zpool set cachefile=/etc/zfs/zpool.cache zroot
 ```
 * Configure our default boot environment
 ```
-zpool set bootfs=zroot/ROOT/void.$( date +Y.%m.%d ) zroot
+zpool set bootfs=zroot/ROOT/void.$( date +%Y.%m.%d ) zroot
 ```
 * Configure Dracut to load ZFS support
 ```
@@ -131,7 +135,7 @@ echo "GRUB_CMDLINE_LINUX_DEFAULT=\"spl_hostid=$( hostid ) ro quiet\"" > /etc/def
 
 * Create an EFI partition on `/dev/sdb`
 ```
-gdisk /dev/sdb
+bash-5.0# gdisk /dev/sdb
 GPT fdisk (gdisk) version 1.0.4
 
 Partition table scan:
@@ -142,26 +146,39 @@ Partition table scan:
 
 Found valid GPT with protective MBR; using GPT.
 
+Command (? for help): o
+This option deletes all partitions and creates a new protective MBR.
+Proceed? (Y/N): y
+
 Command (? for help): p
 Disk /dev/sdb: 62656641 sectors, 29.9 GiB
 Model: Flash Drive FIT 
 Sector size (logical/physical): 512/512 bytes
-Disk identifier (GUID): 957513EB-C1FF-A74D-B3C1-55CEBBC72DFA
+Disk identifier (GUID): 0803CB07-D712-4839-BA5D-FB52EF4E88BB
 Partition table holds up to 128 entries
 Main partition table begins at sector 2 and ends at sector 33
-First usable sector is 2048, last usable sector is 62656607
+First usable sector is 34, last usable sector is 62656607
 Partitions will be aligned on 2048-sector boundaries
-Total free space is 61605984 sectors (29.4 GiB)
+Total free space is 62656574 sectors (29.9 GiB)
+
+Number  Start (sector)    End (sector)  Size       Code  Name
 
 Command (? for help): n
 Partition number (1-128, default 1): 1
-First sector (1050624-62656607, default = 1050624) or {+-}size{KMGTP}: 
-Last sector (1050624-62656607, default = 62656607) or {+-}size{KMGTP}: +512M
+First sector (34-62656607, default = 2048) or {+-}size{KMGTP}: 
+Last sector (2048-62656607, default = 62656607) or {+-}size{KMGTP}: +512M
 Current type is 'Linux filesystem'
 Hex code or GUID (L to show codes, Enter = 8300): EF00
 Changed type of partition to 'EFI System'
 
-Command (? for help): 
+Command (? for help): w
+
+Final checks complete. About to write GPT data. THIS WILL OVERWRITE EXISTING
+PARTITIONS!!
+
+Do you want to proceed? (Y/N): y
+OK; writing new GUID partition table (GPT) to /dev/sdb.
+The operation has completed successfully.
 ```
 
 * Create a vfat filesystem
@@ -179,8 +196,10 @@ mount /boot/efi
 ```
 
 * Install rEFInd
+
 This should find /boot/efi as your EFI partition and install itself accordingly. 
 ```
+xbps-install -S
 xbps-install -Rs refind
 refind-install
 rm /boot/refind_linux.conf
@@ -192,7 +211,7 @@ xbps-install -Rs zfsbootmenu
 ```
 * Enable zfsbootmenu image creation
 Edit /etc/zfsbootmenu/config.ini and set:
- * Manage=1 under [General] section
+ * ManageImages=1 under [Global] section
  * Copies=3 under [Components] section
  * See [Configuration options](https://github.com/zdykstra/zfsbootmenu#installation) for more details.
 ```

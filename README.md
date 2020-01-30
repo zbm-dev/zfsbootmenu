@@ -14,11 +14,11 @@ zfsbootmenu is implemented as a Dracut module to provide an experience similar t
     * If a bootfs value is defined, start a 10 second countdown to boot that environment with the highest kernel found in /boot
     * If no bootfs value is defined, find every filesystem that mounts to / with a /boot directory, and find every kernel. Prompt via fzf.
         * If needed, prompt for encryption passphrases
- * Once the count down has been reached for the bootfs-selected environment, prompt to encryption keys if they're needed
-     * Mount the filesystem and find the highest-numbered kernel in /boot in the boot environment.     
- * Load the kernel, initramfs and the kernel command line defined in `/etc/default/grub` into memory via kexec
- * Unmount all ZFS filesystems and export all pools
- * Boot the final kernel and initramfs
+* Once the count down has been reached for the bootfs-selected environment, prompt for the encryption passphrase if needed
+* Mount the filesystem and find the highest-numbered kernel in /boot in the boot environment.     
+* Load the kernel, initramfs and the kernel command line defined in `/etc/default/grub` into memory via kexec
+* Unmount all ZFS filesystems
+* Boot the final kernel and initramfs
     
 At this point, you'll be booting into your OS-managed kernel and initramfs, along with any arguments needed to correctly boot your system.
  
