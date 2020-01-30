@@ -128,6 +128,7 @@ xbps-reconfigure -f linux5.4
 ```
 echo "GRUB_CMDLINE_LINUX_DEFAULT=\"spl_hostid=$( hostid ) ro quiet\"" > /etc/default/grub
 ```
+
 * Create an EFI partition on `/dev/sdb`
 ```
 gdisk /dev/sdb
@@ -162,15 +163,21 @@ Changed type of partition to 'EFI System'
 
 Command (? for help): 
 ```
+
 * Create a vfat filesystem
 ```
 mkfs.vfat -F32 /dev/sdb1
 ```
-* Mount the EFI partition
+
+* Create an fstab entry and mount
 ```
-mkdir /mnt/boot/efi
-mount /dev/sdb1 /mnt/boot/efi
+cat << EOF >> /etc/fstab
+$( blkid | grep /dev/sdb1 | cut -d ' ' -f 2 ) /boot/efi vfat defaults,noauto 0 0
+EOF
+mkdir /boot/efi
+mount /boot/efi
 ```
+
 * Install rEFInd
 This should find /boot/efi as your EFI partition and install itself accordingly. 
 ```
@@ -178,15 +185,7 @@ xbps-install -Rs refind
 refind-install
 rm /boot/refind_linux.conf
 ```
-* Add ZFSBootMenu repository
-Currently, I have not upstreamed this package. It's been developing fairly quickly, so it was simpler to run my own repository. It will be upstreamed sometime in early February, 2020. Once you've installed the package you can remove the repository file.
-```
-echo "repository=https://void.stratumzero.date/current" > /etc/xbps.d/zfsbootmenu.conf
-```
-* Accept the new repository signing key
-```
-xbps-install -S
-```
+
 * Install the bootmenu package
 ```
 xbps-install -Rs zfsbootmenu
@@ -195,6 +194,7 @@ xbps-install -Rs zfsbootmenu
 Edit /etc/zfsbootmenu/config.ini and set:
  * Manage=1 under [General] section
  * Copies=3 under [Components] section
+ * See [Configuration options](https://github.com/zdykstra/zfsbootmenu#installation) for more details.
 ```
 [Global]
 ManageImages=1
@@ -205,7 +205,7 @@ BootMountPoint=/boot/efi
 CommandLine=ro quiet loglevel=0
 
 [Components]
-ImageDir=/boot/efi
+ImageDir=/boot/efi/EFI/void
 Versioned=1
 Copies=3
 
@@ -229,8 +229,8 @@ Created /boot/efi/EFI/void/vmlinuz-0.8.1_1, /boot/efi/EFI/void/initramfs-0.8.1_1
 * Create /boot/efi/EFI/void/refind_linux.conf
 ```
 cat << EOF > /boot/efi/EFI/void/refind_linux.conf
-"Boot default"  "zfsbootmenu:ROOT=zroot spl_hostid=$( hostid ) timeout=0 ro"
-"Boot to menu"  "zfsbootmenu:ROOT=zroot spl_hostid=$( hostid ) timeout=-1 ro"
+"Boot default"  "zfsbootmenu:ROOT=zroot spl_hostid=$( hostid ) timeout=0 ro quiet loglevel=0"
+"Boot to menu"  "zfsbootmenu:ROOT=zroot spl_hostid=$( hostid ) timeout=-1 ro quiet loglevel=0"
 EOF
 ```
 * Exit the chroot, unmount everything
