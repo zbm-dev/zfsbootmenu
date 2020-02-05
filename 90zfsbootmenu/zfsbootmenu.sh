@@ -1,8 +1,13 @@
 #!/bin/bash
+# store current kernel log level
+read -r printk < /proc/sys/kernel/printk
+printk=${printk:0:1}
+
+# Set it to 0
+echo 0 > /proc/sys/kernel/printk
 
 test -f /lib/zfsbootmenu-lib.sh && source /lib/zfsbootmenu-lib.sh
 test -f zfsbootmenu-lib.sh && source zfsbootmenu-lib.sh
-
 
 echo "Loading boot menu ..."
 TERM=linux

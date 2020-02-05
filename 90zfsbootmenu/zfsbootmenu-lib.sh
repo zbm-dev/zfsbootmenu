@@ -110,18 +110,21 @@ kexec_kernel() {
     cli_args="${line}"
   done < "${BASE}/${fs}/default_args"
 
-  kexec -l ${mnt}${kernel} \
-    --initrd=${mnt}/${initramfs} \
+  # restore kernel log level just before we kexec
+  echo "${printk}" > /proc/sys/kernel/printk
+
+  kexec -l "${mnt}${kernel}" \
+    --initrd="${mnt}${initramfs}" \
     --command-line="root=zfs:${fs} ${cli_args}"
 
   umount ${mnt}
 
   # Export if read-write, to ensure a clean pool
   pool="${selected%%/*}"
-  if [ "$( zpool get -H -o value readonly ${pool} )" = "off" ]; then
+  if [ "$( zpool get -H -o value readonly "${pool}" )" = "off" ]; then
     export_pool "${pool}"
   fi
-
+  
   kexec -e -i
 }
 
@@ -137,7 +140,7 @@ clone_snapshot() {
   pool="${selected%%/*}"
 
   # If the pool is read-only, flip the arg off then export and import
-  if [ "$( zpool get -H -o value readonly ${pool} )" = "on" ]; then
+  if [ "$( zpool get -H -o value readonly "${pool}" )" = "on" ]; then
     export_pool "${pool}"
     import_args="${import_args/readonly=on/readonly=off}"
     import_pool "${pool}"
@@ -145,26 +148,26 @@ clone_snapshot() {
 
   target="${selected/@/_}"
 
-  if $( zfs list -H -o name | grep -q ${target} ); then
-    last_env="$( zfs list -H -o name | grep ${target} | tail -1 )"
+  if $( zfs list -H -o name | grep -q "${target}" ); then
+    last_env="$( zfs list -H -o name | grep "${target}" | tail -1 )"
     index="${last_env##${target}_}"
     index="$(( ${index} + 1 ))"
   else
     index="0"
   fi
 
-  target="$( printf "%s_%0.3d" ${target} ${index} )"
+  target="$( printf "%s_%0.3d" "${target}" "${index}" )"
 
   zfs clone -o mountpoint=/ \
     -o canmount=noauto \
-    ${selected} ${target}
+    "${selected}" "${target}"
   ret=$?
 
   if [ $ret -eq 0 ]; then 
     key_wrapper "${target}"
     if [ $? -eq 0 ]; then
       if output=$( find_be_kernels "${target}" ); then
-        echo "${target}" >> ${BASE}/env
+        echo "${target}" >> "${BASE}/env"
         return 0
       else
         # No kernels were found
@@ -187,14 +190,14 @@ set_default_env() {
   pool="${selected%%/*}"
 
   # If the pool is read-only, flip the arg off then export and import
-  if [ "$( zpool get -H -o value readonly ${pool} )" = "on" ]; then
+  if [ "$( zpool get -H -o value readonly "${pool}" )" = "on" ]; then
     export_pool "${pool}"
     import_args="${import_args/readonly=on/readonly=off}"
     import_pool "${pool}"
     key_wrapper "${pool}"
   fi
 
-  if output="$( zpool set bootfs=${selected} ${pool} )"; then
+  if output="$( zpool set bootfs="${selected}" "${pool}" )"; then
     BOOTFS="${selected}"
   fi
 }
@@ -210,7 +213,6 @@ find_be_kernels() {
 
 
   local sane kernel version kernel_records
-  pairs=()
 
   # Check if /boot even exists in the environment
   mnt="$( mount_zfs "${fs}" )"
