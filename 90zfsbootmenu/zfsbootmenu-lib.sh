@@ -277,7 +277,7 @@ select_kernel() {
       if [[ "${kernel}" =~ "${specific_kernel}" ]]; then
         break
       fi
-    done <<<"$( cat ${BASE}/${zfsbe}/kernels )"
+    done <<<"$( tac ${BASE}/${zfsbe}/kernels )"
   fi
 
   echo "${kexec_args}"
