@@ -26,9 +26,9 @@ This tool makes uses of the following additional software:
  * [fzf](https://github.com/junegunn/fzf)
  * [kexec-tools](https://github.com/horms/kexec-tools)
  * Linux Kernel
- * ZFS on Linux (currently 0.8.2 built on Void Linux).
+ * ZFS on Linux (currently 0.8.3 built on Void Linux).
  
-Binary releases for x86_64 and ppc64le are built on Void Linux hosts.
+Binary releases for x86_64 and ppc64le are built on Void Linux hosts. ZFSBootMenu has been successfully tested up to ZFS on Linux 0.8.3 and Dracut 49.
 
 # System prereqs
 
@@ -130,7 +130,7 @@ Each time the bootmenu is updated, a new EFI entry will need to be manually adde
 
 ### rEFInd
 
-`rEFInd` is considerably easier to install and manage. Refer to your distributions packages for installation. Once rEFInd` has been installed, you can create `refind_linux.conf` in the directory holding the ZFS Boot Menu files (`/boot/efi/EFI/void` in our example):
+`rEFInd` is considerably easier to install and manage. Refer to your distributions packages for installation. Once rEFInd has been installed, you can create `refind_linux.conf` in the directory holding the ZFS Boot Menu files (`/boot/efi/EFI/void` in our example):
 
 ```
 "Boot Default BE" "ro quiet loglevel=0 timeout=0 zfsbootmenu:POOL= spl_hostid="
