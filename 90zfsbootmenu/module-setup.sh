@@ -56,6 +56,7 @@ install() {
   fi
   dracut_install /usr/bin/mount.zfs
   dracut_install /usr/lib/udev/vdev_id
+  dracut_install /usr/lib/udev/zvol_id
   dracut_install tac
   dracut_install awk
   dracut_install basename
@@ -76,12 +77,11 @@ install() {
   dracut_install mount
   dracut_install df
   dracut_install ip
-  dracut_install /usr/bin/timeout
   dracut_install /usr/bin/mkdir
   dracut_install /usr/bin/tail
-  dracut_install /usr/lib/udev/zvol_id
   inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh"
   inst_simple "${moddir}/zfsbootmenu-preview.sh" "/bin/zfsbootmenu-preview.sh"
+  inst_simple "${moddir}/zfs-chroot" "/bin/zfs-chroot"
   inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh"
   inst_hook pre-mount 90 "${moddir}/zfsbootmenu.sh"
 
