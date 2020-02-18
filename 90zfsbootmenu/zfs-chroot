@@ -1,10 +1,19 @@
 #!/bin/bash
+BASE="$( mktemp -d /tmp/zfs.XXXX )"
+fs="$( zfs list -H -o name ${1} )"
 
-mkdir /mnt
-mount -t proc proc /mnt/proc
-mount -t sysfs sys /mnt/sys
-mount -B /dev /mnt/dev
-mount -t devpts pts /mnt/dev/pts
+if [ "$fs" != "${1}" ]; then
+  echo "Filesystem $1 doesn't exist"
+  exit
+fi
 
-mount -o zfsutil -t zfs "${1}" /mnt
-chroot /mnt
+mount -o zfsutil -t zfs "${1}" "${BASE}"
+mount -t proc proc "${BASE}/proc"
+mount -t sysfs sys "${BASE}/sys"
+mount -B /dev "${BASE}/dev"
+mount -B /tmp "${BASE}/var/tmp"
+mount -t devpts pts "${BASE}/dev/pts"
+
+chroot "${BASE}" /bin/bash
+
+umount "${1}"
