@@ -57,6 +57,7 @@ install() {
   dracut_install /usr/bin/mount.zfs
   dracut_install /usr/lib/udev/vdev_id
   dracut_install /usr/lib/udev/zvol_id
+  dracut_install tac
   dracut_install awk
   dracut_install basename
   dracut_install cut
