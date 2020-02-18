@@ -1,0 +1,10 @@
+#!/bin/bash
+
+mkdir /mnt
+mount -t proc proc /mnt/proc
+mount -t sysfs sys /mnt/sys
+mount -B /dev /mnt/dev
+mount -t devpts pts /mnt/dev/pts
+
+mount -o zfsutil -t zfs "${1}" /mnt
+chroot /mnt
