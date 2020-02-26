@@ -38,7 +38,7 @@ my ( %runConf, %config, %components );
 my $configfile = "/etc/zfsbootmenu/config.ini";
 
 $runConf{bootdir} = "/boot";
-$runConf{confd}   = "/usr/share/zfsbootmenu/dracut.conf.d";
+$runConf{confd}   = "/etc/zfsbootmenu/dracut.conf.d";
 $runConf{version} = $VERSION;
 
 GetOptions(
