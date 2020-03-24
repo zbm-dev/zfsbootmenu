@@ -21,11 +21,8 @@ export FZF_DEFAULT_OPTS="--layout=reverse-list --cycle \
 BASE="$( mktemp -d /tmp/zfs.XXXX )"
 
 # I should probably just modprobe zfs right off the bat
-# rootok is always 1 here, otherwise we wouldn't be here ...
-if [ ${rootok} -eq 1 ]; then
-  modprobe zfs 2>/dev/null
-  udevadm settle
-fi
+modprobe zfs 2>/dev/null
+udevadm settle
 
 # Find all pools by name that are listed as ONLINE, then import them
 response="$( find_online_pools )"
