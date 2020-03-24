@@ -310,6 +310,8 @@ sub unifiedEFI {
   my $cmdline_file = join( '/', $temp, "cmdline.txt" );
   my $cmdline      = $config{Kernel}{CommandLine};
 
+  my $efi_stub     = $config{EFI}{Stub} || "/usr/lib/gummiboot/linuxx64.efi.stub";
+
   open( my $fh, '>', $cmdline_file );
   print $fh $cmdline;
   close($fh);
@@ -323,7 +325,7 @@ sub unifiedEFI {
     qw(--change-section-vma .linux=0x40000),
     qq(--add-section .initrd=$initramfs),
     qw(--change-section-vma .initrd=0x3000000),
-    qw(/usr/lib/gummiboot/linuxx64.efi.stub),
+    $efi_stub,
     $output_file
   );
 
