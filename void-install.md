@@ -128,9 +128,9 @@ xbps-reconfigure -f linux5.4
 ```
 # Install and configure ZFSBootMenu
 
-* Create /etc/default/grub . This is read by `ZFSBootMenu` to know what kernel command line arguments are needed to boot the final kernel.
+* Assign command-line arguments to be used when booting the final kernel. Because ZFS properties are inherited, assign the common properties to the `ROOT` dataset so all children will inherit common arguments by default.
 ```
-echo "GRUB_CMDLINE_LINUX_DEFAULT=\"spl_hostid=$( hostid ) ro quiet\"" > /etc/default/grub
+zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) ro quiet" zpool/ROOT
 ```
 
 * Create an EFI partition on `/dev/sdb`

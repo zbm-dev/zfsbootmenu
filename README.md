@@ -16,7 +16,7 @@ zfsbootmenu is implemented as a Dracut module to provide an experience similar t
         * If needed, prompt for encryption passphrases
 * Once the count down has been reached for the bootfs-selected environment, prompt for the encryption passphrase if needed
 * Mount the filesystem and find the highest-numbered kernel in /boot in the boot environment.     
-* Load the kernel, initramfs and the kernel command line defined in `/etc/default/grub` into memory via kexec
+* Load the kernel, initramfs and the kernel command line defined in the `org.zfsbootmenu:commandline` property (or, as a fallback, `/etc/default/grub`) into memory via kexec
 * Unmount all ZFS filesystems
 * Boot the final kernel and initramfs
     
@@ -54,14 +54,15 @@ On start, ZFS Boot Menu will find the highest versioned kernel in `zroot/ROOT/vo
 
 # Installation
 
-In the boot environment, the file `/etc/default/grub` will need to be created with the variable `GRUB_CMDLINE_LINUX_DEFAULT` defined. These are the kernel arguments passed to the kernel in your boot environment. Do not set any `root=` or any other pool-related options here. This value will be filled in when a boot environment is selected.
+Kernel command-line arguments should be set by setting the ZFS property `org.zfsbootmenu:commandline` on each boot environment. If the property is not defined for a boot environment or its parents, command-line arguments will be taken from the `GRUB_CMDLINE_LINUX_DEFAULT` variable in the file `/etc/default/grub` of the boot environment if the file exist and the variable is defined. Do not set any `root=` or any other pool-related options in the kernel command line; these will be filled in automatically when a boot environment is selected.
 
-For example, I have the following set:
+For example, I have the following command-line arguments set on my boot environment:
 
 ```
-GRUB_CMDLINE_LINUX_DEFAULT="zfs.zfs_arc_max=8589934592 elevator=noop"
+zfs.zfs_arc_max=8589934592 elevator=noop
 ```
 
+Because ZFS properties are inherited by default, it is possible to set the `org.zfsbootmenu:commandline` property on a common parent to apply the same arguments to multiple environments. Setting the property locally on individual boot environments will override the common defaults.
 
 ## EFI
 
@@ -236,8 +237,6 @@ It's critical that you do not put this key file into the ZFS Boot Menu initramfs
 
 
 # Limitations
-
-Currently, the kernel command line for the boot environment is read from `/etc/default/grub`. I'd like to support multiple locations determined by probing the OS installed in the boot environment. 
 
 When building a kernel command line to pass to the kexec'd kernel, the command line generated is always created for Dracut's ZFS module. Again, this will need to be modified based on the detected OS in the boot environment.
 
