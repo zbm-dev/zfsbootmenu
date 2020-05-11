@@ -105,7 +105,7 @@ kexec_kernel() {
     emergency_shell "unable to mount ${fs}"
   fi
 
-  cli_args="$( find_kernel_args "${mnt}" )"
+  cli_args="$( find_kernel_args "${fs}" "${mnt}" )"
 
   # restore kernel log level just before we kexec
   echo "${printk}" > /proc/sys/kernel/printk
@@ -246,7 +246,7 @@ find_be_kernels() {
   def_kernel_file="${mnt/mnt/default_kernel}"
   echo "${def_version}" > "${def_kernel_file}"
 
-  def_args="$( find_kernel_args "${mnt}" )"
+  def_args="$( find_kernel_args "${fs}" "${mnt}" )"
   def_args_file="${mnt/mnt/default_args}"
   echo "${def_args}" > "${def_args_file}"
 
@@ -283,19 +283,26 @@ select_kernel() {
 }
 
 find_kernel_args() {
-  local zfsbe
-  zfsbe="${1}"
-  local selected_args
+  local zfsbe_mnt zfsbe_fs zfsbe_args
+  zfsbe_fs="${1}"
+  zfsbe_mnt="${2}"
 
-  if [ -f "${BASE}/default_args" ]
-  then
+  if [ -f "${BASE}/default_args" ]; then
     cat "${BASE}/default_args"
     return
   fi
 
-  if [ -f "${zfsbe}/etc/default/grub" ]; then
+  if [ -n "${zfsbe_fs}" ]; then
+    zfsbe_args="$( zfs get -H -o value org.zfsbootmenu:commandline "${zfsbe_fs}" )"
+    if [ "${zfsbe_args}" != "-" ]; then
+      echo "${zfsbe_args}"
+      return
+    fi
+  fi
+
+  if [ -n "${zfsbe_mnt}" -a -f "${zfsbe_mnt}/etc/default/grub" ]; then
     echo "$(
-      . "${zfsbe}/etc/default/grub" ;
+      . "${zfsbe_mnt}/etc/default/grub" ;
       echo "${GRUB_CMDLINE_LINUX_DEFAULT}"
     )"
     return
