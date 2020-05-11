@@ -198,7 +198,7 @@ while true; do
         BE_SELECTED=0
         ;;
       "alt-s")
-        selected_snap="$( draw_snapshots ${selected_be} )"
+        selected_snap="$( draw_snapshots "${selected_be}" )"
         ret=$?
 
         if [ $ret -eq 130 ]; then
@@ -221,6 +221,33 @@ while true; do
         ;;
       "alt-r")
         emergency_shell "alt-r invoked"
+        ;;
+      "alt-c")
+        tput clear
+        tput cnorm
+
+        zfsbootmenu-preview.sh ${BASE} ${selected_be} ${BOOTFS}
+
+        if [ -f "${BASE}/default_args" ]
+        then
+          ARGS="${BASE}/default_args"
+        else
+          ARGS="${BASE}/${selected_be}/default_args"
+        fi
+
+        while IFS= read -r line
+        do
+          def_args="${line}"
+        done < "${ARGS}"
+        echo -e "\nNew kernel command line"
+        read -r -e -i "${def_args}" -p "> " cmdline
+        if [ -n "${cmdline}" ]
+        then
+          echo "${cmdline}" > "${BASE}/default_args"
+        fi
+        BE_SELECTED=0
+        tput civis
+        ;;
     esac
   fi
 done

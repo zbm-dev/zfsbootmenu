@@ -2,10 +2,10 @@
 
 # ZFS boot menu functions
 
-# arg1: ZFS filesystem name 
+# arg1: ZFS filesystem name
 # arg2: mountpoint
 # prints: No output
-# returns: 0 on success 
+# returns: 0 on success
 
 mount_zfs() {
   local fs mnt ret
@@ -23,7 +23,7 @@ mount_zfs() {
 }
 
 # arg1: Path to file with detected boot environments, 1 per line
-# prints: key pressed, boot environment 
+# prints: key pressed, boot environment
 # returns: 130 on error, 0 otherwise
 
 draw_be() {
@@ -34,9 +34,9 @@ draw_be() {
   test -f ${env} || return 130
 
   selected="$( cat ${env} | fzf -0 --prompt "BE > " \
-    --expect=alt-k,alt-s,alt-a,alt-r,alt-d \
+    --expect=alt-k,alt-d,alt-s,alt-c,alt-a,alt-r \
     --preview-window=up:2 \
-    --header="[ENTER] boot [ALT+K] kernel [ALT+D] set bootfs [ALT+S] snapshots" \
+    --header="[ENTER] boot [ALT+K] kernel [ALT+D] set bootfs [ALT+S] snapshots [ALT+C] cmdline" \
     --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}")"
   ret=$?
   while read -r line; do
@@ -60,7 +60,7 @@ draw_kernel() {
 
   selected="$( cat ${BASE}/${benv}/kernels | fzf --prompt "${benv} > " --tac \
     --with-nth=2 --header="[ENTER] boot [ESC] back")"
-  
+
   ret=$?
   echo "${selected}"
   return ${ret}
@@ -105,10 +105,7 @@ kexec_kernel() {
     emergency_shell "unable to mount ${fs}"
   fi
 
-  while IFS= read -r line
-  do
-    cli_args="${line}"
-  done < "${BASE}/${fs}/default_args"
+  cli_args="$( find_kernel_args "${mnt}" )"
 
   # restore kernel log level just before we kexec
   echo "${printk}" > /proc/sys/kernel/printk
@@ -124,7 +121,7 @@ kexec_kernel() {
   if [ "$( zpool get -H -o value readonly "${pool}" )" = "off" ]; then
     export_pool "${pool}"
   fi
-  
+
   kexec -e -i
 }
 
@@ -163,7 +160,7 @@ clone_snapshot() {
     "${selected}" "${target}"
   ret=$?
 
-  if [ $ret -eq 0 ]; then 
+  if [ $ret -eq 0 ]; then
     key_wrapper "${target}"
     if [ $? -eq 0 ]; then
       if output=$( find_be_kernels "${target}" ); then
@@ -179,7 +176,7 @@ clone_snapshot() {
     fi
   else
     # Clone failed
-    return $ret 
+    return $ret
   fi
 }
 
@@ -208,7 +205,7 @@ set_default_env() {
 # returns: 0 if kernels were found
 
 find_be_kernels() {
-  local fs mnt 
+  local fs mnt
   fs="${1}"
 
 
@@ -227,7 +224,7 @@ find_be_kernels() {
     ${mnt}/boot/vmlinuz-* \
     ${mnt}/boot/kernel-* \
     ${mnt}/boot/linux-* 2>/dev/null | sort -V ); do
-    
+
     kernel="${kernel#${mnt}}"
     version=$( echo $kernel | sed -e "s,^[^0-9]*-,,g" )
 
@@ -266,7 +263,7 @@ select_kernel() {
   zfsbe="${1}"
 
   local sane specific_kernel kexec_args
-  
+
   specific_kernel="$( zfs get -H -o value org.zfsbootmenu:kernel ${zfsbe} )"
 
   # No value set, pick the last kernel entry
@@ -279,7 +276,7 @@ select_kernel() {
       if [[ "${kernel}" =~ "${specific_kernel}" ]]; then
         break
       fi
-    done <<<"$( tac ${BASE}/${zfsbe}/kernels )"
+    done <<<"$( tac "${BASE}/${zfsbe}/kernels" )"
   fi
 
   echo "${kexec_args}"
@@ -288,8 +285,13 @@ select_kernel() {
 find_kernel_args() {
   local zfsbe
   zfsbe="${1}"
+  local selected_args
 
-  local arguments
+  if [ -f "${BASE}/default_args" ]
+  then
+    cat "${BASE}/default_args"
+    return
+  fi
 
   if [ -f "${zfsbe}/etc/default/grub" ]; then
     echo "$(
@@ -308,7 +310,7 @@ find_kernel_args() {
 # returns: number of pools that can be imported
 
 find_online_pools() {
-  local importable pool state junk
+  local importable pool state
   importable=()
   while read -r line; do
     case "$line" in
@@ -437,11 +439,11 @@ key_wrapper() {
   fs="${1}"
   ret=0
 
-  encroot="$( be_key_needed ${fs})"
+  encroot="$( be_key_needed "${fs}" )"
 
   if [ $? -eq 1 ]; then
-    if be_key_status ${encroot} ; then
-      if ! load_key ${encroot} ; then
+    if be_key_status "${encroot}" ; then
+      if ! load_key "${encroot}" ; then
         ret=1
       fi
     fi
