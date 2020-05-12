@@ -15,19 +15,19 @@ zfsbootmenu is implemented as a Dracut module to provide an experience similar t
     * If no bootfs value is defined, find every filesystem that mounts to / with a /boot directory, and find every kernel. Prompt via fzf.
         * If needed, prompt for encryption passphrases
 * Once the count down has been reached for the bootfs-selected environment, prompt for the encryption passphrase if needed
-* Mount the filesystem and find the highest-numbered kernel in /boot in the boot environment.     
+* Mount the filesystem and find the highest-numbered kernel in /boot in the boot environment.
 * Load the kernel, initramfs and the kernel command line defined in the `org.zfsbootmenu:commandline` property (or, as a fallback, `/etc/default/grub`) into memory via kexec
 * Unmount all ZFS filesystems
 * Boot the final kernel and initramfs
-    
+
 At this point, you'll be booting into your OS-managed kernel and initramfs, along with any arguments needed to correctly boot your system.
- 
+
 This tool makes uses of the following additional software:
  * [fzf](https://github.com/junegunn/fzf)
  * [kexec-tools](https://github.com/horms/kexec-tools)
  * Linux Kernel
  * ZFS on Linux (currently 0.8.3 built on Void Linux).
- 
+
 Binary releases for x86_64 and ppc64le are built on Void Linux hosts. ZFSBootMenu has been successfully tested up to ZFS on Linux 0.8.3 and Dracut 49.
 
 # System prereqs
@@ -43,7 +43,7 @@ zroot/ROOT/void.2019.11.01    10.9G   582G     7.17G  /
 zroot/home                     120G   582G     11.8G  /home
 ```
 
-There are two boot environments created, identified by mounting to /.  The environment that this system will boot into is defined by the `bootfs` value set on the `zroot` zpool. 
+There are two boot environments created, identified by mounting to /.  The environment that this system will boot into is defined by the `bootfs` value set on the `zroot` zpool.
 
 ```
 NAME   PROPERTY  VALUE                       SOURCE
@@ -66,12 +66,12 @@ Because ZFS properties are inherited by default, it is possible to set the `org.
 
 ## EFI
 
-ZFS Boot Menu integrates nicely with an EFI system. There will be two key things to configure here. 
+ZFS Boot Menu integrates nicely with an EFI system. There will be two key things to configure here.
 
 * The mountpoint of the EFI partition and it's contents
 * The mountpoint of the boot environment `/boot` and it's contents
 
-Each boot environment should have `/boot` live on the ZFS filesystem. Using the above example, `zroot/ROOT/void.2019.11.01` would contain `/boot` with any kernel/initramfs pairs. 
+Each boot environment should have `/boot` live on the ZFS filesystem. Using the above example, `zroot/ROOT/void.2019.11.01` would contain `/boot` with any kernel/initramfs pairs.
 
 ```
 # ls /boot
@@ -92,7 +92,7 @@ Once `/boot` is backed by ZFS in a boot environment, you'll need to install the 
 ```
 # lsblk -f /dev/sda
 NAME   FSTYPE LABEL UUID                                 FSAVAIL FSUSE% MOUNTPOINT
-sdg                                                                     
+sdg
 ├─sda1 vfat         AFC2-35EE                               7.9G     1% /boot/efi
 └─sda2 swap         412401b6-4aec-4452-a6bd-6fc20fbdc2a5                [SWAP]
 
@@ -104,7 +104,7 @@ vmlinuz-0.7.5
 ```
 
 
-With this layout, you'll now need a way to boot the kernel and initramfs via EFI. This can be done via a manual entry set via efibootmgr, or it can be done with rEFInd. 
+With this layout, you'll now need a way to boot the kernel and initramfs via EFI. This can be done via a manual entry set via efibootmgr, or it can be done with rEFInd.
 
 If you are using a pre-built kernel and initramfs downloaded from the releases page, you'll need to identify the following additional details:
 
@@ -127,7 +127,7 @@ efibootmgr --disk /dev/sda \
 
 Take note to adjust `zfsbootmenu:POOL=`, `spl_hostid=`, `--disk` and `--part` to match your system configuration.
 
-Each time the bootmenu is updated, a new EFI entry will need to be manually added. 
+Each time the bootmenu is updated, a new EFI entry will need to be manually added.
 
 ### rEFInd
 
@@ -141,7 +141,7 @@ Each time the bootmenu is updated, a new EFI entry will need to be manually adde
 
 As with the efibootmgr section, the `zfsbootmenu:POOL=` and `spl_hostid=` options need to be configured to match your environment.
 
-This file will configure `rEFInd` to create two entries for each kernel and initrams pair it finds. The first will directly boot into the environment set via the `bootfs` pool property. The second will force ZFS Boot Menu to display an environment / kernel / snapshot selection menu, allowing you to boot alternate environments, kernels and snapshots. 
+This file will configure `rEFInd` to create two entries for each kernel and initrams pair it finds. The first will directly boot into the environment set via the `bootfs` pool property. The second will force ZFS Boot Menu to display an environment / kernel / snapshot selection menu, allowing you to boot alternate environments, kernels and snapshots.
 
 # Command line options
 
@@ -155,6 +155,14 @@ ZFS Boot Menu currently understands the following options:
  * A value of `-1` will result in the system displaying a boot menu.
  * Any other positive value will show a countdown timer to boot the environment configured under `bootfs`, otherwise it will default to a boot menu.
 * `""|zfsbootmenu|zfsbootmenu:|zfsbootmenu:POOL=zroot` The first three values are functionally identical. The fourth can be used to prefer a pool if multiple are present in the system.
+
+# ZFS properties
+
+The following properties can be set at whatever level of the pool you'd prefer to control the boot behavior.
+
+* `org.zfsbootmenu:kernel` this can be a partial kernel name `(5.4)` or an explicit na:q
+me `(vmlinuz-5.6.11_1)`.
+* `org.zfsbootmenu:commandline` set the list of kernel commandline options to be passed to the final OS. Do not set `root=`, this is set for you.
 
 
 # initramfs creation
@@ -218,7 +226,7 @@ Copies=0
 ZFS Boot Menu can import pools or filesystems with native encryption enabled. If your boot environments are not encrypted but say /home is, you will not receive a decryption prompt. To ensure that you can decrypt your pool to load the kernel and initramfs, you'll need to you have the filesystem parameters configured correctly.
 
 ```
-zfs get all zroot | egrep '(encryption|keylocation|keyformat)' 
+zfs get all zroot | egrep '(encryption|keylocation|keyformat)'
 zroot  encryption            aes-256-gcm                -
 zroot  keylocation           file:///etc/zfs/zroot.key  local
 zroot  keyformat             passphrase                 -
