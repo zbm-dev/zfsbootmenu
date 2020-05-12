@@ -130,7 +130,7 @@ xbps-reconfigure -f linux5.4
 
 * Assign command-line arguments to be used when booting the final kernel. Because ZFS properties are inherited, assign the common properties to the `ROOT` dataset so all children will inherit common arguments by default.
 ```
-zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) ro quiet" zpool/ROOT
+zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) ro quiet" zroot/ROOT
 ```
 
 * Create an EFI partition on `/dev/sdb`
