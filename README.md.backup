@@ -160,8 +160,7 @@ ZFS Boot Menu currently understands the following options:
 
 The following properties can be set at whatever level of the pool you'd prefer to control the boot behavior.
 
-* `org.zfsbootmenu:kernel` this can be a partial kernel name `(5.4)` or an explicit na:q
-me `(vmlinuz-5.6.11_1)`.
+* `org.zfsbootmenu:kernel` this can be a partial kernel name `(5.4)` or an explicit name `(vmlinuz-5.6.11_1)`.
 * `org.zfsbootmenu:commandline` set the list of kernel commandline options to be passed to the final OS. Do not set `root=`, this is set for you.
 
 
