@@ -27,17 +27,17 @@ mount_zfs() {
 # returns: 130 on error, 0 otherwise
 
 draw_be() {
-  local env header selected ret
+  local env selected ret
 
   env="${1}"
 
-  test -f ${env} || return 130
+  test -f "${env}" || return 130
 
-  selected="$( cat ${env} | fzf -0 --prompt "BE > " \
+  selected="$( fzf -0 --prompt "BE > " \
     --expect=alt-k,alt-d,alt-s,alt-c,alt-a,alt-r \
     --preview-window=up:2 \
     --header="[ENTER] boot [ALT+K] kernel [ALT+D] set bootfs [ALT+S] snapshots [ALT+C] cmdline" \
-    --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}")"
+    --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}" < "${env}" )"
   ret=$?
   while read -r line; do
     if [ -z "$line" ]; then
@@ -54,12 +54,12 @@ draw_be() {
 # returns: 130 on error, 0 otherwise
 
 draw_kernel() {
-  local benv pretty selected ret
+  local benv selected ret
 
   benv="${1}"
 
-  selected="$( cat ${BASE}/${benv}/kernels | fzf --prompt "${benv} > " --tac \
-    --with-nth=2 --header="[ENTER] boot [ESC] back")"
+  selected="$( fzf --prompt "${benv} > " --tac \
+    --with-nth=2 --header="[ENTER] boot [ESC] back" < "${BASE}/${benv}/kernels" )"
 
   ret=$?
   echo "${selected}"
@@ -75,7 +75,7 @@ draw_snapshots() {
 
   benv="${1}"
 
-  selected="$( zfs list -t snapshot -H -o name ${benv} | fzf --prompt "Snapshot > " --tac \
+  selected="$( zfs list -t snapshot -H -o name "${benv}" | fzf --prompt "Snapshot > " --tac \
     --header="[ENTER] clone [ESC] back" )"
   ret=$?
   echo "${selected}"
@@ -96,7 +96,7 @@ kexec_kernel() {
   # zfs filesystem
   # kernel
   # initramfs
-  IFS=' ' read fs kernel initramfs <<<"${selected}"
+  IFS=' ' read -r fs kernel initramfs <<<"${selected}"
 
   mnt="$( mount_zfs "${fs}" )"
 
@@ -108,13 +108,14 @@ kexec_kernel() {
   cli_args="$( find_kernel_args "${fs}" "${mnt}" )"
 
   # restore kernel log level just before we kexec
+  # shellcheck disable=SC2154
   echo "${printk}" > /proc/sys/kernel/printk
 
   kexec -l "${mnt}${kernel}" \
     --initrd="${mnt}${initramfs}" \
     --command-line="root=zfs:${fs} ${cli_args}"
 
-  umount ${mnt}
+  umount "${mnt}"
 
   # Export if read-write, to ensure a clean pool
   pool="${selected%%/*}"
@@ -130,7 +131,7 @@ kexec_kernel() {
 # returns: 0 on success
 
 clone_snapshot() {
-  local selected target response
+  local selected target pool import_args last_env index ret output
 
   selected="${1}"
 
@@ -145,24 +146,21 @@ clone_snapshot() {
 
   target="${selected/@/_}"
 
-  if $( zfs list -H -o name | grep -q "${target}" ); then
+  if  zfs list -H -o name | grep -q "${target}" ; then
     last_env="$( zfs list -H -o name | grep "${target}" | tail -1 )"
     index="${last_env##${target}_}"
-    index="$(( ${index} + 1 ))"
+    index="$(( index + 1 ))"
   else
     index="0"
   fi
 
   target="$( printf "%s_%0.3d" "${target}" "${index}" )"
 
-  zfs clone -o mountpoint=/ \
+  if zfs clone -o mountpoint=/ \
     -o canmount=noauto \
-    "${selected}" "${target}"
-  ret=$?
+    "${selected}" "${target}" ; then
 
-  if [ $ret -eq 0 ]; then
-    key_wrapper "${target}"
-    if [ $? -eq 0 ]; then
+    if key_wrapper "${target}"; then
       if output=$( find_be_kernels "${target}" ); then
         echo "${target}" >> "${BASE}/env"
         return 0
@@ -181,7 +179,7 @@ clone_snapshot() {
 }
 
 set_default_env() {
-  local selected
+  local selected pool import_args output
   selected="${1}"
 
   pool="${selected%%/*}"
@@ -194,6 +192,7 @@ set_default_env() {
     key_wrapper "${pool}"
   fi
 
+  # shellcheck disable=SC2034
   if output="$( zpool set bootfs="${selected}" "${pool}" )"; then
     BOOTFS="${selected}"
   fi
@@ -209,7 +208,8 @@ find_be_kernels() {
   fs="${1}"
 
 
-  local sane kernel version kernel_records
+  local kernel version kernel_records
+  local defaults def_kernel def_version def_kernel_file def_args def_args_file
 
   # Check if /boot even exists in the environment
   mnt="$( mount_zfs "${fs}" )"
@@ -220,13 +220,15 @@ find_be_kernels() {
     return 1
   fi
 
+  # shellcheck disable=SC2012,2086
   for kernel in $( ls ${mnt}/boot/vmlinux-* \
     ${mnt}/boot/vmlinuz-* \
     ${mnt}/boot/kernel-* \
     ${mnt}/boot/linux-* 2>/dev/null | sort -V ); do
 
     kernel="${kernel#${mnt}}"
-    version=$( echo $kernel | sed -e "s,^[^0-9]*-,,g" )
+    # shellcheck disable=SC2001
+    version=$( echo "$kernel" | sed -e "s,^[^0-9]*-,,g" )
 
     for i in "initrd.img-${version}" "initrd-${version}.img" "initrd-${version}.gz" \
       "initrd-${version}" "initramfs-${version}.img"; do
@@ -239,9 +241,11 @@ find_be_kernels() {
   done
 
   defaults="$( select_kernel "${fs}" )"
-  IFS=' ' read def_fs def_kernel def_initramfs <<<"${defaults}"
+  # shellcheck disable=SC2034
+  IFS=' ' read -r def_fs def_kernel def_initramfs <<<"${defaults}"
   def_kernel="$( basename "${def_kernel}" )"
-  def_version=$( echo $def_kernel | sed -e "s,^[^0-9]*-,,g" )
+  # shellcheck disable=SC2001
+  def_version=$( echo "$def_kernel" | sed -e "s,^[^0-9]*-,,g" )
 
   def_kernel_file="${mnt/mnt/default_kernel}"
   echo "${def_version}" > "${def_kernel_file}"
@@ -262,18 +266,18 @@ select_kernel() {
   local zfsbe
   zfsbe="${1}"
 
-  local sane specific_kernel kexec_args
+  local specific_kernel kexec_args
 
-  specific_kernel="$( zfs get -H -o value org.zfsbootmenu:kernel ${zfsbe} )"
+  specific_kernel="$( zfs get -H -o value org.zfsbootmenu:kernel "${zfsbe}" )"
 
   # No value set, pick the last kernel entry
   if [ "${specific_kernel}" = "-" ]; then
-    kexec_args="$( tail -1 ${BASE}/${zfsbe}/kernels )"
+    kexec_args="$( tail -1 "${BASE}/${zfsbe}/kernels" )"
   else
     while read -r kexec_args; do
       local fs kernel initramfs
-      IFS=' ' read fs kernel initramfs <<<"${kexec_args}"
-      if [[ "${kernel}" =~ "${specific_kernel}" ]]; then
+      IFS=' ' read -r fs kernel initramfs <<<"${kexec_args}"
+      if [[ "${kernel}" =~ ${specific_kernel} ]]; then
         break
       fi
     done <<<"$( tac "${BASE}/${zfsbe}/kernels" )"
@@ -282,13 +286,18 @@ select_kernel() {
   echo "${kexec_args}"
 }
 
+# arg1: ZFS filesystem
+# arg2: path for a mounted filesystem
+# prints: discovered kernel command line arguments
+# returns: nothing
+
 find_kernel_args() {
   local zfsbe_mnt zfsbe_fs zfsbe_args
   zfsbe_fs="${1}"
   zfsbe_mnt="${2}"
 
   if [ -f "${BASE}/default_args" ]; then
-    cat "${BASE}/default_args"
+    head -1 "${BASE}/default_args" | tr -d '\n'
     return
   fi
 
@@ -300,8 +309,14 @@ find_kernel_args() {
     fi
   fi
 
-  if [ -n "${zfsbe_mnt}" -a -f "${zfsbe_mnt}/etc/default/grub" ]; then
+  if [ -n "${zfsbe_mnt}" ] && [ -f "${zfsbe_mnt}/etc/default/zfsbootmenu" ]; then
+    head -1 "${zfsbe_mnt}/etc/default/zfsbootmenu" | tr -d '\n'
+    return
+  fi
+
+  if [ -n "${zfsbe_mnt}" ] && [ -f "${zfsbe_mnt}/etc/default/grub" ]; then
     echo "$(
+      # shellcheck disable=SC1090
       . "${zfsbe_mnt}/etc/default/grub" ;
       echo "${GRUB_CMDLINE_LINUX_DEFAULT}"
     )"
@@ -344,6 +359,7 @@ import_pool() {
   local pool
   pool="${1}"
 
+  # shellcheck disable=SC2086
   status="$( zpool import ${import_args} ${pool} )"
   ret=$?
 
@@ -358,7 +374,8 @@ export_pool() {
   local pool
   pool="${1}"
 
-  status="$( zpool export ${pool} )"
+  # shellcheck disable=SC2034
+  status="$( zpool export "${pool}" )"
   ret=$?
 
   return ${ret}
@@ -370,10 +387,10 @@ export_pool() {
 be_key_needed() {
   local fs pool encroot
   fs="${1}"
-  pool="$( echo ${fs} | cut -d '/' -f 1 )"
+  pool="${fs%%/*}"
 
-  if [ $( zpool list -H -o feature@encryption ${pool}) == "active" ]; then
-    encroot="$( zfs get -H -o value encryptionroot ${fs} )"
+  if [ "$( zpool list -H -o feature@encryption "${pool}" )" == "active" ]; then
+    encroot="$( zfs get -H -o value encryptionroot "${fs}" )"
     if [ "${encroot}" == "-" ]; then
       echo ""
       return 0
@@ -395,7 +412,7 @@ be_key_status() {
   local encroot keystatus
   encroot="${1}"
 
-  keystatus="$( zfs get -H -o value keystatus ${encroot} )"
+  keystatus="$( zfs get -H -o value keystatus "${encroot}" )"
   case "${keystatus}" in
     unavailable)
       return 0;
@@ -414,22 +431,22 @@ load_key() {
   local encroot ret key keyformat keylocation
   encroot="${1}"
 
-  keylocation="$( zfs get -H -o value keylocation ${encroot} )"
+  keylocation="$( zfs get -H -o value keylocation "${encroot}" )"
   if [ "${keylocation}" = "prompt" ]; then
     tput clear
     tput cup 0 0
-    zfs load-key -L prompt ${encroot}
+    zfs load-key -L prompt "${encroot}"
     ret=$?
   else
     key="${keylocation#file://}"
-    keyformat="$( zfs get -H -o value keyformat ${encroot} )"
+    keyformat="$( zfs get -H -o value keyformat "${encroot}" )"
     if [[ -f "${key}" ]]; then
-      zfs load-key ${encroot}
+      zfs load-key "${encroot}"
       ret=$?
     elif [ "${keyformat}" = "passphrase" ]; then
       tput clear
       tput cup 0 0
-      zfs load-key -L prompt ${encroot}
+      zfs load-key -L prompt "${encroot}"
       ret=$?
     fi
   fi

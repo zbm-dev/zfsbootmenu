@@ -6,7 +6,9 @@ printk=${printk:0:1}
 # Set it to 0
 echo 0 > /proc/sys/kernel/printk
 
+# shellcheck disable=SC1091
 test -f /lib/zfsbootmenu-lib.sh && source /lib/zfsbootmenu-lib.sh
+# shellcheck disable=SC1091
 test -f zfsbootmenu-lib.sh && source zfsbootmenu-lib.sh
 
 echo "Loading boot menu ..."
@@ -30,9 +32,10 @@ ret=$?
 
 if [ $ret -gt 0 ]; then
   import_success=0
+  # shellcheck disable=SC2162
   IFS=',' read -a zpools <<<"${response}"
   for pool in "${zpools[@]}"; do
-    import_pool ${pool}
+    import_pool "${pool}"
     ret=$?
     if [ $ret -eq 0 ]; then
       import_success=1
@@ -42,13 +45,15 @@ if [ $ret -gt 0 ]; then
     emergency_shell "unable to successfully import a pool"
   fi
 else
-  if [ $die_on_import_failure -eq 1 ]; then
+  # shellcheck disable=SC2154,SC2086
+  if [ ${die_on_import_failure} -eq 1 ]; then
     emergency_shell "no pools available to import"
     exit;
   fi
 fi
 
 # Prefer a specific pool when checking for a bootfs value
+# shellcheck disable=SC2154
 if [ "${root}" = "zfsbootmenu" ]; then
   pool=
 else
@@ -56,6 +61,7 @@ else
 fi
 
 # Attempt to find the bootfs property 
+# shellcheck disable=SC2086
 datasets="$( zpool list -H -o bootfs ${pool} )"
 while read -r line; do
   if [ "${line}" = "-" ]; then
@@ -68,8 +74,9 @@ done <<<"${datasets}"
 
 # If BOOTFS is not empty display the fast boot menu
 fast_boot=0
-if [[ ! -z "${BOOTFS}" ]]; then
+if [[ -n "${BOOTFS}" ]]; then
   # Draw a countdown menu
+  # shellcheck disable=SC2154
   if [[ ${menu_timeout} -gt 0 ]]; then
     # Clear the screen
     tput civis
@@ -79,29 +86,30 @@ if [[ ! -z "${BOOTFS}" ]]; then
 
     # Draw the line centered on the screen
     mes="[ENTER] to boot"
-    x=$(( ($HEIGHT - 0) / 2 ))
-    y=$(( ($WIDTH - ${#mes}) / 2 ))
+    x=$(( (HEIGHT - 0) / 2 ))
+    y=$(( (WIDTH - ${#mes}) / 2 ))
     tput cup $x $y
-    echo -n ${mes}
+    echo -n "${mes}"
 
     # Draw the line centered on the screen
     mes="[ESC] boot menu"
-    x=$(( $x + 1 ))
-    y=$(( ($WIDTH - ${#mes}) / 2 ))
+    x=$(( x + 1 ))
+    y=$(( (WIDTH - ${#mes}) / 2 ))
     tput cup $x $y
-    echo -n ${mes}
+    echo -n "${mes}"
 
-    x=$(( $x + 1 ))
+    x=$(( x + 1 ))
     tput cup $x $y
 
     IFS=''
-    for (( i=${menu_timeout}; i>0; i--)); do
-      mes="$( printf 'Booting %s in %0.2d seconds' ${BOOTFS} ${i} )"
-      y=$(( ($WIDTH - ${#mes}) / 2 ))
+    for (( i=menu_timeout; i>0; i--)); do
+      mes="$( printf 'Booting %s in %0.2d seconds' "${BOOTFS}" "${i}" )"
+      y=$(( (WIDTH - ${#mes}) / 2 ))
       tput cup $x $y
       echo -ne "${mes}"
 
       # Wait 1 second for input
+      # shellcheck disable=SC2162
       read -s -N 1 -t 1 key
       # Escape key
       if [ "$key" = $'\e' ]; then
@@ -149,12 +157,13 @@ for FS in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
   fi
 
   # Check for kernels under the mountpoint, add to our BE list
+  # shellcheck disable=SC2034
   if output="$( find_be_kernels "${FS}" )" ; then
-    echo ${FS} >> ${BASE}/env
+    echo "${FS}" >> "${BASE}/env"
   fi
 done
 
-if [ ! -f ${BASE}/env ]; then
+if [ ! -f "${BASE}/env" ]; then
   emergency_shell "no boot environments with kernels found"
 fi
 
@@ -169,6 +178,7 @@ while true; do
     
     # key press
     # bootenv
+    # shellcheck disable=SC2162
     IFS=, read key selected_be <<<"${bootenv}"
 
     if [ $ret -eq 0 ]; then
@@ -226,7 +236,8 @@ while true; do
         tput clear
         tput cnorm
 
-        zfsbootmenu-preview.sh ${BASE} ${selected_be} ${BOOTFS}
+        echo ""
+        zfsbootmenu-preview.sh "${BASE}" "${selected_be}" "${BOOTFS}"
 
         if [ -f "${BASE}/default_args" ]
         then
@@ -241,8 +252,7 @@ while true; do
         done < "${ARGS}"
         echo -e "\nNew kernel command line"
         read -r -e -i "${def_args}" -p "> " cmdline
-        if [ -n "${cmdline}" ]
-        then
+        if [ -n "${cmdline}" ] ; then
           echo "${cmdline}" > "${BASE}/default_args"
         fi
         BE_SELECTED=0
