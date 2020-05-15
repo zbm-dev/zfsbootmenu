@@ -1,2 +1,0 @@
-distfiles="https://www-fourier.ujf-grenoble.fr/~parisse/debian/dists/stable/main/source/giac_${version%.*}-${version##*.}.tar.gz"
-version=1.5.0.59
