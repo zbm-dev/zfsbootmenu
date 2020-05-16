@@ -312,6 +312,10 @@ sub unifiedEFI {
 
   my $efi_stub     = $config{EFI}{Stub} || "/usr/lib/gummiboot/linuxx64.efi.stub";
 
+  unless ( -e $efi_stub) {
+    die "Missing EFI stub: $efi_stub";
+  }
+
   open( my $fh, '>', $cmdline_file );
   print $fh $cmdline;
   close($fh);
