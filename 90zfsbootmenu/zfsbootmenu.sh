@@ -221,6 +221,7 @@ while true; do
         ;;
       "alt-r")
         emergency_shell "alt-r invoked"
+        BE_SELECTED=0
         ;;
       "alt-c")
         tput clear
