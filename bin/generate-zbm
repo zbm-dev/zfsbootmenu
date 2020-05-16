@@ -116,14 +116,16 @@ if ( ( defined $runConf{kernel} ) and ( length $runConf{kernel} ) ) {
 $runConf{bootdir} = dirname( $runConf{kernel} );
 ( $runConf{kernel_prefix}, $runConf{kernel_version} ) = split( '-', basename( $runConf{kernel} ) );
 
-# We always need to create an initramfs
-printf "Creating ZFS Boot Menu %s, with %s %s\n", $runConf{version}, $runConf{kernel_prefix}, $runConf{kernel_version};
+# We need to create an initramfs for all cases other than unifiedEFI
+if ( defined( $config{Components}{Copies} ) and ( $config{Components}{Copies} gt 0 ) ) {
+  printf "Creating ZFS Boot Menu %s, with %s %s\n", $runConf{version}, $runConf{kernel_prefix}, $runConf{kernel_version};
 
-$runConf{initramfs} = createInitramfs( $tempdir, $runConf{kernel_version} );
+  $runConf{initramfs} = createInitramfs( $tempdir, $runConf{kernel_version} );
+}
 
 # Create a unified kernel/initramfs/command line EFI file
 if ( defined( $config{EFI}{Copies} ) and ( $config{EFI}{Copies} gt 0 ) ) {
-  $runConf{unified_efi} = unifiedEFI( $tempdir, $runConf{kernel}, $runConf{initramfs} );
+  $runConf{unified_efi} = unifiedEFI( $tempdir, $runConf{kernel_version} );
 
   if ( defined( $config{EFI}{Versioned} ) and ( $config{EFI}{Versioned} ) ) {
     $runConf{efi_target} =
@@ -304,33 +306,22 @@ sub createInitramfs {
 }
 
 sub unifiedEFI {
-  my ( $temp, $kernel, $initramfs ) = @_;
+  my ( $temp, $kver ) = @_;
 
   my $output_file  = join( '/', $temp, "zfsbootmenu.efi" );
-  my $cmdline_file = join( '/', $temp, "cmdline.txt" );
-  my $cmdline      = $config{Kernel}{CommandLine};
-
   my $efi_stub     = $config{EFI}{Stub} || "/usr/lib/gummiboot/linuxx64.efi.stub";
 
   unless ( -e $efi_stub) {
     die "Missing EFI stub: $efi_stub";
   }
 
-  open( my $fh, '>', $cmdline_file );
-  print $fh $cmdline;
-  close($fh);
-
   my @cmd = (
-    qw(objcopy),
-    qw(--add-section .osrel=/etc/os-release --change-section-vma .osrel=0x20000),
-    qq(--add-section .cmdline=$cmdline_file),
-    qw(--change-section-vma .cmdline=0x30000),
-    qq(--add-section .linux=$kernel),
-    qw(--change-section-vma .linux=0x40000),
-    qq(--add-section .initrd=$initramfs),
-    qw(--change-section-vma .initrd=0x3000000),
-    $efi_stub,
-    $output_file
+    qw(dracut -q -f --uefi --confdir),
+    $runConf{confd},
+    qq(--uefi-stub), $efi_stub,
+    qq(--kernel-cmdline=\"$config{Kernel}{CommandLine}\"),
+    $output_file,
+    qw(--kver), $kver,
   );
 
   my @output = execute(@cmd);
