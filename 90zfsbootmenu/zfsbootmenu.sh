@@ -26,6 +26,10 @@ BASE="$( mktemp -d /tmp/zfs.XXXX )"
 modprobe zfs 2>/dev/null
 udevadm settle
 
+# try to set console options for display and interaction
+# this is sometimes run as an initqueue hook, but cannot be guaranteed
+test -x /lib/udev/console_init -a -c /dev/tty0 && /lib/udev/console_init tty0
+
 # Find all pools by name that are listed as ONLINE, then import them
 response="$( find_online_pools )"
 ret=$?
