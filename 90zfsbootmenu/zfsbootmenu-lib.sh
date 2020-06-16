@@ -34,7 +34,7 @@ draw_be() {
   test -f "${env}" || return 130
 
   selected="$( fzf -0 --prompt "BE > " \
-    --expect=alt-k,alt-d,alt-s,alt-c,alt-a,alt-r \
+    --expect=alt-k,alt-d,alt-s,alt-c,alt-a,alt-r,alt-x \
     --preview-window=up:2 \
     --header="[ENTER] boot [ALT+K] kernel [ALT+D] set bootfs [ALT+S] snapshots [ALT+C] cmdline" \
     --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}" < "${env}" )"
@@ -127,6 +127,39 @@ kexec_kernel() {
 }
 
 # arg1: snapshot name
+# arg2: new BE name
+# prints: nothing
+# returns: 0 on success
+
+duplicate_snapshot() {
+  local selected target
+
+  selected="${1}"
+  target="${2}"
+
+  pool="${selected%%/*}"
+  if set_rw_pool "${pool}"; then
+    key_wrapper "${pool}"
+  fi
+
+  if zfs send "${selected}" | mbuffer | zfs recv "${target}" ; then
+    zfs set mountpoint=/ "${target}"
+    zfs set canmount=noauto "${target}"
+
+    if output=$( find_be_kernels "${target}" ); then
+      echo "${target}" >> "${BASE}/env"
+      return 0
+    else
+      # No kernels were found
+      return 1
+    fi
+  else
+    # Send|Recv failed
+    return $ret
+  fi
+}
+
+# arg1: snapshot name
 # prints: nothing
 # returns: 0 on success
 
@@ -137,11 +170,8 @@ clone_snapshot() {
 
   pool="${selected%%/*}"
 
-  # If the pool is read-only, flip the arg off then export and import
-  if [ "$( zpool get -H -o value readonly "${pool}" )" = "on" ]; then
-    export_pool "${pool}"
-    import_args="${import_args/readonly=on/readonly=off}"
-    import_pool "${pool}"
+  if set_rw_pool "${pool}"; then
+    key_wrapper "${pool}"
   fi
 
   target="${selected/@/_}"
@@ -184,11 +214,7 @@ set_default_env() {
 
   pool="${selected%%/*}"
 
-  # If the pool is read-only, flip the arg off then export and import
-  if [ "$( zpool get -H -o value readonly "${pool}" )" = "on" ]; then
-    export_pool "${pool}"
-    import_args="${import_args/readonly=on/readonly=off}"
-    import_pool "${pool}"
+  if set_rw_pool "${pool}"; then
     key_wrapper "${pool}"
   fi
 
@@ -380,6 +406,28 @@ export_pool() {
 
   return ${ret}
 }
+
+# arg1: pool name
+# prints: nothing
+# returns: 0 on success, 1 on failure
+
+set_rw_pool() {
+  local pool
+  pool="${1}"
+
+  if [ "$( zpool get -H -o value readonly "${pool}" )" = "on" ]; then
+    import_args="${import_args/readonly=on/readonly=off}"
+    if export_pool "${pool}" ; then
+      import_pool "${pool}"
+      return $?
+    else
+      return 1
+    fi
+  else
+    return 0
+  fi
+}
+
 # arg1: ZFS filesystem
 # prints: name of encryption root, if present
 # returns: 1 if key is needed, 0 if not

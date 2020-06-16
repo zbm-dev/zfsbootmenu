@@ -64,7 +64,7 @@ else
   pool="${root}"
 fi
 
-# Attempt to find the bootfs property 
+# Attempt to find the bootfs property
 # shellcheck disable=SC2086
 datasets="$( zpool list -H -o bootfs ${pool} )"
 while read -r line; do
@@ -132,7 +132,7 @@ if [[ -n "${BOOTFS}" ]]; then
     # Make sure we bypass the other fastboot check
     i=1
   fi
-  
+
   # Boot up if we timed out, or if the enter key was pressed
   if [[ ${fast_boot} -eq 1 || $i -eq 0 ]]; then
     if ! key_wrapper "${BOOTFS}" ; then
@@ -179,7 +179,7 @@ while true; do
   if [ ${BE_SELECTED} -eq 0 ]; then
     bootenv="$( draw_be "${BASE}/env" )"
     ret=$?
-    
+
     # key press
     # bootenv
     # shellcheck disable=SC2162
@@ -201,7 +201,7 @@ while true; do
         ret=$?
 
         if [ $ret -eq 130 ]; then
-          BE_SELECTED=0 
+          BE_SELECTED=0
         elif [ $ret -eq 0 ] ; then
           kexec_kernel "${selected_kernel}"
           exit
@@ -216,10 +216,10 @@ while true; do
         ret=$?
 
         if [ $ret -eq 130 ]; then
-          BE_SELECTED=0 
+          BE_SELECTED=0
         elif [ $ret -eq 0 ] ; then
           clone_snapshot "${selected_snap}"
-          BE_SELECTED=0 
+          BE_SELECTED=0
         fi
         ;;
       "alt-a")
@@ -227,16 +227,16 @@ while true; do
         ret=$?
 
         if [ $ret -eq 130 ]; then
-          BE_SELECTED=0 
+          BE_SELECTED=0
         elif [ $ret -eq 0 ] ; then
           clone_snapshot "${selected_snap}"
-          BE_SELECTED=0 
+          BE_SELECTED=0
         fi
         ;;
       "alt-r")
         emergency_shell "alt-r invoked"
         BE_SELECTED=0
-        ;;
+        :g/;;
       "alt-c")
         tput clear
         tput cnorm
@@ -263,6 +263,26 @@ while true; do
         BE_SELECTED=0
         tput civis
         ;;
+      "alt-x")
+        selected_snap="$( draw_snapshots "${selected_be}" )"
+        ret=$?
+
+        if [ $ret -eq 130 ]; then
+          BE_SELECTED=0
+        elif [ $ret -eq 0 ] ; then
+          tput clear
+          tput cnorm
+          echo -e "\nNew boot environment name"
+          read -r -e -i "${selected_snap}" -p "> " new_be
+          if [ -n "${new_be}" ] ; then
+            echo -e "\nCreating ${new_be} ..."
+            duplicate_snapshot "${selected_snap}" "${new_be}"
+          fi
+          tput civis
+        fi
+        BE_SELECTED=0
+        ;;
+
     esac
   fi
 done

@@ -79,6 +79,7 @@ install() {
   dracut_install ip
   dracut_install /usr/bin/mkdir
   dracut_install /usr/bin/tail
+  dracut_install mbuffer
   inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh"
   inst_simple "${moddir}/zfsbootmenu-preview.sh" "/bin/zfsbootmenu-preview.sh"
   inst_simple "${moddir}/zfs-chroot" "/bin/zfs-chroot"
