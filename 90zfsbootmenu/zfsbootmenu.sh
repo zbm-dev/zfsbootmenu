@@ -192,6 +192,9 @@ while true; do
   fi
 
   if [ ${BE_SELECTED} -eq 1 ]; then
+    # Either a boot will proceed, or the menu will be drawn fresh
+    BE_SELECTED=0
+
     case "${key}" in
       "enter")
         kexec_kernel "$( select_kernel "${selected_be}" )"
@@ -201,76 +204,76 @@ while true; do
         selected_kernel="$( draw_kernel "${selected_be}" )"
         ret=$?
 
-        if [ $ret -eq 130 ]; then
-          BE_SELECTED=0
-        elif [ $ret -eq 0 ] ; then
+        if [ $ret -eq 0 ]; then
           kexec_kernel "${selected_kernel}"
           exit
         fi
         ;;
       "alt-d")
         set_default_env "${selected_be}"
-        BE_SELECTED=0
         ;;
       "alt-s")
         selection="$( draw_snapshots "${selected_be}" )"
         ret=$?
 
+        # Only continue if a selection was made
+        [ $ret -eq 0 ] || continue
+
         IFS=, read subkey selected_snap <<< "${selection}"
 
-        if [ $ret -eq 130 ]; then
-          BE_SELECTED=0
-        elif [ $ret -eq 0 ] ; then
-          case "$subkey" in
-            "enter")
-               tput clear
-               tput cnorm
+        # Parent of the selected dataset, must be nonempty
+        parent_ds="${selected_snap%/*}"
+        [ -n "$parent_ds" ] || continue
 
-               # Strip parent datasets
-               pre_populated="${selected_snap##*/}"
-               # Strip snapshot name
-               pre_populated="${pre_populated%%@*}"
-               # Append _NEW
-               pre_populated="${pre_populated}_NEW"
+        tput clear
+        tput cnorm
 
-               while true;
-               do
-                 echo -e "\nNew boot environment name"
-                 read -r -e -i "${pre_populated}" -p "> " new_be
-                 if [ -n "${new_be}" ] ; then
-                   local valid_name=$( echo "${new_be}" | tr -c -d 'a-zA-Z0-9-_.,' )
-                   # If the entered name is invalid, set the prompt to the valid form of the name
-                   if [[ "${new_be}" != "${valid_name}" ]]; then
-                     echo "${new_be} is invalid, ${valid_name} can be used"
-                     pre_populated="${valid_name}"
-                   else
-                     break
-                   fi
-                 fi
-               done
+        # Strip parent datasets
+        pre_populated="${selected_snap##*/}"
+        # Strip snapshot name and append NEW
+        pre_populated="${pre_populated%%@*}_NEW"
 
-               if [ -n "${new_be}" ] ; then
-                 # Recover the leading datasets
-                 parent_ds="${selected_snap%/*}"
-                 echo -e "\nCreating ${parent_ds}/${new_be} from ${selected_snap}"
-                 duplicate_snapshot "${selected_snap}" "${parent_ds}/${new_be}"
-               fi
+        while true;
+        do
+          echo -e "\nNew boot environment name"
+          read -r -e -i "${pre_populated}" -p "> " new_be
+          if [ -n "${new_be}" ] ; then
+            valid_name=$( echo "${new_be}" | tr -c -d 'a-zA-Z0-9-_.,' )
+            # If the entered name is invalid, set the prompt to the valid form of the name
+            if [[ "${new_be}" != "${valid_name}" ]]; then
+              echo "${new_be} is invalid, ${valid_name} can be used"
+              pre_populated="${valid_name}"
+            elif zfs list -H -o name "${parent_ds}/${new_be}" >/dev/null 2>&1; then
+              echo "${new_be} already exists, please use another name"
+              pre_populated="${new_be}"
+            else
+              break
+            fi
+          fi
+        done
 
-               tput civis
-	       ;;
-            "alt-x")
-              clone_snapshot "${selected_snap}"
-	      ;;
-            "alt-c")
-              clone_snapshot "${selected_snap}" "nopromote"
-	      ;;
-          esac
-          BE_SELECTED=0
-        fi
+        # Must have a nonempty name for the new BE
+        [ -n "${new_be}" ] || continue
+
+        clone_target="${parent_ds}/${new_be}"
+        echo -e "\nCreating ${clone_target} from ${selected_snap}"
+
+        tput civis
+
+        case "$subkey" in
+          "enter")
+            duplicate_snapshot "${selected_snap}" "${clone_target}"
+            ;;
+          "alt-x")
+            clone_snapshot "${selected_snap}" "${clone_target}"
+            ;;
+          "alt-c")
+            clone_snapshot "${selected_snap}" "${clone_target}" "nopromote"
+            ;;
+        esac
         ;;
       "alt-r")
         emergency_shell "alt-r invoked"
-        BE_SELECTED=0
         ;;
       "alt-c")
         tput clear
@@ -295,7 +298,6 @@ while true; do
         if [ -n "${cmdline}" ] ; then
           echo "${cmdline}" > "${BASE}/default_args"
         fi
-        BE_SELECTED=0
         tput civis
         ;;
     esac

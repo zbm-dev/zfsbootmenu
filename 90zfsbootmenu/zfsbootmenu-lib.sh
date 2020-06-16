@@ -22,12 +22,28 @@ mount_zfs() {
   return ${ret}
 }
 
+# arg1: value to substitute for empty lines (default: "enter")
+# prints: concatenated lines of stdin, joined by commas
+
+csv_cat() {
+  local CSV empty
+  empty=${1:-enter}
+
+  while read -r line; do
+    if [ -z "$line" ]; then
+      line="${empty}"
+    fi
+    CSV+=("${line}")
+  done
+  (IFS=',' ; printf '%s' "${CSV[*]}")
+}
+
 # arg1: Path to file with detected boot environments, 1 per line
 # prints: key pressed, boot environment
 # returns: 130 on error, 0 otherwise
 
 draw_be() {
-  local env selected ret CSV
+  local env selected ret
 
   env="${1}"
 
@@ -39,13 +55,7 @@ draw_be() {
     --header="[ENTER] boot [ALT+K] kernel [ALT+D] set bootfs [ALT+S] snapshots [ALT+C] cmdline" \
     --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}" < "${env}" )"
   ret=$?
-  while read -r line; do
-    if [ -z "$line" ]; then
-      line="enter"
-    fi
-    CSV+=("${line}")
-  done <<< "${selected}"
-  (IFS=',' ; printf '%s' "${CSV[*]}")
+  csv_cat <<< "${selected}"
   return ${ret}
 }
 
@@ -71,7 +81,7 @@ draw_kernel() {
 # returns: 130 on error, 0 otherwise
 
 draw_snapshots() {
-  local benv selected ret CSV
+  local benv selected ret
 
   benv="${1}"
 
@@ -79,13 +89,7 @@ draw_snapshots() {
     fzf --prompt "Snapshot > " --tac --expect=alt-x,alt-c \
         --header="[ENTER] duplicate [ALT+X] clone and promote [ALT+C] clone only [ESC] back" )"
   ret=$?
-  while read -r line; do
-    if [ -z "$line" ]; then
-      line="enter"
-    fi
-    CSV+=("${line}")
-  done <<< "${selected}"
-  (IFS=',' ; printf '%s' "${CSV[*]}")
+  csv_cat <<< "${selected}"
   return ${ret}
 }
 
@@ -136,13 +140,16 @@ kexec_kernel() {
 # arg1: snapshot name
 # arg2: new BE name
 # prints: nothing
-# returns: 0 on success, 1 on failure
+# returns: 0 on success
 
 duplicate_snapshot() {
   local selected target
 
   selected="${1}"
   target="${2}"
+
+  [ -n "$selected" ] || return 1
+  [ -n "$target" ] || return 1
 
   pool="${selected%%/*}"
 
@@ -167,15 +174,20 @@ duplicate_snapshot() {
 }
 
 # arg1: snapshot name
-# arg2: prevents promotion if equal to "nopromote"; otherwise ignored
+# arg2: new BE name
+# arg3: prevents promotion if equal to "nopromote"; otherwise ignored
 # prints: nothing
 # returns: 0 on success
 
 clone_snapshot() {
-  local selected target pool import_args last_env index ret output
+  local selected target pool import_args output
 
   selected="${1}"
-  promote="${2}"
+  target="${2}"
+  promote="${3}"
+
+  [ -n "$selected" ] || return 1
+  [ -n "$target" ] || return 1
 
   pool="${selected%%/*}"
 
@@ -183,33 +195,12 @@ clone_snapshot() {
     key_wrapper "${pool}"
   fi
 
-  target="${selected/@/_}"
-
-  if  zfs list -H -o name | grep -q "${target}" ; then
-    last_env="$( zfs list -H -o name | grep "${target}" | tail -1 )"
-    index="${last_env##${target}_}"
-    index="$(( index + 1 ))"
-  else
-    index="0"
-  fi
-
-  target="$( printf "%s_%0.3d" "${target}" "${index}" )"
-
-  zfs clone -o mountpoint=/ -o canmount=noauto "${selected}" "${target}"
-  ret=$?
-
-  if [ $ret -ne 0 ]; then
-    # Clone failed
-    return $ret
-  fi
+  # Clone must succeed to continue
+  zfs clone -o mountpoint=/ -o canmount=noauto "${selected}" "${target}" || return 1
 
   if [ "x$promote" != "xnopromote" ]; then
-    zfs promote "${target}"
-    ret=$?
-    if [ $ret -ne 0 ]; then
-      # Promotion failed
-      return $ret
-    fi
+    # Promotion must succeed to continue
+    zfs promote "${target}" || return 1
   fi
 
   if key_wrapper "${target}"; then
