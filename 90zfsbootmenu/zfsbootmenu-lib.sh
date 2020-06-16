@@ -22,6 +22,22 @@ mount_zfs() {
   return ${ret}
 }
 
+# arg1: value to substitute for empty lines (default: "enter")
+# prints: concatenated lines of stdin, joined by commas
+
+csv_cat() {
+  local CSV empty
+  empty=${1:-enter}
+
+  while read -r line; do
+    if [ -z "$line" ]; then
+      line="${empty}"
+    fi
+    CSV+=("${line}")
+  done
+  (IFS=',' ; printf '%s' "${CSV[*]}")
+}
+
 # arg1: Path to file with detected boot environments, 1 per line
 # prints: key pressed, boot environment
 # returns: 130 on error, 0 otherwise
@@ -34,18 +50,12 @@ draw_be() {
   test -f "${env}" || return 130
 
   selected="$( fzf -0 --prompt "BE > " \
-    --expect=alt-k,alt-d,alt-s,alt-c,alt-a,alt-r,alt-x \
+    --expect=alt-k,alt-d,alt-s,alt-c,alt-r \
     --preview-window=up:2 \
     --header="[ENTER] boot [ALT+K] kernel [ALT+D] set bootfs [ALT+S] snapshots [ALT+C] cmdline" \
     --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}" < "${env}" )"
   ret=$?
-  while read -r line; do
-    if [ -z "$line" ]; then
-      line="enter"
-    fi
-    CSV+=("${line}")
-  done <<< "${selected}"
-  (IFS=',' ; printf '%s' "${CSV[*]}")
+  csv_cat <<< "${selected}"
   return ${ret}
 }
 
@@ -75,10 +85,11 @@ draw_snapshots() {
 
   benv="${1}"
 
-  selected="$( zfs list -t snapshot -H -o name "${benv}" | fzf --prompt "Snapshot > " --tac \
-    --header="[ENTER] clone [ESC] back" )"
+  selected="$( zfs list -t snapshot -H -o name "${benv}" |
+    fzf --prompt "Snapshot > " --tac --expect=alt-x,alt-c \
+        --header="[ENTER] duplicate [ALT+X] clone and promote [ALT+C] clone only [ESC] back" )"
   ret=$?
-  echo "${selected}"
+  csv_cat <<< "${selected}"
   return ${ret}
 }
 
@@ -129,13 +140,16 @@ kexec_kernel() {
 # arg1: snapshot name
 # arg2: new BE name
 # prints: nothing
-# returns: 0 on success, 1 on failure
+# returns: 0 on success
 
 duplicate_snapshot() {
   local selected target
 
   selected="${1}"
   target="${2}"
+
+  [ -n "$selected" ] || return 1
+  [ -n "$target" ] || return 1
 
   pool="${selected%%/*}"
 
@@ -146,7 +160,6 @@ duplicate_snapshot() {
   fi
 
   if zfs send "${selected}" | mbuffer | zfs recv -u -o canmount=noauto -o mountpoint=/ "${target}" ; then
-
     if output=$( find_be_kernels "${target}" ); then
       echo "${target}" >> "${BASE}/env"
       return 0
@@ -161,13 +174,20 @@ duplicate_snapshot() {
 }
 
 # arg1: snapshot name
+# arg2: new BE name
+# arg3: prevents promotion if equal to "nopromote"; otherwise ignored
 # prints: nothing
 # returns: 0 on success
 
 clone_snapshot() {
-  local selected target pool import_args last_env index ret output
+  local selected target pool import_args output
 
   selected="${1}"
+  target="${2}"
+  promote="${3}"
+
+  [ -n "$selected" ] || return 1
+  [ -n "$target" ] || return 1
 
   pool="${selected%%/*}"
 
@@ -175,37 +195,25 @@ clone_snapshot() {
     key_wrapper "${pool}"
   fi
 
-  target="${selected/@/_}"
+  # Clone must succeed to continue
+  zfs clone -o mountpoint=/ -o canmount=noauto "${selected}" "${target}" || return 1
 
-  if  zfs list -H -o name | grep -q "${target}" ; then
-    last_env="$( zfs list -H -o name | grep "${target}" | tail -1 )"
-    index="${last_env##${target}_}"
-    index="$(( index + 1 ))"
-  else
-    index="0"
+  if [ "x$promote" != "xnopromote" ]; then
+    # Promotion must succeed to continue
+    zfs promote "${target}" || return 1
   fi
 
-  target="$( printf "%s_%0.3d" "${target}" "${index}" )"
-
-  if zfs clone -o mountpoint=/ \
-    -o canmount=noauto \
-    "${selected}" "${target}" ; then
-
-    if key_wrapper "${target}"; then
-      if output=$( find_be_kernels "${target}" ); then
-        echo "${target}" >> "${BASE}/env"
-        return 0
-      else
-        # No kernels were found
-        return 1
-      fi
+  if key_wrapper "${target}"; then
+    if output=$( find_be_kernels "${target}" ); then
+      echo "${target}" >> "${BASE}/env"
+      return 0
     else
-      # keys were needed, but not loaded
+      # No kernels were found
       return 1
     fi
   else
-    # Clone failed
-    return $ret
+    # keys were needed, but not loaded
+    return 1
   fi
 }
 
