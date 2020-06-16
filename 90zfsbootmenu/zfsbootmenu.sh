@@ -13,6 +13,7 @@ test -f zfsbootmenu-lib.sh && source zfsbootmenu-lib.sh
 
 echo "Loading boot menu ..."
 TERM=linux
+CLEAR_SCREEN=0
 tput reset
 
 OLDIFS="$IFS"

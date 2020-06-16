@@ -138,13 +138,14 @@ duplicate_snapshot() {
   target="${2}"
 
   pool="${selected%%/*}"
+
   if set_rw_pool "${pool}"; then
+    CLEAR_SCREEN=0
     key_wrapper "${pool}"
+    CLEAR_SCREEN=1
   fi
 
-  if zfs send "${selected}" | mbuffer | zfs recv "${target}" ; then
-    zfs set mountpoint=/ "${target}"
-    zfs set canmount=noauto "${target}"
+  if zfs send "${selected}" | mbuffer | zfs recv -u -o canmount=noauto -o mountpoint=/ "${target}" ; then
 
     if output=$( find_be_kernels "${target}" ); then
       echo "${target}" >> "${BASE}/env"
@@ -154,7 +155,7 @@ duplicate_snapshot() {
       return 1
     fi
   else
-    # Send|Recv failed
+    # send|recv failed
     return $ret
   fi
 }
@@ -481,8 +482,10 @@ load_key() {
 
   keylocation="$( zfs get -H -o value keylocation "${encroot}" )"
   if [ "${keylocation}" = "prompt" ]; then
-    tput clear
-    tput cup 0 0
+    if [ ${CLEAR_SCREEN} -eq 1 ] ; then
+      tput clear
+      tput cup 0 0
+    fi
     zfs load-key -L prompt "${encroot}"
     ret=$?
   else
@@ -492,8 +495,10 @@ load_key() {
       zfs load-key "${encroot}"
       ret=$?
     elif [ "${keyformat}" = "passphrase" ]; then
-      tput clear
-      tput cup 0 0
+      if [ ${CLEAR_SCREEN} -eq 1 ] ; then
+        tput clear
+        tput cup 0 0
+      fi
       zfs load-key -L prompt "${encroot}"
       ret=$?
     fi
