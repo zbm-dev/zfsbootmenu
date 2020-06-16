@@ -27,14 +27,14 @@ mount_zfs() {
 # returns: 130 on error, 0 otherwise
 
 draw_be() {
-  local env selected ret
+  local env selected ret CSV
 
   env="${1}"
 
   test -f "${env}" || return 130
 
   selected="$( fzf -0 --prompt "BE > " \
-    --expect=alt-k,alt-d,alt-s,alt-c,alt-a,alt-r,alt-x \
+    --expect=alt-k,alt-d,alt-s,alt-c,alt-r \
     --preview-window=up:2 \
     --header="[ENTER] boot [ALT+K] kernel [ALT+D] set bootfs [ALT+S] snapshots [ALT+C] cmdline" \
     --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}" < "${env}" )"
@@ -71,14 +71,21 @@ draw_kernel() {
 # returns: 130 on error, 0 otherwise
 
 draw_snapshots() {
-  local benv selected ret
+  local benv selected ret CSV
 
   benv="${1}"
 
-  selected="$( zfs list -t snapshot -H -o name "${benv}" | fzf --prompt "Snapshot > " --tac \
-    --header="[ENTER] clone [ESC] back" )"
+  selected="$( zfs list -t snapshot -H -o name "${benv}" |
+    fzf --prompt "Snapshot > " --tac --expect=alt-x,alt-c \
+        --header="[ENTER] duplicate [ALT+X] clone and promote [ALT+C] clone only [ESC] back" )"
   ret=$?
-  echo "${selected}"
+  while read -r line; do
+    if [ -z "$line" ]; then
+      line="enter"
+    fi
+    CSV+=("${line}")
+  done <<< "${selected}"
+  (IFS=',' ; printf '%s' "${CSV[*]}")
   return ${ret}
 }
 
@@ -146,7 +153,6 @@ duplicate_snapshot() {
   fi
 
   if zfs send "${selected}" | mbuffer | zfs recv -u -o canmount=noauto -o mountpoint=/ "${target}" ; then
-
     if output=$( find_be_kernels "${target}" ); then
       echo "${target}" >> "${BASE}/env"
       return 0
@@ -161,6 +167,7 @@ duplicate_snapshot() {
 }
 
 # arg1: snapshot name
+# arg2: prevents promotion if equal to "nopromote"; otherwise ignored
 # prints: nothing
 # returns: 0 on success
 
@@ -168,6 +175,7 @@ clone_snapshot() {
   local selected target pool import_args last_env index ret output
 
   selected="${1}"
+  promote="${2}"
 
   pool="${selected%%/*}"
 
@@ -187,25 +195,34 @@ clone_snapshot() {
 
   target="$( printf "%s_%0.3d" "${target}" "${index}" )"
 
-  if zfs clone -o mountpoint=/ \
-    -o canmount=noauto \
-    "${selected}" "${target}" ; then
+  zfs clone -o mountpoint=/ -o canmount=noauto "${selected}" "${target}"
+  ret=$?
 
-    if key_wrapper "${target}"; then
-      if output=$( find_be_kernels "${target}" ); then
-        echo "${target}" >> "${BASE}/env"
-        return 0
-      else
-        # No kernels were found
-        return 1
-      fi
+  if [ $ret -ne 0 ]; then
+    # Clone failed
+    return $ret
+  fi
+
+  if [ "x$promote" != "xnopromote" ]; then
+    zfs promote "${target}"
+    ret=$?
+    if [ $ret -ne 0 ]; then
+      # Promotion failed
+      return $ret
+    fi
+  fi
+
+  if key_wrapper "${target}"; then
+    if output=$( find_be_kernels "${target}" ); then
+      echo "${target}" >> "${BASE}/env"
+      return 0
     else
-      # keys were needed, but not loaded
+      # No kernels were found
       return 1
     fi
   else
-    # Clone failed
-    return $ret
+    # keys were needed, but not loaded
+    return 1
   fi
 }
 

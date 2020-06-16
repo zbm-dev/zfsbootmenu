@@ -213,31 +213,65 @@ while true; do
         BE_SELECTED=0
         ;;
       "alt-s")
-        selected_snap="$( draw_snapshots "${selected_be}" )"
+        selection="$( draw_snapshots "${selected_be}" )"
         ret=$?
+
+        IFS=, read subkey selected_snap <<< "${selection}"
 
         if [ $ret -eq 130 ]; then
           BE_SELECTED=0
         elif [ $ret -eq 0 ] ; then
-          clone_snapshot "${selected_snap}"
-          BE_SELECTED=0
-        fi
-        ;;
-      "alt-a")
-        selected_snap="$( draw_snapshots )"
-        ret=$?
+          case "$subkey" in
+            "enter")
+               tput clear
+               tput cnorm
 
-        if [ $ret -eq 130 ]; then
-          BE_SELECTED=0
-        elif [ $ret -eq 0 ] ; then
-          clone_snapshot "${selected_snap}"
+               # Strip parent datasets
+               pre_populated="${selected_snap##*/}"
+               # Strip snapshot name
+               pre_populated="${pre_populated%%@*}"
+               # Append _NEW
+               pre_populated="${pre_populated}_NEW"
+
+               while true;
+               do
+                 echo -e "\nNew boot environment name"
+                 read -r -e -i "${pre_populated}" -p "> " new_be
+                 if [ -n "${new_be}" ] ; then
+                   local valid_name=$( echo "${new_be}" | tr -c -d 'a-zA-Z0-9-_.,' )
+                   # If the entered name is invalid, set the prompt to the valid form of the name
+                   if [[ "${new_be}" != "${valid_name}" ]]; then
+                     echo "${new_be} is invalid, ${valid_name} can be used"
+                     pre_populated="${valid_name}"
+                   else
+                     break
+                   fi
+                 fi
+               done
+
+               if [ -n "${new_be}" ] ; then
+                 # Recover the leading datasets
+                 parent_ds="${selected_snap%/*}"
+                 echo -e "\nCreating ${parent_ds}/${new_be} from ${selected_snap}"
+                 duplicate_snapshot "${selected_snap}" "${parent_ds}/${new_be}"
+               fi
+
+               tput civis
+	       ;;
+            "alt-x")
+              clone_snapshot "${selected_snap}"
+	      ;;
+            "alt-c")
+              clone_snapshot "${selected_snap}" "nopromote"
+	      ;;
+          esac
           BE_SELECTED=0
         fi
         ;;
       "alt-r")
         emergency_shell "alt-r invoked"
         BE_SELECTED=0
-        :g/;;
+        ;;
       "alt-c")
         tput clear
         tput cnorm
@@ -264,51 +298,6 @@ while true; do
         BE_SELECTED=0
         tput civis
         ;;
-      "alt-x")
-        selected_snap="$( draw_snapshots "${selected_be}" )"
-        ret=$?
-
-        if [ $ret -eq 130 ]; then
-          BE_SELECTED=0
-        elif [ $ret -eq 0 ] ; then
-          tput clear
-          tput cnorm
-
-          # Strip parent datasets
-          pre_populated="${selected_snap##*/}"
-          # Strip snapshot name
-          pre_populated="${pre_populated%%@*}"
-          # Append _NEW
-          pre_populated="${pre_populated}_NEW"
-
-          while true;
-          do
-            echo -e "\nNew boot environment name"
-            read -r -e -i "${pre_populated}" -p "> " new_be
-            if [ -n "${new_be}" ] ; then
-              local valid_name=$( echo "${new_be}" | tr -c -d 'a-zA-Z0-9-_.,' )
-              # If the entered name is invalid, set the prompt to the valid form of the name
-              if [[ "${new_be}" != "${valid_name}" ]]; then
-                echo "${new_be} is invalid, ${valid_name} can be used"
-                pre_populated="${valid_name}"
-              else
-                break
-              fi
-            fi
-          done
-
-          if [ -n "${new_be}" ] ; then
-            # Recover the leading datasets
-            parent_ds="${selected_snap%/*}"
-            echo -e "\nCreating ${parent_ds}/${new_be} from ${selected_snap}"
-            duplicate_snapshot "${selected_snap}" "${parent_ds}/${new_be}"
-          fi
-
-          tput civis
-        fi
-        BE_SELECTED=0
-        ;;
-
     esac
   fi
 done
