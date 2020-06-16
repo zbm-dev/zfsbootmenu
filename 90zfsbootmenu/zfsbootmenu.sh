@@ -273,12 +273,37 @@ while true; do
         elif [ $ret -eq 0 ] ; then
           tput clear
           tput cnorm
-          echo -e "\nNew boot environment name"
-          read -r -e -i "${selected_snap}" -p "> " new_be
+
+          # Strip parent datasets
+          pre_populated="${selected_snap##*/}"
+          # Strip snapshot name
+          pre_populated="${pre_populated%%@*}"
+          # Append _NEW
+          pre_populated="${pre_populated}_NEW"
+
+          while true;
+          do
+            echo -e "\nNew boot environment name"
+            read -r -e -i "${pre_populated}" -p "> " new_be
+            if [ -n "${new_be}" ] ; then
+              local valid_name=$( echo "${new_be}" | tr -c -d 'a-zA-Z0-9-_.,' )
+              # If the entered name is invalid, set the prompt to the valid form of the name
+              if [[ "${new_be}" != "${valid_name}" ]]; then
+                echo "${new_be} is invalid, ${valid_name} can be used"
+                pre_populated="${valid_name}"
+              else
+                break
+              fi
+            fi
+          done
+
           if [ -n "${new_be}" ] ; then
-            echo -e "\nCreating ${new_be} ..."
-            duplicate_snapshot "${selected_snap}" "${new_be}"
+            # Recover the leading datasets
+            parent_ds="${selected_snap%/*}"
+            echo -e "\nCreating ${parent_ds}/${new_be} from ${selected_snap}"
+            duplicate_snapshot "${selected_snap}" "${parent_ds}/${new_be}"
           fi
+
           tput civis
         fi
         BE_SELECTED=0

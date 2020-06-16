@@ -129,7 +129,7 @@ kexec_kernel() {
 # arg1: snapshot name
 # arg2: new BE name
 # prints: nothing
-# returns: 0 on success
+# returns: 0 on success, 1 on failure
 
 duplicate_snapshot() {
   local selected target
@@ -156,7 +156,7 @@ duplicate_snapshot() {
     fi
   else
     # send|recv failed
-    return $ret
+    return 1
   fi
 }
 
