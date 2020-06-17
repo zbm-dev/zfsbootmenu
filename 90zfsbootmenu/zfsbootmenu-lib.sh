@@ -301,18 +301,19 @@ select_kernel() {
   local zfsbe
   zfsbe="${1}"
 
-  local specific_kernel kexec_args
+  local specific_kernel kexec_args spec_kexec_args
 
+  # By default, select the last kernel entry
+  kexec_args="$( tail -1 "${BASE}/${zfsbe}/kernels" )"
+
+  # If a specific kernel is listed, prefer it when possible
   specific_kernel="$( zfs get -H -o value org.zfsbootmenu:kernel "${zfsbe}" )"
-
-  # No value set, pick the last kernel entry
-  if [ "${specific_kernel}" = "-" ]; then
-    kexec_args="$( tail -1 "${BASE}/${zfsbe}/kernels" )"
-  else
-    while read -r kexec_args; do
+  if [ "${specific_kernel}" != "-" ]; then
+    while read -r spec_kexec_args; do
       local fs kernel initramfs
-      IFS=' ' read -r fs kernel initramfs <<<"${kexec_args}"
+      IFS=' ' read -r fs kernel initramfs <<<"${spec_kexec_args}"
       if [[ "${kernel}" =~ ${specific_kernel} ]]; then
+        kexec_args="${spec_kexec_args}"
         break
       fi
     done <<<"$( tac "${BASE}/${zfsbe}/kernels" )"
