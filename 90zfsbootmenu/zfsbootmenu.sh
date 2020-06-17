@@ -138,10 +138,7 @@ if [[ -n "${BOOTFS}" ]]; then
   if [[ ${fast_boot} -eq 1 || $i -eq 0 ]]; then
     if ! key_wrapper "${BOOTFS}" ; then
       emergency_shell "unable to load required key for ${BOOTFS}"
-    fi
-
-    # Generate a list of valid kernels for our bootfs
-    if output=$( find_be_kernels "${BOOTFS}" ); then
+    elif output=$( find_be_kernels "${BOOTFS}" ); then
       # Automatically select a kernel and boot it
       kexec_kernel "$( select_kernel "${BOOTFS}" )"
     fi
@@ -174,9 +171,10 @@ fi
 
 # This is the actual menuing system
 BE_SELECTED=0
-tput civis
 
 while true; do
+  tput civis
+
   if [ ${BE_SELECTED} -eq 0 ]; then
     bootenv="$( draw_be "${BASE}/env" )"
     ret=$?
@@ -197,7 +195,9 @@ while true; do
 
     case "${key}" in
       "enter")
-        kexec_kernel "$( select_kernel "${selected_be}" )"
+        if ! kexec_kernel "$( select_kernel "${selected_be}" )"; then
+          continue
+        fi
         exit
         ;;
       "alt-k")
@@ -205,7 +205,9 @@ while true; do
         ret=$?
 
         if [ $ret -eq 0 ]; then
-          kexec_kernel "${selected_kernel}"
+          if ! kexec_kernel "${selected_kernel}"; then
+            continue
+          fi
           exit
         fi
         ;;
@@ -258,8 +260,6 @@ while true; do
         clone_target="${parent_ds}/${new_be}"
         echo -e "\nCreating ${clone_target} from ${selected_snap}"
 
-        tput civis
-
         case "$subkey" in
           "enter")
             duplicate_snapshot "${selected_snap}" "${clone_target}"
@@ -298,7 +298,6 @@ while true; do
         if [ -n "${cmdline}" ] ; then
           echo "${cmdline}" > "${BASE}/default_args"
         fi
-        tput civis
         ;;
     esac
   fi

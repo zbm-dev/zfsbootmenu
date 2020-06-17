@@ -95,7 +95,7 @@ draw_snapshots() {
 
 # arg1: bootfs kernel initramfs
 # prints: nothing
-# returns: does not return
+# returns: 1 on error, otherwise does not return
 
 kexec_kernel() {
   local selected fs kernel initramfs
@@ -114,6 +114,7 @@ kexec_kernel() {
   ret=$?
   if [ $ret != 0 ]; then
     emergency_shell "unable to mount ${fs}"
+    return 1
   fi
 
   cli_args="$( find_kernel_args "${fs}" "${mnt}" )"
@@ -543,7 +544,11 @@ key_wrapper() {
 
 emergency_shell() {
   local message
-  message=${1}
+  message=${1:-unknown reason}
+
+  tput clear
+  tput cnorm
+
   echo -n "Launching emergency shell: "
   echo -e "${message}\n"
   /bin/bash
