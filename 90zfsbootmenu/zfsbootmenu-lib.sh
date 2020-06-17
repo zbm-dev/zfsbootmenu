@@ -219,7 +219,7 @@ set_default_env() {
 # arg1: ZFS filesystem
 # arg2: mountpoint
 # prints: nothing
-# returns: 0 if kernels were found
+# returns: 0 if kernels were found, 1 otherwise
 
 find_be_kernels() {
   local fs mnt
@@ -231,12 +231,15 @@ find_be_kernels() {
 
   # Check if /boot even exists in the environment
   mnt="$( mount_zfs "${fs}" )"
-  kernel_records="${mnt/mnt/kernels}"
 
   if [ ! -d "${mnt}/boot" ]; then
     umount "${mnt}"
     return 1
   fi
+
+  # Make sure the kernel list starts fresh
+  kernel_records="${mnt/mnt/kernels}"
+  : > "${kernel_records}"
 
   # shellcheck disable=SC2012,2086
   for kernel in $( ls ${mnt}/boot/vmlinux-* \
@@ -261,15 +264,24 @@ find_be_kernels() {
   defaults="$( select_kernel "${fs}" )"
   # shellcheck disable=SC2034
   IFS=' ' read -r def_fs def_kernel def_initramfs <<<"${defaults}"
-  def_kernel="$( basename "${def_kernel}" )"
-  # shellcheck disable=SC2001
-  def_version=$( echo "$def_kernel" | sed -e "s,^[^0-9]*-,,g" )
 
   def_kernel_file="${mnt/mnt/default_kernel}"
+  def_args_file="${mnt/mnt/default_args}"
+
+  # If no default kernel is found, there are no kernels; leave the BE
+  # directory in the same state it would be in had no /boot existed
+  if [ -z "${def_kernel}" ]; then
+    rm -f "${kernel_records}" "${def_kernel_file}" "${def_args_file}"
+    return 1
+  fi
+
+  def_kernel=$( basename "${def_kernel}" )
+
+  # shellcheck disable=SC2001
+  def_version=$( echo "$def_kernel" | sed -e "s,^[^0-9]*-,,g" )
   echo "${def_version}" > "${def_kernel_file}"
 
   def_args="$( find_kernel_args "${fs}" "${mnt}" )"
-  def_args_file="${mnt/mnt/default_args}"
   echo "${def_args}" > "${def_args_file}"
 
   umount "${mnt}"
