@@ -25,6 +25,7 @@ At this point, you'll be booting into your OS-managed kernel and initramfs, alon
 This tool makes uses of the following additional software:
  * [fzf](https://github.com/junegunn/fzf)
  * [kexec-tools](https://github.com/horms/kexec-tools)
+ * [mbuffer](http://www.maier-komor.de/mbuffer.html)
  * Linux Kernel
  * ZFS on Linux (currently 0.8.3 built on Void Linux).
 
@@ -170,6 +171,7 @@ The following properties can be set at whatever level of the pool you'd prefer t
 
  * [fzf](https://github.com/junegunn/fzf)
  * [kexec-tools](https://github.com/horms/kexec-tools)
+ * [mbuffer](http://www.maier-komor.de/mbuffer.html)
  * [perl Config::IniFiles](https://metacpan.org/pod/Config::IniFiles)
 
 If you want to create an unified EFI file (kernel, initramfs, command line), the following additional tools will be needed:
