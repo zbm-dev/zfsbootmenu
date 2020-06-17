@@ -160,18 +160,11 @@ duplicate_snapshot() {
     CLEAR_SCREEN=1
   fi
 
-  if zfs send "${selected}" | mbuffer | zfs recv -u -o canmount=noauto -o mountpoint=/ "${target}" ; then
-    if output=$( find_be_kernels "${target}" ); then
-      echo "${target}" >> "${BASE}/env"
-      return 0
-    else
-      # No kernels were found
-      return 1
-    fi
-  else
-    # send|recv failed
-    return 1
-  fi
+  zfs send "${selected}" | mbuffer \
+      | zfs recv -u -o canmount=noauto -o mountpoint=/ "${target}"
+
+  # Just forward return code from duplication operation
+  return $?
 }
 
 # arg1: snapshot name
@@ -204,18 +197,7 @@ clone_snapshot() {
     zfs promote "${target}" || return 1
   fi
 
-  if key_wrapper "${target}"; then
-    if output=$( find_be_kernels "${target}" ); then
-      echo "${target}" >> "${BASE}/env"
-      return 0
-    else
-      # No kernels were found
-      return 1
-    fi
-  else
-    # keys were needed, but not loaded
-    return 1
-  fi
+  return 0
 }
 
 set_default_env() {
@@ -538,6 +520,37 @@ key_wrapper() {
 
   return ${ret}
 }
+
+# arg1: path to BE list
+# prints: nothing
+# returns: 0 on success, 1 on failure
+
+populate_be_list() {
+  local be_list
+
+  be_list="${1}"
+  [ -n "${be_list}" ] || return 1
+
+  # Truncate the list to avoid stale entries
+  : > "${be_list}"
+
+  # Find any filesystems that mount to /, see if there are any kernels present
+  for FS in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
+    if ! key_wrapper "${FS}" ; then
+      continue
+    fi
+
+    # Check for kernels under the mountpoint, add to our BE list
+    # shellcheck disable=SC2034
+    if output="$( find_be_kernels "${FS}" )" ; then
+      echo "${FS}" >> "${be_list}"
+    fi
+  done
+
+  return 0
+}
+
+
 # arg1: message
 # prints: nothing
 # returns: nothing

@@ -147,35 +147,22 @@ fi
 
 ##
 # No automatic boot has taken place
-# Find all ZFS filesystems on any pool that mount to /
-# Load any keys as we come across them
-# If any kernels were found in /boot for a BE, add that BE to our menu
+# Look for BEs with kernels and present a selection menu
 ##
 
-# Find any filesystems that mount to /, see if there are any kernels present
-for FS in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
-  if ! key_wrapper "${FS}" ; then
-    continue
-  fi
-
-  # Check for kernels under the mountpoint, add to our BE list
-  # shellcheck disable=SC2034
-  if output="$( find_be_kernels "${FS}" )" ; then
-    echo "${FS}" >> "${BASE}/env"
-  fi
-done
-
-if [ ! -f "${BASE}/env" ]; then
-  emergency_shell "no boot environments with kernels found"
-fi
-
-# This is the actual menuing system
 BE_SELECTED=0
 
 while true; do
   tput civis
 
   if [ ${BE_SELECTED} -eq 0 ]; then
+    # Populate the BE list, load any keys as necessary
+    populate_be_list "${BASE}/env"
+    if [ ! -f "${BASE}/env" ]; then
+      emergency_shell "no boot environments with kernels found"
+      continue
+    fi
+
     bootenv="$( draw_be "${BASE}/env" )"
     ret=$?
 
