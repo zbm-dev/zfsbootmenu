@@ -130,26 +130,33 @@ if ( defined( $config{EFI}{Copies} ) and ( $config{EFI}{Copies} gt 0 ) ) {
   if ( defined( $config{EFI}{Versioned} ) and ( $config{EFI}{Versioned} ) ) {
     $runConf{efi_target} =
       sprintf( "%s/%s-%s.EFI", $config{EFI}{ImageDir}, $runConf{kernel_prefix}, $runConf{version} );
+
+      my $glob = sprintf( "%s/%s-*.EFI", $config{Components}{ImageDir}, $runConf{kernel_prefix} );
+      my @efi  = sort glob($glob);
+
+      my $index = 0;
+      foreach my $entry (@efi) {
+        if ( $entry eq $runConf{efi_target} ) {
+          splice @efi, $index, 1;
+        }
+        $index++;
+      }
+
+      printf "Found %s existing EFI images, allowed to have a total of %s\n", scalar @efi, $config{EFI}{Copies};
+      while ( scalar @efi > $config{EFI}{Copies} ) {
+        my $image = shift(@efi);
+        printf "Removing %s\n", $image;
+        unlink $image;
+      }
   } else {
     $runConf{efi_target} = sprintf( "%s/%s.EFI", $config{EFI}{ImageDir}, $runConf{kernel_prefix} );
-  }
+    $runConf{efi_backup} = sprintf( "%s/%s-backup.EFI", ${config}{EFI}{ImageDir}, $runConf{kernel_prefix} );
 
-  my $glob = sprintf( "%s/%s-*.EFI", $config{Components}{ImageDir}, $runConf{kernel_prefix} );
-  my @efi  = sort glob($glob);
-
-  my $index = 0;
-  foreach my $entry (@efi) {
-    if ( $entry eq $runConf{efi_target} ) {
-      splice @efi, $index, 1;
+    if ( -f $runConf{efi_target} ) {
+      if ( safeCopy( $runConf{efi_target}, $runConf{efi_backup} ) ) {
+        printf "Created %s\n", $runConf{efi_backup};
+      }
     }
-    $index++;
-  }
-
-  printf "Found %s existing EFI images, allowed to have a total of %s\n", scalar @efi, $config{EFI}{Copies};
-  while ( scalar @efi > $config{EFI}{Copies} ) {
-    my $image = shift(@efi);
-    printf "Removing %s\n", $image;
-    unlink $image;
   }
 
   make_path $config{EFI}{ImageDir};
