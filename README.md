@@ -1,5 +1,6 @@
 # Introduction
 
+![](https://github.com/zdykstra/zfsbootmenu/workflows/ZFS%20Boot%20Menu/badge.svg)
 
 [![asciicast](https://asciinema.org/a/FN4gWtVUPPXzgZPrCjd8mK6Vz.svg)](https://asciinema.org/a/FN4gWtVUPPXzgZPrCjd8mK6Vz)
 
