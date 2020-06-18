@@ -9,7 +9,7 @@ check() {
     test -x "$tool" || return 1
   done
   # Verify grep exists
-  which grep >/dev/null 2>&1 || return 1
+  command -v grep >/dev/null 2>&1 || return 1
 
   return 255
 }
@@ -40,13 +40,13 @@ install() {
   dracut_install /usr/bin/zfs
   dracut_install /usr/bin/zpool
   # Workaround for zfsonlinux/zfs#4749 by ensuring libgcc_s.so(.1) is included
-  if [[ -n "$(ldd /usr/bin/zpool | grep -F 'libgcc_s.so')" ]]; then
+  if ldd /usr/bin/zpool | grep -qF 'libgcc_s.so'; then
     # Dracut will have already tracked and included it
     :;
-  elif command -v gcc-config 2>&1 1>/dev/null; then
+  elif command -v gcc-config >/dev/null 2>&1; then
     # On systems with gcc-config (Gentoo, Funtoo, etc.):
     # Use the current profile to resolve the appropriate path
-    dracut_install "/usr/lib/gcc/$(s=$(gcc-config -c); echo ${s%-*}/${s##*-})/libgcc_s.so.1"
+    dracut_install "/usr/lib/gcc/$(s=$(gcc-config -c); echo "${s%-*}/${s##*-}")/libgcc_s.so.1"
   elif [[ -n "$(ls /usr/lib/libgcc_s.so* 2>/dev/null)" ]]; then
     # Try a simple path first
     dracut_install /usr/lib/libgcc_s.so*
@@ -81,6 +81,8 @@ install() {
   dracut_install /usr/bin/tail
   dracut_install mbuffer
   dracut_install tr
+
+  # shellcheck disable=SC2154
   inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh"
   inst_simple "${moddir}/zfsbootmenu-preview.sh" "/bin/zfsbootmenu-preview.sh"
   inst_simple "${moddir}/zfs-chroot" "/bin/zfs-chroot"
@@ -98,9 +100,11 @@ install() {
   fi
 
   # Synchronize initramfs and system hostid
-  AA=`hostid | cut -b 1,2`
-  BB=`hostid | cut -b 3,4`
-  CC=`hostid | cut -b 5,6`
-  DD=`hostid | cut -b 7,8`
+  AA=$(hostid | cut -b 1,2)
+  BB=$(hostid | cut -b 3,4)
+  CC=$(hostid | cut -b 5,6)
+  DD=$(hostid | cut -b 7,8)
+
+  # shellcheck disable=SC2154
   echo -ne "\\x${DD}\\x${CC}\\x${BB}\\x${AA}" > "${initdir}/etc/hostid"
 }

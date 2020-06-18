@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . /lib/dracut-lib.sh
 
@@ -54,7 +54,7 @@ case "${root}" in
 
     info "ZFSBootMenu: Enabling menu after udev settles"
     ;;
-  zfsbootmenu:POOL\=*)
+  zfsbootmenu:POOL=*)
     # Prefer a specific pool for bootfs value, root=zfsbootmenu:POOL=zroot
     root="${root#zfsbootmenu:POOL=}"
     rootok=1
@@ -68,6 +68,7 @@ esac
 # modules to settle before mounting.
 if [ ${wait_for_zfs} -eq 1 ]; then
   ln -s /dev/null /dev/root 2>/dev/null
+  # shellcheck disable=SC2154
   initqueuedir="${hookdir}/initqueue/finished"
   test -d "${initqueuedir}" || {
     initqueuedir="${hookdir}/initqueue-finished"

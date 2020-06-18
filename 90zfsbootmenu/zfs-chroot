@@ -1,6 +1,6 @@
 #!/bin/bash
 BASE="$( mktemp -d /tmp/zfs.XXXX )"
-fs="$( zfs list -H -o name ${1} )"
+fs="$( zfs list -H -o name "${1}" )"
 
 if [ "$fs" != "${1}" ]; then
   echo "Filesystem $1 doesn't exist"
