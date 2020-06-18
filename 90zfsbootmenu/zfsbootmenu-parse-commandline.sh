@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# shellcheck disable=SC1091
 . /lib/dracut-lib.sh
 
 # Let the command line override our host id.
@@ -49,6 +50,7 @@ case "${root}" in
   ""|zfsbootmenu|zfsbootmenu:)
     # We'll take root unset, root=zfsbootmenu, or root=zfsbootmenu:
     root="zfsbootmenu"
+    # shellcheck disable=SC2034
     rootok=1
     wait_for_zfs=1
 
@@ -57,6 +59,7 @@ case "${root}" in
   zfsbootmenu:POOL=*)
     # Prefer a specific pool for bootfs value, root=zfsbootmenu:POOL=zroot
     root="${root#zfsbootmenu:POOL=}"
+    # shellcheck disable=SC2034
     rootok=1
     wait_for_zfs=1
 
