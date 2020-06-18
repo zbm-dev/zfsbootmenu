@@ -135,6 +135,7 @@ if [[ -n "${BOOTFS}" ]]; then
   fi
 
   # Boot up if we timed out, or if the enter key was pressed
+  # shellcheck disable=SC2034
   if [[ ${fast_boot} -eq 1 || $i -eq 0 ]]; then
     if ! key_wrapper "${BOOTFS}" ; then
       emergency_shell "unable to load required key for ${BOOTFS}"
@@ -208,6 +209,7 @@ while true; do
         # Only continue if a selection was made
         [ $ret -eq 0 ] || continue
 
+        # shellcheck disable=SC2162
         IFS=, read subkey selected_snap <<< "${selection}"
 
         # Parent of the selected dataset, must be nonempty

@@ -25,6 +25,7 @@ mount_zfs() {
 # arg1: value to substitute for empty lines (default: "enter")
 # prints: concatenated lines of stdin, joined by commas
 
+# shellcheck disable=SC2120
 csv_cat() {
   local CSV empty
   empty=${1:-enter}
@@ -55,6 +56,7 @@ draw_be() {
     --header="[ENTER] boot [ALT+K] kernel [ALT+D] set bootfs [ALT+S] snapshots [ALT+C] cmdline" \
     --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}" < "${env}" )"
   ret=$?
+  # shellcheck disable=SC2119
   csv_cat <<< "${selected}"
   return ${ret}
 }
@@ -89,6 +91,7 @@ draw_snapshots() {
     fzf --prompt "Snapshot > " --tac --expect=alt-x,alt-c \
         --header="[ENTER] duplicate [ALT+X] clone and promote [ALT+C] clone only [ESC] back" )"
   ret=$?
+  # shellcheck disable=SC2119
   csv_cat <<< "${selected}"
   return ${ret}
 }
