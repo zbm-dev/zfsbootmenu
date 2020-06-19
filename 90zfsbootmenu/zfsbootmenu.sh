@@ -190,15 +190,28 @@ while true; do
         exit
         ;;
       "alt-k")
-        selected_kernel="$( draw_kernel "${selected_be}" )"
+        selection="$( draw_kernel "${selected_be}" )"
         ret=$?
 
-        if [ $ret -eq 0 ]; then
-          if ! kexec_kernel "${selected_kernel}"; then
-            continue
-          fi
-          exit
-        fi
+        # Only continue if a selection was made
+        [ $ret -eq 0 ] || continue
+
+        # shellcheck disable=SC2162
+        IFS=, read subkey selected_kernel <<< "${selection}"
+
+        case "${subkey}" in
+          "enter")
+            if ! kexec_kernel "${selected_kernel}"; then
+              continue
+            fi
+            exit
+            ;;
+          "alt-d")
+            # shellcheck disable=SC2034
+            IFS=' ' read -r fs kpath initrd <<< "${selected_kernel}"
+            set_default_kernel "${fs}" "${kpath}"
+            ;;
+        esac
         ;;
       "alt-d")
         set_default_env "${selected_be}"
@@ -250,7 +263,7 @@ while true; do
         clone_target="${parent_ds}/${new_be}"
         echo -e "\nCreating ${clone_target} from ${selected_snap}"
 
-        case "$subkey" in
+        case "${subkey}" in
           "enter")
             duplicate_snapshot "${selected_snap}" "${clone_target}"
             ;;

@@ -70,11 +70,11 @@ draw_kernel() {
 
   benv="${1}"
 
-  selected="$( fzf --prompt "${benv} > " --tac \
-    --with-nth=2 --header="[ENTER] boot [ESC] back" < "${BASE}/${benv}/kernels" )"
-
+  selected="$( fzf --prompt "${benv} > " --tac --expect=alt-d \
+    --with-nth=2 --header="[ENTER] boot [ALT+D] set default [ESC] back" < "${BASE}/${benv}/kernels" )"
   ret=$?
-  echo "${selected}"
+  # shellcheck disable=SC2119
+  csv_cat <<< "${selected}"
   return ${ret}
 }
 
@@ -214,6 +214,42 @@ clone_snapshot() {
   if [ "x$promote" != "xnopromote" ]; then
     # Promotion must succeed to continue
     zfs promote "${target}" || return 1
+  fi
+
+  return 0
+}
+
+# arg1: ZFS filesystem
+# arg2: default kernel path (omit to unset default)
+# prints: nothing
+# returns: 0 on success, 1 otherwise
+
+set_default_kernel() {
+  local fs kernel
+
+  fs="$1"
+  [ -n "${fs}" ] || return 1
+
+  pool="${fs%%/*}"
+  [ -n "${pool}" ] || return 1
+
+  # Strip /boot/ to list only the file
+  kernel="${2#/boot/}"
+
+  # Make sure the pool is writable
+  if set_rw_pool "${pool}"; then
+    CLEAR_SCREEN=1
+    key_wrapper "${pool}"
+    CLEAR_SCREEN=0
+  else
+    return 1
+  fi
+
+  # Restore nonspecific default when no kernel specified
+  if [ -z "$kernel" ]; then
+    zfs inherit org.zfsbootmenu:kernel "${fs}" || return 1
+  else
+    zfs set org.zfsbootmenu:kernel="${kernel}" "${fs}" || return 1
   fi
 
   return 0
