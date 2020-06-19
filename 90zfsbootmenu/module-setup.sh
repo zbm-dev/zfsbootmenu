@@ -20,16 +20,36 @@ depends() {
 }
 
 installkernel() {
-  instmods zfs
-  instmods zcommon
-  instmods znvpair
-  instmods zavl
-  instmods zunicode
-  instmods zlua
-  instmods icp
-  instmods spl
-  instmods zlib_deflate
-  instmods zlib_inflate
+  local mod
+
+  local required_modules=(
+    "zfs"
+    "zcommon"
+    "znvpair"
+    "zavl"
+    "zunicode"
+    "zlua"
+    "icp"
+    "spl"
+  )
+
+  for mod in "${required_modules[@]}"
+  do
+    if ! instmods -c "${mod}" ; then
+      dfatal "Required kernel module '${mod}' is missing, aborting image creation!"
+      exit 1
+    fi
+  done
+
+  local optional_modules=(
+    "zlib_deflate"
+    "zlib_inflate"
+  )
+
+  for mod in "${optional_modules[@]}"
+  do
+    instmods "${mod}"
+  done
 }
 
 install() {

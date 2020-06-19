@@ -37,9 +37,10 @@ my ( %runConf, %config, %components );
 
 my $configfile = "/etc/zfsbootmenu/config.ini";
 
-$runConf{bootdir} = "/boot";
-$runConf{confd}   = "/etc/zfsbootmenu/dracut.conf.d";
-$runConf{version} = $VERSION;
+$runConf{bootdir}   = "/boot";
+$runConf{confd}     = "/etc/zfsbootmenu/dracut.conf.d";
+$runConf{version}   = $VERSION;
+$runConf{exit_code} = 0;
 
 GetOptions(
   "version|v=s" => \$runConf{version},
@@ -307,8 +308,12 @@ sub createInitramfs {
   if ( $status eq 0 ) {
     return $output_file;
   } else {
-    print Dumper(@output);
-    die "Failed to create $output_file";
+    foreach my $line (@output) {
+      print $line;
+    }
+    print "Failed to create $output_file\n";
+    $runConf{exit_code} = $status;
+    exit;
   }
 }
 
@@ -336,8 +341,12 @@ sub unifiedEFI {
   if ( $status eq 0 ) {
     return $output_file;
   } else {
-    print Dumper(@output);
-    die "Failed to create $output_file";
+    foreach my $line (@output) {
+      print $line;
+    }
+    print "Failed to create $output_file\n";
+    $runConf{exit_code} = $status;
+    exit;
   }
 }
 
@@ -361,4 +370,5 @@ sub cleanupMount {
     my $cmd = "umount $config{Global}{BootMountPoint}";
     execute($cmd);
   }
+  exit $runConf{exit_code};
 }
