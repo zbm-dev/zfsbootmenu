@@ -177,7 +177,7 @@ duplicate_snapshot() {
 # returns: 0 on success
 
 clone_snapshot() {
-  local selected target pool import_args output
+  local selected target pool import_args output opts parent
 
   selected="${1}"
   target="${2}"
@@ -187,13 +187,29 @@ clone_snapshot() {
   [ -n "$target" ] || return 1
 
   pool="${selected%%/*}"
+  parent="${selected%%@*}"
 
   if set_rw_pool "${pool}"; then
     key_wrapper "${pool}"
   fi
 
+  while read -r PROPERTY VALUE
+  do
+    case "${PROPERTY}" in
+      "mountpoint")
+        # explicitly set in the clone
+        ;;
+      "canmount")
+        # explicitly set in the clone
+        ;;
+      *)
+        opts+=("-o" "${PROPERTY}=${VALUE}")
+        ;;
+    esac
+  done <<< "$( zfs get -o property,value -s local,received -H all "${parent}" )"
+
   # Clone must succeed to continue
-  zfs clone -o mountpoint=/ -o canmount=noauto "${selected}" "${target}" || return 1
+  zfs clone -o mountpoint=/ -o canmount=noauto "${opts[@]}" "${selected}" "${target}" || return 1
 
   if [ "x$promote" != "xnopromote" ]; then
     # Promotion must succeed to continue
