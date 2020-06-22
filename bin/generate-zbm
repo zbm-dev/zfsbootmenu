@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-our $VERSION = '1.1';
+our $VERSION = '1.2';
 
 use Getopt::Long qw(:config no_ignore_case auto_version);
 use Pod::Usage qw(pod2usage);
@@ -44,13 +44,23 @@ $runConf{exit_code} = 0;
 
 GetOptions(
   "version|v=s" => \$runConf{version},
-  "pkgname|p=s" => \$runConf{pkgname},
-  "action|a=s"  => \$runConf{action},
-  "update|u=s"  => \$runConf{update},
   "kernel|k=s"  => \$runConf{kernel},
   "bootdir|b=s" => \$runConf{bootdir},
   "confd|C=s"   => \$runConf{confd},
   "config|c=s"  => \$configfile,
+  "help|h"      => sub {
+    my $bin   = basename($0);
+    my $help  = << "EOF";
+Usage: $bin [options]
+  -v|--version    Manually set the version
+  -k|--kernel     Manually set the kernel version
+  -b|--bootdir    Manually set the location for the generated boot files
+  -C|--confd      Manually set the Dracut configuration directory
+  -c|--config     Manually set the configuration file
+EOF
+    print $help;
+    exit;
+  },
 );
 
 # Sanity check, ensure we have a configuration file
