@@ -261,7 +261,8 @@ while true; do
         [ -n "${new_be}" ] || continue
 
         clone_target="${parent_ds}/${new_be}"
-        echo -e "\nCreating ${clone_target} from ${selected_snap}"
+        be_size="$( zfs list -H -o refer "${selected_snap}" )"
+        echo -e "\nCreating ${clone_target} from ${selected_snap} (${be_size})"
 
         case "${subkey}" in
           "enter")
