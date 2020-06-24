@@ -233,6 +233,14 @@ while true; do
         tput clear
         tput cnorm
 
+        case "${subkey}" in
+          "alt-d")
+            draw_diff "${selected_snap}"
+            BE_SELECTED=1
+            continue
+          ;;
+        esac
+
         # Strip parent datasets
         pre_populated="${selected_snap##*/}"
         # Strip snapshot name and append NEW

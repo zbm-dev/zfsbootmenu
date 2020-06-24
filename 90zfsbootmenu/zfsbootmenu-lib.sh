@@ -88,12 +88,47 @@ draw_snapshots() {
   benv="${1}"
 
   selected="$( zfs list -t snapshot -H -o name "${benv}" |
-    fzf --prompt "Snapshot > " --tac --expect=alt-x,alt-c \
-        --header="[ENTER] duplicate [ALT+X] clone and promote [ALT+C] clone only [ESC] back" )"
+    fzf --prompt "Snapshot > " --tac --expect=alt-x,alt-c,alt-d \
+        --header="[ENTER] duplicate [ALT+X] clone and promote [ALT+C] clone only [ALT+D] show diff [ESC] back" )"
   ret=$?
   # shellcheck disable=SC2119
   csv_cat <<< "${selected}"
   return ${ret}
+}
+
+# arg1: ZFS snapshot
+# arg2: ZFS filesystem
+# prints: nothing
+# returns: nothing
+
+draw_diff() {
+  local snapshot diff_target mnt
+
+  snapshot="${1}"
+  pool="${snapshot%%/*}"
+
+  if set_rw_pool "${pool}"; then
+    CLEAR_SCREEN=1
+    key_wrapper "${pool}"
+    CLEAR_SCREEN=0
+  else
+    return
+  fi
+
+  diff_target="${snapshot%%@*}"
+  if ! mnt="$( mount_zfs "${diff_target}" )" ; then
+    return
+  fi
+
+  # shellcheck disable=SC2016
+  ( zfs diff -H "${snapshot}" "${diff_target}" & echo $! >&3 ) 3>/tmp/diff.pid | \
+    sed "s,${mnt},," | \
+    fzf --prompt "Files > " \
+    --bind 'esc:execute-silent( kill $( cat /tmp/diff.pid ) )+abort'
+
+  test -f /tmp/diff.pid  && rm /tmp/diff.pid
+  umount "${mnt}"
+  return
 }
 
 # arg1: bootfs kernel initramfs
