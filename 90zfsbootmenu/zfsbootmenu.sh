@@ -152,6 +152,9 @@ fi
 # Look for BEs with kernels and present a selection menu
 ##
 
+# Clear screen before a possible password prompt
+tput clear
+
 BE_SELECTED=0
 
 while true; do
