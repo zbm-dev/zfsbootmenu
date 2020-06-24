@@ -192,11 +192,10 @@ duplicate_snapshot() {
 
   pool="${selected%%/*}"
 
-  if set_rw_pool "${pool}"; then
-    CLEAR_SCREEN=0
-    key_wrapper "${pool}"
-    CLEAR_SCREEN=1
-  fi
+  set_rw_pool "${pool}" || return 1
+  CLEAR_SCREEN=0
+  key_wrapper "${pool}"
+  CLEAR_SCREEN=1
 
   zfs send "${selected}" | mbuffer \
       | zfs recv -u -o canmount=noauto -o mountpoint=/ "${target}"
@@ -224,9 +223,8 @@ clone_snapshot() {
   pool="${selected%%/*}"
   parent="${selected%%@*}"
 
-  if set_rw_pool "${pool}"; then
-    key_wrapper "${pool}"
-  fi
+  set_rw_pool "${pool}" || return 1
+  key_wrapper "${pool}"
 
   while read -r PROPERTY VALUE
   do
@@ -272,13 +270,10 @@ set_default_kernel() {
   kernel="${2#/boot/}"
 
   # Make sure the pool is writable
-  if set_rw_pool "${pool}"; then
-    CLEAR_SCREEN=1
-    key_wrapper "${pool}"
-    CLEAR_SCREEN=0
-  else
-    return 1
-  fi
+  set_rw_pool "${pool}" || return 1
+  CLEAR_SCREEN=1
+  key_wrapper "${pool}"
+  CLEAR_SCREEN=0
 
   # Restore nonspecific default when no kernel specified
   if [ -z "$kernel" ]; then
@@ -296,9 +291,8 @@ set_default_env() {
 
   pool="${selected%%/*}"
 
-  if set_rw_pool "${pool}"; then
-    key_wrapper "${pool}"
-  fi
+  set_rw_pool "${pool}" || return 1
+  key_wrapper "${pool}"
 
   # shellcheck disable=SC2034
   if output="$( zpool set bootfs="${selected}" "${pool}" )"; then
@@ -502,6 +496,21 @@ export_pool() {
   return ${ret}
 }
 
+# prints: nothing
+# returns: 0 if suspend device found, 1 otherwise
+
+has_resume_device() {
+  # These partition types come from the dracut 95resume module
+  for stype in suspend swsuspend swsupend; do
+    if blkid -t TYPE="${stype}" >/dev/null 2>&1; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+
 # arg1: pool name
 # prints: nothing
 # returns: 0 on success, 1 on failure
@@ -510,17 +519,50 @@ set_rw_pool() {
   local pool
   pool="${1}"
 
-  if [ "$( zpool get -H -o value readonly "${pool}" )" = "on" ]; then
-    import_args="${import_args/readonly=on/readonly=off}"
-    if export_pool "${pool}" ; then
-      import_pool "${pool}"
-      return $?
-    else
+  # Nothing to do if the pool is not read-only
+  [ "x$( zpool get -H -o value readonly "${pool}" )" = "xon" ] || return 0
+
+  # Try to avoid importing writable when a resume device is found
+  if has_resume_device; then
+    # Make sure the warning is prominent
+    tput clear
+    tput cnorm
+    tput cup 0 0
+
+    cat <<-EOF
+	WARNING!!!
+
+	This system appears to have an active suspend partition.
+
+	The action you are requesting requires the ZFS pool
+
+	    ${pool}
+
+	be imported read-write. Importing read-write and then resuming
+	from an active suspend partition may DESTROY YOUR POOL.
+
+	If you are certain you want to proceed, type NORESUME. You are
+	also STRONGLY ADVISED to boot with the "noresume" option added to
+	your kernel command-line to prevent your system from attempting
+	to restore this image.
+
+	Proceed [No] ?
+	EOF
+
+    read -r decision
+
+    if [ "x${decision}" != "xNORESUME" ]; then
       return 1
     fi
-  else
-    return 0
   fi
+
+  import_args="${import_args/readonly=on/readonly=off}"
+  if export_pool "${pool}" ; then
+    import_pool "${pool}"
+    return $?
+  fi
+
+  return 1
 }
 
 # arg1: ZFS filesystem
