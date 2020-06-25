@@ -3,8 +3,7 @@
 # ZFS boot menu functions
 
 # arg1: ZFS filesystem name
-# arg2: mountpoint
-# prints: No output
+# prints: mountpoint
 # returns: 0 on success
 
 mount_zfs() {
@@ -15,8 +14,14 @@ mount_zfs() {
   mnt="${BASE}/${fs}/mnt"
   test -d "${mnt}" || mkdir -p "${mnt}"
 
-  mount -o zfsutil -t zfs "${fs}" "${mnt}"
-  ret=$?
+  # zfsutil is required for non-legacy mounts and omitted for legacy mounts
+  if [ "x$(zfs get -H -o value mountpoint "${fs}")" = "xlegacy" ]; then
+    mount -t zfs "${fs}" "${mnt}"
+    ret=$?
+  else
+    mount -o zfsutil -t zfs "${fs}" "${mnt}"
+    ret=$?
+  fi
 
   echo "${mnt}"
   return ${ret}
@@ -309,7 +314,6 @@ set_default_env() {
 }
 
 # arg1: ZFS filesystem
-# arg2: mountpoint
 # prints: nothing
 # returns: 0 if kernels were found, 1 otherwise
 
@@ -678,7 +682,7 @@ key_wrapper() {
 # returns: 0 on success, 1 on failure
 
 populate_be_list() {
-  local be_list
+  local be_list fs mnt active
 
   be_list="${1}"
   [ -n "${be_list}" ] || return 1
@@ -686,18 +690,28 @@ populate_be_list() {
   # Truncate the list to avoid stale entries
   : > "${be_list}"
 
-  # Find any filesystems that mount to /, see if there are any kernels present
-  for FS in $( zfs list -H -o name,mountpoint | grep -E "/$" | cut -f1 ); do
-    if ! key_wrapper "${FS}" ; then
+  # Find valid BEs
+  while IFS=$'\t' read -r fs mnt active; do
+    if [ "x${mnt}" = "x/" ]; then
+      # When mountpoint=/, org.zfsbootmenu:active=off hides this BE
+      [ "x${active}" = "xoff" ] && continue
+    elif [ "x${mnt}" = "xlegacy" ]; then
+      # When mountpoint=legacy, org.zfsbootmenu:active=on may show this BE
+      [ "x${active}" = "xon" ] || continue
+    else
+      # All other datasets are ignored
       continue
     fi
 
-    # Check for kernels under the mountpoint, add to our BE list
+    # Unlock if necessary
+    key_wrapper "${fs}" || continue
+
+    # Candidates are added to BE list if they have kernels in /boot
     # shellcheck disable=SC2034
-    if output="$( find_be_kernels "${FS}" )" ; then
-      echo "${FS}" >> "${be_list}"
+    if output="$( find_be_kernels "${fs}" )" ; then
+      echo "${fs}" >> "${be_list}"
     fi
-  done
+  done <<< "$(zfs list -H -o name,mountpoint,org.zfsbootmenu:active)"
 
   return 0
 }

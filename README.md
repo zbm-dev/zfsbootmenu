@@ -164,6 +164,9 @@ The following properties can be set at whatever level of the pool you'd prefer t
 
 * `org.zfsbootmenu:kernel` this can be a partial kernel name `(5.4)` or an explicit name `(vmlinuz-5.6.11_1)`.
 * `org.zfsbootmenu:commandline` set the list of kernel commandline options to be passed to the final OS. Do not set `root=`, this is set for you.
+* `org.zfsbootmenu:active` controls whether boot environments appear in or are hidden from ZFS Boot Menu:
+  - If a boot environment has the property `mountpoint=/`, set `org.zfsbootmenu:active=off` to *hide* the environment. For any other value, including not set, the boot environment will be shown.
+  - If a boot environment has the property `mountpoint=legacy`, set `org.zfsbootmenu:active=on` to *show* the environment. For any other value, including not set, the boot environment will be hidden.
 
 
 # initramfs creation
