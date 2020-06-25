@@ -292,7 +292,9 @@ set_default_env() {
   pool="${selected%%/*}"
 
   set_rw_pool "${pool}" || return 1
+  CLEAR_SCREEN=1
   key_wrapper "${pool}"
+  CLEAR_SCREEN=0
 
   # shellcheck disable=SC2034
   if output="$( zpool set bootfs="${selected}" "${pool}" )"; then
