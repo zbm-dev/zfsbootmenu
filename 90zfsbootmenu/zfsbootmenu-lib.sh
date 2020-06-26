@@ -682,7 +682,7 @@ key_wrapper() {
 # returns: 0 on success, 1 on failure
 
 populate_be_list() {
-  local be_list fs mnt active
+  local be_list fs mnt active candidates
 
   be_list="${1}"
   [ -n "${be_list}" ] || return 1
@@ -693,16 +693,19 @@ populate_be_list() {
   # Find valid BEs
   while IFS=$'\t' read -r fs mnt active; do
     if [ "x${mnt}" = "x/" ]; then
-      # When mountpoint=/, org.zfsbootmenu:active=off hides this BE
+      # When mountpoint=/, BE is a candidate unless org.zfsbootmenu:active=off
       [ "x${active}" = "xoff" ] && continue
     elif [ "x${mnt}" = "xlegacy" ]; then
-      # When mountpoint=legacy, org.zfsbootmenu:active=on may show this BE
+      # When mountpoint=legacy, BE is a candidate only if org.zfsbootmenu:active=on
       [ "x${active}" = "xon" ] || continue
     else
       # All other datasets are ignored
       continue
     fi
+    candidates+=( "${fs}" )
+  done <<< "$(zfs list -H -o name,mountpoint,org.zfsbootmenu:active)"
 
+  for fs in "${candidates[@]}"; do
     # Unlock if necessary
     key_wrapper "${fs}" || continue
 
@@ -711,8 +714,7 @@ populate_be_list() {
     if output="$( find_be_kernels "${fs}" )" ; then
       echo "${fs}" >> "${be_list}"
     fi
-  done <<< "$(zfs list -H -o name,mountpoint,org.zfsbootmenu:active)"
-
+  done
   return 0
 }
 
