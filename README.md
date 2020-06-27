@@ -223,7 +223,7 @@ Copies=0
 * `ImageDir` This is the destination directory for the unified EFI file.
 * `Versioned` Set to 1 to create versioned files. Set to 0 to disable a version suffix, which is useful if you have static bootloader entries pointing to ZFS Boot Menu.
 * `Copies` This controls the number of copies to keep, in addition to the file that is currently being created.
-
+* `Stub` This is the path to the stub loader used to boot the unified EFI image. If not set, a default of `/usr/lib/gummiboot/linuxx64.efi.stub` is assumed.
 
 # Native encryption
 
