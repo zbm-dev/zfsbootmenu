@@ -178,10 +178,9 @@ The following properties can be set at whatever level of the pool you'd prefer t
  * [mbuffer](http://www.maier-komor.de/mbuffer.html)
  * [perl Config::IniFiles](https://metacpan.org/pod/Config::IniFiles)
 
-If you want to create an unified EFI file (kernel, initramfs, command line), the following additional tools will be needed:
+If you want to create an unified EFI file (kernel, initramfs, command line), you will also need:
 
-* gnu objcopy (typically packaged as binutils)
-* linuxx64.efi.stub (typically packaged as gummiboot)
+* linuxx64.efi.stub (typically packaged with gummiboot)
 
 Your distribution should have packages for these already.
 
