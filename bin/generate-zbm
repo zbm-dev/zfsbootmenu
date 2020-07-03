@@ -125,7 +125,14 @@ if ( ( defined $runConf{kernel} ) and ( length $runConf{kernel} ) ) {
 }
 
 $runConf{bootdir} = dirname( $runConf{kernel} );
-( $runConf{kernel_prefix}, $runConf{kernel_version} ) = split( '-', basename( $runConf{kernel} ) );
+
+if ( basename( $runConf{kernel} ) =~ m/(vmlinux|vmlinuz|linux|kernel)-(\S+)/i ) {
+  $runConf{kernel_prefix} = $1;
+  $runConf{kernel_version} = $2;
+} else {
+  printf "Unable to determine kernel prefix and version from %s", $runConf{kernel};
+  exit;
+}
 
 # We need to create an initramfs for all cases other than unifiedEFI
 if ( defined( $config{Components}{Copies} ) and ( $config{Components}{Copies} gt 0 ) ) {
