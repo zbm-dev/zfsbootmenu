@@ -322,8 +322,8 @@ find_be_kernels() {
   fs="${1}"
 
 
-  local kernel version kernel_records
-  local defaults def_kernel def_version def_kernel_file def_args def_args_file
+  local kernel kernel_base labels version kernel_records
+  local defaults def_kernel def_kernel_file def_args def_args_file
 
   # Check if /boot even exists in the environment
   mnt="$( mount_zfs "${fs}" )"
@@ -338,23 +338,38 @@ find_be_kernels() {
   : > "${kernel_records}"
 
   # shellcheck disable=SC2012,2086
-  for kernel in $( ls ${mnt}/boot/vmlinux-* \
-    ${mnt}/boot/vmlinuz-* \
-    ${mnt}/boot/kernel-* \
-    ${mnt}/boot/linux-* 2>/dev/null | sort -V ); do
+  for kernel in $( ls \
+      ${mnt}/boot/{{vm,}linu{x,z},kernel}{,-*} 2>/dev/null | sort -V ); do
+    # Pull basename and validate
+    kernel=$( basename "${kernel}" )
+    [ -e "${mnt}/boot/${kernel}" ] || continue
 
-    kernel="${kernel#${mnt}}"
-    # shellcheck disable=SC2001
-    version=$( echo "$kernel" | sed -e "s,^[^0-9]*-,,g" )
+    # Kernel "base" extends to first hyphen
+    kernel_base="${kernel%%-*}"
+    # Kernel "version" is everything after base and may be empty
+    version="${kernel#${kernel_base}}"
+    version="${version#-}"
 
-    for i in "initrd.img-${version}" "initrd-${version}.img" "initrd-${version}.gz" \
-      "initrd-${version}" "initramfs-${version}.img"; do
+    # initramfs images can take many forms, look for a sensible one
+    labels=( "$kernel" )
+    if [ -n "$version" ]; then
+      labels+=( "$version" )
+    fi
 
-      if test -e "${mnt}/boot/${i}" ; then
-        echo "${fs} ${kernel} /boot/${i}" >> "${kernel_records}"
-        break
-      fi
+    # Use a mess of loops instead better brace expansions to control priorities
+    for ext in {.img,""}{"",.{gz,bz2,xz,lzma,lz4,lzo,zstd}}; do
+      for pfx in initramfs initrd; do
+        for lbl in "${labels[@]}"; do
+          for i in "${pfx}-${lbl}${ext}" "${pfx}${ext}-${lbl}"; do
+            if [ -e "${mnt}/boot/${i}" ]; then
+              echo "${fs} /boot/${kernel} /boot/${i}" >> "${kernel_records}"
+              break 4
+            fi
+          done
+        done
+      done
     done
+
   done
 
   defaults="$( select_kernel "${fs}" )"
@@ -371,11 +386,7 @@ find_be_kernels() {
     return 1
   fi
 
-  def_kernel=$( basename "${def_kernel}" )
-
-  # shellcheck disable=SC2001
-  def_version=$( echo "$def_kernel" | sed -e "s,^[^0-9]*-,,g" )
-  echo "${def_version}" > "${def_kernel_file}"
+  basename "${def_kernel}" > "${def_kernel_file}"
 
   def_args="$( find_kernel_args "${fs}" "${mnt}" )"
   echo "${def_args}" > "${def_args_file}"
