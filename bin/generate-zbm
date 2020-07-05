@@ -10,6 +10,7 @@ use Pod::Usage qw(pod2usage);
 use File::Basename;
 use File::Temp qw(tempfile tempdir);
 use File::Copy;
+use File::stat;
 use File::Path qw(make_path remove_tree);
 use Sort::Versions;
 
@@ -378,6 +379,11 @@ sub safeCopy {
     printf "Unable to copy %s to %s: %s\n", $source, $dest, $!;
     return 0;
   }
+
+  # Copy the access and mod times if possible
+  my $sb = stat $source;
+  utime( $sb->atime, $sb->mtime, $dest );
+
   return 1;
 }
 
