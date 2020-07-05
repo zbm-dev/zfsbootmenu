@@ -22,11 +22,13 @@ $Data::Dumper::Purity   = 1;
 use Config::IniFiles;
 use Sort::Versions;
 
+sub versionedKernel;
 sub latestKernel;
 sub createInitramfs;
 sub unifiedEFI;
 sub execute;
 sub safeCopy;
+sub nonempty;
 sub cleanupMount;
 
 BEGIN {
@@ -46,6 +48,8 @@ $runConf{exit_code} = 0;
 GetOptions(
   "version|v=s" => \$runConf{version},
   "kernel|k=s"  => \$runConf{kernel},
+  "kver|K=s"    => \$runConf{kernel_version},
+  "prefix|p=s"  => \$runConf{kernel_prefix},
   "bootdir|b=s" => \$runConf{bootdir},
   "confd|C=s"   => \$runConf{confd},
   "config|c=s"  => \$configfile,
@@ -54,8 +58,10 @@ GetOptions(
     my $help  = << "EOF";
 Usage: $bin [options]
   -v|--version    Manually set the version
-  -k|--kernel     Manually set the kernel version
-  -b|--bootdir    Manually set the location for the generated boot files
+  -k|--kernel     Manually set the path to the kernel
+  -K|--kver       Manually set the kernel version
+  -p|--prefix     Manually set the output kernel prefix
+  -b|--bootdir    Manually set the location to search for kernel files
   -C|--confd      Manually set the Dracut configuration directory
   -c|--config     Manually set the configuration file
 EOF
@@ -82,13 +88,13 @@ unless ( ( defined $config{Global}{ManageImages} ) and ( $config{Global}{ManageI
 }
 
 # Override the location of our specific dracut.conf.d directory
-if ( defined $config{Global}{DracutConfDir} ) {
+if ( nonempty $config{Global}{DracutConfDir} ) {
   $runConf{confd} = $config{Global}{DracutConfDir};
 }
 
 # Ensure our bootloader partition is mounted
 $runConf{umount_on_exit} = 0;
-if ( ( defined $config{Global}{BootMountPoint} ) and ( length $config{Global}{BootMountPoint} ) ) {
+if ( nonempty $config{Global}{BootMountPoint} ) {
   my $mounted = 0;
 
   my $cmd    = "mount";
@@ -115,24 +121,44 @@ if ( ( defined $config{Global}{BootMountPoint} ) and ( length $config{Global}{Bo
 my $dir     = File::Temp->newdir();
 my $tempdir = $dir->dirname;
 
-# Set our kernel from the CLI, or pick the latest available in /boot
-if ( ( defined $runConf{kernel} ) and ( length $runConf{kernel} ) ) {
-  unless ( -f $runConf{kernel} ) {
-    printf "The provided kernel %s was not found, unable to continue", $runConf{kernel};
+if ( ! nonempty $runConf{kernel} ) {
+  # Try to determine a kernel file when one was not provided
+  if ( ! nonempty $runConf{kernel_version} ) {
+    $runConf{kernel} = latestKernel;
+  } else {
+    $runConf{kernel} = versionedKernel $runConf{kernel_version};
+  }
+
+  # Make sure a kernel was found
+  unless ( nonempty $runConf{kernel} ) {
+    print "Unable to choose a kernel file, cannot continue\n";
     exit;
   }
 } else {
-  $runConf{kernel} = latestKernel;
+  # Make sure the provided kernel file exists
+  unless ( -f $runConf{kernel} ) {
+    printf "The provided kernel %s was not found, unable to continue\n", $runConf{kernel};
+    exit;
+  }
 }
 
-$runConf{bootdir} = dirname( $runConf{kernel} );
-
-if ( basename( $runConf{kernel} ) =~ m/(vmlinux|vmlinuz|linux|kernel)-(\S+)/i ) {
-  $runConf{kernel_prefix} = $1;
-  $runConf{kernel_version} = $2;
-} else {
-  printf "Unable to determine kernel prefix and version from %s", $runConf{kernel};
-  exit;
+# Try to determine kernel_prefix or kernel_version if necessary
+if ( ! ( nonempty $runConf{kernel_prefix} and nonempty $runConf{kernel_version} ) ) {
+  basename ( $runConf{kernel} ) =~ m/([^-\s]+)(-(\S+))?/;
+  if ( ! nonempty $runConf{kernel_prefix} ) {
+    unless ( defined $1 ) {
+      printf "Unable to determine kernel prefix from %s\n", $runConf{kernel};
+      exit;
+    }
+    $runConf{kernel_prefix} = $1;
+  }
+  if ( ! nonempty $runConf{kernel_version} ) {
+    unless ( defined $3 ) {
+      printf "Unable to detrmine kernel version from %s\n", $runConf{kernel};
+      exit;
+    }
+    $runConf{kernel_version} = $3;
+  }
 }
 
 # We need to create an initramfs for all cases other than unifiedEFI
@@ -302,6 +328,19 @@ END {
   cleanupMount;
 }
 
+# Finds specifically versioned kernel in /boot
+sub versionedKernel {
+  my ($kver, ) = @_;
+  foreach my $prefix (qw(vmlinuz linux vmlinux kernel)) {
+    my $kernel = join( '-', ( $prefix, $kver ) );
+    if ( -f join( '/', ( $runConf{bootdir}, $kernel ) ) ) {
+      return $kernel;
+    }
+  }
+
+  return;
+}
+
 # Finds the latest kernel in /boot
 sub latestKernel {
   my @prefixes = ( "vmlinux*", "vmlinuz*", "linux*", "kernel*" );
@@ -313,6 +352,8 @@ sub latestKernel {
       return $_;
     }
   }
+
+  return;
 }
 
 # Returns the path to an initramfs, or dies with an error
@@ -385,6 +426,11 @@ sub safeCopy {
   utime( $sb->atime, $sb->mtime, $dest );
 
   return 1;
+}
+
+sub nonempty {
+  my ($item,) = @_;
+  return ( defined $item and length $item );
 }
 
 sub cleanupMount {
