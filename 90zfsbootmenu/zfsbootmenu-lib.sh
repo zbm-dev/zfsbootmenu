@@ -167,6 +167,7 @@ kexec_kernel() {
   fi
 
   cli_args="$( find_kernel_args "${fs}" "${mnt}" )"
+  root_prefix="$( find_root_prefix "${fs}" "${mnt}" )"
 
   # restore kernel log level just before we kexec
   # shellcheck disable=SC2154
@@ -174,7 +175,7 @@ kexec_kernel() {
 
   kexec -l "${mnt}${kernel}" \
     --initrd="${mnt}${initramfs}" \
-    --command-line="root=zfs:${fs} ${cli_args}"
+    --command-line="root=${root_prefix}${fs} ${cli_args}"
 
   umount "${mnt}"
 
@@ -422,6 +423,61 @@ select_kernel() {
   fi
 
   echo "${kexec_args}"
+}
+
+# arg1: ZFS filesystem
+# arg2: path for the mounted filesystem
+# prints: discovered prefix for root= command-line argument
+
+find_root_prefix() {
+  local zfsbe_mnt zfsbe_fs prefix
+  zfsbe_fs="${1}"
+  zfsbe_mnt="${2}"
+
+  # Grab the root prefix from a property if possible
+  if prefix="$( zfs get -H -o value org.zfsbootmenu:rootprefix "${zfsbe_fs}" )"; then
+    if [ "${prefix}" != "-" ]; then
+      echo "${prefix}"
+      return
+    fi
+  fi
+
+  # Try looking at os-release in BE
+  if [ -n "${zfsbe_mnt}" ]; then
+    prefix=$(
+      # OS type is in ID and ID_LIKE variables; /etc supersedes /usr/lib
+      unset ID ID_LIKE
+      for osrel in ${zfsbe_mnt}/{usr/lib,etc}/os-release; do
+        if [ -f "${osrel}" ]; then
+          # shellcheck disable=SC1090
+          . "${osrel}" >/dev/null 2>&1
+        fi
+      done
+
+      for ostype in $ID $ID_LIKE; do
+        case "$ostype" in
+          void|ubuntu|debian)
+            echo "zfs:"
+            break
+            ;;
+          arch)
+            echo "zfs="
+            break
+            ;;
+          *)
+            ;;
+        esac
+      done
+    )
+
+    if [ -n "${prefix}" ]; then
+      echo "${prefix}"
+      return;
+    fi
+  fi
+
+  # Just return a default
+  echo "zfs:"
 }
 
 # arg1: ZFS filesystem
