@@ -97,18 +97,10 @@ $runConf{umount_on_exit} = 0;
 if ( nonempty $config{Global}{BootMountPoint} ) {
   my $mounted = 0;
 
-  my $cmd    = "mount";
+  my $cmd    = "mountpoint $config{Global}{BootMountPoint}";
   my @output = execute($cmd);
   my $status = pop(@output);
-  foreach my $line (@output) {
-    chomp($line);
-    if ( $line =~ m/$config{Global}{BootMountPoint}/ ) {
-      $mounted = 1;
-      last;
-    }
-  }
-
-  unless ($mounted) {
+  unless ( $status eq 0 ) {
     print "Mounting $config{Global}{BootMountPoint}\n";
     $cmd = "mount $config{Global}{BootMountPoint}";
     my @output = execute($cmd);
