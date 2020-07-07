@@ -167,6 +167,7 @@ The following properties can be set at whatever level of the pool you'd prefer t
 * `org.zfsbootmenu:active` controls whether boot environments appear in or are hidden from ZFS Boot Menu:
   - If a boot environment has the property `mountpoint=/`, set `org.zfsbootmenu:active=off` to *hide* the environment. For any other value, including not set, the boot environment will be shown.
   - If a boot environment has the property `mountpoint=legacy`, set `org.zfsbootmenu:active=on` to *show* the environment. For any other value, including not set, the boot environment will be hidden.
+* `org.zfsbootmenu:rootprefix` controls the prefix substituted when setting the `root=<PREFIX><boot-environment>` command-line argument for a selected boot environment. By default, the prefix is `zfs:` unless the boot environment appears to be Arch Linux; for Arch, the default is `zfs=`. Set `org.zfsbootmenu:rootprefix` on any boot environment or its parent to override this default. Remember to include any necessary delimiters, like `:` or `=`.
 
 
 # initramfs creation
