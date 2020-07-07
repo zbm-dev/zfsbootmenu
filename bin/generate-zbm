@@ -111,8 +111,18 @@ if ( nonempty $config{Global}{BootMountPoint} ) {
   unless ($mounted) {
     print "Mounting $config{Global}{BootMountPoint}\n";
     $cmd = "mount $config{Global}{BootMountPoint}";
-    execute($cmd);
-    $runConf{umount_on_exit} = 1;
+    my @output = execute($cmd);
+    my $status = pop(@output);
+    if ( $status eq 0 ) {
+      $runConf{umount_on_exit} = 1;
+    } else {
+      foreach my $line (@output) {
+        print $line;
+      }
+      printf "Unable to mount %s", $config{Global}{BootMountPoint};
+      $runConf{exit_code} = $status;
+      exit;
+    }
   }
 }
 
