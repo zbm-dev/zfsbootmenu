@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-our $VERSION = '1.2';
+our $VERSION = '1.3';
 
 use Getopt::Long qw(:config no_ignore_case auto_version);
 use Pod::Usage qw(pod2usage);
