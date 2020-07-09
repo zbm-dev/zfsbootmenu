@@ -175,7 +175,7 @@ kexec_kernel() {
 
   kexec -l "${mnt}${kernel}" \
     --initrd="${mnt}${initramfs}" \
-    --command-line="root=${root_prefix}${fs} ${cli_args}"
+    --command-line="${root_prefix}${fs} ${cli_args}"
 
   umount "${mnt}"
 
@@ -457,7 +457,7 @@ find_root_prefix() {
       for ostype in $ID $ID_LIKE; do
         case "$ostype" in
           void|ubuntu|debian)
-            echo "zfs:"
+            echo "root=zfs:"
             break
             ;;
           arch)
@@ -477,7 +477,7 @@ find_root_prefix() {
   fi
 
   # Just return a default
-  echo "zfs:"
+  echo "root=zfs:"
 }
 
 # arg1: ZFS filesystem
