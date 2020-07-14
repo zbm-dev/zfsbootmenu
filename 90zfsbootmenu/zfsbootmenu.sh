@@ -138,6 +138,8 @@ if [[ -n "${BOOTFS}" ]]; then
   # Boot up if we timed out, or if the enter key was pressed
   # shellcheck disable=SC2034
   if [[ ${fast_boot} -eq 1 || $i -eq 0 ]]; then
+    # Clear screen before a possible password prompt
+    tput clear
     if ! key_wrapper "${BOOTFS}" ; then
       emergency_shell "unable to load required key for ${BOOTFS}"
     elif output=$( find_be_kernels "${BOOTFS}" ); then
