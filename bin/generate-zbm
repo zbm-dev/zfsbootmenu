@@ -123,12 +123,18 @@ if ( nonempty $config{Global}{BootMountPoint} ) {
 my $dir     = File::Temp->newdir();
 my $tempdir = $dir->dirname;
 
-if ( ! nonempty $runConf{kernel} ) {
+if ( nonempty $runConf{kernel} ) {
+  # Make sure the provided kernel file exists
+  unless ( -f $runConf{kernel} ) {
+    printf "The provided kernel %s was not found, unable to continue\n", $runConf{kernel};
+    exit;
+  }
+} else {
   # Try to determine a kernel file when one was not provided
-  if ( ! nonempty $runConf{kernel_version} ) {
-    $runConf{kernel} = latestKernel;
-  } else {
+  if ( nonempty $runConf{kernel_version} ) {
     $runConf{kernel} = versionedKernel $runConf{kernel_version};
+  } else {
+    $runConf{kernel} = latestKernel;
   }
 
   # Make sure a kernel was found
@@ -136,25 +142,19 @@ if ( ! nonempty $runConf{kernel} ) {
     print "Unable to choose a kernel file, cannot continue\n";
     exit;
   }
-} else {
-  # Make sure the provided kernel file exists
-  unless ( -f $runConf{kernel} ) {
-    printf "The provided kernel %s was not found, unable to continue\n", $runConf{kernel};
-    exit;
-  }
 }
 
 # Try to determine kernel_prefix or kernel_version if necessary
-if ( ! ( nonempty $runConf{kernel_prefix} and nonempty $runConf{kernel_version} ) ) {
+unless ( nonempty $runConf{kernel_prefix} and nonempty $runConf{kernel_version} ) {
   basename ( $runConf{kernel} ) =~ m/([^-\s]+)(-(\S+))?/;
-  if ( ! nonempty $runConf{kernel_prefix} ) {
+  unless ( nonempty $runConf{kernel_prefix} ) {
     unless ( defined $1 ) {
       printf "Unable to determine kernel prefix from %s\n", $runConf{kernel};
       exit;
     }
     $runConf{kernel_prefix} = $1;
   }
-  if ( ! nonempty $runConf{kernel_version} ) {
+  unless ( nonempty $runConf{kernel_version} ) {
     unless ( defined $3 ) {
       printf "Unable to detrmine kernel version from %s\n", $runConf{kernel};
       exit;
@@ -163,12 +163,7 @@ if ( ! ( nonempty $runConf{kernel_prefix} and nonempty $runConf{kernel_version} 
   }
 }
 
-# We need to create an initramfs for all cases other than unifiedEFI
-if ( defined( $config{Components}{Copies} ) and ( $config{Components}{Copies} gt 0 ) ) {
-  printf "Creating ZFS Boot Menu %s, with %s %s\n", $runConf{version}, $runConf{kernel_prefix}, $runConf{kernel_version};
-
-  $runConf{initramfs} = createInitramfs( $tempdir, $runConf{kernel_version} );
-}
+printf "Creating ZFS Boot Menu from kernel %s\n", $runConf{kernel};
 
 # Create a unified kernel/initramfs/command line EFI file
 if ( defined( $config{EFI}{Copies} ) and ( $config{EFI}{Copies} gt 0 ) ) {
@@ -214,6 +209,7 @@ if ( defined( $config{EFI}{Copies} ) and ( $config{EFI}{Copies} gt 0 ) ) {
 
 # Create a separate kernel / initramfs. Used by syslinux/extlinux/grub.
 if ( defined( $config{Components}{Copies} ) and ( $config{Components}{Copies} gt 0 ) ) {
+  $runConf{initramfs} = createInitramfs( $tempdir, $runConf{kernel_version} );
   if ( defined( $config{Components}{Versioned} ) and ( $config{Components}{Versioned} ) ) {
     $runConf{kernel_target} =
       sprintf( "%s/%s-%s", $config{Components}{ImageDir}, $runConf{kernel_prefix}, $runConf{version} );
