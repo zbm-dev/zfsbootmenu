@@ -17,7 +17,7 @@ if [ -n "$(echo "${release}" | sed 's/[0-9][A-Za-z0-9_.-]*$//')" ]; then
 fi
 
 # Make sure paths make sense
-if [ ! -e bin/generate-zbm -a ! -e CHANGELOG.md ]; then
+if [ ! -e bin/generate-zbm ] && [ ! -e CHANGELOG.md ]; then
   error "ERROR: run this script from the root of the zfsbootmenu tree"
 fi
 
@@ -27,6 +27,7 @@ if [ "$(git rev-parse --abbrev-ref HEAD)" != "master" ]; then
 fi
 
 # Only allow changes to CHANGELOG.md when tagging releases
+# shellcheck disable=SC2143
 if [ -n "$(git status --porcelain=v1 | grep -v '.. CHANGELOG.md$')" ]; then
   error "ERROR: will not tag release with non-changelog changes in tree"
 fi
@@ -42,6 +43,7 @@ echo "Will tag release version ${release} as ${tag}"
 
 # Extract release notes for this version
 relnotes=$(mktemp)
+# shellcheck disable=SC2064
 trap "rm -f ${relnotes}" 0
 
 awk ' BEGIN{ hdr=0; }
@@ -54,7 +56,7 @@ if ! (head -n 1 "${relnotes}" | grep -q "ZFSBootMenu ${tag}\b"); then
 fi
 
 # Update version in generate-zbm
-sed -i bin/generate-zbm -e 's/our $VERSION.*/our $VERSION = "'${release}'";/'
+sed -i bin/generate-zbm -e "s/our \$VERSION.*/our \$VERSION = '${release}';/"
 
 # Add tagged updates to this release
 git add bin/generate-zbm CHANGELOG.md
@@ -65,7 +67,7 @@ fi
 
 # Push HEAD and tag to primary repo
 git push
-git push "${tag}"
+git push "${tag}:${tag}"
 
 # Publish release, as prerelease if version contains alphabetics
 if echo "${release}" | grep -q "[A-Za-z]"; then
