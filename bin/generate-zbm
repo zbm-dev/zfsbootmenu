@@ -202,7 +202,7 @@ if ( defined( $config{EFI}{Copies} ) and ( $config{EFI}{Copies} gt 0 ) ) {
   }
 
   make_path $config{EFI}{ImageDir};
-  if ( safeCopy( $runConf{unified_efi}, $runConf{efi_target} ) ) {
+  if ( safeCopy( $runConf{unified_efi}, $runConf{efi_target}, 0 ) ) {
     printf "Created a unified EFI at %s\n", $runConf{efi_target};
   }
 }
@@ -255,8 +255,8 @@ if ( defined( $config{Components}{Copies} ) and ( $config{Components}{Copies} gt
   }
 
   make_path $config{Components}{ImageDir};
-  if (  safeCopy( $runConf{kernel}, $runConf{kernel_target} )
-    and safeCopy( $runConf{initramfs}, $runConf{initramfs_target} ) )
+  if ( safeCopy( $runConf{kernel}, $runConf{kernel_target}, 0 )
+    and safeCopy( $runConf{initramfs}, $runConf{initramfs_target}, 0 ) )
   {
     printf "Created %s, %s\n", $runConf{kernel_target}, $runConf{initramfs_target};
   }
@@ -412,16 +412,21 @@ sub execute {
 }
 
 sub safeCopy {
-  my ( $source, $dest ) = @_;
+  my ( $source, $dest, $savetime ) = @_;
+
+  my $preserve = (defined $savetime and $savetime == 0) ? "false" : "true";
 
   unless ( copy( $source, $dest ) ) {
     printf "Unable to copy %s to %s: %s\n", $source, $dest, $!;
     return 0;
   }
 
-  # Copy the access and mod times if possible
-  my $sb = stat $source;
-  utime( $sb->atime, $sb->mtime, $dest );
+
+  if ( $preserve eq "true" ) {
+    # Copy the access and mod times if possible
+    my $sb = stat $source;
+    utime( $sb->atime, $sb->mtime, $dest );
+  }
 
   return 1;
 }
