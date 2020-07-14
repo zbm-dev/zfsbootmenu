@@ -58,20 +58,15 @@ fi
 # Update version in generate-zbm
 sed -i bin/generate-zbm -e "s/our \$VERSION.*/our \$VERSION = '${release}';/"
 
-# Add tagged updates to this release
+# Push updates for the release
 git add bin/generate-zbm CHANGELOG.md
 git commit -m "Bump to version ${release}"
-if ! git tag "${tag}"; then
-  error "ERROR: Please fix your tree and try to re-tag"
-fi
-
-# Push HEAD and tag to primary repo
 git push
-git push "${tag}:${tag}"
 
 # Publish release, as prerelease if version contains alphabetics
 if echo "${release}" | grep -q "[A-Za-z]"; then
   prerelease="--prerelease"
 fi
 
+# Hub creates the tag for us
 hub release create ${prerelease} -F "${relnotes}" "${tag}"
