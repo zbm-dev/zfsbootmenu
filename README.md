@@ -214,6 +214,9 @@ Copies=0
 
 ### Kernel
 * `CommandLine` If you're making a unified EFI file, this is the command line passed to the module. Refer to [Command line options](README.md#command-line-options).
+* `Path` The full path to a specific kernel to use when making generating the boot-menu images. If not specified, `generate-zbm` will try to pick a reasonable kernel.
+* `Version` A specific kernel version to use, or use `/current` to assume the version returned by `uname -r`. If not set, `generate-zbm` will try to parse the path of the selected kernel for a version.
+* `Prefix` The prefix to use for the names of ZFS Boot Menu kernels or unified EFI images. By default, the prefix is extracted from the input kernel name.
 
 ### Components
 * `ImageDir` This is the destination directory for the initramfs and kernel.
