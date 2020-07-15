@@ -82,7 +82,7 @@ $runConf{version} = $runConf{version} . "_1";
 # Read our config into a hash
 tie %config, 'Config::IniFiles', ( -file => $configfile );
 
-unless ( ( defined $config{Global}{ManageImages} ) and ( $config{Global}{ManageImages} ) ) {
+unless ( ( defined $config{Global}{ManageImages} ) and $config{Global}{ManageImages} ) {
   print "ManageImages not enabled, no action taken\n";
   exit;
 }
@@ -122,6 +122,31 @@ if ( nonempty $config{Global}{BootMountPoint} ) {
 # It is automatically purged on program exit
 my $dir     = File::Temp->newdir();
 my $tempdir = $dir->dirname;
+
+# Config file may provide some default values for command-line args
+if ( nonempty $config{Kernel}{Path} and ! nonempty $runConf{kernel} ) {
+  $runConf{kernel} = $config{Kernel}{Path};
+}
+
+if ( nonempty $config{Kernel}{Prefix} and ! nonempty $runConf{kernel_prefix} ) {
+  $runConf{kernel_prefix} = $config{Kernel}{Prefix};
+}
+
+if ( nonempty $config{Kernel}{Version} and ! nonempty $runConf{kernel_version} ) {
+  $runConf{kernel_version} = $config{Kernel}{Version};
+}
+
+# Map "%current" kernel version to output of `uname r`
+if (nonempty $runConf{kernel_version} and $runConf{kernel_version} =~ /^%current$/i) {
+  my ($uname, $status) = execute(qw(uname -r));
+  unless ( $status eq 0 ) {
+    print "Cannot determine current kernel version\n";
+    $runConf{exit_code} = $status;
+    exit;
+  }
+  chomp $uname;
+  $runConf{kernel_version} = $uname
+}
 
 if ( nonempty $runConf{kernel} ) {
   # Make sure the provided kernel file exists
@@ -329,6 +354,7 @@ END {
 # Finds specifically versioned kernel in /boot
 sub versionedKernel {
   my ($kver, ) = @_;
+
   foreach my $prefix (qw(vmlinuz linux vmlinux kernel)) {
     my $kernel = join( '-', ( $prefix, $kver ) );
     if ( -f join( '/', ( $runConf{bootdir}, $kernel ) ) ) {
