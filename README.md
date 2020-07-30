@@ -249,11 +249,3 @@ install_items+=" /etc/zfs/zroot.key "
 ```
 
 It's critical that you do not put this key file into the ZFS Boot Menu initramfs, since that file exists on an unencrypted volume - leaving your pool essentially wide-open.
-
-
-
-# Limitations
-
-When building a kernel command line to pass to the kexec'd kernel, the command line generated is always created for Dracut's ZFS module. Again, this will need to be modified based on the detected OS in the boot environment.
-
-Both of the above issues are readily resolved by hopefully reading /etc/os-release from the boot environment and acting based on that.
