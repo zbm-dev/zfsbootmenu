@@ -2,8 +2,9 @@
 
 use strict;
 use warnings;
+use diagnostics;
 
-our $VERSION = '1.3';
+our $VERSION = '1.4';
 
 use Getopt::Long qw(:config no_ignore_case auto_version);
 use Pod::Usage qw(pod2usage);
@@ -21,6 +22,10 @@ $Data::Dumper::Purity   = 1;
 
 use Config::IniFiles;
 use Sort::Versions;
+use YAML::PP;
+use boolean;
+
+use Storable qw( dclone );
 
 sub versionedKernel;
 sub latestKernel;
@@ -36,9 +41,10 @@ BEGIN {
   $SIG{TERM} = \&cleanupMount;
 }
 
-my ( %runConf, %config, %components );
+my ( %runConf, %config, %ini_config, %components );
 
-my $configfile = "/etc/zfsbootmenu/config.ini";
+my $inifile     = "/etc/zfsbootmenu/config.ini";
+my $configfile  = "/etc/zfsbootmenu/config.yaml";
 
 $runConf{bootdir}   = "/boot";
 $runConf{confd}     = "/etc/zfsbootmenu/dracut.conf.d";
@@ -70,17 +76,28 @@ EOF
   },
 );
 
-# Sanity check, ensure we have a configuration file
-unless ( -f $configfile ) {
-  print "$configfile missing, exiting\n";
+if ( -f $inifile and ! -f $configfile) {
+  print "Converting $inifile to $configfile\n";
+  tie %ini_config, 'Config::IniFiles', ( -file => $inifile );
+
+  my $yaml = YAML::PP->new(boolean => 'boolean');
+
+  # Force boolean
+  $ini_config{Components}{Versioned} = boolean($ini_config{Components}{Versioned});
+  $ini_config{EFI}{Versioned} = boolean($ini_config{EFI}{Versioned});
+  $ini_config{Global}{ManageImages} = boolean($ini_config{Global}{ManageImages});
+  $ini_config{syslinux}{CreateConfig} = boolean($ini_config{syslinux}{CreateConfig});
+
+  # Move syslinux to be a sub section of Components
+  $ini_config{Components}{syslinux} = dclone($ini_config{syslinux});
+  delete $ini_config{syslinux};
+
+  print $yaml->dump_string( \%ini_config );
   exit;
 }
 
 # Versions ending in .0 will be stripped by petitboots' syslinux parser
 $runConf{version} = $runConf{version} . "_1";
-
-# Read our config into a hash
-tie %config, 'Config::IniFiles', ( -file => $configfile );
 
 unless ( ( defined $config{Global}{ManageImages} ) and $config{Global}{ManageImages} ) {
   print "ManageImages not enabled, no action taken\n";
