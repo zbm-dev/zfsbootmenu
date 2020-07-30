@@ -90,6 +90,8 @@ if ( -f $inifile and ! -f $configfile) {
 
   # Move syslinux to be a sub section of Components
   $ini_config{Components}{syslinux} = dclone($ini_config{syslinux});
+  $ini_config{Components}{syslinux}{Enabled} = $ini_config{Components}{syslinux}{CreateConfig};
+  delete $ini_config{Components}{syslinux}{CreateConfig};
   delete $ini_config{syslinux};
 
   print $yaml->dump_string( \%ini_config );
