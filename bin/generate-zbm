@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-our $VERSION = '1.3';
+our $VERSION = '1.4';
 
 use Getopt::Long qw(:config no_ignore_case auto_version);
 use Pod::Usage qw(pod2usage);
@@ -12,6 +12,7 @@ use File::Temp qw(tempfile tempdir);
 use File::Copy;
 use File::stat;
 use File::Path qw(make_path remove_tree);
+use File::Glob qw(:globally :nocase);
 use Sort::Versions;
 
 use Data::Dumper;
@@ -21,6 +22,10 @@ $Data::Dumper::Purity   = 1;
 
 use Config::IniFiles;
 use Sort::Versions;
+use YAML::PP;
+use boolean;
+
+use Storable qw( dclone );
 
 sub versionedKernel;
 sub latestKernel;
@@ -30,19 +35,25 @@ sub execute;
 sub safeCopy;
 sub nonempty;
 sub cleanupMount;
+sub enabled;
+sub maxRevision;
+sub groupKernels;
+sub pruneVersions;
+sub purgeFiles;
+sub convertConfig;
+sub convertImageConfig;
 
 BEGIN {
   $SIG{INT}  = \&cleanupMount;
   $SIG{TERM} = \&cleanupMount;
 }
 
-my ( %runConf, %config, %components );
+my ( %runConf, %config, %ini_config, %components );
 
-my $configfile = "/etc/zfsbootmenu/config.ini";
+my $configfile;
 
 $runConf{bootdir}   = "/boot";
 $runConf{confd}     = "/etc/zfsbootmenu/dracut.conf.d";
-$runConf{version}   = $VERSION;
 $runConf{exit_code} = 0;
 
 GetOptions(
@@ -52,10 +63,11 @@ GetOptions(
   "prefix|p=s"  => \$runConf{kernel_prefix},
   "bootdir|b=s" => \$runConf{bootdir},
   "confd|C=s"   => \$runConf{confd},
+  "cmdline|l=s" => \$runConf{cmdline},
   "config|c=s"  => \$configfile,
   "help|h"      => sub {
-    my $bin   = basename($0);
-    my $help  = << "EOF";
+    my $bin  = basename($0);
+    my $help = << "EOF";
 Usage: $bin [options]
   -v|--version    Manually set the version
   -k|--kernel     Manually set the path to the kernel
@@ -64,25 +76,35 @@ Usage: $bin [options]
   -b|--bootdir    Manually set the location to search for kernel files
   -C|--confd      Manually set the Dracut configuration directory
   -c|--config     Manually set the configuration file
+  -l|--cmdline    Manually set the kernel command line
 EOF
     print $help;
     exit;
   },
 );
 
-# Sanity check, ensure we have a configuration file
-unless ( -f $configfile ) {
-  print "$configfile missing, exiting\n";
-  exit;
+unless ( nonempty $configfile ) {
+  my $inifile = "/etc/zfsbootmenu/config.ini";
+  $configfile = "/etc/zfsbootmenu/config.yaml";
+
+  # Convert a default INI to YAML if no YAML config exists
+  if ( -f $inifile and !-f $configfile ) {
+    print "Converting $inifile to $configfile\n";
+    convertConfig $inifile, $configfile;
+    print "Please verify the converted file and re-run $0\n";
+    exit;
+  }
 }
 
-# Versions ending in .0 will be stripped by petitboots' syslinux parser
-$runConf{version} = $runConf{version} . "_1";
+if ( -r $configfile ) {
+  my $yaml = YAML::PP->new( boolean => 'boolean' )->load_file($configfile);
+  %config = %$yaml;
+} else {
+  printf "Configuration %s does not exist or is unreadable\n", $configfile;
+  exit 1;
+}
 
-# Read our config into a hash
-tie %config, 'Config::IniFiles', ( -file => $configfile );
-
-unless ( ( defined $config{Global}{ManageImages} ) and $config{Global}{ManageImages} ) {
+unless ( $config{Global}{ManageImages} ) {
   print "ManageImages not enabled, no action taken\n";
   exit;
 }
@@ -111,7 +133,7 @@ if ( nonempty $config{Global}{BootMountPoint} ) {
       foreach my $line (@output) {
         print $line;
       }
-      printf "Unable to mount %s", $config{Global}{BootMountPoint};
+      printf "Unable to mount %s\n", $config{Global}{BootMountPoint};
       $runConf{exit_code} = $status;
       exit;
     }
@@ -124,28 +146,45 @@ my $dir     = File::Temp->newdir();
 my $tempdir = $dir->dirname;
 
 # Config file may provide some default values for command-line args
-if ( nonempty $config{Kernel}{Path} and ! nonempty $runConf{kernel} ) {
+if ( nonempty $config{Kernel}{Path} and !nonempty $runConf{kernel} ) {
   $runConf{kernel} = $config{Kernel}{Path};
 }
 
-if ( nonempty $config{Kernel}{Prefix} and ! nonempty $runConf{kernel_prefix} ) {
+if ( nonempty $config{Kernel}{Prefix} and !nonempty $runConf{kernel_prefix} ) {
   $runConf{kernel_prefix} = $config{Kernel}{Prefix};
 }
 
-if ( nonempty $config{Kernel}{Version} and ! nonempty $runConf{kernel_version} ) {
+if ( nonempty $config{Kernel}{Version} and !nonempty $runConf{kernel_version} ) {
   $runConf{kernel_version} = $config{Kernel}{Version};
+  $runConf{kernel_version} =~ s/%current\b/%{current}/i;
+}
+
+if ( nonempty $config{Global}{Version} and !nonempty $runConf{version} ) {
+  $runConf{version} = $config{Global}{Version};
+}
+
+if ( nonempty $config{Kernel}{CommandLine} and !nonempty $runConf{cmdline} ) {
+  $runConf{cmdline} = $config{Kernel}{CommandLine};
+}
+
+if ( nonempty $runConf{version} ) {
+  $runConf{version} =~ s/%current\b/%current/i;
+  $runConf{version} =~ s/%\{current\}/$VERSION/i;
+} else {
+  $runConf{version} = $VERSION;
 }
 
 # Map "%current" kernel version to output of `uname r`
-if (nonempty $runConf{kernel_version} and $runConf{kernel_version} =~ /^%current$/i) {
-  my ($uname, $status) = execute(qw(uname -r));
-  unless ( $status eq 0 ) {
+if ( nonempty $runConf{kernel_version} and $runConf{kernel_version} =~ /%\{current\}/i ) {
+  my @uname  = execute(qw(uname -r));
+  my $status = pop(@uname);
+  unless ( $status eq 0 and scalar @uname ) {
     print "Cannot determine current kernel version\n";
     $runConf{exit_code} = $status;
     exit;
   }
-  chomp $uname;
-  $runConf{kernel_version} = $uname
+  chomp @uname;
+  $runConf{kernel_version} =~ s/%\{current\}/$uname[0]/i;
 }
 
 if ( nonempty $runConf{kernel} ) {
@@ -155,6 +194,7 @@ if ( nonempty $runConf{kernel} ) {
     exit;
   }
 } else {
+
   # Try to determine a kernel file when one was not provided
   if ( nonempty $runConf{kernel_version} ) {
     $runConf{kernel} = versionedKernel $runConf{kernel_version};
@@ -171,7 +211,7 @@ if ( nonempty $runConf{kernel} ) {
 
 # Try to determine kernel_prefix or kernel_version if necessary
 unless ( nonempty $runConf{kernel_prefix} and nonempty $runConf{kernel_version} ) {
-  basename ( $runConf{kernel} ) =~ m/([^-\s]+)(-(\S+))?/;
+  basename( $runConf{kernel} ) =~ m/([^-\s]+)(-(\S+))?/;
   unless ( nonempty $runConf{kernel_prefix} ) {
     unless ( defined $1 ) {
       printf "Unable to determine kernel prefix from %s\n", $runConf{kernel};
@@ -188,109 +228,107 @@ unless ( nonempty $runConf{kernel_prefix} and nonempty $runConf{kernel_version} 
   }
 }
 
-printf "Creating ZFS Boot Menu from kernel %s\n", $runConf{kernel};
+printf "Creating ZFS Boot Menu %s from kernel %s\n", $runConf{version}, $runConf{kernel};
 
 # Create a unified kernel/initramfs/command line EFI file
-if ( defined( $config{EFI}{Copies} ) and ( $config{EFI}{Copies} gt 0 ) ) {
-  $runConf{unified_efi} = unifiedEFI( $tempdir, $runConf{kernel}, $runConf{kernel_version} );
+if ( enabled $config{EFI} ) {
+  my $unified_efi = unifiedEFI( $tempdir, $runConf{kernel}, $runConf{kernel_version} );
 
-  if ( defined( $config{EFI}{Versioned} ) and ( $config{EFI}{Versioned} ) ) {
-    $runConf{efi_target} =
-      sprintf( "%s/%s-%s.EFI", $config{EFI}{ImageDir}, $runConf{kernel_prefix}, $runConf{version} );
+  my $efi_target;
 
-      my $glob = sprintf( "%s/%s-*.EFI", $config{EFI}{ImageDir}, $runConf{kernel_prefix} );
-      my @efi  = sort glob($glob);
+  my $efi_prefix   = sprintf( "%s/%s", $config{EFI}{ImageDir}, $runConf{kernel_prefix} );
+  my $efi_versions = int $config{EFI}{Versions};
 
-      my $index = 0;
-      foreach my $entry (@efi) {
-        if ( $entry eq $runConf{efi_target} ) {
-          splice @efi, $index, 1;
-        }
-        $index++;
-      }
+  if ( $efi_versions > 0 ) {
 
-      printf "Found %s existing EFI images, allowed to have a total of %s\n", scalar @efi, $config{EFI}{Copies};
-      while ( scalar @efi > $config{EFI}{Copies} ) {
-        my $image = shift(@efi);
-        printf "Removing %s\n", $image;
-        unlink $image;
-      }
+    # Find UEFI bundles and group by apparent version
+    my @efi        = glob sprintf( "%s-*.EFI", $efi_prefix );
+    my $efi_groups = groupKernels( \@efi, $efi_prefix, ".EFI" );
+
+    # Determine the revision to use for this image
+    my $revision = maxRevision( $efi_groups->{ $runConf{version} }, ".EFI" ) + 1;
+    $efi_target = sprintf( "%s-%s_%s.EFI", $efi_prefix, $runConf{version}, $revision );
+
+    # Prune the old versions
+    pruneVersions $efi_groups, $runConf{version}, $efi_versions;
   } else {
-    $runConf{efi_target} = sprintf( "%s/%s.EFI", $config{EFI}{ImageDir}, $runConf{kernel_prefix} );
-    $runConf{efi_backup} = sprintf( "%s/%s-backup.EFI", ${config}{EFI}{ImageDir}, $runConf{kernel_prefix} );
+    $efi_target = sprintf( "%s.EFI", $efi_prefix );
+    my $efi_backup = sprintf( "%s-backup.EFI", $efi_prefix );
 
-    if ( -f $runConf{efi_target} ) {
-      if ( safeCopy( $runConf{efi_target}, $runConf{efi_backup} ) ) {
-        printf "Created %s\n", $runConf{efi_backup};
-      }
+    if ( -f $efi_target and safeCopy( $efi_target, $efi_backup ) ) {
+      printf "Created backup %s -> %s\n", $efi_target, $efi_backup;
     }
   }
 
   make_path $config{EFI}{ImageDir};
-  if ( safeCopy( $runConf{unified_efi}, $runConf{efi_target}, 0 ) ) {
-    printf "Created a unified EFI at %s\n", $runConf{efi_target};
+  if ( safeCopy( $unified_efi, $efi_target, 0 ) ) {
+    printf "Created new UEFI image %s\n", $efi_target;
   }
 }
 
 # Create a separate kernel / initramfs. Used by syslinux/extlinux/grub.
-if ( defined( $config{Components}{Copies} ) and ( $config{Components}{Copies} gt 0 ) ) {
-  $runConf{initramfs} = createInitramfs( $tempdir, $runConf{kernel_version} );
-  if ( defined( $config{Components}{Versioned} ) and ( $config{Components}{Versioned} ) ) {
-    $runConf{kernel_target} =
-      sprintf( "%s/%s-%s", $config{Components}{ImageDir}, $runConf{kernel_prefix}, $runConf{version} );
-    $runConf{initramfs_target} = sprintf( "%s/initramfs-%s.img", $config{Components}{ImageDir}, $runConf{version} );
+if ( enabled $config{Components} ) {
+  my $initramfs = createInitramfs( $tempdir, $runConf{kernel_version} );
 
-    my $glob    = sprintf( "%s/%s-*", $config{Components}{ImageDir}, $runConf{kernel_prefix} );
-    my @listing = sort glob($glob);
+  my ( $kernel_target, $initramfs_target );
 
-    # Filter EFI files and our target image
-    my @components;
-    foreach my $entry (@listing) {
-      if ( $entry eq $runConf{kernel_target} ) {
-        next;
-      } elsif ( $entry =~ /EFI$/i ) {
-        next;
+  my $component_prefix   = sprintf( "%s/%s", $config{Components}{ImageDir}, $runConf{kernel_prefix} );
+  my $component_versions = int $config{Components}{Versions};
+
+  if ( $component_versions > 0 ) {
+
+    # Find ZBM kernels and group by apparent version
+    my @kernels     = glob( sprintf( "%s-*", $component_prefix ) );
+    my $kern_groups = groupKernels( \@kernels, $component_prefix );
+
+    my $revision = maxRevision( $kern_groups->{ $runConf{version} } ) + 1;
+    $kernel_target = sprintf( "%s-%s_%s", $component_prefix, $runConf{version}, $revision );
+    $initramfs_target =
+      sprintf( "%s/initramfs-%s_%s.img", $config{Components}{ImageDir}, $runConf{version}, $revision );
+
+    # Prune old versions
+    pruneVersions $kern_groups, $runConf{version}, $component_versions;
+
+    # Map kernel to initramfs and prune
+    keys %$kern_groups;
+    while ( my ( $kver, $image ) = each %$kern_groups ) {
+      foreach (@$image) {
+        s/\Q$component_prefix\E/$config{Components}{ImageDir}\/initramfs/;
+        s/$/.img/;
       }
-      push( @components, $entry );
     }
-
-    printf "Found %s existing images, allowed to have a total of %s\n", scalar @components, $config{Components}{Copies};
-    while ( scalar @components > $config{Components}{Copies} ) {
-      my $kernel    = shift(@components);
-      my $initramfs = sprintf( "%s.img", $kernel );
-      $initramfs =~ s/\Q$runConf{kernel_prefix}/initramfs/;
-      printf "Removing %s, %s\n", $kernel, $initramfs;
-      unlink $kernel;
-      unlink $initramfs;
-    }
+    pruneVersions $kern_groups, $runConf{version}, $component_versions;
   } else {
-    $runConf{kernel_target} = sprintf( "%s/%s-bootmenu", $config{Components}{ImageDir}, $runConf{kernel_prefix} );
-    $runConf{kernel_backup} =
-      sprintf( "%s/%s-bootmenu-backup", $config{Components}{ImageDir}, $runConf{kernel_prefix} );
-    $runConf{initramfs_target} = sprintf( "%s/initramfs-bootmenu.img",        $config{Components}{ImageDir} );
-    $runConf{initramfs_backup} = sprintf( "%s/initramfs-bootmenu-backup.img", $config{Components}{ImageDir} );
+    $kernel_target    = sprintf( "%s-bootmenu",               $component_prefix );
+    $initramfs_target = sprintf( "%s/initramfs-bootmenu.img", $config{Components}{ImageDir} );
 
-    if ( -f $runConf{kernel_target} ) {
-      if (  safeCopy( $runConf{kernel_target}, $runConf{kernel_backup} )
-        and safeCopy( $runConf{initramfs_target}, $runConf{initramfs_backup} ) )
-      {
-        printf "Created %s, %s\n", $runConf{kernel_backup}, $runConf{initramfs_backup};
-      }
+    my $kernel_backup    = sprintf( "%s-backup",                        $kernel_target );
+    my $initramfs_backup = sprintf( "%s/initramfs-bootmenu-backup.img", $config{Components}{ImageDir} );
+
+    if ( -f $kernel_target and safeCopy( $kernel_target, $kernel_backup ) ) {
+      printf "Created backup %s -> %s\n", $kernel_target, $kernel_backup;
+    }
+
+    if ( -f $initramfs_target and safeCopy( $initramfs_target, $initramfs_backup ) ) {
+      printf "Created backup %s -> %s\n", $initramfs_target, $initramfs_backup;
     }
   }
 
   make_path $config{Components}{ImageDir};
-  if ( safeCopy( $runConf{kernel}, $runConf{kernel_target}, 0 )
-    and safeCopy( $runConf{initramfs}, $runConf{initramfs_target}, 0 ) )
-  {
-    printf "Created %s, %s\n", $runConf{kernel_target}, $runConf{initramfs_target};
+
+  if ( safeCopy( $runConf{kernel}, $kernel_target, 0 ) ) {
+    printf "Created kernel image %s\n", $kernel_target;
+  }
+
+  if ( safeCopy( $initramfs, $initramfs_target, 0 ) ) {
+    printf "Created initramfs image %s\n", $initramfs_target;
   }
 }
 
 # Generate syslinux.cfg, requires components to be built
-if ( defined( $config{syslinux}{CreateConfig} ) and ( $config{syslinux}{CreateConfig} eq 1 ) ) {
+if ( enabled $config{Components}{syslinux} ) {
   my $glob    = sprintf( "%s/%s-*", $config{Components}{ImageDir}, $runConf{kernel_prefix} );
-  my @listing = sort glob($glob);
+  my @listing = sort versioncmp glob($glob);
 
   # Filter EFI files, in case they're in the same directory
   my @components;
@@ -337,13 +375,13 @@ EOF
     print CFG "MENU LABEL $menu_label\n";
     print CFG "KERNEL $directory/$kernel\n";
     print CFG "INITRD $directory/initramfs-$version.img\n";
-    print CFG "APPEND $config{Kernel}{CommandLine}\n";
+    print CFG "APPEND $runConf{cmdline}\n";
     print CFG "\n";
 
   }
   close CFG;
 
-  make_path dirname( $config{syslinux}{Config} );
+  make_path dirname( $config{Components}{syslinux}{Config} );
   safeCopy( $runConf{syslinux_temp}, $config{syslinux}{Config} );
 }
 
@@ -353,10 +391,10 @@ END {
 
 # Finds specifically versioned kernel in /boot
 sub versionedKernel {
-  my ($kver, ) = @_;
+  my ( $kver, ) = @_;
 
   foreach my $prefix (qw(vmlinuz linux vmlinux kernel)) {
-    my $kernel = join('/', ( $runConf{bootdir}, join( '-', ( $prefix, $kver ) ) ) );
+    my $kernel = join( '/', ( $runConf{bootdir}, join( '-', ( $prefix, $kver ) ) ) );
     if ( -f $kernel ) {
       return $kernel;
     }
@@ -403,20 +441,22 @@ sub createInitramfs {
 sub unifiedEFI {
   my ( $temp, $kernfile, $kver ) = @_;
 
-  my $output_file  = join( '/', $temp, "zfsbootmenu.efi" );
-  my $efi_stub     = $config{EFI}{Stub} || "/usr/lib/gummiboot/linuxx64.efi.stub";
+  my $output_file = join( '/', $temp, "zfsbootmenu.efi" );
+  my $efi_stub    = $config{EFI}{Stub} || "/usr/lib/gummiboot/linuxx64.efi.stub";
 
-  unless ( -e $efi_stub) {
+  unless ( -e $efi_stub ) {
     die "Missing EFI stub: $efi_stub";
   }
 
   my @cmd = (
     qw(dracut -q -f --uefi --confdir), $runConf{confd},
-    qq(--uefi-stub), $efi_stub,
-    qq(--kernel-image), $kernfile,
-    qq(--kernel-cmdline=\"$config{Kernel}{CommandLine}\"),
-    qq(--kver), $kver, $output_file,
-  );
+    qq(--uefi-stub), $efi_stub, qq(--kernel-image), $kernfile, );
+
+  if ( nonempty $runConf{cmdline} ) {
+    push @cmd, qq(--kernel-cmdline=\"$runConf{cmdline}\");
+  }
+
+  push @cmd, ( qq(--kver), $kver, $output_file, );
 
   my @output = execute(@cmd);
   my $status = pop(@output);
@@ -439,15 +479,15 @@ sub execute {
 sub safeCopy {
   my ( $source, $dest, $savetime ) = @_;
 
-  my $preserve = (defined $savetime and $savetime == 0) ? "false" : "true";
+  my $preserve = ( defined $savetime ) ? boolean($savetime) : true;
 
   unless ( copy( $source, $dest ) ) {
     printf "Unable to copy %s to %s: %s\n", $source, $dest, $!;
     return 0;
   }
 
+  if ($preserve) {
 
-  if ( $preserve eq "true" ) {
     # Copy the access and mod times if possible
     my $sb = stat $source;
     utime( $sb->atime, $sb->mtime, $dest );
@@ -457,8 +497,13 @@ sub safeCopy {
 }
 
 sub nonempty {
-  my ($item,) = @_;
+  my $item = shift;
   return ( defined $item and length $item );
+}
+
+sub enabled {
+  my $section = shift;
+  return ( defined $section->{Enabled} and $section->{Enabled} );
 }
 
 sub cleanupMount {
@@ -468,4 +513,135 @@ sub cleanupMount {
     execute($cmd);
   }
   exit $runConf{exit_code};
+}
+
+sub maxRevision {
+  my ( $files, $suffix ) = @_;
+  my $revision = 0;
+
+  $suffix = "" unless ( defined $suffix );
+
+  foreach my $file (@$files) {
+    if ( $file =~ /_(\d+)\Q$suffix\E$/ ) {
+      $revision = $1 if ( $1 > $revision );
+    }
+  }
+
+  return $revision;
+}
+
+sub groupKernels {
+  my ( $kernels, $prefix, $suffix ) = @_;
+  my %groups;
+
+  $suffix = "" unless ( defined $suffix );
+
+  foreach my $kernel (@$kernels) {
+    next unless ( $kernel =~ /^\Q$prefix\E-(.+)_\d+\Q$suffix\E$/ );
+    push @{ $groups{$1} }, $kernel;
+  }
+
+  return \%groups;
+}
+
+sub pruneVersions {
+  my ( $versions, $current, $keep ) = @_;
+  my $old_version;
+
+  $keep = 0 unless ( defined $keep and $keep gt 0 );
+
+  # Keep revisions current version
+  purgeFiles $versions->{$current}, $keep;
+
+  # Sort the versions and remove the current
+  my @old_versions = sort versioncmp keys %$versions;
+
+  my $index = 0;
+  foreach my $key (@old_versions) {
+    if ( $key eq $current ) {
+      splice @old_versions, $index, 1;
+    } else {
+      $index++;
+    }
+  }
+
+  # Purge all of the too-old revisions
+  while ( scalar @old_versions > $keep ) {
+    $old_version = shift @old_versions;
+    purgeFiles $versions->{$old_version};
+  }
+
+  # Purge all but the remaining revision of the leftover versions
+  foreach $old_version (@old_versions) {
+    purgeFiles $versions->{$old_version}, 1;
+  }
+}
+
+sub purgeFiles {
+  my ( $files, $keep ) = @_;
+
+  return unless ( defined $files );
+
+  $keep = 0 unless ( defined $keep and $keep gt 0 );
+
+  if ( $keep gt 0 ) {
+    my @sorted_files = sort versioncmp @$files;
+    while ( scalar @sorted_files > $keep ) {
+      my $file = shift @sorted_files;
+      if ( -f $file ) {
+        print "Removing file $file\n";
+        unlink $file;
+      }
+    }
+  } else {
+    foreach my $file (@$files) {
+      if ( -f $file ) {
+        print "Removing file $file\n";
+        unlink $file;
+      }
+    }
+  }
+}
+
+sub convertConfig {
+  my ( $inifile, $configfile ) = @_;
+
+  tie %ini_config, 'Config::IniFiles', ( -file => $inifile );
+
+  my $yaml = YAML::PP->new( boolean => 'boolean' );
+
+  # Force boolean
+  $ini_config{Global}{ManageImages} = boolean( $ini_config{Global}{ManageImages} );
+
+  # Convert the component and EFI image sections to the new format
+  convertImageConfig $ini_config{Components};
+  convertImageConfig $ini_config{EFI};
+
+  # Move syslinux to be a sub section of Components
+  $ini_config{Components}{syslinux} = dclone( $ini_config{syslinux} );
+  $ini_config{Components}{syslinux}{Enabled} = boolean( $ini_config{Components}{syslinux}{CreateConfig} );
+  delete $ini_config{Components}{syslinux}{CreateConfig};
+  delete $ini_config{syslinux};
+
+  $yaml->dump_file( $configfile, \%ini_config );
+}
+
+sub convertImageConfig {
+  my $section = shift;
+
+  $section->{Enabled} = boolean( $section->{Copies} > 0 );
+  $section->{Enabled} = boolean( $section->{Copies} > 0 );
+
+  if ( $section->{Versioned} ) {
+    if ( $section->{Copies} > 1 ) {
+      $section->{Versions} = int $section->{Copies};
+    } else {
+      $section->{Versions} = true;
+    }
+  } else {
+    $section->{Versions} = false;
+  }
+
+  delete $section->{Versioned};
+  delete $section->{Copies};
 }

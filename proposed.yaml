@@ -1,0 +1,18 @@
+---
+Global:
+  ManageImages: false
+  BootMountPoint: /boot/efi
+  DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
+Components:
+  ImageDir: /boot/efi/EFI/void
+  Versions: 2
+  Enabled: false
+  syslinux:
+    Config: /boot/syslinux/syslinux.cfg
+    Enabled: false
+EFI:
+  ImageDir: /boot/efi/EFI/void
+  Versions: 2
+  Enabled: false
+Kernel:
+  CommandLine: ro quiet loglevel=0
