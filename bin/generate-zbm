@@ -229,8 +229,9 @@ if ( enabled $config{EFI} ) {
     foreach my $entry (@efi) {
       if ( $entry eq $runConf{efi_target} ) {
         splice @efi, $index, 1;
+      } else {
+        $index++;
       }
-      $index++;
     }
 
     printf "Found %s existing EFI images, allowed to have a total of %s\n", scalar @efi, $config{EFI}{Copies};
