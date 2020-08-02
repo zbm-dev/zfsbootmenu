@@ -234,7 +234,7 @@ if ( enabled $config{EFI} ) {
       }
     }
 
-    printf "Found %s existing EFI images, allowed to have a total of %s\n", scalar @efi, $config{EFI}{Copies};
+    printf "Found %s existing EFI images, allowed to have a total of %s\n", scalar @efi, $efi_versions;
     while ( scalar @efi > $efi_versions ) {
       my $image = shift(@efi);
       printf "Removing %s\n", $image;
@@ -282,7 +282,7 @@ if ( enabled $config{Components} ) {
       push( @components, $entry );
     }
 
-    printf "Found %s existing images, allowed to have a total of %s\n", scalar @components, $config{Components}{Copies};
+    printf "Found %s existing images, allowed to have a total of %s\n", scalar @components, $component_versions;
     while ( scalar @components > $component_versions ) {
       my $kernel    = shift(@components);
       my $initramfs = sprintf( "%s.img", $kernel );
