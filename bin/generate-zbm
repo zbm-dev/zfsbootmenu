@@ -214,7 +214,7 @@ printf "Creating ZFS Boot Menu from kernel %s\n", $runConf{kernel};
 
 # Create a unified kernel/initramfs/command line EFI file
 if ( enabled $config{EFI} ) {
-  $runConf{unified_efi} = unifiedEFI( $tempdir, $runConf{kernel_version} );
+  $runConf{unified_efi} = unifiedEFI( $tempdir, $runConf{kernel}, $runConf{kernel_version} );
 
   my $efi_versions = int $config{EFI}{Versions};
 
@@ -384,8 +384,8 @@ sub versionedKernel {
   my ( $kver, ) = @_;
 
   foreach my $prefix (qw(vmlinuz linux vmlinux kernel)) {
-    my $kernel = join( '-', ( $prefix, $kver ) );
-    if ( -f join( '/', ( $runConf{bootdir}, $kernel ) ) ) {
+    my $kernel = join('/', ( $runConf{bootdir}, join( '-', ( $prefix, $kver ) ) ) );
+    if ( -f $kernel ) {
       return $kernel;
     }
   }
@@ -429,7 +429,7 @@ sub createInitramfs {
 }
 
 sub unifiedEFI {
-  my ( $temp, $kver ) = @_;
+  my ( $temp, $kernfile, $kver ) = @_;
 
   my $output_file = join( '/', $temp, "zfsbootmenu.efi" );
   my $efi_stub    = $config{EFI}{Stub} || "/usr/lib/gummiboot/linuxx64.efi.stub";
@@ -439,9 +439,11 @@ sub unifiedEFI {
   }
 
   my @cmd = (
-    qw(dracut -q -f --uefi --confdir), $runConf{confd}, qq(--uefi-stub), $efi_stub,
+    qw(dracut -q -f --uefi --confdir), $runConf{confd},
+    qq(--uefi-stub), $efi_stub,
+    qq(--kernel-image), $kernfile,
     qq(--kernel-cmdline=\"$config{Kernel}{CommandLine}\"),
-    qw(--kver), $kver, $output_file, 
+    qq(--kver), $kver, $output_file,
   );
 
   my @output = execute(@cmd);
