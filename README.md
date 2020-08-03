@@ -217,6 +217,7 @@ Copies=0
 * `Path` The full path to a specific kernel to use when making generating the boot-menu images. If not specified, `generate-zbm` will try to pick a reasonable kernel.
 * `Version` A specific kernel version to use, or use `%current` to assume the version returned by `uname -r`. If not set, `generate-zbm` will try to parse the path of the selected kernel for a version.
 * `Prefix` The prefix to use for the names of ZFS Boot Menu kernels or unified EFI images. By default, the prefix is extracted from the input kernel name.
+* `Suffix` An optional version suffix to append to ZFS Boot Menu image versions. Empty by default.
 
 ### Components
 * `ImageDir` This is the destination directory for the initramfs and kernel.

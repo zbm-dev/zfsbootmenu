@@ -13,6 +13,7 @@ use File::Temp qw(tempfile tempdir);
 use File::Copy;
 use File::stat;
 use File::Path qw(make_path remove_tree);
+use File::Glob qw(:globally :nocase);
 use Sort::Versions;
 
 use Data::Dumper;
@@ -37,6 +38,9 @@ sub nonempty;
 sub cleanupMount;
 sub enabled;
 sub maxRevision;
+sub groupKernels;
+sub pruneVersions;
+sub purgeFiles;
 sub convertConfig;
 sub convertImageConfig;
 
@@ -51,7 +55,6 @@ my $configfile;
 
 $runConf{bootdir}   = "/boot";
 $runConf{confd}     = "/etc/zfsbootmenu/dracut.conf.d";
-$runConf{version}   = $VERSION;
 $runConf{exit_code} = 0;
 
 GetOptions(
@@ -59,6 +62,7 @@ GetOptions(
   "kernel|k=s"  => \$runConf{kernel},
   "kver|K=s"    => \$runConf{kernel_version},
   "prefix|p=s"  => \$runConf{kernel_prefix},
+  "suffix|s=s"  => \$runConf{kernel_suffix},
   "bootdir|b=s" => \$runConf{bootdir},
   "confd|C=s"   => \$runConf{confd},
   "config|c=s"  => \$configfile,
@@ -70,6 +74,7 @@ Usage: $bin [options]
   -k|--kernel     Manually set the path to the kernel
   -K|--kver       Manually set the kernel version
   -p|--prefix     Manually set the output kernel prefix
+  -s|--suffix     Manually set the output kernel version suffix
   -b|--bootdir    Manually set the location to search for kernel files
   -C|--confd      Manually set the Dracut configuration directory
   -c|--config     Manually set the configuration file
@@ -154,6 +159,18 @@ if ( nonempty $config{Kernel}{Version} and !nonempty $runConf{kernel_version} ) 
   $runConf{kernel_version} = $config{Kernel}{Version};
 }
 
+if ( nonempty $config{Kernel}{Suffix} and !nonempty $runConf{kernel_suffix} ) {
+  $runConf{kernel_suffix} = $config{Kernel}{Suffix};
+}
+
+unless ( nonempty $runConf{version} ) {
+  if ( nonempty $runConf{kernel_suffix} ) {
+    $runConf{version} = "${VERSION}-$runConf{kernel_suffix}";
+  } else {
+    $runConf{version} = $VERSION;
+  }
+}
+
 # Map "%current" kernel version to output of `uname r`
 if ( nonempty $runConf{kernel_version} and $runConf{kernel_version} =~ /^%current$/i ) {
   my ( $uname, $status ) = execute(qw(uname -r));
@@ -220,28 +237,17 @@ if ( enabled $config{EFI} ) {
   my $efi_versions = int $config{EFI}{Versions};
 
   if ( $efi_versions > 0 ) {
-    my $versioned = sprintf( "%s-%s", $efi_prefix, $runConf{version} );
 
-    my @efi = sort glob( sprintf( "%s-*.EFI", $efi_prefix ) );
+    # Find UEFI bundles and group by apparent version
+    my @efi        = glob sprintf( "%s-*.EFI", $efi_prefix );
+    my $efi_groups = groupKernels( \@efi, $efi_prefix, ".EFI" );
 
-    my $revision = maxRevision( \@efi, $versioned ) + 1;
-    $efi_target = sprintf( "%s_%s.EFI", $versioned, $revision );
+    # Determine the revision to use for this image
+    my $revision = maxRevision( $efi_groups->{ $runConf{version} }, ".EFI" ) + 1;
+    $efi_target = sprintf( "%s-%s_%s.EFI", $efi_prefix, $runConf{version}, $revision );
 
-    my $index = 0;
-    foreach my $entry (@efi) {
-      if ( $entry eq $efi_target ) {
-        splice @efi, $index, 1;
-      } else {
-        $index++;
-      }
-    }
-
-    printf "Found %s EFI images, allowed to keep %s\n", scalar @efi, $efi_versions;
-    while ( scalar @efi > $efi_versions ) {
-      my $image = shift(@efi);
-      printf "Removing %s\n", $image;
-      unlink $image;
-    }
+    # Prune the old versions
+    pruneVersions $efi_groups, $runConf{version}, $efi_versions;
   } else {
     $efi_target = sprintf( "%s.EFI", $efi_prefix );
     my $efi_backup = sprintf( "%s-backup.EFI", $efi_prefix );
@@ -267,39 +273,33 @@ if ( enabled $config{Components} ) {
   my $component_versions = int $config{Components}{Versions};
 
   if ( $component_versions > 0 ) {
-    my $versioned = sprintf( "%s-%s", $component_prefix, $runConf{version} );
 
-    my @components = sort glob( sprintf( "%s-*", $component_prefix ) );
+    # Find ZBM kernels and group by apparent version
+    my @kernels     = glob( sprintf( "%s-*", $component_prefix ) );
+    my $kern_groups = groupKernels( \@kernels, $component_prefix );
 
-    my $revision = maxRevision( \@components, $versioned ) + 1;
-    $kernel_target = sprintf( "%s_%s", $versioned, $revision );
+    my $revision = maxRevision( $kern_groups->{ $runConf{version} } ) + 1;
+    $kernel_target = sprintf( "%s-%s_%s", $component_prefix, $runConf{version}, $revision );
     $initramfs_target =
       sprintf( "%s/initramfs-%s_%s.img", $config{Components}{ImageDir}, $runConf{version}, $revision );
 
-    # Filter EFI files and our target image
-    my $index = 0;
-    foreach my $entry (@components) {
-      if ( $entry eq $kernel_target or $entry =~ /\.EFI$/i ) {
-        splice @components, $index, 1;
-      } else {
-        $index++;
+    # Prune old versions
+    pruneVersions $kern_groups, $runConf{version}, $component_versions;
+
+    # Map kernel to initramfs and prune
+    keys %$kern_groups;
+    while ( my ( $kver, $image ) = each %$kern_groups ) {
+      foreach (@$image) {
+        s/\Q$component_prefix\E/$config{Components}{ImageDir}\/initramfs/;
+        s/$/.img/;
       }
     }
-
-    printf "Found %s images, allowed to keep %s\n", scalar @components, $component_versions;
-    while ( scalar @components > $component_versions ) {
-      my $kernel    = shift(@components);
-      my $initramfs = sprintf( "%s.img", $kernel );
-      $initramfs =~ s/\Q$runConf{kernel_prefix}\E/initramfs/;
-      printf "Removing images %s, %s\n", $kernel, $initramfs;
-      unlink $kernel;
-      unlink $initramfs;
-    }
+    pruneVersions $image_versions, $runConf{version}, $component_versions;
   } else {
-    $kernel_target    = sprintf( "%s-bootmenu", $component_prefix );
+    $kernel_target    = sprintf( "%s-bootmenu",               $component_prefix );
     $initramfs_target = sprintf( "%s/initramfs-bootmenu.img", $config{Components}{ImageDir} );
 
-    my $kernel_backup    = sprintf( "%s-backup", $kernel_target );
+    my $kernel_backup    = sprintf( "%s-backup",                        $kernel_target );
     my $initramfs_backup = sprintf( "%s/initramfs-bootmenu-backup.img", $config{Components}{ImageDir} );
 
     if ( -f $kernel_target and safeCopy( $kernel_target, $kernel_backup ) ) {
@@ -325,7 +325,7 @@ if ( enabled $config{Components} ) {
 # Generate syslinux.cfg, requires components to be built
 if ( enabled $config{Components}{syslinux} ) {
   my $glob    = sprintf( "%s/%s-*", $config{Components}{ImageDir}, $runConf{kernel_prefix} );
-  my @listing = sort glob($glob);
+  my @listing = sort versioncmp glob($glob);
 
   # Filter EFI files, in case they're in the same directory
   my @components;
@@ -407,7 +407,7 @@ sub latestKernel {
     my $glob    = join( '/', ( $runConf{bootdir}, $prefix ) );
     my @kernels = glob($glob);
     next if !@kernels;
-    for ( sort { versioncmp( $b, $a ) } @kernels ) {
+    for ( sort versioncmp @kernels ) {
       return $_;
     }
   }
@@ -473,14 +473,14 @@ sub execute {
 sub safeCopy {
   my ( $source, $dest, $savetime ) = @_;
 
-  my $preserve = ( defined $savetime and $savetime == 0 ) ? "false" : "true";
+  my $preserve = ( defined $savetime ) ? boolean($savetime) : true;
 
   unless ( copy( $source, $dest ) ) {
     printf "Unable to copy %s to %s: %s\n", $source, $dest, $!;
     return 0;
   }
 
-  if ( $preserve eq "true" ) {
+  if ($preserve) {
 
     # Copy the access and mod times if possible
     my $sb = stat $source;
@@ -510,18 +510,91 @@ sub cleanupMount {
 }
 
 sub maxRevision {
-  my ( $files, $prefix, ) = @_;
+  my ( $files, $suffix ) = @_;
   my $revision = 0;
 
+  $suffix = "" unless ( defined $suffix );
+
   foreach my $file (@$files) {
-    if ( $file =~ /\Q${prefix}_\E(\d+)/ ) {
-      if ( $1 > $revision ) {
-        $revision = $1;
-      }
+    if ( $file =~ /_(\d+)\Q$suffix\E$/ ) {
+      $revision = $1 if ( $1 > $revision );
     }
   }
 
   return $revision;
+}
+
+sub groupKernels {
+  my ( $kernels, $prefix, $suffix ) = @_;
+  my %groups;
+
+  $suffix = "" unless ( defined $suffix );
+
+  foreach my $kernel (@$kernels) {
+    next unless ( $kernel =~ /^\Q$prefix\E-(.+)_\d+\Q$suffix\E$/ );
+    push @{ $groups{$1} }, $kernel;
+  }
+
+  return \%groups;
+}
+
+sub pruneVersions {
+  my ( $versions, $current, $keep ) = @_;
+  my $old_version;
+
+  $keep = 0 unless ( defined $keep and $keep gt 0 );
+
+  # Keep revisions current version
+  purgeFiles $versions->{$current}, $keep;
+
+  # Sort the versions and remove the current
+  my @old_versions = sort versioncmp keys %$versions;
+
+  my $index = 0;
+  foreach my $key (@old_versions) {
+    if ( $key eq $current ) {
+      splice @old_versions, $index, 1;
+    } else {
+      $index++;
+    }
+  }
+
+  # Purge all of the too-old revisions
+  while ( scalar @old_versions > $keep ) {
+    $old_version = shift @old_versions;
+    purgeFiles $versions->{$old_version};
+  }
+
+  # Purge all but the remaining revision of the leftover versions
+  foreach $old_version (@old_versions) {
+    purgeFiles $versions->{$old_version}, 1;
+  }
+}
+
+sub purgeFiles {
+  my ( $files, $keep ) = @_;
+
+  return unless ( defined $files );
+
+  $keep = 0 unless ( defined $keep and $keep gt 0 );
+
+  if ( $keep gt 0 ) {
+    my @sorted_files = sort versioncmp @$files;
+    while ( scalar @sorted_files > $keep ) {
+      my $file = shift @sorted_files;
+      if ( -f $file ) {
+        print "Removing file $file\n";
+        unlink $file;
+      }
+    }
+  } else {
+    foreach my $file (@$files) {
+      if ( -f $file ) {
+        print "Removing file $file\n";
+        unlink $file;
+      }
+    }
+  }
 }
 
 sub convertConfig {
