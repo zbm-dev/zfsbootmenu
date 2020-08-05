@@ -294,7 +294,7 @@ if ( enabled $config{Components} ) {
         s/$/.img/;
       }
     }
-    pruneVersions $image_versions, $runConf{version}, $component_versions;
+    pruneVersions $kern_groups, $runConf{version}, $component_versions;
   } else {
     $kernel_target    = sprintf( "%s-bootmenu",               $component_prefix );
     $initramfs_target = sprintf( "%s/initramfs-bootmenu.img", $config{Components}{ImageDir} );
