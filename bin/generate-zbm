@@ -64,6 +64,7 @@ GetOptions(
   "prefix|p=s"  => \$runConf{kernel_prefix},
   "bootdir|b=s" => \$runConf{bootdir},
   "confd|C=s"   => \$runConf{confd},
+  "cmdline|l=s" => \$runConf{cmdline},
   "config|c=s"  => \$configfile,
   "help|h"      => sub {
     my $bin  = basename($0);
@@ -76,6 +77,7 @@ Usage: $bin [options]
   -b|--bootdir    Manually set the location to search for kernel files
   -C|--confd      Manually set the Dracut configuration directory
   -c|--config     Manually set the configuration file
+  -l|--cmdline    Manually set the kernel command line
 EOF
     print $help;
     exit;
@@ -162,6 +164,10 @@ if ( nonempty $config{Global}{Version} and !nonempty $runConf{version} ) {
   $runConf{version} = $config{Global}{Version};
 }
 
+if ( nonempty $config{Kernel}{CommandLine} and !nonempty $runConf{cmdline} ) {
+  $runConf{cmdline} = $config{Kernel}{CommandLine};
+}
+
 if ( nonempty $runConf{version} ) {
   $runConf{version} =~ s/%current\b/%current/i;
   $runConf{version} =~ s/%\{current\}/$VERSION/i;
@@ -171,7 +177,7 @@ if ( nonempty $runConf{version} ) {
 
 # Map "%current" kernel version to output of `uname r`
 if ( nonempty $runConf{kernel_version} and $runConf{kernel_version} =~ /%\{current\}/i ) {
-  my @uname = execute(qw(uname -r));
+  my @uname  = execute(qw(uname -r));
   my $status = pop(@uname);
   unless ( $status eq 0 and scalar @uname ) {
     print "Cannot determine current kernel version\n";
@@ -370,7 +376,7 @@ EOF
     print CFG "MENU LABEL $menu_label\n";
     print CFG "KERNEL $directory/$kernel\n";
     print CFG "INITRD $directory/initramfs-$version.img\n";
-    print CFG "APPEND $config{Kernel}{CommandLine}\n";
+    print CFG "APPEND $runConf{cmdline}\n";
     print CFG "\n";
 
   }
@@ -445,10 +451,13 @@ sub unifiedEFI {
 
   my @cmd = (
     qw(dracut -q -f --uefi --confdir), $runConf{confd},
-    qq(--uefi-stub), $efi_stub, qq(--kernel-image), $kernfile,
-    qq(--kernel-cmdline=\"$config{Kernel}{CommandLine}\"),
-    qq(--kver), $kver, $output_file,
-  );
+    qq(--uefi-stub), $efi_stub, qq(--kernel-image), $kernfile, );
+
+  if ( nonempty $runConf{cmdline} ) {
+    push @cmd, qq(--kernel-cmdline=\"$runConf{cmdline}\");
+  }
+
+  push @cmd, ( qq(--kver), $kver, $output_file, );
 
   my @output = execute(@cmd);
   my $status = pop(@output);
