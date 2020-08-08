@@ -62,7 +62,6 @@ GetOptions(
   "kernel|k=s"  => \$runConf{kernel},
   "kver|K=s"    => \$runConf{kernel_version},
   "prefix|p=s"  => \$runConf{kernel_prefix},
-  "suffix|s=s"  => \$runConf{kernel_suffix},
   "bootdir|b=s" => \$runConf{bootdir},
   "confd|C=s"   => \$runConf{confd},
   "config|c=s"  => \$configfile,
@@ -74,7 +73,6 @@ Usage: $bin [options]
   -k|--kernel     Manually set the path to the kernel
   -K|--kver       Manually set the kernel version
   -p|--prefix     Manually set the output kernel prefix
-  -s|--suffix     Manually set the output kernel version suffix
   -b|--bootdir    Manually set the location to search for kernel files
   -C|--confd      Manually set the Dracut configuration directory
   -c|--config     Manually set the configuration file
@@ -157,34 +155,34 @@ if ( nonempty $config{Kernel}{Prefix} and !nonempty $runConf{kernel_prefix} ) {
 
 if ( nonempty $config{Kernel}{Version} and !nonempty $runConf{kernel_version} ) {
   $runConf{kernel_version} = $config{Kernel}{Version};
+  $runConf{kernel_version} =~ s/%current\b/%{current}/i;
 }
 
-if ( nonempty $config{Kernel}{Suffix} and !nonempty $runConf{kernel_suffix} ) {
-  $runConf{kernel_suffix} = $config{Kernel}{Suffix};
+if ( nonempty $config{Global}{Version} and !nonempty $runConf{version} ) {
+  $runConf{version} = $config{Global}{Version};
 }
 
-unless ( nonempty $runConf{version} ) {
-  if ( nonempty $runConf{kernel_suffix} ) {
-    $runConf{version} = "${VERSION}-$runConf{kernel_suffix}";
-  } else {
-    $runConf{version} = $VERSION;
-  }
+if ( nonempty $runConf{version} ) {
+  $runConf{version} =~ s/%current\b/%current/i;
+  $runConf{version} =~ s/%\{current\}/$VERSION/i;
+} else {
+  $runConf{version} = $VERSION;
 }
 
 # Map "%current" kernel version to output of `uname r`
-if ( nonempty $runConf{kernel_version} and $runConf{kernel_version} =~ /^%current$/i ) {
-  my ( $uname, $status ) = execute(qw(uname -r));
-  unless ( $status eq 0 ) {
+if ( nonempty $runConf{kernel_version} and $runConf{kernel_version} =~ /%\{current\}/i ) {
+  my @uname = execute(qw(uname -r));
+  my $status = pop(@uname);
+  unless ( $status eq 0 and scalar @uname ) {
     print "Cannot determine current kernel version\n";
     $runConf{exit_code} = $status;
     exit;
   }
-  chomp $uname;
-  $runConf{kernel_version} = $uname;
+  chomp @uname;
+  $runConf{kernel_version} =~ s/%\{current\}/$uname[0]/i;
 }
 
 if ( nonempty $runConf{kernel} ) {
-
   # Make sure the provided kernel file exists
   unless ( -f $runConf{kernel} ) {
     printf "The provided kernel %s was not found, unable to continue\n", $runConf{kernel};
@@ -225,7 +223,7 @@ unless ( nonempty $runConf{kernel_prefix} and nonempty $runConf{kernel_version} 
   }
 }
 
-printf "Creating ZFS Boot Menu from kernel %s\n", $runConf{kernel};
+printf "Creating ZFS Boot Menu %s from kernel %s\n", $runConf{version}, $runConf{kernel};
 
 # Create a unified kernel/initramfs/command line EFI file
 if ( enabled $config{EFI} ) {
