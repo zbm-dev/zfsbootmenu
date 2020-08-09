@@ -411,7 +411,7 @@ sub latestKernel {
     my $glob    = join( '/', ( $runConf{bootdir}, $prefix ) );
     my @kernels = glob($glob);
     next if !@kernels;
-    for ( sort versioncmp @kernels ) {
+    for ( sort { versioncmp( $b, $a ) } @kernels ) {
       return $_;
     }
   }
