@@ -195,7 +195,7 @@ An example YAML configuration file follows:
 ```
 ---
 Global:
-  ManageImages: true
+  ManageImages: false
   BootMountPoint: /boot/efi
   DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
 Components:
@@ -207,8 +207,8 @@ Components:
     Enabled: false
 EFI:
   ImageDir: /boot/efi/EFI/void
-  Versions: 4
-  Enabled: true
+  Versions: 2
+  Enabled: false
 Kernel:
   CommandLine: ro quiet loglevel=0
 ```
