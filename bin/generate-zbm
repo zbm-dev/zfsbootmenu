@@ -240,7 +240,6 @@ if ( enabled $config{EFI} ) {
   my $efi_versions = int $config{EFI}{Versions};
 
   if ( $efi_versions > 0 ) {
-
     # Find UEFI bundles and group by apparent version
     my @efi        = glob sprintf( "%s-*.EFI", $efi_prefix );
     my $efi_groups = groupKernels( \@efi, $efi_prefix, ".EFI" );

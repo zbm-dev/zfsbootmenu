@@ -27,10 +27,11 @@ This tool makes uses of the following additional software:
  * [fzf](https://github.com/junegunn/fzf)
  * [kexec-tools](https://github.com/horms/kexec-tools)
  * [mbuffer](http://www.maier-komor.de/mbuffer.html)
- * Linux Kernel
- * ZFS on Linux (currently 0.8.3 built on Void Linux).
-
-Binary releases for x86_64 and ppc64le are built on Void Linux hosts. ZFSBootMenu has been successfully tested up to ZFS on Linux 0.8.3 and Dracut 49.
+ * [Linux Kernel](https://www.kernel.org)
+ * [ZFS on Linux](https://zfsonlinux.org)
+ * [dracut](https://github.com/dracutdevs/dracut)
+ 
+ ZFSBootMenu has been tested successfully with Kernel 5.7.13, Dracut 050 and ZFS On Linux 0.8.4.
 
 # System prereqs
 
