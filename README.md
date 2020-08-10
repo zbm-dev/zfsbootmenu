@@ -173,7 +173,7 @@ The following properties can be set at whatever level of the pool you'd prefer t
 
 # initramfs creation
 
-`bin/generate-zbm` can be used to create an initramfs on your system. It ships with void-specific defaults in `etc/config.ini`. To create an initramfs, the following additional tools/libraries will need to be available on your system:
+`bin/generate-zbm` can be used to create an initramfs on your system. It ships with void-specific defaults in [etc/zfsbootmenu/config.yaml](etc/zfsbootmenu/config.yaml). To create an initramfs, the following additional tools/libraries will need to be available on your system:
 
  * [fzf](https://github.com/junegunn/fzf)
  * [kexec-tools](https://github.com/horms/kexec-tools)
