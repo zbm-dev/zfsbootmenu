@@ -365,25 +365,28 @@ EOF
     my $kernel = basename($entry);
     my ( undef, $version ) = split( '-', $kernel );
     my $label      = "ZFSBootMenu-$version";
-    my $menu_label = "ZFS Boot Menu v$version";
+    my $menu_label = "ZFS Boot Menu $version";
 
     if ($add_default) {
       print CFG "DEFAULT $label\n\n";
       $add_default--;
     }
 
-    print CFG "LABEL $label\n";
-    print CFG "MENU LABEL $menu_label\n";
-    print CFG "KERNEL $directory/$kernel\n";
-    print CFG "INITRD $directory/initramfs-$version.img\n";
-    print CFG "APPEND $runConf{cmdline}\n";
-    print CFG "\n";
+    my $entry_text = <<"EOF";
+LABEL $label
+MENU LABEL $menu_label
+KERNEL $directory/$kernel
+INITRD $directory/initramfs-$version.img
+APPEND $runConf{cmdline}
+
+EOF
+    print CFG $entry_text;
 
   }
   close CFG;
 
   make_path dirname( $config{Components}{syslinux}{Config} );
-  safeCopy( $runConf{syslinux_temp}, $config{syslinux}{Config} );
+  safeCopy( $runConf{syslinux_temp}, $config{Components}{syslinux}{Config} );
 }
 
 END {
