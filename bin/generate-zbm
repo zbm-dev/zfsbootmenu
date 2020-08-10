@@ -210,12 +210,14 @@ if ( nonempty $runConf{kernel_version} and $runConf{kernel_version} =~ /%\{curre
 }
 
 if ( nonempty $runConf{kernel} ) {
+
   # Make sure the provided kernel file exists
   unless ( -f $runConf{kernel} ) {
     printf "The provided kernel %s was not found, unable to continue\n", $runConf{kernel};
     exit 1;
   }
 } else {
+
   # Try to determine a kernel file when one was not provided
   if ( nonempty $runConf{kernel_version} ) {
     $runConf{kernel} = versionedKernel $runConf{kernel_version};
@@ -468,9 +470,8 @@ sub unifiedEFI {
     die "Missing EFI stub: $efi_stub";
   }
 
-  my @cmd = (
-    qw(dracut -q -f --uefi --confdir), $runConf{confd},
-    qq(--uefi-stub), $efi_stub, qq(--kernel-image), $kernfile, );
+  my @cmd =
+    ( qw(dracut -q -f --uefi --confdir), $runConf{confd}, qq(--uefi-stub), $efi_stub, qq(--kernel-image), $kernfile, );
 
   if ( nonempty $runConf{cmdline} ) {
     push( @cmd, qq(--kernel-cmdline=\"$runConf{cmdline}\") );
@@ -641,7 +642,10 @@ sub convertConfig {
 
   tie %ini_config, 'Config::IniFiles', ( -file => $inifile );
 
-  my $yaml = YAML::PP->new( boolean => 'boolean' );
+  my $yaml = YAML::PP->new(
+    boolean => 'boolean',
+    header  => 0,
+  );
 
   # Force boolean
   $ini_config{Global}{ManageImages} = boolean( $ini_config{Global}{ManageImages} );
