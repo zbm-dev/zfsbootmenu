@@ -49,13 +49,12 @@ BEGIN {
   $SIG{TERM} = \&cleanupMount;
 }
 
-my ( %runConf, %config, %ini_config, %components );
+my ( %runConf, %config );
 
 my $configfile;
 
-$runConf{bootdir}   = "/boot";
-$runConf{confd}     = "/etc/zfsbootmenu/dracut.conf.d";
-$runConf{exit_code} = 0;
+$runConf{bootdir} = "/boot";
+$runConf{confd}   = "/etc/zfsbootmenu/dracut.conf.d";
 
 GetOptions(
   "version|v=s" => \$runConf{version},
@@ -86,20 +85,44 @@ EOF
 
 unless ( nonempty $configfile ) {
   my $inifile = "/etc/zfsbootmenu/config.ini";
+  my $iniconv = "${inifile}.converted";
+
   $configfile = "/etc/zfsbootmenu/config.yaml";
 
   # Convert a default INI to YAML if no YAML config exists
   if ( -f $inifile and !-f $configfile ) {
     print "Converting $inifile to $configfile\n";
     convertConfig $inifile, $configfile;
-    print "Please verify the converted file and re-run $0\n";
-    exit;
+
+    my $notice = <<"EOF";
+NOTICE: the legacy INI configuration file
+
+  $inifile
+
+has been converted to YAML at
+
+  $configfile
+
+Please verify the converted file.
+
+EOF
+
+    print $notice;
+
+    if ( rename( $inifile, $iniconv ) ) {
+      print "The prior configuration has been renamed to\n\n  $iniconv\n\n";
+    }
   }
 }
 
 if ( -r $configfile ) {
-  my $yaml = YAML::PP->new( boolean => 'boolean' )->load_file($configfile);
-  %config = %$yaml;
+  eval {
+    my $yaml = YAML::PP->new( boolean => 'boolean' )->load_file($configfile);
+    %config = %$yaml;
+  } or do {
+    printf "Unable to parse configuration %s as YAML\n", $configfile;
+    exit 1;
+  };
 } else {
   printf "Configuration %s does not exist or is unreadable\n", $configfile;
   exit 1;
@@ -135,8 +158,7 @@ if ( nonempty $config{Global}{BootMountPoint} ) {
         print $line;
       }
       printf "Unable to mount %s\n", $config{Global}{BootMountPoint};
-      $runConf{exit_code} = $status;
-      exit;
+      exit $status;
     }
   }
 }
@@ -181,8 +203,7 @@ if ( nonempty $runConf{kernel_version} and $runConf{kernel_version} =~ /%\{curre
   my $status = pop(@uname);
   unless ( $status eq 0 and scalar @uname ) {
     print "Cannot determine current kernel version\n";
-    $runConf{exit_code} = $status;
-    exit;
+    exit $status;
   }
   chomp @uname;
   $runConf{kernel_version} =~ s/%\{current\}/$uname[0]/i;
@@ -192,10 +213,9 @@ if ( nonempty $runConf{kernel} ) {
   # Make sure the provided kernel file exists
   unless ( -f $runConf{kernel} ) {
     printf "The provided kernel %s was not found, unable to continue\n", $runConf{kernel};
-    exit;
+    exit 1;
   }
 } else {
-
   # Try to determine a kernel file when one was not provided
   if ( nonempty $runConf{kernel_version} ) {
     $runConf{kernel} = versionedKernel $runConf{kernel_version};
@@ -206,7 +226,7 @@ if ( nonempty $runConf{kernel} ) {
   # Make sure a kernel was found
   unless ( nonempty $runConf{kernel} ) {
     print "Unable to choose a kernel file, cannot continue\n";
-    exit;
+    exit 1;
   }
 }
 
@@ -216,14 +236,14 @@ unless ( nonempty $runConf{kernel_prefix} and nonempty $runConf{kernel_version} 
   unless ( nonempty $runConf{kernel_prefix} ) {
     unless ( defined $1 ) {
       printf "Unable to determine kernel prefix from %s\n", $runConf{kernel};
-      exit;
+      exit 1;
     }
     $runConf{kernel_prefix} = $1;
   }
   unless ( nonempty $runConf{kernel_version} ) {
     unless ( defined $3 ) {
       printf "Unable to detrmine kernel version from %s\n", $runConf{kernel};
-      exit;
+      exit 1;
     }
     $runConf{kernel_version} = $3;
   }
@@ -262,9 +282,8 @@ if ( enabled $config{EFI} ) {
   }
 
   make_path $config{EFI}{ImageDir};
-  if ( safeCopy( $unified_efi, $efi_target, 0 ) ) {
-    printf "Created new UEFI image %s\n", $efi_target;
-  }
+  safeCopy( $unified_efi, $efi_target, 0 ) or exit 1;
+  printf "Created new UEFI image %s\n", $efi_target;
 }
 
 # Create a separate kernel / initramfs. Used by syslinux/extlinux/grub.
@@ -317,13 +336,11 @@ if ( enabled $config{Components} ) {
 
   make_path $config{Components}{ImageDir};
 
-  if ( safeCopy( $runConf{kernel}, $kernel_target, 0 ) ) {
-    printf "Created kernel image %s\n", $kernel_target;
-  }
+  safeCopy( $runConf{kernel}, $kernel_target, 0 ) or exit 1;
+  printf "Created kernel image %s\n", $kernel_target;
 
-  if ( safeCopy( $initramfs, $initramfs_target, 0 ) ) {
-    printf "Created initramfs image %s\n", $initramfs_target;
-  }
+  safeCopy( $initramfs, $initramfs_target, 0 ) or exit 1;
+  printf "Created initramfs image %s\n", $initramfs_target;
 }
 
 # Generate syslinux.cfg, requires components to be built
@@ -386,7 +403,7 @@ EOF
   close CFG;
 
   make_path dirname( $config{Components}{syslinux}{Config} );
-  safeCopy( $runConf{syslinux_temp}, $config{Components}{syslinux}{Config} );
+  safeCopy( $runConf{syslinux_temp}, $config{Components}{syslinux}{Config} ) or exit 1;
 }
 
 END {
@@ -437,8 +454,7 @@ sub createInitramfs {
       print $line;
     }
     print "Failed to create $output_file\n";
-    $runConf{exit_code} = $status;
-    exit;
+    exit $status;
   }
 }
 
@@ -471,8 +487,7 @@ sub unifiedEFI {
       print $line;
     }
     print "Failed to create $output_file\n";
-    $runConf{exit_code} = $status;
-    exit;
+    exit $status;
   }
 }
 
@@ -511,12 +526,18 @@ sub enabled {
 }
 
 sub cleanupMount {
+  my $signal = shift;
+
   if ( $runConf{umount_on_exit} ) {
     print "Unmounting $config{Global}{BootMountPoint}\n";
     my $cmd = "umount $config{Global}{BootMountPoint}";
     execute($cmd);
   }
-  exit $runConf{exit_code};
+
+  if ( defined $signal ) {
+    print "$0 terminating on signal $signal\n";
+    exit 1;
+  }
 }
 
 sub maxRevision {
@@ -615,6 +636,8 @@ sub verboseUnlink {
 
 sub convertConfig {
   my ( $inifile, $configfile ) = @_;
+
+  my %ini_config;
 
   tie %ini_config, 'Config::IniFiles', ( -file => $inifile );
 
