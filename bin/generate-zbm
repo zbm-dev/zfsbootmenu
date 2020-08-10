@@ -92,7 +92,7 @@ unless ( nonempty $configfile ) {
   # Convert a default INI to YAML if no YAML config exists
   if ( -f $inifile and !-f $configfile ) {
     print "Converting $inifile to $configfile\n";
-    convertConfig $inifile, $configfile;
+    convertConfig( $inifile, $configfile );
 
     my $notice = <<"EOF";
 NOTICE: the legacy INI configuration file
@@ -271,7 +271,7 @@ if ( enabled $config{EFI} ) {
     $efi_target = sprintf( "%s-%s_%s.EFI", $efi_prefix, $runConf{version}, $revision );
 
     # Prune the old versions
-    pruneVersions $efi_groups, $runConf{version}, $efi_versions;
+    pruneVersions( $efi_groups, $runConf{version}, $efi_versions );
   } else {
     $efi_target = sprintf( "%s.EFI", $efi_prefix );
     my $efi_backup = sprintf( "%s-backup.EFI", $efi_prefix );
@@ -307,7 +307,7 @@ if ( enabled $config{Components} ) {
       sprintf( "%s/initramfs-%s_%s.img", $config{Components}{ImageDir}, $runConf{version}, $revision );
 
     # Prune old versions
-    pruneVersions $kern_groups, $runConf{version}, $component_versions;
+    pruneVersions( $kern_groups, $runConf{version}, $component_versions );
 
     # Map kernel to initramfs and prune
     keys %$kern_groups;
@@ -317,7 +317,7 @@ if ( enabled $config{Components} ) {
         s/$/.img/;
       }
     }
-    pruneVersions $kern_groups, $runConf{version}, $component_versions;
+    pruneVersions( $kern_groups, $runConf{version}, $component_versions );
   } else {
     $kernel_target    = sprintf( "%s-bootmenu",               $component_prefix );
     $initramfs_target = sprintf( "%s/initramfs-bootmenu.img", $config{Components}{ImageDir} );
@@ -473,10 +473,10 @@ sub unifiedEFI {
     qq(--uefi-stub), $efi_stub, qq(--kernel-image), $kernfile, );
 
   if ( nonempty $runConf{cmdline} ) {
-    push @cmd, qq(--kernel-cmdline=\"$runConf{cmdline}\");
+    push( @cmd, qq(--kernel-cmdline=\"$runConf{cmdline}\") );
   }
 
-  push @cmd, ( qq(--kver), $kver, $output_file, );
+  push( @cmd, ( qq(--kver), $kver, $output_file, ) );
 
   my @output = execute(@cmd);
   my $status = pop(@output);
@@ -563,7 +563,7 @@ sub groupKernels {
 
   foreach my $kernel (@$kernels) {
     next unless ( $kernel =~ /^\Q$prefix\E-(.+)_\d+\Q$suffix\E$/ );
-    push @{ $groups{$1} }, $kernel;
+    push( @{ $groups{$1} }, $kernel );
   }
 
   return \%groups;
@@ -576,7 +576,7 @@ sub pruneVersions {
   $keep = 0 unless ( defined $keep and $keep gt 0 );
 
   # Keep revisions current version
-  purgeFiles $versions->{$current}, $keep;
+  purgeFiles( $versions->{$current}, $keep );
 
   # Sort the versions and remove the current
   my @old_versions = sort versioncmp keys %$versions;
@@ -584,7 +584,7 @@ sub pruneVersions {
   my $index = 0;
   foreach my $key (@old_versions) {
     if ( $key eq $current ) {
-      splice @old_versions, $index, 1;
+      splice( @old_versions, $index, 1 );
     } else {
       $index++;
     }
@@ -593,12 +593,12 @@ sub pruneVersions {
   # Purge all of the too-old revisions
   while ( scalar @old_versions > $keep ) {
     $old_version = shift @old_versions;
-    purgeFiles $versions->{$old_version};
+    purgeFiles( $versions->{$old_version} );
   }
 
   # Purge all but the remaining revision of the leftover versions
   foreach $old_version (@old_versions) {
-    purgeFiles $versions->{$old_version}, 1;
+    purgeFiles( $versions->{$old_version}, 1 );
   }
 }
 
