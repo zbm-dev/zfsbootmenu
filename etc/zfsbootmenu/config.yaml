@@ -1,4 +1,3 @@
----
 Global:
   ManageImages: false
   BootMountPoint: /boot/efi
