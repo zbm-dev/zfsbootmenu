@@ -40,6 +40,7 @@ sub maxRevision;
 sub groupKernels;
 sub pruneVersions;
 sub purgeFiles;
+sub verboseUnlink;
 sub convertConfig;
 sub convertImageConfig;
 
@@ -588,18 +589,24 @@ sub purgeFiles {
     my @sorted_files = sort versioncmp @$files;
     while ( scalar @sorted_files > $keep ) {
       my $file = shift @sorted_files;
-      if ( -f $file ) {
-        print "Removing file $file\n";
-        unlink $file;
-      }
+      verboseUnlink $file;
     }
   } else {
     foreach my $file (@$files) {
-      if ( -f $file ) {
-        print "Removing file $file\n";
-        unlink $file;
-      }
+      verboseUnlink $file;
     }
+  }
+}
+
+sub verboseUnlink {
+  my $file = shift;
+
+  return unless ( -f $file );
+
+  if ( unlink $file ) {
+    print "Removed file $file\n";
+  } else {
+    print "Unable to remove $file: $!\n";
   }
 }
 
