@@ -189,12 +189,9 @@ Your distribution should have packages for these already.
 
 ## config.yaml
 
-The YAML file `/etc/zfsbootmenu/config.yaml` is used to control the behavior of `generate-zbm`. In prior versions, an INI file was used; `generate-zbm` will convert an existing `config.ini` file if possible when no `config.yaml` is found.
-
-An example YAML configuration file follows:
+The YAML file `/etc/zfsbootmenu/config.yaml` is used to control the behavior of `generate-zbm`. An example YAML configuration file follows:
 
 ```
----
 Global:
   ManageImages: false
   BootMountPoint: /boot/efi
@@ -240,6 +237,23 @@ Kernel:
 * `Enabled` Set to `true` to enable creation of unified UEFI bundles. The default value is `false`.
 * `Versions` Behaves similarly to `Components.Versions`, but acts on files matching the UEFI bundle naming scheme.
 * `Stub` This is the path to the stub loader used to boot the unified EFI image. If not set, a default of `/usr/lib/gummiboot/linuxx64.efi.stub` is assumed.
+
+
+## Conversion of legacy configurations
+
+In prior versions of ZFS Boot Menu, an INI format was used for configuration. In general, migration to the new format is not automatic, but `generate-zbm` can perform the migration if your distribution package has not done it for you. To migrate an existing configuration, just run
+
+```
+generate-zbm --migrate [ini-config] [--config yaml-config]
+```
+
+By default, the output YAML will be written to `/etc/zfsbootmenu/config.yaml`; use the `--config` argument to customize the output location.
+
+The argument `[ini-config]` to `--migrate` is optional. When it is not provided, `generate-zbm` will derive an input file by dropping the `.yaml` extension from the output file and appending a `.ini` extension.
+
+As a special case, if and only if `generate-zbm` is run without a `--config` option (*i.e.*, it attempts to load the default `/etc/zfsbootmenu/config.yaml`) and the default configuration does *not* exist. Under these circumstances, `generate-zbm` will behave as if it were passed the `--migrate /etc/zfsbootmenu/config.ini` option.
+
+Whenever `generate-zbm` attempts to migrate configuraton files, it will exit immediately with a zero exit code on successful conversion and a nonzero exit code if problems were encountered during the conversion. No boot images will be produced in the same invocation as a migration attempt.
 
 # Native encryption
 
