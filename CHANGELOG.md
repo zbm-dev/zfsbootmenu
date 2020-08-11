@@ -1,3 +1,29 @@
+# ZFSBootMenu v1.4rc1
+
+ZFSBootMenu 1.4 includes significant internal changes and some user-visible functional changes in the `generate-zbm` script.
+
+## Fixes
+* Internal improvements to `generate-zbm` to improve consistency and facilitate future development.
+* Management of versioned image retention should now be more consistent with expectation. Versioned ZBM images now increment a revision number when existing images with the same version already exist, and the retention policy preserves a configurable number of revisions for the current version alongside the latest revision of each of the same number of prior versions.
+* Improved error handling should make failures in `generate-zbm` easier to understand.
+
+## New features
+* Move from an INI configuration format to YAML, which should provide more flexibility for future enhancements.
+* Provide a `--migrate` command-line option to convert existing INI configurations to the new format.
+* Add configuration options to change default behavior for `--kernel`, `--kver` and `--prefix` to make `generate-zbm` easier to incorporate on non-Void systems.
+* Add a configuration option to change the default behavior for `--version` to allow customized output versioning of images.
+* Support string interpolation of `%current` or `%{current}` tags in `--kver` and `--version` values.
+* Add a `--cmdline` command-line option to override the configured `CommandLine` value without editing the configuration file.
+
+## Significant commits in this release:
+3b2b2f0 - Add explicit --migrate option to generate-zbm (Andrew J. Hesford)
+3cd3a8e - Improve error handling and automatic config conversion (Andrew J. Hesford)
+80e0c30 - Switch syslinux entry to heredoc, fix syslinux.cfg file copy (Zach Dykstra)
+6351226 - Move to YAML configuration, improve version handling (Andrew J. Hesford, Zach Dykstra)
+5fdb872 - Add configuration options for kernel, version and prefix (Andrew J. Hesford)
+79295ec - Add an optional parameter to safeCopy: (Zach Dykstra)
+8aa133f - Clean up control flow in generate-zbm (Andrew J. Hesford)
+
 # ZFSBootMenu v1.3.1
 
 This release fixes an issue found minutes after v1.3 was tagged and released - such is life. After timing out on the countdown menu, the screen is now cleared before displaying a prompt for the pool password. 
@@ -64,19 +90,6 @@ In addition:
 * The currently selected boot environment and kernel are displayed throughout submenus.
 * In addition to identifying boot environments by the property `mountpoint=/`, ZFSBootMenu will also identify boot environments with the properties `mountpoint=legacy` and `org.zfsbootmenu:active=on`.
 * Boot environments with `mountpoint=/` can be hidden from ZFSBootMenu by setting the property `org.zfsbootmenu:active=off`.
-
-## Significant commits in this release:
-7122be9 - Use mountpoint to check for ESP (Zach Dykstra)
-315e326 - Check return of mount operation (Zach Dykstra)
-8e434b1 - Allow root prefix to be customized for other distributions (Andrew J. Hesford)
-fcaba86 - Support unversioned kernel naming in generate-zbm (Andrew J. Hesford)
-294a84d - Broaden search for kernels and initramfs images (Andrew J. Hesford)
-2263dbe - Handle kernels with multi-part versions (Zach Dykstra)
-95f65a6 - Initial support for org.zfsbootmenu:active visibility (Andrew J. Hesford)
-69c3d63 - Draw the preview header on kernel, snapshot and diff screens (Zach Dykstra)
-83b2cbb - Initial support for resume guard (Andrew J. Hesford)
-6828550 - Initial snapshot diff browser (Zach Dykstra)
-4c0a968 - Report source size when cloning/duplicating a snapshot (Zach Dykstra)
 
 
 # ZFSBootMenu v1.2
