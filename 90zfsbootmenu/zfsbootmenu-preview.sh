@@ -1,4 +1,5 @@
 #!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
 
 BASE="${1}"
 ENV="${2}"

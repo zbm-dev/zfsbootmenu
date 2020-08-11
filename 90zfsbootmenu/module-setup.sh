@@ -1,4 +1,5 @@
 #!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
 
 check() {
   # We depend on udev-rules being loaded

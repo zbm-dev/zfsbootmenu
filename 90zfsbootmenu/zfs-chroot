@@ -1,4 +1,6 @@
 #!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
+
 BASE="$( mktemp -d /tmp/zfs.XXXX )"
 fs="$( zfs list -H -o name "${1}" )"
 

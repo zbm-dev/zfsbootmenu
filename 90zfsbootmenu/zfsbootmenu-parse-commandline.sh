@@ -1,4 +1,5 @@
 #!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
 
 # shellcheck disable=SC1091
 . /lib/dracut-lib.sh

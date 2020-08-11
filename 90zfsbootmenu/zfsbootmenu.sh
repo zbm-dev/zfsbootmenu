@@ -1,4 +1,6 @@
 #!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
+
 # store current kernel log level
 read -r printk < /proc/sys/kernel/printk
 printk=${printk:0:1}
