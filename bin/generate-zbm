@@ -51,8 +51,7 @@ BEGIN {
 }
 
 my ( %runConf, %config );
-
-my $configfile;
+my $default_config = "/etc/zfsbootmenu/config.yaml";
 
 $runConf{bootdir} = "/boot";
 $runConf{confd}   = "/etc/zfsbootmenu/dracut.conf.d";
@@ -65,7 +64,8 @@ GetOptions(
   "bootdir|b=s" => \$runConf{bootdir},
   "confd|C=s"   => \$runConf{confd},
   "cmdline|l=s" => \$runConf{cmdline},
-  "config|c=s"  => \$configfile,
+  "migrate|m:s" => \$runConf{migrate},
+  "config|c=s"  => \$runConf{config},
   "help|h"      => sub {
     my $bin  = basename($0);
     my $help = << "EOF";
@@ -78,54 +78,68 @@ Usage: $bin [options]
   -C|--confd      Manually set the Dracut configuration directory
   -c|--config     Manually set the configuration file
   -l|--cmdline    Manually set the kernel command line
+  -m|--migrate    Migrate legacy INI file to new YAML format
 EOF
     print $help;
     exit;
   },
 );
 
-unless ( nonempty $configfile ) {
-  my $inifile = "/etc/zfsbootmenu/config.ini";
-  my $iniconv = "${inifile}.converted";
+unless ( nonempty $runConf{config} ) {
+  $runConf{config} = $default_config;
 
-  $configfile = "/etc/zfsbootmenu/config.yaml";
-
-  # Convert a default INI to YAML if no YAML config exists
-  if ( -f $inifile and !-f $configfile ) {
-    print "Converting $inifile to $configfile\n";
-    convertConfig( $inifile, $configfile );
-
-    my $notice = <<"EOF";
-NOTICE: the legacy INI configuration file
-
-  $inifile
-
-has been converted to YAML at
-
-  $configfile
-
-Please verify the converted file.
-
-EOF
-
-    print $notice;
-
-    if ( rename( $inifile, $iniconv ) ) {
-      print "The prior configuration has been renamed to\n\n  $iniconv\n\n";
-    }
+  # Implicitly request migration if default config does not exist
+  unless ( defined $runConf{migrate} or -f $runConf{config} ) {
+    printf "Configuration %s does not exist, attempting to migrate\n", $runConf{config};
+    $runConf{migrate} = "/etc/zfsbootmenu/config.ini";
   }
 }
 
-if ( -r $configfile ) {
+# If migration explicitly requested or no config file exists, convert it
+if ( defined $runConf{migrate} ) {
+  my $inifile;
+
+  if ( nonempty $runConf{migrate} ) {
+    $inifile = $runConf{migrate};
+  } else {
+    $inifile = $runConf{config};
+    $inifile =~ s/(\.yaml)?$/.ini/i;
+  }
+
+  # If possible, make a backup of an existing output file
+  my $conf_backup = sprintf( "%s.backup", $runConf{config} );
+  if ( -f $runConf{config} and safeCopy( $runConf{config}, $conf_backup ) ) {
+    printf "Created backup %s -> %s\n", $runConf{config}, $conf_backup;
+  }
+
+  convertConfig( $inifile, $runConf{config} ) or exit 1;
+  exit 0;
+}
+
+if ( -r $runConf{config} ) {
   eval {
-    my $yaml = YAML::PP->new( boolean => 'boolean' )->load_file($configfile);
+    my $yaml = YAML::PP->new( boolean => 'boolean' )->load_file( $runConf{config} );
     %config = %$yaml;
   } or do {
-    printf "Unable to parse configuration %s as YAML\n", $configfile;
+    my $error = <<"EOF";
+Unable to parse configuration $runConf{config} as YAML.
+
+If this is a legacy configuration, migrate to the new format by running
+
+  $0 --migrate $runConf{config} [ --config <output> ],
+
+where `<output>` is the desired location of the converted file. If you
+omit the `--config` option, an output location
+
+  $default_config
+
+will be used by default.
+EOF
+    print $error;
     exit 1;
   };
 } else {
-  printf "Configuration %s does not exist or is unreadable\n", $configfile;
+  printf "Configuration %s does not exist or is unreadable\n", $runConf{config};
   exit 1;
 }
 
@@ -639,8 +653,14 @@ sub verboseUnlink {
 sub convertConfig {
   my ( $inifile, $configfile ) = @_;
 
-  my %ini_config;
+  unless ( -r $inifile ) {
+    printf "Unable to read legacy configuration file %s\n", $inifile;
+    exit 1;
+  }
 
+  print "Migrating $inifile to $configfile\n";
+
+  my %ini_config;
   tie %ini_config, 'Config::IniFiles', ( -file => $inifile );
 
   my $yaml = YAML::PP->new(
@@ -662,6 +682,8 @@ sub convertConfig {
   delete $ini_config{syslinux};
 
   $yaml->dump_file( $configfile, \%ini_config );
+
+  printf "Please verify the converted file %s\n", $configfile;
 }
 
 sub convertImageConfig {
