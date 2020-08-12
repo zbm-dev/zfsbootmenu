@@ -102,6 +102,7 @@ install() {
   dracut_install /usr/bin/tail
   dracut_install mbuffer
   dracut_install tr
+  dracut_install setsid
 
   # shellcheck disable=SC2154
   inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh"

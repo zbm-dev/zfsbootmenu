@@ -800,5 +800,7 @@ emergency_shell() {
 
   echo -n "Launching emergency shell: "
   echo -e "${message}\n"
-  /bin/bash
+
+  # https://busybox.net/FAQ.html#job_control
+  setsid sh -c 'exec /bin/bash </dev/tty1 >/dev/tty1 2>&1'
 }
