@@ -17,7 +17,7 @@ if [ -n "$(echo "${release}" | sed 's/[0-9][A-Za-z0-9_.-]*$//')" ]; then
 fi
 
 # Make sure paths make sense
-if [ ! -e bin/generate-zbm ] && [ ! -e CHANGELOG.md ]; then
+if [ ! -e bin/generate-zbm ] || [ ! -e CHANGELOG.md ]; then
   error "ERROR: run this script from the root of the zfsbootmenu tree"
 fi
 
@@ -41,6 +41,13 @@ fi
 
 echo "Will tag release version ${release} as ${tag}"
 
+# Synchronize man pages with POD documentation
+if [ ! -x releng/pod2man.sh ]; then
+  error "ERROR: unable to convert documentation"
+fi
+
+releng/pod2man.sh "${release}"
+
 # Extract release notes for this version
 relnotes=$(mktemp)
 # shellcheck disable=SC2064
@@ -59,7 +66,7 @@ fi
 sed -i bin/generate-zbm -e "s/our \$VERSION.*/our \$VERSION = '${release}';/"
 
 # Push updates for the release
-git add bin/generate-zbm CHANGELOG.md
+git add bin/generate-zbm CHANGELOG.md man/
 git commit -m "Bump to version ${release}"
 git push
 
