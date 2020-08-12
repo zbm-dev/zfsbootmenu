@@ -1,0 +1,155 @@
+__END__
+
+=head1 NAME
+
+=over 2
+
+B<config.yaml> - configuration file for generate-zbm
+
+=back
+
+=head1 SYNOPSIS
+
+=over 2
+
+B</etc/zfsbootmenu/config.yaml>
+
+=back
+
+=head1 DESCRIPTION
+
+=over 2
+
+The YAML file I</etc/zfsbootmenu/config.yaml> is used to control the behavior of B<generate-zbm>. An example YAML configuration file follows:
+
+=over 6 
+
+  Global:
+    ManageImages: false
+    BootMountPoint: /boot/efi
+    DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
+  Components:
+    ImageDir: /boot/efi/EFI/void
+    Versions: false
+    Enabled: false
+    syslinux:
+      Config: /boot/syslinux/syslinux.cfg
+      Enabled: false
+  EFI:
+    ImageDir: /boot/efi/EFI/void
+    Versions: 2
+    Enabled: false
+  Kernel:
+    CommandLine: ro quiet loglevel=0
+
+
+=back
+
+=back
+
+=head1 SECTIONS 
+
+=head2 Global
+
+=over 4
+
+=item B<ManageImages>
+
+Set this to I<1|true> to allow B<generate-zbm> to perform any actions (creation, removal of old files, etc)
+
+
+=item B<DracutConfDir>
+
+Set this to the location of the dracut configuration director for ZFS Boot Menu. This CAN NOT be the same location as the system I<dracut.conf.d>, as the configuration files there directly conflict with the creation of the bootmenu initramfs.
+
+=item B<BootMountPoint>
+
+Generally, set this to the location of your ESP. B<generate-zbm> will ensure that this is mounted when images are created and, if B<generate-zbm> does the mounting, will unmount this filesystem on exit. If you wish to avoid the mount checks, remove this parameter.
+
+=item B<Version>
+
+A specific ZFS Boot Menu version string to use in producing images. In the string, the value I<%{current}> will be replaced with the release version of ZFS Boot Menu. The default value is simply the current release version.
+
+=back
+
+=head2 Kernel
+
+=over 4
+
+=item B<CommandLine>
+
+If you're making a unified EFI file or a syslinux configuration, this is the command line passed to the boot image.
+
+=item B<Path>
+
+The full path to a specific kernel to use when making the boot images. If not specified, B<generate-zbm> will try to pick a reasonable kernel.
+
+=item B<Version>
+
+A specific kernel version to use. The value I<"%{current}"> will be replaced with the output of B<uname -r>; the braces can be omitted if I<%current> ends on a word bounary. If not set, B<generate-zbm> will try to parse the path of the selected kernel for a version.
+
+=item B<Prefix>
+
+The prefix to use for the names of ZFS Boot Menu images. By default, the prefix is extracted from the input kernel name.
+
+=back
+ 
+=head2 Components
+
+=over 4
+
+=item B<ImageDir>
+
+This is the destination directory for the initramfs and kernel.
+
+=item B<Enabled>
+
+Set to I<true> to enable creation of separate ZFS Boot Menu kernel and initramfs images. The default value is I<false>.
+
+=item B<Versions>
+
+Set to I<false> or I<0> to disable image versioning; B<generate-zbm> will not use its I<Global.Version> parameter to name outputs, and will keep exactly one backup copy of every image it produces. Set to I<true> (which behaves as I<1>) or a positive integer to enable image versioning; B<generate-zbm> will append the value of I<Global.Version> to every image it produces, followed by a revision as I<_$revision>. B<generate-zbm> will save I<Config.Versions> revisions of all images that match the current value of I<Global.Versions>. In addition, B<generate-zbm> will save the highest revision of the most recent I<Config.Versions> other image versions found.
+
+=back
+
+=head2 Components.syslinx
+
+=over 4 
+
+=item B<Enabled>
+
+Set to I<true> to enable syslinux configuration generation. The default value is I<false>.
+
+=item B<Config>
+
+Set to the path of the syslinux configuration file to produce.
+
+=back
+
+=head2 EFI
+
+=over 4
+
+=item B<ImageDir>
+
+This is the destination directory for the unified EFI file.
+
+=item B<Enabled>
+
+Set to I<true> to enable creation of unified UEFI bundles. The default value is I<false>.
+
+=item B<Versions>
+
+Behaves similarly to I<Components.Versions>, but acts on files matching the UEFI bundle naming scheme.
+
+=item B<Stub>
+
+This is the path to the stub loader used to boot the unified EFI image. If not set, a default of I</usr/lib/gummiboot/linuxx64.efi.stub> is assumed.
+
+=back
+
+=head1 AUTHOR
+
+ZFS Boot Menu Team
+
+=cut
