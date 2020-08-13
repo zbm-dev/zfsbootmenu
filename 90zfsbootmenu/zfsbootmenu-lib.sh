@@ -224,7 +224,7 @@ duplicate_snapshot() {
 # returns: 0 on success
 
 clone_snapshot() {
-  local selected target pool import_args output opts parent
+  local selected target pool output opts parent
 
   selected="${1}"
   target="${2}"
@@ -299,7 +299,7 @@ set_default_kernel() {
 }
 
 set_default_env() {
-  local selected pool import_args output
+  local selected pool output
   selected="${1}"
 
   pool="${selected%%/*}"
