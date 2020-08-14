@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "generate-zbm 5"
-.TH generate-zbm 5 "2020-08-12" "1.4rc1" "config.yaml"
+.TH generate-zbm 5 "2020-08-14" "1.4rc1" "config.yaml"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -150,32 +150,13 @@ config.yaml \- configuration file for generate\-zbm
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
 .RS 2
-The \s-1YAML\s0 file \fI/etc/zfsbootmenu/config.yaml\fR is used to control the behavior of \fBgenerate-zbm\fR. An example \s-1YAML\s0 configuration file follows:
-.Sp
-.Vb 10
-\&  Global:
-\&    ManageImages: false
-\&    BootMountPoint: /boot/efi
-\&    DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
-\&  Components:
-\&    ImageDir: /boot/efi/EFI/void
-\&    Versions: false
-\&    Enabled: false
-\&    syslinux:
-\&      Config: /boot/syslinux/syslinux.cfg
-\&      Enabled: false
-\&  EFI:
-\&    ImageDir: /boot/efi/EFI/void
-\&    Versions: 2
-\&    Enabled: false
-\&  Kernel:
-\&    CommandLine: ro quiet loglevel=0
-.Ve
-.RE
-.RS 2
+The \s-1YAML\s0 file \fI/etc/zfsbootmenu/config.yaml\fR is used to control the behavior of \fBgenerate-zbm\fR.
 .RE
 .SH "SECTIONS"
 .IX Header "SECTIONS"
+.RS 2
+Configuration sections described in detail below.
+.RE
 .SS "Global"
 .IX Subsection "Global"
 .IP "\fBManageImages\fR" 4
@@ -237,6 +218,27 @@ Behaves similarly to \fIComponents.Versions\fR, but acts on files matching the \
 .IP "\fBStub\fR" 4
 .IX Item "Stub"
 This is the path to the stub loader used to boot the unified \s-1EFI\s0 image. If not set, a default of \fI/usr/lib/gummiboot/linuxx64.efi.stub\fR is assumed.
+.SH "EXAMPLE"
+.IX Header "EXAMPLE"
+.Vb 10
+\&  Global:
+\&    ManageImages: false
+\&    BootMountPoint: /boot/efi
+\&    DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
+\&  Components:
+\&    ImageDir: /boot/efi/EFI/void
+\&    Versions: false
+\&    Enabled: false
+\&    syslinux:
+\&      Config: /boot/syslinux/syslinux.cfg
+\&      Enabled: false
+\&  EFI:
+\&    ImageDir: /boot/efi/EFI/void
+\&    Versions: 2
+\&    Enabled: false
+\&  Kernel:
+\&    CommandLine: ro quiet loglevel=0
+.Ve
 .SH "AUTHOR"
 .IX Header "AUTHOR"
-\&\s-1ZFS\s0 Boot Menu Team
+ZFSBootMenu Team

@@ -20,34 +20,17 @@ B</etc/zfsbootmenu/config.yaml>
 
 =over 2
 
-The YAML file I</etc/zfsbootmenu/config.yaml> is used to control the behavior of B<generate-zbm>. An example YAML configuration file follows:
-
-=over 6 
-
-  Global:
-    ManageImages: false
-    BootMountPoint: /boot/efi
-    DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
-  Components:
-    ImageDir: /boot/efi/EFI/void
-    Versions: false
-    Enabled: false
-    syslinux:
-      Config: /boot/syslinux/syslinux.cfg
-      Enabled: false
-  EFI:
-    ImageDir: /boot/efi/EFI/void
-    Versions: 2
-    Enabled: false
-  Kernel:
-    CommandLine: ro quiet loglevel=0
-
-
-=back
+The YAML file I</etc/zfsbootmenu/config.yaml> is used to control the behavior of B<generate-zbm>.
 
 =back
 
 =head1 SECTIONS 
+
+=over 2
+
+Configuration sections described in detail below.
+
+=back
 
 =head2 Global
 
@@ -145,6 +128,31 @@ Behaves similarly to I<Components.Versions>, but acts on files matching the UEFI
 =item B<Stub>
 
 This is the path to the stub loader used to boot the unified EFI image. If not set, a default of I</usr/lib/gummiboot/linuxx64.efi.stub> is assumed.
+
+=back
+
+=head1 EXAMPLE
+
+=over 6 
+
+  Global:
+    ManageImages: false
+    BootMountPoint: /boot/efi
+    DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
+  Components:
+    ImageDir: /boot/efi/EFI/void
+    Versions: false
+    Enabled: false
+    syslinux:
+      Config: /boot/syslinux/syslinux.cfg
+      Enabled: false
+  EFI:
+    ImageDir: /boot/efi/EFI/void
+    Versions: 2
+    Enabled: false
+  Kernel:
+    CommandLine: ro quiet loglevel=0
+
 
 =back
 
