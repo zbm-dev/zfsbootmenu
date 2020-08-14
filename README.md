@@ -189,55 +189,7 @@ Your distribution should have packages for these already.
 
 ## config.yaml
 
-The YAML file `/etc/zfsbootmenu/config.yaml` is used to control the behavior of `generate-zbm`. An example YAML configuration file follows:
-
-```
-Global:
-  ManageImages: false
-  BootMountPoint: /boot/efi
-  DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
-Components:
-  ImageDir: /boot/efi/EFI/void
-  Versions: false
-  Enabled: false
-  syslinux:
-    Config: /boot/syslinux/syslinux.cfg
-    Enabled: false
-EFI:
-  ImageDir: /boot/efi/EFI/void
-  Versions: 2
-  Enabled: false
-Kernel:
-  CommandLine: ro quiet loglevel=0
-```
-
-### Global
-* `ManageImages` Set this to 1 to allow `generate-zbm` to perform any actions (creation, removal of old files, etc)
-* `DracutConfDir` Set this to the location of the dracut configuration director for ZFS Boot Menu. This *CAN NOT* be the same location as the system `dracut.conf.d`, as the configuration files there directly conflict with the creation of the bootmenu initramfs.
-* `BootMountPoint` Generally, set this to the location of your ESP. `generate-zbm` will ensure that this is mounted when images are created and, if `generate-zbm` does the mounting, will unmount this filesystem on exit. If you wish to avoid the mount checks, remove this parameter.
-* `Version` A specific ZFS Boot Menu version string to use in producing images. In the string, the value `%{current}` will be replaced with the release version of ZFS Boot Menu. The default value is simply the current release version.
-
-### Kernel
-* `CommandLine` If you're making a unified EFI file or a syslinux configuration, this is the command line passed to the boot image. Refer to [Command line options](README.md#command-line-options).
-* `Path` The full path to a specific kernel to use when making the boot images. If not specified, `generate-zbm` will try to pick a reasonable kernel.
-* `Version` A specific kernel version to use. The value "%{current}" will be replaced with the output of `uname -r`; the braces can be omitted if `%current` ends on a word bounary. If not set, `generate-zbm` will try to parse the path of the selected kernel for a version.
-* `Prefix` The prefix to use for the names of ZFS Boot Menu images. By default, the prefix is extracted from the input kernel name.
-
-### Components
-* `ImageDir` This is the destination directory for the initramfs and kernel.
-* `Enabled` Set to `true` to enable creation of separate ZFS Boot Menu kernel and initramfs images. The default value is `false`.
-* `Versions` Set to `false` or `0` to disable image versioning; `generate-zbm` will not use its `Global.Version` parameter to name outputs, and will keep exactly one backup copy of every image it produces. Set to `true` (which behaves as `1`) or a positive integer to enable image versioning; `generate-zbm` will append the value of `Global.Version` to every image it produces, followed by a revision as `_$revision`. `generate-zbm` will save `Config.Versions` *revisions* of all images that match the current value of `Global.Versions`. In addition, `generate-zbm` will save the *highest* revision of the most recent `Config.Versions` other image versions found.
-
-### Components.syslinux
-* `Enabled` Set to `true` to enable syslinux configuration generation. The default value is `false`.
-* `Config` Set to the path of the syslinux configuration file to produce.
-
-### EFI
-* `ImageDir` This is the destination directory for the unified EFI file.
-* `Enabled` Set to `true` to enable creation of unified UEFI bundles. The default value is `false`.
-* `Versions` Behaves similarly to `Components.Versions`, but acts on files matching the UEFI bundle naming scheme.
-* `Stub` This is the path to the stub loader used to boot the unified EFI image. If not set, a default of `/usr/lib/gummiboot/linuxx64.efi.stub` is assumed.
-
+[config.yaml](pod/generate-zbm.5.pd) is used to control the operation of [generate-zbm](bin/generate-zbm). 
 
 ## Conversion of legacy configurations
 
