@@ -64,7 +64,7 @@ pod2man pod/generate-zbm.5.pod -c "config.yaml" \
   -r "${release}" -s 5 -n generate-zbm > man/generate-zbm.5
 
 pod2man bin/generate-zbm -c "generate-zbm" \
-  -r "${release}" -s 1 -n generate-zbm > man/generate-zbm.1
+  -r "${release}" -s 8 -n generate-zbm > man/generate-zbm.8
 
 # Push updates for the release
 git add bin/generate-zbm CHANGELOG.md man/
