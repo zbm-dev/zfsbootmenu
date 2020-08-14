@@ -189,7 +189,7 @@ Your distribution should have packages for these already.
 
 ## config.yaml
 
-[config.yaml](pod/generate-zbm.5.pd) is used to control the operation of [generate-zbm](bin/generate-zbm). 
+[config.yaml](pod/generate-zbm.5.pod) is used to control the operation of [generate-zbm](bin/generate-zbm). 
 
 ## Conversion of legacy configurations
 
