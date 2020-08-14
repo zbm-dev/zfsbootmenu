@@ -79,9 +79,7 @@ install() {
   dracut_install /usr/lib/udev/vdev_id
   dracut_install /usr/lib/udev/zvol_id
   dracut_install tac
-  dracut_install awk
   dracut_install basename
-  dracut_install cut
   dracut_install head
   dracut_install kexec
   dracut_install fzf
@@ -89,17 +87,10 @@ install() {
   dracut_install sort
   dracut_install sed
   dracut_install grep
-  dracut_install xargs
-  dracut_install clear
-  dracut_install reset
-  dracut_install lsblk
-  dracut_install cut
   dracut_install tput
   dracut_install mount
-  dracut_install df
-  dracut_install ip
-  dracut_install /usr/bin/mkdir
-  dracut_install /usr/bin/tail
+  dracut_install mkdir
+  dracut_install tail
   dracut_install mbuffer
   dracut_install tr
 
@@ -121,11 +112,7 @@ install() {
   fi
 
   # Synchronize initramfs and system hostid
-  AA=$(hostid | cut -b 1,2)
-  BB=$(hostid | cut -b 3,4)
-  CC=$(hostid | cut -b 5,6)
-  DD=$(hostid | cut -b 7,8)
-
+  HOSTID="$( hostid )"
   # shellcheck disable=SC2154
-  echo -ne "\\x${DD}\\x${CC}\\x${BB}\\x${AA}" > "${initdir}/etc/hostid"
+  echo -ne "\\x${HOSTID:6:2}\\x${HOSTID:4:2}\\x${HOSTID:2:2}\\x${HOSTID:0:2}" > "${initdir}/etc/hostid"
 }

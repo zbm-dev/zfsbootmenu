@@ -8,11 +8,7 @@
 spl_hostid=$(getarg spl_hostid=)
 if [ -n "${spl_hostid}" ] ; then
   info "ZFSBootMenu: Using hostid from command line: ${spl_hostid}"
-  AA=$(echo "${spl_hostid}" | cut -b 1,2)
-  BB=$(echo "${spl_hostid}" | cut -b 3,4)
-  CC=$(echo "${spl_hostid}" | cut -b 5,6)
-  DD=$(echo "${spl_hostid}" | cut -b 7,8)
-  echo -ne "\\x${DD}\\x${CC}\\x${BB}\\x${AA}" >/etc/hostid
+  echo -ne "\\x${spl_hostid:6:2}\\x${spl_hostid:4:2}\\x${spl_hostid:2:2}\\x${spl_hostid:0:2}" >/etc/hostid
 elif [ -f "/etc/hostid" ] ; then
   info "ZFSBootMenu: Using hostid from /etc/hostid: $(hostid)"
 else
