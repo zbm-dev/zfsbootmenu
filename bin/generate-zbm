@@ -16,6 +16,8 @@ use File::Path qw(make_path remove_tree);
 use File::Glob qw(:globally :nocase);
 use Sort::Versions;
 
+use Pod::Usage qw(pod2usage);
+
 use Data::Dumper;
 $Data::Dumper::Indent   = 1;
 $Data::Dumper::Sortkeys = 1;
@@ -67,20 +69,7 @@ GetOptions(
   "migrate|m:s" => \$runConf{migrate},
   "config|c=s"  => \$runConf{config},
   "help|h"      => sub {
-    my $bin  = basename($0);
-    my $help = << "EOF";
-Usage: $bin [options]
-  -v|--version    Manually set the version
-  -k|--kernel     Manually set the path to the kernel
-  -K|--kver       Manually set the kernel version
-  -p|--prefix     Manually set the output kernel prefix
-  -b|--bootdir    Manually set the location to search for kernel files
-  -C|--confd      Manually set the Dracut configuration directory
-  -c|--config     Manually set the configuration file
-  -l|--cmdline    Manually set the kernel command line
-  -m|--migrate    Migrate legacy INI file to new YAML format
-EOF
-    print $help;
+    pod2usage( -verbose => 2 );
     exit;
   },
 );
@@ -705,3 +694,62 @@ sub convertImageConfig {
   delete $section->{Versioned};
   delete $section->{Copies};
 }
+
+
+__END__
+
+=head1 NAME
+
+B<generate-zbm> ZFSBootMenu initramfs generator
+
+=head1 SYNOPSIS
+
+B<generate-zbm> [options]
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<--version|v>
+
+Manually set the version
+
+=item B<--kernel|k>
+
+Manually set the path to the kernel
+
+=item B<--kver|K>
+
+Manually set the kernel version
+
+=item B<--prefix|p>
+
+Manually set the output kernel prefix
+
+=item B<--bootdir|b>
+
+Manually set the location to search for kernel files
+
+=item B<--confd|C>
+
+Manually set the Dracut configuration directory
+
+=item B<--config|c>
+
+Manually set the configuration file
+
+=item B<--cmdline|l>
+
+Manually set the kernel commandline
+
+=item B<--migrate|m>
+
+Migrate legacy INI files to new YAML format
+
+=back
+
+=head1 AUTHOR
+
+ZFSBootMenu Team
+
+=cut

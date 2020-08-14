@@ -58,8 +58,16 @@ fi
 # Update version in generate-zbm
 sed -i bin/generate-zbm -e "s/our \$VERSION.*/our \$VERSION = '${release}';/"
 
+# Generate man pages from pod documentation
+
+pod2man pod/generate-zbm.5.pod -c "config.yaml" \
+  -r "${release}" -s 5 -n generate-zbm > man/generate-zbm.5
+
+pod2man bin/generate-zbm -c "generate-zbm" \
+  -r "${release}" -s 1 -n generate-zbm > man/generate-zbm.1
+
 # Push updates for the release
-git add bin/generate-zbm CHANGELOG.md
+git add bin/generate-zbm CHANGELOG.md man/
 git commit -m "Bump to version ${release}"
 git push
 

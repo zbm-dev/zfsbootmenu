@@ -150,6 +150,6 @@ This is the path to the stub loader used to boot the unified EFI image. If not s
 
 =head1 AUTHOR
 
-ZFS Boot Menu Team
+ZFSBootMenu Team
 
 =cut
