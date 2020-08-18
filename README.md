@@ -146,30 +146,9 @@ As with the efibootmgr section, the `zfsbootmenu:POOL=` and `spl_hostid=` option
 
 This file will configure `rEFInd` to create two entries for each kernel and initrams pair it finds. The first will directly boot into the environment set via the `bootfs` pool property. The second will force ZFS Boot Menu to display an environment / kernel / snapshot selection menu, allowing you to boot alternate environments, kernels and snapshots.
 
-# Command line options
+# [Command line options](pod/zfsbootmenu.7.pod#cli-parameters) 
 
-ZFS Boot Menu currently understands the following options:
-
-* `spl_hostid=` used to set the system hostid if you are using a pre-built initramfs from the release page.
-* `force_import=0|1` set to `1` to attempt to force import all pools on the system. Use with caution!
-* `read_write=0|1` set to `1` to enable writes to pools when importing. Pools are imported read-only by default as a safety precaution.
-* `timeout=`
- * A value of `0` will result in the system immediately booting from the pool configured in the `bootfs` pool property
- * A value of `-1` will result in the system displaying a boot menu.
- * Any other positive value will show a countdown timer to boot the environment configured under `bootfs`, otherwise it will default to a boot menu.
-* `""|zfsbootmenu|zfsbootmenu:|zfsbootmenu:POOL=zroot` The first three values are functionally identical. The fourth can be used to prefer a pool if multiple are present in the system.
-
-# ZFS properties
-
-The following properties can be set at whatever level of the pool you'd prefer to control the boot behavior.
-
-* `org.zfsbootmenu:kernel` this can be a partial kernel name `(5.4)` or an explicit name `(vmlinuz-5.6.11_1)`.
-* `org.zfsbootmenu:commandline` set the list of kernel commandline options to be passed to the final OS. Do not set `root=`, this is set for you.
-* `org.zfsbootmenu:active` controls whether boot environments appear in or are hidden from ZFS Boot Menu:
-  - If a boot environment has the property `mountpoint=/`, set `org.zfsbootmenu:active=off` to *hide* the environment. For any other value, including not set, the boot environment will be shown.
-  - If a boot environment has the property `mountpoint=legacy`, set `org.zfsbootmenu:active=on` to *show* the environment. For any other value, including not set, the boot environment will be hidden. **Note**: Not all Linux distributions support booting from filesystems with `mountpoint=legacy`.
-* `org.zfsbootmenu:rootprefix` controls the prefix added to the ZFS filesystem provided as the root to kernels booted by ZFSBootMenu. For example, the command-line argument `root=zfs:zroot/ROOT/void` has the root prefix `root=zfs:`, which is the default value unless the boot environment appears to be Arch Linux; for Arch, the default root prefix is `zfs=`. Set `org.zfsbootmenu:rootprefix` on any boot environment or its parent to override this default. Remember to include the `root=` component if necessary and any delimiters like `:` or `=` that separate the prefix from the root filesystem.
-
+# [ZFS Properties](pod/zfsbootmenu.7.pod#zfs-properties) 
 
 # initramfs creation
 
