@@ -24,7 +24,7 @@ zfsbootmenu is implemented as a Dracut module to provide an experience similar t
 At this point, you'll be booting into your OS-managed kernel and initramfs, along with any arguments needed to correctly boot your system.
 
 This tool makes uses of the following additional software:
- * [fzf](https://github.com/junegunn/fzf)
+ * [fzf](https://github.com/junegunn/fzf) or [skim](https://github.com/lotabout/skim)
  * [kexec-tools](https://github.com/horms/kexec-tools)
  * [mbuffer](http://www.maier-komor.de/mbuffer.html)
  * [Linux Kernel](https://www.kernel.org)
@@ -158,7 +158,7 @@ The [zfsbootmenu(7)](pod/zfsbootmenu.7.pod#zfs-properties) manual page describes
 
 `bin/generate-zbm` can be used to create an initramfs on your system. It ships with void-specific defaults in [etc/zfsbootmenu/config.yaml](etc/zfsbootmenu/config.yaml). To create an initramfs, the following additional tools/libraries will need to be available on your system:
 
- * [fzf](https://github.com/junegunn/fzf)
+ * [fzf](https://github.com/junegunn/fzf) or [skim](https://github.com/lotabout/skim)
  * [kexec-tools](https://github.com/horms/kexec-tools)
  * [mbuffer](http://www.maier-komor.de/mbuffer.html)
  * [perl Config::IniFiles](https://metacpan.org/pod/Config::IniFiles)
