@@ -21,8 +21,15 @@ tput reset
 
 OLDIFS="$IFS"
 
-export FZF_DEFAULT_OPTS="--layout=reverse-list --cycle \
-  --inline-info --tac"
+if command -v fzf >/dev/null 2>&1; then
+  export FUZZYSEL=fzf
+  export FZF_DEFAULT_OPTS="--layout=reverse-list --cycle --inline-info --tac"
+  export PREVIEW_HEIGHT=2
+elif command -v sk >/dev/null 2>&1; then
+  export FUZZYSEL=sk
+  export SKIM_DEFAULT_OPTIONS="--layout=reverse-list --inline-info --tac --color=16"
+  export PREVIEW_HEIGHT=3
+fi
 
 BASE="$( mktemp -d /tmp/zfs.XXXX )"
 
@@ -158,6 +165,12 @@ fi
 
 # Clear screen before a possible password prompt
 tput clear
+
+# The menu will not work if a fuzzy menu isn't available
+if [ -z "${FUZZYSEL}" ]; then
+  emergency_shell "no fuzzy menu available"
+  exit
+fi
 
 BE_SELECTED=0
 

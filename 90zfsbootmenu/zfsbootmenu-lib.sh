@@ -56,9 +56,9 @@ draw_be() {
 
   test -f "${env}" || return 130
 
-  selected="$( fzf -0 --prompt "BE > " \
+  selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
     --expect=alt-k,alt-d,alt-s,alt-c,alt-r \
-    --preview-window=up:2 \
+    --preview-window="up:${PREVIEW_HEIGHT}" \
     --header="[ENTER] boot [ALT+K] kernel [ALT+D] set bootfs [ALT+S] snapshots [ALT+C] cmdline" \
     --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}" < "${env}" )"
   ret=$?
@@ -76,9 +76,9 @@ draw_kernel() {
 
   benv="${1}"
 
-  selected="$( fzf --prompt "${benv} > " --tac --expect=alt-d \
+  selected="$( ${FUZZYSEL} --prompt "${benv} > " --tac --expect=alt-d \
     --with-nth=2 --header="[ENTER] boot [ALT+D] set default [ESC] back" \
-    --preview-window=up:2 \
+    --preview-window="up:${PREVIEW_HEIGHT}" \
     --preview="zfsbootmenu-preview.sh ${BASE} ${benv} ${BOOTFS}" < "${BASE}/${benv}/kernels" )"
   ret=$?
   # shellcheck disable=SC2119
@@ -96,9 +96,9 @@ draw_snapshots() {
   benv="${1}"
 
   selected="$( zfs list -t snapshot -H -o name "${benv}" |
-    fzf --prompt "Snapshot > " --tac --expect=alt-x,alt-c,alt-d \
+    ${FUZZYSEL} --prompt "Snapshot > " --tac --expect=alt-x,alt-c,alt-d \
       --preview="zfsbootmenu-preview.sh ${BASE} ${benv} ${BOOTFS}" \
-      --preview-window=up:2 \
+      --preview-window="up:${PREVIEW_HEIGHT}" \
       --header="[ENTER] duplicate [ALT+X] clone and promote [ALT+C] clone only [ALT+D] show diff [ESC] back" )"
   ret=$?
   # shellcheck disable=SC2119
@@ -133,9 +133,9 @@ draw_diff() {
   # shellcheck disable=SC2016
   ( zfs diff -H "${snapshot}" "${diff_target}" & echo $! >&3 ) 3>/tmp/diff.pid | \
     sed "s,${mnt},," | \
-    fzf --prompt "Files > " \
+    ${FUZZYSEL} --prompt "Files > " \
       --preview="zfsbootmenu-preview.sh ${BASE} ${diff_target} ${BOOTFS}" \
-      --preview-window=up:2 \
+      --preview-window="up:${PREVIEW_HEIGHT}" \
       --bind 'esc:execute-silent( kill $( cat /tmp/diff.pid ) )+abort'
 
   test -f /tmp/diff.pid  && rm /tmp/diff.pid
