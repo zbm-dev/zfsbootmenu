@@ -65,6 +65,7 @@ GetOptions(
   "confd|C=s"   => \$runConf{confd},
   "cmdline|l=s" => \$runConf{cmdline},
   "config|c=s"  => \$configfile,
+  "icon|i=s"    => \$runConf{icon},
   "help|h"      => sub {
     my $bin  = basename($0);
     my $help = << "EOF";
@@ -77,6 +78,7 @@ Usage: $bin [options]
   -C|--confd      Manually set the Dracut configuration directory
   -c|--config     Manually set the configuration file
   -l|--cmdline    Manually set the kernel command line
+  -i|--icon       Manually set the icon
 EOF
     print $help;
     exit;
