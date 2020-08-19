@@ -1,82 +1,73 @@
-__END__
-
 =head1 NAME
 
-=over 2
-
-B<zfsbootmenu> - System integrations 
-
-=back
+B<zfsbootmenu> - System integration
 
 =head1 SYNOPSIS
 
-=over 2
-
-ZFSBootMenu behavior is controlled through kernel command line options and ZFS filesystem properties.
-
-=back
+ZFSBootMenu behavior is controlled through ZFS filesystem properties and command-line options provided to the ZFSBootMenu kernel.
 
 =head1 CLI Parameters 
 
-=over 4 
-
-These options are set on the kernel command line when booting the initramfs or UEFI bundle. Default options were carefully chosen so that a system can be booted without setting any values.
-
-=back
+These options are set on the kernel command line when booting the initramfs or UEFI bundle. Default options were chosen to allow general systems to boot without setting any values.
 
 =over 4
 
-=item B<spl_hostid=>
+=item B<spl_hostid=E<lt>hostidE<gt>>
 
-When creating an initramfs or UEFI bundle, the I<hostid> from the system is copied into the target. If this image will be used on another system with a different I<hostid>, it can be overridden with this option. 
+When creating an initramfs or UEFI bundle, the I<hostid> from the system is copied into the target. If this image will be used on another system with a different I<hostid>, it can be overridden with this option.
 
-=item B<force_import=0|1>
+Replace B<E<lt>hostidE<gt>> with an eight-digit hexadecimal number.
 
-Set this option to I<1> to attempt to force a pool import on the system. This enables I<-f> on the I<zpool import> command, which will attempt to import a pool that's potentially in use on another system. Use this option with caution!
+=item B<force_import=1>
 
-=item B<timeout=>
+Set this option to attempt to force pool imports. When set, this invokes I<zpool import -f> in place of the regular I<zpool import> command, which will attempt to import a pool that's potentially in use on another system. Use this option with caution!
 
-This option controls if the boot environment menu should be displayed.
+Omit this option or explicitly specify B<force_import=0> to disable forced imports.
+
+=item B<timeout>
+
+This option accepts numeric values that control whether and when the
+boot-environment menu should be displayed.
 
 =over 2
 
-=item B<0> 
+=item B<timeout=0>
 
-Set this to bypass the menu and immediately boot the configured I<bootfs> pool property.
+When possible, bypass the menu and immediately boot a configured I<bootfs> pool property.
 
-=item B<-1>
+=item B<timeout=-1>
 
-Set this to always display the boot environment menu.
+Rather than present a countdown timer for automatic selection, immediately display the boot-environment menu.
 
-=item B<Positive integer>
+=item B<timeout=E<lt>positive integerE<gt>>
 
-Set any positive integer to display a countdown timer before booting the configured I<bootfs> boot environment.
+Display a countdown timer for the specified number of seconds before booting the configured I<bootfs> boot environment.
 
 =back
 
-=item B<zfsbootmenu:POOL=>
+=item B<zfsbootmenu:POOL=E<lt>poolE<gt>>
 
-The boot menu module will automatically start if it's included in an initramfs. However, if your system has multiple ZFS pools, you can set one as a primary pool. This is set via I<zfsbootmenu:POOL=>B<pool>
+By default, ZFSBootMenu will look for the I<bootfs> property on the first pool it imports to select the default boot environment. If you have multiple pools, substitute the name of your preferred pool for B<E<lt>poolE<gt>> in the argument B<zfsbootmenu:POOL=E<lt>poolE<gt>>.
 
 =back
 
 =head1 ZFS Properties 
 
-=over 4
-
-The following properties can be set at any level of the pool to control boot behavior.
-
-=back
+The following properties can be set at any level of the boot-environment hierarchy to control boot behavior.
 
 =over 4
 
 =item B<org.zfsbootmenu:kernel>
 
-This can be a partial kernel name (I<5.4>) or a full filename (I<vmlinuz-5.7.11_1>).
+An identifier used to select which kernel to boot among all kernels found in the I</boot> directory of the selected boot environment. This can be a partial kernel name (e.g., I<5.4>) or a full filename (e.g., I<vmlinuz-5.7.11_1>).
+
+If the identifier does not match any kernels, the latest kernel will be chosen as a fallback.
 
 =item B<org.zfsbootmenu.commandline>
 
-Set the list of kernel commandline options to be passed to the final OS. Do not set I<root=>, this is set for you.
+A list of command-line arguments passed to the kernel selected by ZFSBootMenu for final boot.
+
+Do not set I<root=>; ZFSBootMenu will set this option for for you.
 
 =item B<org.zfsbootmenu:active>
 
@@ -86,22 +77,28 @@ This controls whether boot environments appear in or are hidden from ZFSBootMenu
 
 =item B<off>
 
-Set to B<off> on a boot environment with I<mountpoint=/> to B<HIDE> the environment.
+For boot environments with I<mountpoint=/>, set B<org.zfsbootmenu:active=off> to B<HIDE> the environment.
 
 =item B<on>
 
-Set to B<on> for a boot environment with I<mountpoint=legacy> to B<SHOW> the environment. By default ZFSBootMenu only presents boot environments that have I<mountpoint=/> set. Note that not all Linux distributions support booting from filesystems with I<mountpoint=legacy>.
+For boot environments with I<mountpoint=legacy>, set B<org.zfsbootmenu:active=on> to B<SHOW> the environment.
 
 =back
 
+By default, ZFSBootMenu only shows boot environments for which the property I<mountpoint=/>.
+
 =item B<org.zfsbootmenu:rootprefix>
 
-This controls the prefix added to the ZFS filesystem provided as the root to the kernel booted by ZFSBootMenu. For example, the command-line argument I<root=zfs:zroot/ROOT/void> has the root prefix I<root=zfs:>, which is the default value unless the boot environment appears to be I<Arch Linux>; for arch, the default root prefix is I<zfs=>. Set this property to override the value determined from inspecting the boot environment.
+This specifies the prefix added to the ZFS filesystem provided as the root filesystem on the kernel command line. For example, the command-line argument I<root=zfs:zroot/ROOT/void> has root prefix I<root=zfs:>.
+
+The default prefix is I<root=zfs:> on all systems except those that appear to be Arch Linux. For Arch, the default root prefix is I<zfs=>.
+
+Set this property to override the value determined from inspecting the boot environment.
 
 =back
 
 =head1 AUTHOR
 
-ZFSBootMenu Team
+ZFSBootMenu Team L<https://github.com/zdykstra/zfsbootmenu>
 
 =cut

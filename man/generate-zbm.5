@@ -133,44 +133,36 @@
 .\" ========================================================================
 .\"
 .IX Title "generate-zbm 5"
-.TH generate-zbm 5 "2020-08-14" "1.4rc1" "config.yaml"
+.TH generate-zbm 5 "2020-08-19" "1.4rc1" "config.yaml"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
 .nh
 .SH "NAME"
-.RS 2
 config.yaml \- configuration file for generate\-zbm
-.RE
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
-.RS 2
 \&\fB/etc/zfsbootmenu/config.yaml\fR
-.RE
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-.RS 2
-The \s-1YAML\s0 file \fI/etc/zfsbootmenu/config.yaml\fR is used to control the behavior of \fBgenerate-zbm\fR.
-.RE
+The \s-1YAML\s0 file \fI/etc/zfsbootmenu/config.yaml\fR controls the production of ZFSBootMenu images by \fBgenerate-zbm\fR.
 .SH "SECTIONS"
 .IX Header "SECTIONS"
-.RS 2
-Configuration sections described in detail below.
-.RE
+The configuration is divided into several logical sections as keys of a \s-1YAML\s0 map. The value of each section is itself a \s-1YAML\s0 map.
 .SS "Global"
 .IX Subsection "Global"
 .IP "\fBManageImages\fR" 4
 .IX Item "ManageImages"
-Set this to \fI1|true\fR to allow \fBgenerate-zbm\fR to perform any actions (creation, removal of old files, etc)
+This must be set to \fItrue\fR before \fBgenerate-zbm\fR will attempt to perform any action (e.g., image creation or pruning old files).
 .IP "\fBDracutConfDir\fR" 4
 .IX Item "DracutConfDir"
-Set this to the location of the dracut configuration director for \s-1ZFS\s0 Boot Menu. This \s-1CAN NOT\s0 be the same location as the system \fIdracut.conf.d\fR, as the configuration files there directly conflict with the creation of the bootmenu initramfs.
+The path of the dracut configuration directory for ZFSBootMenu. This \fB\s-1MUST NOT\s0\fR be the same location as the system \fIdracut.conf.d\fR, as the configuration files there interfere with the creation of the ZFSBootMenu initramfs. If unspecified, a default value of \fI/etc/zfsbootmenu/dracut.conf.d\fR is assumed.
 .IP "\fBBootMountPoint\fR" 4
 .IX Item "BootMountPoint"
-Generally, set this to the location of your \s-1ESP.\s0 \fBgenerate-zbm\fR will ensure that this is mounted when images are created and, if \fBgenerate-zbm\fR does the mounting, will unmount this filesystem on exit. If you wish to avoid the mount checks, remove this parameter.
+In general, this should be the location of your \s-1EFI\s0 System Partition. \fBgenerate-zbm\fR will ensure that this is mounted when images are created and, if \fBgenerate-zbm\fR does the mounting, will unmount this filesystem on exit. When this parameter is not specified, \fBgenerate-zbm\fR will not verify or attempt to mount any filesystems.
 .IP "\fBVersion\fR" 4
 .IX Item "Version"
-A specific \s-1ZFS\s0 Boot Menu version string to use in producing images. In the string, the value \fI%{current}\fR will be replaced with the release version of \s-1ZFS\s0 Boot Menu. The default value is simply the current release version.
+A specific ZFSBootMenu version string to use in producing images. In the string, the value \fI%{current}\fR will be replaced with the release version of ZFSBootMenu. The default value is simply \fI%{current}\fR.
 .SS "Kernel"
 .IX Subsection "Kernel"
 .IP "\fBCommandLine\fR" 4
@@ -181,64 +173,68 @@ If you're making a unified \s-1EFI\s0 file or a syslinux configuration, this is 
 The full path to a specific kernel to use when making the boot images. If not specified, \fBgenerate-zbm\fR will try to pick a reasonable kernel.
 .IP "\fBVersion\fR" 4
 .IX Item "Version"
-A specific kernel version to use. The value \fI\*(L"%{current}\*(R"\fR will be replaced with the output of \fBuname \-r\fR; the braces can be omitted if \fI\f(CI%current\fI\fR ends on a word bounary. If not set, \fBgenerate-zbm\fR will try to parse the path of the selected kernel for a version.
+A specific kernel version to use. The value \fI%{current}\fR will be replaced with the output of \fBuname \-r\fR. If not set, \fBgenerate-zbm\fR will try to parse the path of the selected kernel filename for a version.
 .IP "\fBPrefix\fR" 4
 .IX Item "Prefix"
-The prefix to use for the names of \s-1ZFS\s0 Boot Menu images. By default, the prefix is extracted from the input kernel name.
+The prefix to use for the names of ZFSBootMenu images. By default, the prefix is extracted from the input kernel name.
 .SS "Components"
 .IX Subsection "Components"
-.IP "\fBImageDir\fR" 4
-.IX Item "ImageDir"
-This is the destination directory for the initramfs and kernel.
 .IP "\fBEnabled\fR" 4
 .IX Item "Enabled"
-Set to \fItrue\fR to enable creation of separate \s-1ZFS\s0 Boot Menu kernel and initramfs images. The default value is \fIfalse\fR.
+When \fItrue\fR, \fBgenerate-zbm\fR will create separate ZFSBootMenu kernel and initramfs images. The default value is \fIfalse\fR.
+.IP "\fBImageDir\fR" 4
+.IX Item "ImageDir"
+The destination directory for separate initramfs and kernel images.
 .IP "\fBVersions\fR" 4
 .IX Item "Versions"
-Set to \fIfalse\fR or \fI0\fR to disable image versioning; \fBgenerate-zbm\fR will not use its \fIGlobal.Version\fR parameter to name outputs, and will keep exactly one backup copy of every image it produces. Set to \fItrue\fR (which behaves as \fI1\fR) or a positive integer to enable image versioning; \fBgenerate-zbm\fR will append the value of \fIGlobal.Version\fR to every image it produces, followed by a revision as \fI_$revision\fR. \fBgenerate-zbm\fR will save \fIConfig.Versions\fR revisions of all images that match the current value of \fIGlobal.Versions\fR. In addition, \fBgenerate-zbm\fR will save the highest revision of the most recent \fIConfig.Versions\fR other image versions found.
-.SS "Components.syslinx"
-.IX Subsection "Components.syslinx"
+When \fIfalse\fR or \fI0\fR, image versioning will be disabled; \fBgenerate-zbm\fR will not use its \fIGlobal.Version\fR parameter to name outputs, and will keep exactly one backup copy of any image it would overwrite.
+.Sp
+When \fItrue\fR (which behaves as \fI1\fR) or any positive integer, \fBgenerate-zbm\fR will append the value of \fIGlobal.Version\fR to every image it produces, followed by a revision as \fI_$revision\fR. \fBgenerate-zbm\fR will save \fIComponents.Versions\fR revisions of all images with versions matching the current value of \fIGlobal.Version\fR. In addition, \fBgenerate-zbm\fR will save the highest revision of the most recent \fIComponents.Versions\fR image versions distinct from \fIGlobal.Version\fR.
+.SS "Components.syslinux"
+.IX Subsection "Components.syslinux"
 .IP "\fBEnabled\fR" 4
 .IX Item "Enabled"
-Set to \fItrue\fR to enable syslinux configuration generation. The default value is \fIfalse\fR.
+When \fItrue\fR, syslinux configuration generation is enabled. The default value is \fIfalse\fR.
 .IP "\fBConfig\fR" 4
 .IX Item "Config"
-Set to the path of the syslinux configuration file to produce.
+The path of the syslinux configuration file to produce.
 .SS "\s-1EFI\s0"
 .IX Subsection "EFI"
-.IP "\fBImageDir\fR" 4
-.IX Item "ImageDir"
-This is the destination directory for the unified \s-1EFI\s0 file.
 .IP "\fBEnabled\fR" 4
 .IX Item "Enabled"
-Set to \fItrue\fR to enable creation of unified \s-1UEFI\s0 bundles. The default value is \fIfalse\fR.
+When \fItrue\fR, \fBgenerate-zbm\fR will create unified \s-1UEFI\s0 bundles. The default value is \fIfalse\fR.
+.IP "\fBImageDir\fR" 4
+.IX Item "ImageDir"
+The destination directory for unified \s-1EFI\s0 files.
 .IP "\fBVersions\fR" 4
 .IX Item "Versions"
 Behaves similarly to \fIComponents.Versions\fR, but acts on files matching the \s-1UEFI\s0 bundle naming scheme.
 .IP "\fBStub\fR" 4
 .IX Item "Stub"
-This is the path to the stub loader used to boot the unified \s-1EFI\s0 image. If not set, a default of \fI/usr/lib/gummiboot/linuxx64.efi.stub\fR is assumed.
+The path to the \s-1EFI\s0 stub loader used to boot the unified bundle. If not set, a default of \fI/usr/lib/gummiboot/linuxx64.efi.stub\fR is assumed.
 .SH "EXAMPLE"
 .IX Header "EXAMPLE"
+The following example will write separate, unversioned ZFSBootMenu kernel and initramfs images to \fI/boot/efi/EFI/void\fR, keeping a backup for each file that would be overwritten when creating the new images. In addition, a versioned \s-1UEFI\s0 bundle will be stored in the same directory, where two prior revisions of the current version and the highest revision of each of the two most recent prior versions will be retained.
+.Sp
 .Vb 10
 \&  Global:
-\&    ManageImages: false
+\&    ManageImages: true
 \&    BootMountPoint: /boot/efi
 \&    DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
 \&  Components:
 \&    ImageDir: /boot/efi/EFI/void
 \&    Versions: false
-\&    Enabled: false
+\&    Enabled: true
 \&    syslinux:
 \&      Config: /boot/syslinux/syslinux.cfg
 \&      Enabled: false
 \&  EFI:
 \&    ImageDir: /boot/efi/EFI/void
 \&    Versions: 2
-\&    Enabled: false
+\&    Enabled: true
 \&  Kernel:
 \&    CommandLine: ro quiet loglevel=0
 .Ve
 .SH "AUTHOR"
 .IX Header "AUTHOR"
-ZFSBootMenu Team
+ZFSBootMenu Team <https://github.com/zdykstra/zfsbootmenu>

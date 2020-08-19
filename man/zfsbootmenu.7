@@ -133,77 +133,84 @@
 .\" ========================================================================
 .\"
 .IX Title "zfsbootmenu 7"
-.TH zfsbootmenu 7 "2020-08-18" "1.4rc1" "ZFSBootMenu"
+.TH zfsbootmenu 7 "2020-08-19" "1.4rc1" "ZFSBootMenu"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
 .nh
 .SH "NAME"
-.RS 2
-zfsbootmenu \- System integrations
-.RE
+zfsbootmenu \- System integration
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
-.RS 2
-ZFSBootMenu behavior is controlled through kernel command line options and \s-1ZFS\s0 filesystem properties.
-.RE
+ZFSBootMenu behavior is controlled through \s-1ZFS\s0 filesystem properties and command-line options provided to the ZFSBootMenu kernel.
 .SH "CLI Parameters"
 .IX Header "CLI Parameters"
-.RS 4
-These options are set on the kernel command line when booting the initramfs or \s-1UEFI\s0 bundle. Default options were carefully chosen so that a system can be booted without setting any values.
-.RE
-.IP "\fBspl_hostid=\fR" 4
-.IX Item "spl_hostid="
+These options are set on the kernel command line when booting the initramfs or \s-1UEFI\s0 bundle. Default options were chosen to allow general systems to boot without setting any values.
+.IP "\fBspl_hostid=<hostid>\fR" 4
+.IX Item "spl_hostid=<hostid>"
 When creating an initramfs or \s-1UEFI\s0 bundle, the \fIhostid\fR from the system is copied into the target. If this image will be used on another system with a different \fIhostid\fR, it can be overridden with this option.
-.IP "\fBforce_import=0|1\fR" 4
-.IX Item "force_import=0|1"
-Set this option to \fI1\fR to attempt to force a pool import on the system. This enables \fI\-f\fR on the \fIzpool import\fR command, which will attempt to import a pool that's potentially in use on another system. Use this option with caution!
-.IP "\fBtimeout=\fR" 4
-.IX Item "timeout="
-This option controls if the boot environment menu should be displayed.
+.Sp
+Replace \fB<hostid>\fR with an eight-digit hexadecimal number.
+.IP "\fBforce_import=1\fR" 4
+.IX Item "force_import=1"
+Set this option to attempt to force pool imports. When set, this invokes \fIzpool import \-f\fR in place of the regular \fIzpool import\fR command, which will attempt to import a pool that's potentially in use on another system. Use this option with caution!
+.Sp
+Omit this option or explicitly specify \fBforce_import=0\fR to disable forced imports.
+.IP "\fBtimeout\fR" 4
+.IX Item "timeout"
+This option accepts numeric values that control whether and when the
+boot-environment menu should be displayed.
 .RS 4
-.IP "\fB0\fR" 2
-.IX Item "0"
-Set this to bypass the menu and immediately boot the configured \fIbootfs\fR pool property.
-.IP "\fB\-1\fR" 2
-.IX Item "-1"
-Set this to always display the boot environment menu.
-.IP "\fBPositive integer\fR" 2
-.IX Item "Positive integer"
-Set any positive integer to display a countdown timer before booting the configured \fIbootfs\fR boot environment.
+.IP "\fBtimeout=0\fR" 2
+.IX Item "timeout=0"
+When possible, bypass the menu and immediately boot a configured \fIbootfs\fR pool property.
+.IP "\fBtimeout=\-1\fR" 2
+.IX Item "timeout=-1"
+Rather than present a countdown timer for automatic selection, immediately display the boot-environment menu.
+.IP "\fBtimeout=<positive integer>\fR" 2
+.IX Item "timeout=<positive integer>"
+Display a countdown timer for the specified number of seconds before booting the configured \fIbootfs\fR boot environment.
 .RE
 .RS 4
 .RE
-.IP "\fBzfsbootmenu:POOL=\fR" 4
-.IX Item "zfsbootmenu:POOL="
-The boot menu module will automatically start if it's included in an initramfs. However, if your system has multiple \s-1ZFS\s0 pools, you can set one as a primary pool. This is set via \fIzfsbootmenu:POOL=\fR\fBpool\fR
+.IP "\fBzfsbootmenu:POOL=<pool>\fR" 4
+.IX Item "zfsbootmenu:POOL=<pool>"
+By default, ZFSBootMenu will look for the \fIbootfs\fR property on the first pool it imports to select the default boot environment. If you have multiple pools, substitute the name of your preferred pool for \fB<pool>\fR in the argument \fBzfsbootmenu:POOL=<pool>\fR.
 .SH "ZFS Properties"
 .IX Header "ZFS Properties"
-.RS 4
-The following properties can be set at any level of the pool to control boot behavior.
-.RE
+The following properties can be set at any level of the boot-environment hierarchy to control boot behavior.
 .IP "\fBorg.zfsbootmenu:kernel\fR" 4
 .IX Item "org.zfsbootmenu:kernel"
-This can be a partial kernel name (\fI5.4\fR) or a full filename (\fIvmlinuz\-5.7.11_1\fR).
+An identifier used to select which kernel to boot among all kernels found in the \fI/boot\fR directory of the selected boot environment. This can be a partial kernel name (e.g., \fI5.4\fR) or a full filename (e.g., \fIvmlinuz\-5.7.11_1\fR).
+.Sp
+If the identifier does not match any kernels, the latest kernel will be chosen as a fallback.
 .IP "\fBorg.zfsbootmenu.commandline\fR" 4
 .IX Item "org.zfsbootmenu.commandline"
-Set the list of kernel commandline options to be passed to the final \s-1OS.\s0 Do not set \fIroot=\fR, this is set for you.
+A list of command-line arguments passed to the kernel selected by ZFSBootMenu for final boot.
+.Sp
+Do not set \fIroot=\fR; ZFSBootMenu will set this option for for you.
 .IP "\fBorg.zfsbootmenu:active\fR" 4
 .IX Item "org.zfsbootmenu:active"
 This controls whether boot environments appear in or are hidden from ZFSBootMenu.
 .RS 4
 .IP "\fBoff\fR" 2
 .IX Item "off"
-Set to \fBoff\fR on a boot environment with \fImountpoint=/\fR to \fB\s-1HIDE\s0\fR the environment.
+For boot environments with \fImountpoint=/\fR, set \fBorg.zfsbootmenu:active=off\fR to \fB\s-1HIDE\s0\fR the environment.
 .IP "\fBon\fR" 2
 .IX Item "on"
-Set to \fBon\fR for a boot environment with \fImountpoint=legacy\fR to \fB\s-1SHOW\s0\fR the environment. By default ZFSBootMenu only presents boot environments that have \fImountpoint=/\fR set. Note that not all Linux distributions support booting from filesystems with \fImountpoint=legacy\fR.
+For boot environments with \fImountpoint=legacy\fR, set \fBorg.zfsbootmenu:active=on\fR to \fB\s-1SHOW\s0\fR the environment.
 .RE
 .RS 4
+.Sp
+By default, ZFSBootMenu only shows boot environments for which the property \fImountpoint=/\fR.
 .RE
 .IP "\fBorg.zfsbootmenu:rootprefix\fR" 4
 .IX Item "org.zfsbootmenu:rootprefix"
-This controls the prefix added to the \s-1ZFS\s0 filesystem provided as the root to the kernel booted by ZFSBootMenu. For example, the command-line argument \fIroot=zfs:zroot/ROOT/void\fR has the root prefix \fIroot=zfs:\fR, which is the default value unless the boot environment appears to be \fIArch Linux\fR; for arch, the default root prefix is \fIzfs=\fR. Set this property to override the value determined from inspecting the boot environment.
+This specifies the prefix added to the \s-1ZFS\s0 filesystem provided as the root filesystem on the kernel command line. For example, the command-line argument \fIroot=zfs:zroot/ROOT/void\fR has root prefix \fIroot=zfs:\fR.
+.Sp
+The default prefix is \fIroot=zfs:\fR on all systems except those that appear to be Arch Linux. For Arch, the default root prefix is \fIzfs=\fR.
+.Sp
+Set this property to override the value determined from inspecting the boot environment.
 .SH "AUTHOR"
 .IX Header "AUTHOR"
-ZFSBootMenu Team
+ZFSBootMenu Team <https://github.com/zdykstra/zfsbootmenu>

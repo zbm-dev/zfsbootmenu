@@ -255,7 +255,7 @@ unless ( nonempty $runConf{kernel_prefix} and nonempty $runConf{kernel_version} 
   }
 }
 
-printf "Creating ZFS Boot Menu %s from kernel %s\n", $runConf{version}, $runConf{kernel};
+printf "Creating ZFSBootMenu %s from kernel %s\n", $runConf{version}, $runConf{kernel};
 
 # Create a unified kernel/initramfs/command line EFI file
 if ( enabled $config{EFI} ) {
@@ -388,7 +388,7 @@ EOF
     my $kernel = basename($entry);
     my ( undef, $version ) = split( '-', $kernel );
     my $label      = "ZFSBootMenu-$version";
-    my $menu_label = "ZFS Boot Menu $version";
+    my $menu_label = "ZFSBootMenu $version";
 
     if ($add_default) {
       print CFG "DEFAULT $label\n\n";
@@ -700,7 +700,7 @@ __END__
 
 =head1 NAME
 
-B<generate-zbm> ZFSBootMenu initramfs generator
+B<generate-zbm> - ZFSBootMenu initramfs generator
 
 =head1 SYNOPSIS
 
@@ -708,48 +708,50 @@ B<generate-zbm> [options]
 
 =head1 OPTIONS
 
+Where noted, command-line options supersede options in the B<generate-zbm> configuration file.
+
 =over 4
 
-=item B<--version|v>
+=item B<--version|-v> I<zbm-version>
 
-Manually set the version
+Override the ZFSBootMenu version; supersedes I<Global.Version>
 
-=item B<--kernel|k>
+=item B<--kernel|-k> I<kernel-path>
 
-Manually set the path to the kernel
+Manually specify a specific kernel; supersedes I<Kernel.Path>
 
-=item B<--kver|K>
+=item B<--kver|-K> I<kernel-version>
 
-Manually set the kernel version
+Manually specify a specific kernel version; supersedes I<Kernel.Version>
 
-=item B<--prefix|p>
+=item B<--prefix|-p> I<image-prefix>
 
-Manually set the output kernel prefix
+Manually specify the output image prefix; supersedes I<Kernel.Prefix>
 
-=item B<--bootdir|b>
+=item B<--confd|-C> I<confd-path>
 
-Manually set the location to search for kernel files
+Specify the dracut configuration directory; supersedes I<Global.DracutConfDir>
 
-=item B<--confd|C>
+=item B<--cmdline|-l> I<options>
 
-Manually set the Dracut configuration directory
+Override the kernel command line; supersedes I<Kernel.CommandLine>
 
-=item B<--config|c>
+=item B<--bootdir|-b> I<boot-path>
 
-Manually set the configuration file
+Specify the path to search for kernel files; default: I</boot>
 
-=item B<--cmdline|l>
+=item B<--config|-c> I<conf-file>
 
-Manually set the kernel commandline
+Specify the path to a configuration file; default: I</etc/zfsbootmenu/config.yaml>
 
-=item B<--migrate|m>
+=item B<--migrate|-m> [I<ini-config>]
 
-Migrate legacy INI files to new YAML format
+Migrate a legacy INI files to new YAML format, writing the converted file to path specified by B<--config>. If I<ini-config> is not specified, a default path is chosen by removing any I<.yaml> suffix on the B<--config> path and appending a I<.ini> suffix.
 
 =back
 
 =head1 AUTHOR
 
-ZFSBootMenu Team
+ZFSBootMenu Team L<https://github.com/zdykstra/zfsbootmenu>
 
 =cut

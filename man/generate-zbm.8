@@ -132,46 +132,47 @@
 .rm #[ #] #H #V #F C
 .\" ========================================================================
 .\"
-.IX Title "generate-zbm 1"
-.TH generate-zbm 1 "2020-08-14" "1.4rc1" "generate-zbm"
+.IX Title "generate-zbm 8"
+.TH generate-zbm 8 "2020-08-19" "1.4rc1" "generate-zbm"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
 .nh
 .SH "NAME"
-generate\-zbm ZFSBootMenu initramfs generator
+generate\-zbm \- ZFSBootMenu initramfs generator
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 \&\fBgenerate-zbm\fR [options]
 .SH "OPTIONS"
 .IX Header "OPTIONS"
-.IP "\fB\-\-version|v\fR" 4
-.IX Item "--version|v"
-Manually set the version
-.IP "\fB\-\-kernel|k\fR" 4
-.IX Item "--kernel|k"
-Manually set the path to the kernel
-.IP "\fB\-\-kver|K\fR" 4
-.IX Item "--kver|K"
-Manually set the kernel version
-.IP "\fB\-\-prefix|p\fR" 4
-.IX Item "--prefix|p"
-Manually set the output kernel prefix
-.IP "\fB\-\-bootdir|b\fR" 4
-.IX Item "--bootdir|b"
-Manually set the location to search for kernel files
-.IP "\fB\-\-confd|C\fR" 4
-.IX Item "--confd|C"
-Manually set the Dracut configuration directory
-.IP "\fB\-\-config|c\fR" 4
-.IX Item "--config|c"
-Manually set the configuration file
-.IP "\fB\-\-cmdline|l\fR" 4
-.IX Item "--cmdline|l"
-Manually set the kernel commandline
-.IP "\fB\-\-migrate|m\fR" 4
-.IX Item "--migrate|m"
-Migrate legacy \s-1INI\s0 files to new \s-1YAML\s0 format
+Where noted, command-line options supersede options in the \fBgenerate-zbm\fR configuration file.
+.IP "\fB\-\-version|\-v\fR \fIzbm-version\fR" 4
+.IX Item "--version|-v zbm-version"
+Override the ZFSBootMenu version; supersedes \fIGlobal.Version\fR
+.IP "\fB\-\-kernel|\-k\fR \fIkernel-path\fR" 4
+.IX Item "--kernel|-k kernel-path"
+Manually specify a specific kernel; supersedes \fIKernel.Path\fR
+.IP "\fB\-\-kver|\-K\fR \fIkernel-version\fR" 4
+.IX Item "--kver|-K kernel-version"
+Manually specify a specific kernel version; supersedes \fIKernel.Version\fR
+.IP "\fB\-\-prefix|\-p\fR \fIimage-prefix\fR" 4
+.IX Item "--prefix|-p image-prefix"
+Manually specify the output image prefix; supersedes \fIKernel.Prefix\fR
+.IP "\fB\-\-confd|\-C\fR \fIconfd-path\fR" 4
+.IX Item "--confd|-C confd-path"
+Specify the dracut configuration directory; supersedes \fIGlobal.DracutConfDir\fR
+.IP "\fB\-\-cmdline|\-l\fR \fIoptions\fR" 4
+.IX Item "--cmdline|-l options"
+Override the kernel command line; supersedes \fIKernel.CommandLine\fR
+.IP "\fB\-\-bootdir|\-b\fR \fIboot-path\fR" 4
+.IX Item "--bootdir|-b boot-path"
+Specify the path to search for kernel files; default: \fI/boot\fR
+.IP "\fB\-\-config|\-c\fR \fIconf-file\fR" 4
+.IX Item "--config|-c conf-file"
+Specify the path to a configuration file; default: \fI/etc/zfsbootmenu/config.yaml\fR
+.IP "\fB\-\-migrate|\-m\fR [\fIini-config\fR]" 4
+.IX Item "--migrate|-m [ini-config]"
+Migrate a legacy \s-1INI\s0 files to new \s-1YAML\s0 format, writing the converted file to path specified by \fB\-\-config\fR. If \fIini-config\fR is not specified, a default path is chosen by removing any \fI.yaml\fR suffix on the \fB\-\-config\fR path and appending a \fI.ini\fR suffix.
 .SH "AUTHOR"
 .IX Header "AUTHOR"
-ZFSBootMenu Team
+ZFSBootMenu Team <https://github.com/zdykstra/zfsbootmenu>
