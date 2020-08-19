@@ -8,7 +8,7 @@ B</etc/zfsbootmenu/config.yaml>
 
 =head1 DESCRIPTION
 
-The YAML file I</etc/zfsbootmenu/config.yaml> controls the production of ZFSBootMenu images by B<generate-zbm>.
+The YAML file I</etc/zfsbootmenu/config.yaml> controls the generation of ZFSBootMenu images by B<generate-zbm>(8).
 
 =head1 SECTIONS 
 
@@ -140,6 +140,10 @@ The following example will write separate, unversioned ZFSBootMenu kernel and in
 
 
 =back
+
+=head1 SEE ALSO
+
+B<generate-zbm>(8) B<zfsbootmenu>(7)
 
 =head1 AUTHOR
 

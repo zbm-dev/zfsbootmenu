@@ -184,8 +184,8 @@ The following properties can be set at any level of the boot-environment hierarc
 An identifier used to select which kernel to boot among all kernels found in the \fI/boot\fR directory of the selected boot environment. This can be a partial kernel name (e.g., \fI5.4\fR) or a full filename (e.g., \fIvmlinuz\-5.7.11_1\fR).
 .Sp
 If the identifier does not match any kernels, the latest kernel will be chosen as a fallback.
-.IP "\fBorg.zfsbootmenu.commandline\fR" 4
-.IX Item "org.zfsbootmenu.commandline"
+.IP "\fBorg.zfsbootmenu:commandline\fR" 4
+.IX Item "org.zfsbootmenu:commandline"
 A list of command-line arguments passed to the kernel selected by ZFSBootMenu for final boot.
 .Sp
 Do not set \fIroot=\fR; ZFSBootMenu will set this option for for you.
@@ -202,7 +202,7 @@ For boot environments with \fImountpoint=legacy\fR, set \fBorg.zfsbootmenu:activ
 .RE
 .RS 4
 .Sp
-By default, ZFSBootMenu only shows boot environments for which the property \fImountpoint=/\fR.
+By default, ZFSBootMenu only shows boot environments with the property \fImountpoint=/\fR.
 .RE
 .IP "\fBorg.zfsbootmenu:rootprefix\fR" 4
 .IX Item "org.zfsbootmenu:rootprefix"
@@ -211,6 +211,9 @@ This specifies the prefix added to the \s-1ZFS\s0 filesystem provided as the roo
 The default prefix is \fIroot=zfs:\fR on all systems except those that appear to be Arch Linux. For Arch, the default root prefix is \fIzfs=\fR.
 .Sp
 Set this property to override the value determined from inspecting the boot environment.
+.SH "SEE ALSO"
+.IX Header "SEE ALSO"
+\&\fBgenerate-zbm\fR(5) \fBgenerate-zbm\fR(8)
 .SH "AUTHOR"
 .IX Header "AUTHOR"
 ZFSBootMenu Team <https://github.com/zdykstra/zfsbootmenu>

@@ -63,7 +63,7 @@ An identifier used to select which kernel to boot among all kernels found in the
 
 If the identifier does not match any kernels, the latest kernel will be chosen as a fallback.
 
-=item B<org.zfsbootmenu.commandline>
+=item B<org.zfsbootmenu:commandline>
 
 A list of command-line arguments passed to the kernel selected by ZFSBootMenu for final boot.
 
@@ -85,7 +85,7 @@ For boot environments with I<mountpoint=legacy>, set B<org.zfsbootmenu:active=on
 
 =back
 
-By default, ZFSBootMenu only shows boot environments for which the property I<mountpoint=/>.
+By default, ZFSBootMenu only shows boot environments with the property I<mountpoint=/>.
 
 =item B<org.zfsbootmenu:rootprefix>
 
@@ -96,6 +96,10 @@ The default prefix is I<root=zfs:> on all systems except those that appear to be
 Set this property to override the value determined from inspecting the boot environment.
 
 =back
+
+=head1 SEE ALSO
+
+B<generate-zbm>(5) B<generate-zbm>(8)
 
 =head1 AUTHOR
 

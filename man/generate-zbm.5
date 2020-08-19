@@ -145,7 +145,7 @@ config.yaml \- configuration file for generate\-zbm
 \&\fB/etc/zfsbootmenu/config.yaml\fR
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-The \s-1YAML\s0 file \fI/etc/zfsbootmenu/config.yaml\fR controls the production of ZFSBootMenu images by \fBgenerate-zbm\fR.
+The \s-1YAML\s0 file \fI/etc/zfsbootmenu/config.yaml\fR controls the generation of ZFSBootMenu images by \fBgenerate-zbm\fR(8).
 .SH "SECTIONS"
 .IX Header "SECTIONS"
 The configuration is divided into several logical sections as keys of a \s-1YAML\s0 map. The value of each section is itself a \s-1YAML\s0 map.
@@ -235,6 +235,9 @@ The following example will write separate, unversioned ZFSBootMenu kernel and in
 \&  Kernel:
 \&    CommandLine: ro quiet loglevel=0
 .Ve
+.SH "SEE ALSO"
+.IX Header "SEE ALSO"
+\&\fBgenerate-zbm\fR(8) \fBzfsbootmenu\fR(7)
 .SH "AUTHOR"
 .IX Header "AUTHOR"
 ZFSBootMenu Team <https://github.com/zdykstra/zfsbootmenu>

@@ -708,7 +708,7 @@ B<generate-zbm> [options]
 
 =head1 OPTIONS
 
-Where noted, command-line options supersede options in the B<generate-zbm> configuration file.
+Where noted, command-line options supersede options in the B<generate-zbm>(5) configuration file.
 
 =over 4
 
@@ -746,9 +746,13 @@ Specify the path to a configuration file; default: I</etc/zfsbootmenu/config.yam
 
 =item B<--migrate|-m> [I<ini-config>]
 
-Migrate a legacy INI files to new YAML format, writing the converted file to path specified by B<--config>. If I<ini-config> is not specified, a default path is chosen by removing any I<.yaml> suffix on the B<--config> path and appending a I<.ini> suffix.
+Migrate a legacy INI file to the new YAML format, writing the converted file to the path specified by B<--config>. If I<ini-config> is not specified, a default path is chosen by removing any I<.yaml> suffix in the B<--config> path and appending a I<.ini> suffix.
 
 =back
+
+=head1 SEE ALSO
+
+B<generate-zbm>(5) B<zfsbootmenu>(7)
 
 =head1 AUTHOR
 

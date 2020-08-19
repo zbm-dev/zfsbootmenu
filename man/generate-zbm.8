@@ -145,7 +145,7 @@ generate\-zbm \- ZFSBootMenu initramfs generator
 \&\fBgenerate-zbm\fR [options]
 .SH "OPTIONS"
 .IX Header "OPTIONS"
-Where noted, command-line options supersede options in the \fBgenerate-zbm\fR configuration file.
+Where noted, command-line options supersede options in the \fBgenerate-zbm\fR(5) configuration file.
 .IP "\fB\-\-version|\-v\fR \fIzbm-version\fR" 4
 .IX Item "--version|-v zbm-version"
 Override the ZFSBootMenu version; supersedes \fIGlobal.Version\fR
@@ -172,7 +172,10 @@ Specify the path to search for kernel files; default: \fI/boot\fR
 Specify the path to a configuration file; default: \fI/etc/zfsbootmenu/config.yaml\fR
 .IP "\fB\-\-migrate|\-m\fR [\fIini-config\fR]" 4
 .IX Item "--migrate|-m [ini-config]"
-Migrate a legacy \s-1INI\s0 files to new \s-1YAML\s0 format, writing the converted file to path specified by \fB\-\-config\fR. If \fIini-config\fR is not specified, a default path is chosen by removing any \fI.yaml\fR suffix on the \fB\-\-config\fR path and appending a \fI.ini\fR suffix.
+Migrate a legacy \s-1INI\s0 file to the new \s-1YAML\s0 format, writing the converted file to the path specified by \fB\-\-config\fR. If \fIini-config\fR is not specified, a default path is chosen by removing any \fI.yaml\fR suffix in the \fB\-\-config\fR path and appending a \fI.ini\fR suffix.
+.SH "SEE ALSO"
+.IX Header "SEE ALSO"
+\&\fBgenerate-zbm\fR(5) \fBzfsbootmenu\fR(7)
 .SH "AUTHOR"
 .IX Header "AUTHOR"
 ZFSBootMenu Team <https://github.com/zdykstra/zfsbootmenu>
