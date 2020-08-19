@@ -58,16 +58,7 @@ fi
 # Update version in generate-zbm
 sed -i bin/generate-zbm -e "s/our \$VERSION.*/our \$VERSION = '${release}';/"
 
-# Generate man pages from pod documentation
-
-pod2man pod/generate-zbm.5.pod -c "config.yaml" \
-  -r "${release}" -s 5 -n generate-zbm > man/generate-zbm.5
-
-pod2man pod/zfsbootmenu.7.pod -c "ZFSBootMenu" \
-  -r "${release}" -s 7 -n zfsbootmenu > man/zfsbootmenu.7
-
-pod2man bin/generate-zbm -c "generate-zbm" \
-  -r "${release}" -s 8 -n generate-zbm > man/generate-zbm.8
+scripts/pod2man.sh
 
 # Push updates for the release
 git add bin/generate-zbm CHANGELOG.md man/
