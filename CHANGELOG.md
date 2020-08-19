@@ -1,13 +1,15 @@
-# ZFSBootMenu v1.4rc1
+# ZFSBootMenu v1.4
 
 ZFSBootMenu 1.4 includes significant internal changes and some user-visible functional changes in the `generate-zbm` script.
 
 ## Fixes
+* Correct an issue that required two attempts to set default boot environments.
 * Internal improvements to `generate-zbm` to improve consistency and facilitate future development.
 * Management of versioned image retention should now be more consistent with expectation. Versioned ZBM images now increment a revision number when existing images with the same version already exist, and the retention policy preserves a configurable number of revisions for the current version alongside the latest revision of each of the same number of prior versions.
 * Improved error handling should make failures in `generate-zbm` easier to understand.
 
 ## New features
+* Provide man pages (generate-zbm.5, generate-zbm.8 and zfsbootmenu.7) to document the creation and use of ZFSBootMenu images.
 * Move from an INI configuration format to YAML, which should provide more flexibility for future enhancements.
 * Provide a `--migrate` command-line option to convert existing INI configurations to the new format.
 * Add configuration options to change default behavior for `--kernel`, `--kver` and `--prefix` to make `generate-zbm` easier to incorporate on non-Void systems.
@@ -15,7 +17,9 @@ ZFSBootMenu 1.4 includes significant internal changes and some user-visible func
 * Support string interpolation of `%current` or `%{current}` tags in `--kver` and `--version` values.
 * Add a `--cmdline` command-line option to override the configured `CommandLine` value without editing the configuration file.
 
-## Significant commits in this release:
+## Significant commits in this release
+0979051 - Add documentation for generate-zbm, its config and initramfs options (Zach Dykstra, et al.)
+ee1d9d8 - Unmask import_args in functions calling import_pool (Zach Dykstra)
 3b2b2f0 - Add explicit --migrate option to generate-zbm (Andrew J. Hesford)
 3cd3a8e - Improve error handling and automatic config conversion (Andrew J. Hesford)
 80e0c30 - Switch syslinux entry to heredoc, fix syslinux.cfg file copy (Zach Dykstra)
@@ -24,9 +28,15 @@ ZFSBootMenu 1.4 includes significant internal changes and some user-visible func
 79295ec - Add an optional parameter to safeCopy: (Zach Dykstra)
 8aa133f - Clean up control flow in generate-zbm (Andrew J. Hesford)
 
+
+# ZFSBootMenu v1.4rc1
+
+Except for the addition of man pages and the fix in commit ee1d9d8, the new features and fixes in this release are fully described in the final v1.4 release notes.
+
+
 # ZFSBootMenu v1.3.1
 
-This release fixes an issue found minutes after v1.3 was tagged and released - such is life. After timing out on the countdown menu, the screen is now cleared before displaying a prompt for the pool password. 
+This release fixes an issue found minutes after v1.3 was tagged and released - such is life. After timing out on the countdown menu, the screen is now cleared before displaying a prompt for the pool password.
 
 # ZFSBootMenu v1.3
 
@@ -50,7 +60,7 @@ In addition:
 * In addition to identifying boot environments by the property `mountpoint=/`, ZFSBootMenu will also identify boot environments with the properties `mountpoint=legacy` and `org.zfsbootmenu:active=on`.
 * Boot environments with `mountpoint=/` can be hidden from ZFSBootMenu by setting the property `org.zfsbootmenu:active=off`.
 
-## Significant commits in this release:
+## Significant commits in this release
 7122be9 - Use mountpoint to check for ESP (Zach Dykstra)
 315e326 - Check return of mount operation (Zach Dykstra)
 8e434b1 - Allow root prefix to be customized for other distributions (Andrew J. Hesford)
@@ -71,25 +81,7 @@ This release contains all of the fixes and new features in v1.3rc1, as well as s
 
 # ZFSBootMenu v1.3rc1
 
-This release features several fixes and new features.
-
-## Fixes
-* When creating a boot image, `generate-zbm` will fail if the EFI System Partition (`BootMountPoint` in the configuration) is not and cannot be mounted.
-* When `generate-zbm` creates backup kernels, initramfs images or UEFI bundles, timestamps of the original files will be preserved when possible, which may help boot loaders like rEFInd properly order the images.
-* Some display issues in the boot menu have been fixed.
-
-## New features
-The following new features should allow ZFSBootMenu to work with distributions such as Arch or Ubuntu:
-*  The Dracut module now searches for a much broader range of kernel/initramfs pairs in boot environments, including unversioned kernels with names like `linux` or `vmlinuz`.
-* `generate-zbm` now has a `--kver` argument that can specify a version number when one cannot be correctly determined from the name of a kernel file, allowing creation of ZFSBootMenu images on systems like Arch that do not encode version information in kernel names.
-* When starting a boot environment, the `root=` command-line argument is now set with a prefix (*e.g.*, the `zfs:` part of `root=zfs:pool/ROOT/void`) that is chosen based on distribution ID in `/etc/os-release` or `/usr/lib/os-release`, if available; the default selection can be overridden by setting the `org.zfsbootmenu:rootprefix` property.
-
-In addition:
-* In the ZFSBootMenu snapshot browser, an option to view a `zfs diff` between the live boot environment and a selected snapshot allow convenient review of the changes since the snapshot was taken.
-* ZFSBootMenu now attempts to detect an active suspend-to-disk image and prevent any operations on ZFS pools that could lead to corruption on resume.
-* The currently selected boot environment and kernel are displayed throughout submenus.
-* In addition to identifying boot environments by the property `mountpoint=/`, ZFSBootMenu will also identify boot environments with the properties `mountpoint=legacy` and `org.zfsbootmenu:active=on`.
-* Boot environments with `mountpoint=/` can be hidden from ZFSBootMenu by setting the property `org.zfsbootmenu:active=off`.
+The new features and fixes in this release are fully described in the final v1.3 release notes.
 
 
 # ZFSBootMenu v1.2
@@ -100,7 +92,7 @@ This release features substantial code and idea contributions from @ahesford . T
 
 Previously, snapshots could be cloned to a boot environment with a pre-generated, and often long, BE name. Substantial quality of life improvements were made here, including:
 
-* Add the ability to do a full zfs send | zfs recv clone from a local snapshot. This lets you establish a new boot environment that is not dependent on any other environments or snapshots. 
+* Add the ability to do a full zfs send | zfs recv clone from a local snapshot. This lets you establish a new boot environment that is not dependent on any other environments or snapshots.
 * Add the ability to clone and promote a snapshot, or simply clone it.
 * When cloning a snapshot, local ZFS properties of the parent filesystem are now transferred to the clone.
 * For all snapshot operations, you can now directly enter a boot environment name. This name is checked for character validity, and to confirm that it is not already taken.
@@ -128,10 +120,10 @@ On commit, the shell scripts that power the boot menu and Dracut setup are run t
 
 # ZFSBootMenu v1.1
 
-This release includes a number of small fixes and improvements. 
+This release includes a number of small fixes and improvements.
 
 # Fixes
-* Correctly handle exiting the recovery shell, fixing an infinite loop. A reboot is no longer required to recover from the recovery shell. Thanks, @ahesford. 
+* Correctly handle exiting the recovery shell, fixing an infinite loop. A reboot is no longer required to recover from the recovery shell. Thanks, @ahesford.
 * Check that the EFI stub file is present on disk at the specified location. If the file is missing and an EFI bundle is requested, exit with an error.
 * Minor documentation fixes.
 
@@ -144,7 +136,7 @@ No configuration file changes are needed to use this release. Enjoy!
 
 # ZFSBootMenu v1.0
 
-We're jumping straight up to v1.0! 
+We're jumping straight up to v1.0!
 
 # Small changes
 * Set the kernel log level to 0 when in the menu system, then restore it to the original value on boot
@@ -152,12 +144,12 @@ We're jumping straight up to v1.0!
 * Add an initial chroot helper script, `zfs-chroot` for the recovery shell. It can be invoked as `zfs-chroot pool/ROOT/BE`.
 * Set the default config path in `generate-zbm` to `/etc/zfsbootmenu/conf.d`
 * Allow the EFI stub file to be defined in config.ini
-* Optionally read the kernel command line from `/etc/default/zfsbootmenu` 
+* Optionally read the kernel command line from `/etc/default/zfsbootmenu`
 
 # Large changes
-* Clean up or whitelist all issues in `zfsbootmenu-lib.sh`, `zfsbootmenu-preview.sh` and `zfsbootmenu.sh` noted by shellcheck. 
-* Support entering a custom kernel command line via `alt-c` on the main menu. The input line is pre-filled with the command line that would have been used on the next boot, for that environment. This command line is NOT persisted between reboots, it's simply here to let you recover an unbootable system. 
-* Add support for reading the kernel commandline from the ZFS property `org.zfsbootmenu:commandline`.  This property is now considered the default/primary source of truth for the kernel command line - it takes precedence over `/etc/default/zfsbootmenu` and `/etc/default/grub`. 
+* Clean up or whitelist all issues in `zfsbootmenu-lib.sh`, `zfsbootmenu-preview.sh` and `zfsbootmenu.sh` noted by shellcheck.
+* Support entering a custom kernel command line via `alt-c` on the main menu. The input line is pre-filled with the command line that would have been used on the next boot, for that environment. This command line is NOT persisted between reboots, it's simply here to let you recover an unbootable system.
+* Add support for reading the kernel commandline from the ZFS property `org.zfsbootmenu:commandline`.  This property is now considered the default/primary source of truth for the kernel command line - it takes precedence over `/etc/default/zfsbootmenu` and `/etc/default/grub`.
 
 A big thank you to @ahesford for his code contributions and testing leading up to this release!
 
@@ -167,7 +159,7 @@ A big thank you to @ahesford for his code contributions and testing leading up t
 This release contains all of the fixes and features from 1.0rc1, as well as the following:
 
 * Add support for reading the kernel commandline from the ZFS property `org.zfsbootmenu:commandline`. This property takes precedence over `/etc/default/grub` and `/etc/default/zfsbootmenu`
-* Clean up or whitelist all issues in `zfsbootmenu-lib.sh`, `zfsbootmenu-preview.sh` and `zfsbootmenu.sh` noted by shellcheck. 
+* Clean up or whitelist all issues in `zfsbootmenu-lib.sh`, `zfsbootmenu-preview.sh` and `zfsbootmenu.sh` noted by shellcheck.
 
 A big thank you to @ahesford for his code contributions and testing leading up to this release candidate. It is very much appreciated!
 
@@ -181,14 +173,14 @@ This release has been a long time coming. In no particular order, it contains th
 * Add an initial chroot helper script for the recovery shell
 * Set the default config path in `generate-zbm` to `/etc/zfsbootmenu/conf.d`
 * Allow the EFI stub file to be defined in config.ini
-* Support entering a custom kernel command line via `alt-c` on the main menu. The input line is pre-filled with the command line that would have been used on the next boot, for that environment. This command line is NOT persisted between reboots, it's simply here to let you recover an unbootable system. 
+* Support entering a custom kernel command line via `alt-c` on the main menu. The input line is pre-filled with the command line that would have been used on the next boot, for that environment. This command line is NOT persisted between reboots, it's simply here to let you recover an unbootable system.
 
 
 # ZFSBootMenu 0.8.1
 
-This release adds a few improvements to generate-zbm. 
+This release adds a few improvements to generate-zbm.
 
-* When finding kernels in /boot to use as the base for zfsbootmenu, the list is properly sorted so something like 5.4.11 is now a higher version than 5.3.18. 
+* When finding kernels in /boot to use as the base for zfsbootmenu, the list is properly sorted so something like 5.4.11 is now a higher version than 5.3.18.
 * Output files now have `_1` appended to them (both kernel and initramfs) to workaround a gotcha with Petitboots' syslinux.cfg parser ignoring files ending in `.0`.
 * If the bootloader partition is defined in config.ini, generate-zbm will now mount it and unmount it for you. If it's already mounted, it's left alone.
 * Syslinux mode now builds off of [Components] mode, instead of adding yet another code path for generating the initramfs. This makes syslinux mode simply a syslinux.cfg renderer.
@@ -214,14 +206,14 @@ Additional features added in include:
 This release adds support for generating a syslinux/extlinux-compatible configuration file. This can be used both with Petitboot on POWER hardware and with extlinux on x86_64.
 
 
-# ZFS Boot Menu 0.7.6
+# ZFSBootMenu 0.7.6
 
 This is a fairly minor release, with the removal of an external VERSION file and the inclusion of a basic Makefile being the major impacting changes.
 
 
 # ZFSBootMenu 0.7.5
 
-A previous release defaulted pool imports to read-only mode. Because of this, cloning a snapshot would fail. This release fixes that by detecting if a pool is imported as read-only, exporting it and re-importing it read-write. If the snapshot being cloned is encrypted, keys will be loaded again (from file or via prompt). 
+A previous release defaulted pool imports to read-only mode. Because of this, cloning a snapshot would fail. This release fixes that by detecting if a pool is imported as read-only, exporting it and re-importing it read-write. If the snapshot being cloned is encrypted, keys will be loaded again (from file or via prompt).
 
 To control read-write behavior, the command line argument `read_write` has been added. If unset, this option defaults to 0, importing the pool in read-only mode. Set to 1 to enable read-write on imported pools by default.
 
@@ -233,7 +225,7 @@ Point release to fix issues on a fresh installation with missing target paths.
 
 # ZFSBootMenu 0.7.4
 
-This release fixes a glaring integration issue with rEFInd. Unified EFI files now use the platform kernel base (vmlinux, vmlinuz, etc), with the version and EFI appended. This allows them to integrate nicely with rEFInd's boot options and kernel roll-up features. 
+This release fixes a glaring integration issue with rEFInd. Unified EFI files now use the platform kernel base (vmlinux, vmlinuz, etc), with the version and EFI appended. This allows them to integrate nicely with rEFInd's boot options and kernel roll-up features.
 
 
 # ZFSBootMenu 0.7.3
@@ -291,9 +283,9 @@ pairs were found
 
 This release brings support for native ZoL encryption! It supports encryption on the entire pool, or enabled for a specific boot environment!
 
-Prompting for the passphrase happens if the key needs to be loaded to boot the environment set in `bootfs` or if you escape the auto-boot screen to enter the environment/snapshot/kernel browser. 
+Prompting for the passphrase happens if the key needs to be loaded to boot the environment set in `bootfs` or if you escape the auto-boot screen to enter the environment/snapshot/kernel browser.
 
-A patch is provided for 90zfs/mount-zfs.sh which detects if the keylocation is a file, and then attempts to load it from disk. If the key file is not present, and the type is passphrase, it will prompt. 
+A patch is provided for 90zfs/mount-zfs.sh which detects if the keylocation is a file, and then attempts to load it from disk. If the key file is not present, and the type is passphrase, it will prompt.
 
 The default auto-boot screen now attempts to center itself in your tty, for a slightly easier to read output.
 
