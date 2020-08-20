@@ -18,15 +18,15 @@ ZFSBootMenu 1.4 includes significant internal changes and some user-visible func
 * Add a `--cmdline` command-line option to override the configured `CommandLine` value without editing the configuration file.
 
 ## Significant commits in this release
-0979051 - Add documentation for generate-zbm, its config and initramfs options (Zach Dykstra, et al.)
-ee1d9d8 - Unmask import_args in functions calling import_pool (Zach Dykstra)
-3b2b2f0 - Add explicit --migrate option to generate-zbm (Andrew J. Hesford)
-3cd3a8e - Improve error handling and automatic config conversion (Andrew J. Hesford)
-80e0c30 - Switch syslinux entry to heredoc, fix syslinux.cfg file copy (Zach Dykstra)
-6351226 - Move to YAML configuration, improve version handling (Andrew J. Hesford, Zach Dykstra)
-5fdb872 - Add configuration options for kernel, version and prefix (Andrew J. Hesford)
-79295ec - Add an optional parameter to safeCopy: (Zach Dykstra)
-8aa133f - Clean up control flow in generate-zbm (Andrew J. Hesford)
+* 0979051 - Add documentation for generate-zbm, its config and initramfs options (Zach Dykstra, et al.)
+* ee1d9d8 - Unmask import_args in functions calling import_pool (Zach Dykstra)
+* 3b2b2f0 - Add explicit --migrate option to generate-zbm (Andrew J. Hesford)
+* 3cd3a8e - Improve error handling and automatic config conversion (Andrew J. Hesford)
+* 80e0c30 - Switch syslinux entry to heredoc, fix syslinux.cfg file copy (Zach Dykstra)
+* 6351226 - Move to YAML configuration, improve version handling (Andrew J. Hesford, Zach Dykstra)
+* 5fdb872 - Add configuration options for kernel, version and prefix (Andrew J. Hesford)
+* 79295ec - Add an optional parameter to safeCopy: (Zach Dykstra)
+* 8aa133f - Clean up control flow in generate-zbm (Andrew J. Hesford)
 
 
 # ZFSBootMenu v1.4rc1 (2020-08-11)
@@ -61,17 +61,17 @@ In addition:
 * Boot environments with `mountpoint=/` can be hidden from ZFSBootMenu by setting the property `org.zfsbootmenu:active=off`.
 
 ## Significant commits in this release
-7122be9 - Use mountpoint to check for ESP (Zach Dykstra)
-315e326 - Check return of mount operation (Zach Dykstra)
-8e434b1 - Allow root prefix to be customized for other distributions (Andrew J. Hesford)
-fcaba86 - Support unversioned kernel naming in generate-zbm (Andrew J. Hesford)
-294a84d - Broaden search for kernels and initramfs images (Andrew J. Hesford)
-2263dbe - Handle kernels with multi-part versions (Zach Dykstra)
-95f65a6 - Initial support for org.zfsbootmenu:active visibility (Andrew J. Hesford)
-69c3d63 - Draw the preview header on kernel, snapshot and diff screens (Zach Dykstra)
-83b2cbb - Initial support for resume guard (Andrew J. Hesford)
-6828550 - Initial snapshot diff browser (Zach Dykstra)
-4c0a968 - Report source size when cloning/duplicating a snapshot (Zach Dykstra)
+* 7122be9 - Use mountpoint to check for ESP (Zach Dykstra)
+* 315e326 - Check return of mount operation (Zach Dykstra)
+* 8e434b1 - Allow root prefix to be customized for other distributions (Andrew J. Hesford)
+* fcaba86 - Support unversioned kernel naming in generate-zbm (Andrew J. Hesford)
+* 294a84d - Broaden search for kernels and initramfs images (Andrew J. Hesford)
+* 2263dbe - Handle kernels with multi-part versions (Zach Dykstra)
+* 95f65a6 - Initial support for org.zfsbootmenu:active visibility (Andrew J. Hesford)
+* 69c3d63 - Draw the preview header on kernel, snapshot and diff screens (Zach Dykstra)
+* 83b2cbb - Initial support for resume guard (Andrew J. Hesford)
+* 6828550 - Initial snapshot diff browser (Zach Dykstra)
+* 4c0a968 - Report source size when cloning/duplicating a snapshot (Zach Dykstra)
 
 
 # ZFSBootMenu v1.3rc2 (2020-07-09)
