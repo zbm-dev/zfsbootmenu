@@ -1,3 +1,8 @@
+# ZFSBootMenu v1.4.1 (2020-08-19)
+
+ZFSBootMenu 1.4.1 is a minor update, updating the provided Makefile for packagers.
+
+
 # ZFSBootMenu v1.4 (2020-08-19)
 
 ZFSBootMenu 1.4 includes significant internal changes and some user-visible functional changes in the `generate-zbm` script.
