@@ -11,6 +11,8 @@ check() {
   done
   # Verify grep exists
   command -v grep >/dev/null 2>&1 || return 1
+  # Verify fzf exists
+  command -v fzf >/dev/null 2>&1 || return 1
 
   return 255
 }
