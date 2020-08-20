@@ -1,4 +1,5 @@
 #!/bin/sh
+# vim: softtabstop=2 shiftwidth=2 expandtab
 
 error () {
   echo "$@"
@@ -53,9 +54,20 @@ relnotes=$(mktemp)
 # shellcheck disable=SC2064
 trap "rm -f ${relnotes}" 0
 
-awk ' BEGIN{ hdr=0; }
-  /^# /{ if (hdr) exit 0; hdr=1; }
-  { if (hdr < 1) exit 1; sub("^# ", "", $0); print; }' < CHANGELOG.md > "${relnotes}";
+awk < CHANGELOG.md > "${relnotes}" '
+  BEGIN{ hdr=0; }
+
+  /^# /{
+    if (hdr) exit 0;
+    hdr=1;
+    sub(/^# /, "", $0);
+    sub(/ \(.*\)$/, "", $0);
+  }
+
+  {
+    if (hdr < 1) exit 1;
+    print;
+  }'
 
 # Make sure release notes refer to this version
 if ! (head -n 1 "${relnotes}" | grep -q "ZFSBootMenu ${tag}\b"); then

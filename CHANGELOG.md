@@ -1,4 +1,4 @@
-# ZFSBootMenu v1.4
+# ZFSBootMenu v1.4 (2020-08-19)
 
 ZFSBootMenu 1.4 includes significant internal changes and some user-visible functional changes in the `generate-zbm` script.
 
@@ -29,16 +29,16 @@ ee1d9d8 - Unmask import_args in functions calling import_pool (Zach Dykstra)
 8aa133f - Clean up control flow in generate-zbm (Andrew J. Hesford)
 
 
-# ZFSBootMenu v1.4rc1
+# ZFSBootMenu v1.4rc1 (2020-08-11)
 
 Except for the addition of man pages and the fix in commit ee1d9d8, the new features and fixes in this release are fully described in the final v1.4 release notes.
 
 
-# ZFSBootMenu v1.3.1
+# ZFSBootMenu v1.3.1 (2020-07-14)
 
 This release fixes an issue found minutes after v1.3 was tagged and released - such is life. After timing out on the countdown menu, the screen is now cleared before displaying a prompt for the pool password.
 
-# ZFSBootMenu v1.3
+# ZFSBootMenu v1.3 (2020-07-14)
 
 This release features several fixes and new features.
 
@@ -74,17 +74,17 @@ fcaba86 - Support unversioned kernel naming in generate-zbm (Andrew J. Hesford)
 4c0a968 - Report source size when cloning/duplicating a snapshot (Zach Dykstra)
 
 
-# ZFSBootMenu v1.3rc2
+# ZFSBootMenu v1.3rc2 (2020-07-09)
 
 This release contains all of the fixes and new features in v1.3rc1, as well as some fixes to command-line generation that should allow ZFSBootMenu to properly boot Arch Linux systems.
 
 
-# ZFSBootMenu v1.3rc1
+# ZFSBootMenu v1.3rc1 (2020-07-07)
 
 The new features and fixes in this release are fully described in the final v1.3 release notes.
 
 
-# ZFSBootMenu v1.2
+# ZFSBootMenu v1.2 (2020-06-22)
 
 This release features substantial code and idea contributions from @ahesford . Thank you for all of your help writing features, debugging code and improving documentation.
 
@@ -118,7 +118,7 @@ Much like setting a default boot environment, you can now set a default kernel f
 On commit, the shell scripts that power the boot menu and Dracut setup are run through a validator to check for common errors and pitfalls. This can help reduce some classes of bugs.
 
 
-# ZFSBootMenu v1.1
+# ZFSBootMenu v1.1 (2020-06-11)
 
 This release includes a number of small fixes and improvements.
 
@@ -134,7 +134,7 @@ This release includes a number of small fixes and improvements.
 No configuration file changes are needed to use this release. Enjoy!
 
 
-# ZFSBootMenu v1.0
+# ZFSBootMenu v1.0 (2020-05-15)
 
 We're jumping straight up to v1.0!
 
@@ -154,7 +154,7 @@ We're jumping straight up to v1.0!
 A big thank you to @ahesford for his code contributions and testing leading up to this release!
 
 
-# ZFSBootMenu v1.0rc2
+# ZFSBootMenu v1.0rc2 (2020-05-12)
 
 This release contains all of the fixes and features from 1.0rc1, as well as the following:
 
@@ -164,7 +164,7 @@ This release contains all of the fixes and features from 1.0rc1, as well as the 
 A big thank you to @ahesford for his code contributions and testing leading up to this release candidate. It is very much appreciated!
 
 
-# ZFSBootMenu 1.0rc1
+# ZFSBootMenu 1.0rc1 (2020-05-11)
 
 This release has been a long time coming. In no particular order, it contains the following:
 
@@ -176,7 +176,7 @@ This release has been a long time coming. In no particular order, it contains th
 * Support entering a custom kernel command line via `alt-c` on the main menu. The input line is pre-filled with the command line that would have been used on the next boot, for that environment. This command line is NOT persisted between reboots, it's simply here to let you recover an unbootable system.
 
 
-# ZFSBootMenu 0.8.1
+# ZFSBootMenu 0.8.1 (2020-01-19)
 
 This release adds a few improvements to generate-zbm.
 
@@ -186,7 +186,7 @@ This release adds a few improvements to generate-zbm.
 * Syslinux mode now builds off of [Components] mode, instead of adding yet another code path for generating the initramfs. This makes syslinux mode simply a syslinux.cfg renderer.
 
 
-# ZFSBootMenu 0.8.0
+# ZFSBootMenu 0.8.0 (2020-01-12)
 
 This release adds a preview function to the primary menu screen. Two lines are shown at the top of the display.
 
@@ -201,34 +201,34 @@ Additional features added in include:
 * Finding kernel arguments has now been moved to a function, which can be extended to support multiple OS's as the need arises
 
 
-# ZFSBootMenu 0.7.7
+# ZFSBootMenu 0.7.7 (2020-01-08)
 
 This release adds support for generating a syslinux/extlinux-compatible configuration file. This can be used both with Petitboot on POWER hardware and with extlinux on x86_64.
 
 
-# ZFSBootMenu 0.7.6
+# ZFSBootMenu 0.7.6 (2019-12-31)
 
 This is a fairly minor release, with the removal of an external VERSION file and the inclusion of a basic Makefile being the major impacting changes.
 
 
-# ZFSBootMenu 0.7.5
+# ZFSBootMenu 0.7.5 (2019-12-24)
 
 A previous release defaulted pool imports to read-only mode. Because of this, cloning a snapshot would fail. This release fixes that by detecting if a pool is imported as read-only, exporting it and re-importing it read-write. If the snapshot being cloned is encrypted, keys will be loaded again (from file or via prompt).
 
 To control read-write behavior, the command line argument `read_write` has been added. If unset, this option defaults to 0, importing the pool in read-only mode. Set to 1 to enable read-write on imported pools by default.
 
 
-# ZFSBootMenu 0.7.4.1
+# ZFSBootMenu 0.7.4.1 (2019-12-20)
 
 Point release to fix issues on a fresh installation with missing target paths.
 
 
-# ZFSBootMenu 0.7.4
+# ZFSBootMenu 0.7.4 (2019-12-20)
 
 This release fixes a glaring integration issue with rEFInd. Unified EFI files now use the platform kernel base (vmlinux, vmlinuz, etc), with the version and EFI appended. This allows them to integrate nicely with rEFInd's boot options and kernel roll-up features.
 
 
-# ZFSBootMenu 0.7.3
+# ZFSBootMenu 0.7.3 (2019-12-20)
 
 This release adds the helper bin/generate-zbm which can help control the lifecycle of a the components needed to boot a system. It can generate a versioned kernel and initramfs, and/or a combined kernel/initramfs/commandline EFI executable. The helper script is able to able to do un-versioned files as well, creating initramfs-zfsbootmenu.img and then rotating that into initramfs-zfsbootmenu-backup.img when a new initramfs is created.
 
@@ -241,17 +241,17 @@ Any positive integer value will enable the countdown timer, where the system wil
 The default timeout value remains at 10 seconds, consistent with previous behavior.
 
 
-# ZFSBootMenu 0.7.2
+# ZFSBootMenu 0.7.2 (2019-12-10)
 
 Default the creation of the initramfs to hostonly mode, to substantially reduce the size of the generated file.
 
 
-# ZFSBootMenu 0.7.1
+# ZFSBootMenu 0.7.1 (2019-12-10)
 
 Minor bug fix release. Correctly handle a zpool value on the command line pointing to a non-existent pool. Additionally, when trying to read a pinned kernel version, read it from the selected BE, and not the BE pointed to by `bootfs`
 
 
-# ZFSBootMenu 0.7.0
+# ZFSBootMenu 0.7.0 (2019-12-09)
 
 This release includes the following:
 
@@ -266,7 +266,7 @@ This release includes the following:
 * Do not sanity check memory in kexec for faster booting
 
 
-# ZFSBootMenu 0.6.5
+# ZFSBootMenu 0.6.5 (2019-11-16)
 
 This is largely a bug-fix release, built on top of Linux 5.3.10 and ZFS 0.8.2 for x86_64 and ppc64le (POWER8+).
 
@@ -279,7 +279,7 @@ considered a higher version than 5.x.9
 pairs were found
 
 
-# ZFSBootMenu 0.6
+# ZFSBootMenu 0.6 (2019-11-06)
 
 This release brings support for native ZoL encryption! It supports encryption on the entire pool, or enabled for a specific boot environment!
 
@@ -292,7 +292,7 @@ The default auto-boot screen now attempts to center itself in your tty, for a sl
 Booting from a snapshot has been fixed - the snapshot is now correctly unmounted after a kernel/initramfs pair is located in /boot from the snapshot.
 
 
-# ZFSBootMenu 0.5
+# ZFSBootMenu 0.5 (2019-10-22)
 
 Initial release!
 
