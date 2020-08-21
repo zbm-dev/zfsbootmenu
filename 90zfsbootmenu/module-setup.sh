@@ -2,16 +2,7 @@
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
 check() {
-  # We depend on udev-rules being loaded
-  [ "${1}" = "-d" ] && return 0
-
-  # Verify the zfs tool chain
-  for tool in "/usr/bin/zpool" "/usr/bin/zfs" "/usr/bin/mount.zfs" ; do
-    test -x "$tool" || return 1
-  done
-  # Verify grep exists
-  command -v grep >/dev/null 2>&1 || return 1
-
+  # Do not include this module by default; it must be requested
   return 255
 }
 
@@ -34,8 +25,7 @@ installkernel() {
     "spl"
   )
 
-  for mod in "${required_modules[@]}"
-  do
+  for mod in "${required_modules[@]}"; do
     if ! instmods -c "${mod}" ; then
       dfatal "Required kernel module '${mod}' is missing, aborting image creation!"
       exit 1
@@ -47,59 +37,105 @@ installkernel() {
     "zlib_inflate"
   )
 
-  for mod in "${optional_modules[@]}"
-  do
+  for mod in "${optional_modules[@]}"; do
     instmods "${mod}"
   done
 }
 
 install() {
-  inst_rules /usr/lib/udev/rules.d/90-zfs.rules
-  inst_rules /usr/lib/udev/rules.d/69-vdev.rules
-  inst_rules /usr/lib/udev/rules.d/60-zvol.rules
-  dracut_install hostid
-  dracut_install /usr/bin/zfs
-  dracut_install /usr/bin/zpool
+  local _rule _exec _ret
+
+  local udev_rules=(
+    "/usr/lib/udev/rules.d/90-zfs.rules"
+    "/usr/lib/udev/rules.d/69-vdev.rules"
+    "/usr/lib/udev/rules.d/60-zvol.rules"
+  )
+
+  for _rule in "${udev_rules[@]}"; do
+    if ! inst_rules "${_rule}"; then
+      dfatal "failed to install udev rule '${_rule}'"
+      exit 1
+    fi
+  done
+
+  local essential_execs=(
+    "/usr/lib/udev/vdev_id"
+    "/usr/lib/udev/zvol_id"
+    "zfs"
+    "zpool"
+    "hostid"
+    "mount"
+    "mount.zfs"
+    "kexec"
+    "mkdir"
+    "tput"
+    "basename"
+    "head"
+    "mktemp"
+    "sort"
+    "sed"
+    "grep"
+    "tail"
+    "tr"
+    "tac"
+    "blkid"
+  )
+
+  for _exec in "${essential_execs[@]}"; do
+    if ! dracut_install "${_exec}"; then
+      dfatal "failed to install essential executable '${_exec}'"
+      exit 1
+    fi
+  done
+
+  # sk can be used as a substitute for fzf
+  if ! dracut_install fzf && ! dracut_install sk; then
+    dfatal "failed to install fzf or sk"
+    exit 1
+  fi
+
+  # BE clones will work (silently and less efficiently) without mbuffer
+  if ! dracut_install mbuffer; then
+    dwarning "mbuffer not found; ZFSBootMenu cannot show progress during BE clones"
+  fi
+
   # Workaround for zfsonlinux/zfs#4749 by ensuring libgcc_s.so(.1) is included
+  _ret=0
   if ldd /usr/bin/zpool | grep -qF 'libgcc_s.so'; then
     # Dracut will have already tracked and included it
-    :;
+    :
   elif command -v gcc-config >/dev/null 2>&1; then
     # On systems with gcc-config (Gentoo, Funtoo, etc.):
     # Use the current profile to resolve the appropriate path
     dracut_install "/usr/lib/gcc/$(s=$(gcc-config -c); echo "${s%-*}/${s##*-}")/libgcc_s.so.1"
+    _ret=$?
   elif [[ -n "$(ls /usr/lib/libgcc_s.so* 2>/dev/null)" ]]; then
     # Try a simple path first
     dracut_install /usr/lib/libgcc_s.so*
+    _ret=$?
   else
     # Fallback: Guess the path and include all matches
     dracut_install /usr/lib/gcc/*/*/libgcc_s.so*
+    _ret=$?
   fi
-  dracut_install /usr/bin/mount.zfs
-  dracut_install /usr/lib/udev/vdev_id
-  dracut_install /usr/lib/udev/zvol_id
-  dracut_install tac
-  dracut_install basename
-  dracut_install head
-  dracut_install kexec
-  dracut_install fzf
-  dracut_install mktemp
-  dracut_install sort
-  dracut_install sed
-  dracut_install grep
-  dracut_install tput
-  dracut_install mount
-  dracut_install mkdir
-  dracut_install tail
-  dracut_install mbuffer
-  dracut_install tr
 
+  if [ ${_ret} -ne 0 ]; then
+    dfatal "Unable to install libgcc_s.so"
+    exit 1
+  fi
+
+  _ret=0
   # shellcheck disable=SC2154
-  inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh"
-  inst_simple "${moddir}/zfsbootmenu-preview.sh" "/bin/zfsbootmenu-preview.sh"
-  inst_simple "${moddir}/zfs-chroot" "/bin/zfs-chroot"
-  inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh"
-  inst_hook pre-mount 90 "${moddir}/zfsbootmenu.sh"
+  inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh" || _ret=$?
+  inst_simple "${moddir}/zfsbootmenu-preview.sh" "/bin/zfsbootmenu-preview.sh" || _ret=$?
+  inst_simple "${moddir}/zfs-chroot" "/bin/zfs-chroot" || _ret=$?
+  inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh" || _ret=$?
+  inst_hook pre-mount 90 "${moddir}/zfsbootmenu.sh" || _ret=$?
+
+  if [ ${_ret} -ne 0 ]; then
+    dfatal "Unable to install core ZFSBootMenu functions"
+    exit 1
+  fi
 
   if [ -e /etc/zfs/zpool.cache ]; then
     inst /etc/zfs/zpool.cache

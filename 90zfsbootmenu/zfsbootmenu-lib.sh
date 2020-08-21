@@ -195,7 +195,7 @@ kexec_kernel() {
 # returns: 0 on success
 
 duplicate_snapshot() {
-  local selected target
+  local selected target recv_args
 
   selected="${1}"
   target="${2}"
@@ -210,11 +210,14 @@ duplicate_snapshot() {
   key_wrapper "${pool}"
   CLEAR_SCREEN=1
 
-  zfs send "${selected}" | mbuffer \
-      | zfs recv -u -o canmount=noauto -o mountpoint=/ "${target}"
+  recv_args=( "-u" "-o" "canmount=noauto" "-o" "mountpoint=/" "${target}" )
 
-  # Just forward return code from duplication operation
-  return $?
+  if command -v mbuffer >/dev/null 2>&1; then
+    # Buffer the exchange when possible
+    zfs send "${selected}" | mbuffer | zfs recv "${recv_args[@]}"
+  else
+    zfs send "${selected}" | zfs recv "${recv_args[@]}"
+  fi
 }
 
 # arg1: snapshot name
@@ -597,7 +600,9 @@ has_resume_device() {
 
 set_rw_pool() {
   local pool
+
   pool="${1}"
+  [ -n "${pool}" ] || return 1
 
   # Nothing to do if the pool is not read-only
   [ "x$( zpool get -H -o value readonly "${pool}" )" = "xon" ] || return 0
