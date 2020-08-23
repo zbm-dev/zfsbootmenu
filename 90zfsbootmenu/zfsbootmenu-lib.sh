@@ -57,9 +57,9 @@ draw_be() {
   test -f "${env}" || return 130
 
   selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
-    --expect=alt-k,alt-d,alt-s,alt-c,alt-r \
+    --expect=alt-k,alt-d,alt-s,alt-c,alt-r,alt-p \
     --preview-window="up:${PREVIEW_HEIGHT}" \
-    --header="[ENTER] boot [ALT+K] kernel [ALT+D] set bootfs [ALT+S] snapshots [ALT+C] cmdline" \
+    --header="[ENTER] boot [ALT+K] kernel [ALT+D] set bootfs [ALT+S] snapshots [ALT+C] cmdline [ALT+P] Pool status" \
     --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}" < "${env}" )"
   ret=$?
   # shellcheck disable=SC2119
@@ -142,6 +142,24 @@ draw_diff() {
   umount "${mnt}"
   return
 }
+
+# arg1: nothing
+# prints: selected pool
+# returns: 130 on error, 0 otherwise
+
+draw_pool_status() {
+  local selected ret
+
+  selected="$( zpool list -H -o name |
+    ${FUZZYSEL} --prompt "Pool > " --tac --expect=alt-d,alt-r \
+    --preview="zpool status -v {}" \
+    --header="[ALT+D] Delete checkpoint [ALT+R] Rewind checkpoint [ESC] back"\
+  )"
+  ret=$?
+  csv_cat <<< "${selected}"
+  return ${ret}
+}
+
 
 # arg1: bootfs kernel initramfs
 # prints: nothing
@@ -562,15 +580,20 @@ import_pool() {
   import_args=( "-N" )
 
   # shellcheck disable=SC2154
-  if [ "${force_import}" ]; then
+  if [ -n "${force_import}" ]; then
     import_args+=( "-f" )
   fi
 
   # shellcheck disable=SC2154
-  if [ "${read_write}" ]; then
+  if [ -n "${read_write}" ]; then
     import_args+=( "-o" "readonly=off" )
   else
     import_args+=( "-o" "readonly=on" )
+  fi
+
+  # shellcheck disable=SC2154
+  if [ -n "${rewind_to_checkpoint}" ]; then
+    import_args+=( "--rewind-to-checkpoint" )
   fi
 
   # shellcheck disable=SC2086
@@ -595,6 +618,66 @@ export_pool() {
   return ${ret}
 }
 
+# arg1: pool name
+# prints: nothing
+# returns: 0 on success, 1 on failure
+
+delete_checkpoint() {
+  local pool checkpoint
+  pool="${1}"
+
+  while read -r line; do
+    case "$line" in
+      checkpoint*)
+        checkpoint="${line#checkpoint: }"
+        ;;
+    esac
+  done <<<"$( zpool status "${pool}" )"
+
+  [ -z "${checkpoint}" ] && return 1
+
+  selected="$( echo -e "Yes\nNo" | ${FUZZYSEL} \
+    --header="Delete checkpoint on ${pool} ?"
+  )"
+
+  [ "x${selected}" = "xYes" ] || return 1
+
+  set_rw_pool "${pool}" || return 1
+  zpool checkpoint -d "${pool}" > /dev/null 2>&1
+  ret=$?
+
+  return $ret
+}
+
+
+# arg1: pool name
+# prints: nothing
+# returns: 0 on success, 1 on failure
+
+rewind_checkpoint() {
+  local pool checkpoint
+  pool="${1}"
+
+  while read -r line; do
+    case "$line" in
+      checkpoint*)
+        checkpoint="${line#checkpoint: }"
+        ;;
+    esac
+  done <<<"$( zpool status "${pool}" )"
+
+  [ -z "${checkpoint}" ] && return 1
+
+  selected="$( echo -e "Yes\nNo" | ${FUZZYSEL} \
+    --header="Rewind checkpoint on ${pool} ?"
+  )"
+
+  [ "x${selected}" = "xYes" ] || return 1
+
+  rewind_to_checkpoint=yes force_export=yes set_rw_pool "${pool}"
+  return $?
+}
+
 # prints: nothing
 # returns: 0 if suspend device found, 1 otherwise
 
@@ -609,19 +692,15 @@ has_resume_device() {
   return 1
 }
 
-
 # arg1: pool name
 # prints: nothing
 # returns: 0 on success, 1 on failure
 
-set_rw_pool() {
+resume_prompt() {
   local pool
 
   pool="${1}"
   [ -n "${pool}" ] || return 1
-
-  # Nothing to do if the pool is not read-only
-  [ "x$( zpool get -H -o value readonly "${pool}" )" = "xon" ] || return 0
 
   # Try to avoid importing writable when a resume device is found
   if has_resume_device; then
@@ -656,6 +735,25 @@ set_rw_pool() {
       return 1
     fi
   fi
+
+  return 0
+}
+
+# arg1: pool name
+# prints: nothing
+# returns: 0 on success, 1 on failure
+
+set_rw_pool() {
+  local pool
+
+  pool="${1}"
+  [ -n "${pool}" ] || return 1
+
+  # If force_export is set, skip evaluating if the pool is already read-write
+  # shellcheck disable=SC2154
+  [ -n "${force_export}" ] || [ "x$( zpool get -H -o value readonly "${pool}" )" = "xon" ] || return 0
+
+  resume_prompt "${pool}" || return 1
 
   if export_pool "${pool}" ; then
     read_write=yes import_pool "${pool}"
