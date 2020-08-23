@@ -233,6 +233,28 @@ while true; do
             ;;
         esac
         ;;
+      "alt-p")
+        selection="$( draw_pool_status )"
+        ret=$?
+
+        # Only continue if a selection was made
+        [ $ret -eq 0 ] || continue
+
+        # shellcheck disable=SC2162
+        IFS=, read subkey selected_pool <<< "${selection}"
+
+        case "${subkey}" in
+          "enter")
+            continue
+            ;;
+          "alt-d")
+            delete_checkpoint "${selected_pool}"
+            ;;
+          "alt-r")
+            rewind_checkpoint "${selected_pool}"
+            ;;
+        esac
+        ;;
       "alt-d")
         set_default_env "${selected_be}"
         ;;
