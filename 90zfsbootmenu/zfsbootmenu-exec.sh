@@ -1,6 +1,5 @@
 #!/bin/bash
 
-export import_args
 export spl_hostid
 export force_import
 export read_write
@@ -8,4 +7,4 @@ export menu_timeout
 export root
 
 # https://busybox.net/FAQ.html#job_control
-exec setsid sh -c 'exec /bin/zfsbootmenu </dev/tty1 >/dev/tty1 2>&1'
+exec setsid bash -c 'exec /bin/zfsbootmenu </dev/tty1 >/dev/tty1 2>&1'
