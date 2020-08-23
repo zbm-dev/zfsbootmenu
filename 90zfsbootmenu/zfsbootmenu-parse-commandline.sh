@@ -18,16 +18,16 @@ fi
 
 # Force import pools only when explicitly told to do so
 if getargbool 0 force_import ; then
+  # shellcheck disable=SC2034
+  force_import="yes"
   info "ZFSBootMenu: Enabling force import of ZFS pools"
-  import_args="-o readonly=on -f -N"
-else
-  import_args="-o readonly=on -N"
 fi
 
 # Import pools by default in read-write mode
 if getargbool 0 read_write ; then
+  # shellcheck disable=SC2034
+  read_write="yes"
   info "ZFSBootMenu: Enabling read-write ZFS pool import"
-  import_args="${import_args/readonly=on/readonly=off}"
 fi
 
 # Set a menu timeout, to allow immediate booting

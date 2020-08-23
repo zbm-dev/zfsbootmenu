@@ -554,11 +554,27 @@ find_online_pools() {
 # returns: 0 on success, 1 on failure
 
 import_pool() {
-  local pool
+  local pool import_args
+
   pool="${1}"
 
+  # Import /never/ mounts filesystems
+  import_args=( "-N" )
+
+  # shellcheck disable=SC2154
+  if [ "${force_import}" ]; then
+    import_args+=( "-f" )
+  fi
+
+  # shellcheck disable=SC2154
+  if [ "${read_write}" ]; then
+    import_args+=( "-o" "readonly=on" )
+  else
+    import_args+=( "-o" "readonly=off" )
+  fi
+
   # shellcheck disable=SC2086
-  status="$( zpool import ${import_args} ${pool} )"
+  status="$( zpool import "${import_args[@]}" ${pool} )"
   ret=$?
 
   return ${ret}
@@ -641,9 +657,8 @@ set_rw_pool() {
     fi
   fi
 
-  import_args="${import_args/readonly=on/readonly=off}"
   if export_pool "${pool}" ; then
-    import_pool "${pool}"
+    read_write=yes import_pool "${pool}"
     return $?
   fi
 
