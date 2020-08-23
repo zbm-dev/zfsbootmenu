@@ -772,7 +772,7 @@ Migrate a legacy INI file to the new YAML format, writing the converted file to 
 
 Set the I<Global.ManageImages> option to true, enabling image generation.
 
-=item B<--enable>
+=item B<--disable>
 
 Set the I<Global.ManageImages> option to false, disabling image generation.
 
