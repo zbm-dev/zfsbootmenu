@@ -4,14 +4,14 @@ Global:
   DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
 Components:
   ImageDir: /boot/efi/EFI/void
-  Versions: 2
-  Enabled: false
+  Versions: 3
+  Enabled: true
   syslinux:
     Config: /boot/syslinux/syslinux.cfg
     Enabled: false
 EFI:
   ImageDir: /boot/efi/EFI/void
-  Versions: 2
+  Versions: false
   Enabled: false
 Kernel:
   CommandLine: ro quiet loglevel=0

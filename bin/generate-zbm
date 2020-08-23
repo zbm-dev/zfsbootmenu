@@ -133,13 +133,14 @@ EOF
   printf "Configuration %s does not exist or is unreadable\n", $runConf{config};
   exit 1;
 }
+
 if ( $runConf{disable} ) {
   $runConf{enable} = false;
 }
 
 if ( defined $runConf{enable} ) {
 
-  $config{Global}{ManageImages} = $runConf{enable};
+  $config{Global}{ManageImages} = boolean( $runConf{enable} );
 
   my $yaml = YAML::PP->new(
     boolean => 'boolean',
