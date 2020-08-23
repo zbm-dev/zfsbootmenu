@@ -68,6 +68,8 @@ GetOptions(
   "cmdline|l=s" => \$runConf{cmdline},
   "migrate|m:s" => \$runConf{migrate},
   "config|c=s"  => \$runConf{config},
+  "enable"      => \$runConf{enable},
+  "disable"     => \$runConf{disable},
   "help|h"      => sub {
     pod2usage( -verbose => 2 );
     exit;
@@ -130,6 +132,24 @@ EOF
 } else {
   printf "Configuration %s does not exist or is unreadable\n", $runConf{config};
   exit 1;
+}
+if ( $runConf{disable} ) {
+  $runConf{enable} = false;
+}
+
+if ( defined $runConf{enable} ) {
+
+  $config{Global}{ManageImages} = $runConf{enable};
+
+  my $yaml = YAML::PP->new(
+    boolean => 'boolean',
+    header  => 0,
+  );
+
+  $yaml->dump_file( $runConf{config}, \%config );
+  my $state = $runConf{enable} ? "true" : "false";
+  printf "ManageImages set to '%s' in %s\n", $state, $runConf{config};
+  exit;
 }
 
 unless ( $config{Global}{ManageImages} ) {
@@ -695,7 +715,6 @@ sub convertImageConfig {
   delete $section->{Copies};
 }
 
-
 __END__
 
 =head1 NAME
@@ -747,6 +766,14 @@ Specify the path to a configuration file; default: I</etc/zfsbootmenu/config.yam
 =item B<--migrate|-m> [I<ini-config>]
 
 Migrate a legacy INI file to the new YAML format, writing the converted file to the path specified by B<--config>. If I<ini-config> is not specified, a default path is chosen by removing any I<.yaml> suffix in the B<--config> path and appending a I<.ini> suffix.
+
+=item B<--enable>
+
+Set the I<Global.ManageImages> option to true, enabling image generation.
+
+=item B<--enable>
+
+Set the I<Global.ManageImages> option to false, disabling image generation.
 
 =back
 
