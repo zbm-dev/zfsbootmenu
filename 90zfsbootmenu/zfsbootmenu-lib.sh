@@ -568,9 +568,9 @@ import_pool() {
 
   # shellcheck disable=SC2154
   if [ "${read_write}" ]; then
-    import_args+=( "-o" "readonly=on" )
-  else
     import_args+=( "-o" "readonly=off" )
+  else
+    import_args+=( "-o" "readonly=on" )
   fi
 
   # shellcheck disable=SC2086
