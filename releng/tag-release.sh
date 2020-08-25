@@ -49,6 +49,9 @@ fi
 
 releng/pod2man.sh "${release}"
 
+# Generate a short history for CHANGELOG.md
+# git log --format="* %h - %s (%an)" v1.4.1..HEAD
+
 # Extract release notes for this version
 relnotes=$(mktemp)
 # shellcheck disable=SC2064
