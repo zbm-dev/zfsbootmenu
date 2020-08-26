@@ -247,9 +247,6 @@ while true; do
           "enter")
             continue
             ;;
-          "alt-d")
-            delete_checkpoint "${selected_pool}"
-            ;;
           "alt-r")
             rewind_checkpoint "${selected_pool}"
             ;;

@@ -151,9 +151,9 @@ draw_pool_status() {
   local selected ret
 
   selected="$( zpool list -H -o name |
-    ${FUZZYSEL} --prompt "Pool > " --tac --expect=alt-d,alt-r \
+    ${FUZZYSEL} --prompt "Pool > " --tac --expect=alt-r \
     --preview="zpool status -v {}" \
-    --header="[ALT+D] Delete checkpoint [ALT+R] Rewind checkpoint [ESC] back"\
+    --header="[ALT+R] Rewind checkpoint [ESC] back" \
   )"
   ret=$?
   csv_cat <<< "${selected}"
@@ -617,38 +617,6 @@ export_pool() {
 
   return ${ret}
 }
-
-# arg1: pool name
-# prints: nothing
-# returns: 0 on success, 1 on failure
-
-delete_checkpoint() {
-  local pool checkpoint
-  pool="${1}"
-
-  while read -r line; do
-    case "$line" in
-      checkpoint*)
-        checkpoint="${line#checkpoint: }"
-        ;;
-    esac
-  done <<<"$( zpool status "${pool}" )"
-
-  [ -z "${checkpoint}" ] && return 1
-
-  selected="$( echo -e "Yes\nNo" | ${FUZZYSEL} \
-    --header="Delete checkpoint on ${pool} ?"
-  )"
-
-  [ "x${selected}" = "xYes" ] || return 1
-
-  set_rw_pool "${pool}" || return 1
-  zpool checkpoint -d "${pool}" > /dev/null 2>&1
-  ret=$?
-
-  return $ret
-}
-
 
 # arg1: pool name
 # prints: nothing
