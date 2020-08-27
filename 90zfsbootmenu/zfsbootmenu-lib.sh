@@ -673,11 +673,11 @@ rewind_checkpoint() {
 
   [ -z "${checkpoint}" ] && return 1
 
-  selected="$( echo -e "Yes\nNo" | ${FUZZYSEL} \
+  selected="$( echo -e "Rewind\nDo not rewind" | ${FUZZYSEL} \
     --header="Rewind checkpoint on ${pool} ?"
   )"
 
-  [ "x${selected}" = "xYes" ] || return 1
+  [ "x${selected}" = "xRewind" ] || return 1
 
   rewind_to_checkpoint=yes force_export=yes set_rw_pool "${pool}"
   return $?
