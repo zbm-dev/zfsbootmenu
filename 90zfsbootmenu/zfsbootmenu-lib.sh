@@ -188,43 +188,6 @@ kexec_kernel() {
   cli_args="$( find_kernel_args "${fs}" "${mnt}" )"
   root_prefix="$( find_root_prefix "${fs}" "${mnt}" )"
 
-  if [ -e "${BASE}/noresume" ]; then
-    # Must replace resume= arguments and append a noresume
-    cli_args="$( awk <<<"${cli_args}" '
-      BEGIN {
-        quot = 0;
-        supp = 0;
-        ORS = " ";
-      }
-
-      {
-        for (i=1; i <= NF; i++) {
-          if ( quot == 0 ) {
-            # If unquoted, determine if output should be suppressed
-            if ( $(i) ~ /^resume=/ ) {
-              # Argument starts with "resume=", suppress
-              supp = 1;
-            } else {
-              # Nothing else is suppressed
-              supp = 0;
-            }
-          }
-
-          # If output is not suppressed, print the field
-          if ( supp == 0 && length($(i)) > 0 ) {
-            print $(i);
-          }
-
-          # If an odd number of quotes are in this field, toggle quoting
-          if ( gsub(/"/, "\"", $(i)) % 2 == 1 ) {
-            quot = (quot + 1) % 2;
-          }
-        }
-        printf "noresume";
-      }
-    ' )"
-  fi
-
   # restore kernel log level just before we kexec
   # shellcheck disable=SC2154
   echo "${printk}" > /proc/sys/kernel/printk
@@ -545,39 +508,80 @@ find_root_prefix() {
 # returns: nothing
 
 find_kernel_args() {
-  local zfsbe_mnt zfsbe_fs zfsbe_args
+  local zfsbe_mnt zfsbe_fs zfsbe_def zfsbe_args zfsbe_noprop
   zfsbe_fs="${1}"
   zfsbe_mnt="${2}"
 
-  if [ -f "${BASE}/default_args" ]; then
-    head -1 "${BASE}/default_args" | tr -d '\n'
-    return
+  # If there is an /etc/default in this BE, set it
+  if [ -n "${zfsbe_mnt}" ] && [ -d "${zfsbe_mnt}/etc/default" ]; then
+    zfsbe_def="${zfsbe_mnt}/etc/default"
   fi
 
-  if [ -n "${zfsbe_fs}" ]; then
+  # Reasonable defaults if nothing specific is found
+  zfsbe_args="quiet loglevel=3"
+
+  if [ -f "${BASE}/default_args" ]; then
+    # Prefer user override, if it exists
+    zfsbe_args="$( head -1 "${BASE}/default_args" | tr -d '\n' )"
+  elif [ -n "${zfsbe_fs}" ]; then
+    # Otherwise, prefer ZFS property for this boot environment
     zfsbe_args="$( zfs get -H -o value org.zfsbootmenu:commandline "${zfsbe_fs}" )"
-    if [ "${zfsbe_args}" != "-" ]; then
-      echo "${zfsbe_args}"
-      return
+    if [ "x${zfsbe_args}" = "x-" ]; then
+      zfsbe_noprop="yes"
     fi
   fi
 
-  if [ -n "${zfsbe_mnt}" ] && [ -f "${zfsbe_mnt}/etc/default/zfsbootmenu" ]; then
-    head -1 "${zfsbe_mnt}/etc/default/zfsbootmenu" | tr -d '\n'
-    return
+  # With no override or property, look for files if they exist
+  if [ -n "${zfsbe_noprop}" ] && [ -n "${zfsbe_def}" ]; then
+    if [ -f "${zfsbe_def}/zfsbootmenu" ]; then
+      zfsbe_args="$( head -1 "${zfsbe_def}/zfsbootmenu" | tr -d '\n' )"
+    elif [ -f "${zfsbe_def}/grub" ]; then
+      zfsbe_args="$(
+        # shellcheck disable=SC1090
+        . "${zfsbe_def}/grub";
+        echo "${GRUB_CMDLINE_LINUX_DEFAULT}"
+      )"
+    fi
   fi
 
-  if [ -n "${zfsbe_mnt}" ] && [ -f "${zfsbe_mnt}/etc/default/grub" ]; then
-    echo "$(
-      # shellcheck disable=SC1090
-      . "${zfsbe_mnt}/etc/default/grub" ;
-      echo "${GRUB_CMDLINE_LINUX_DEFAULT}"
-    )"
-    return
+  # If noresume mode was selected, replace resume= arguments with noresume
+  if [ -e "${BASE}/noresume" ]; then
+    zfsbe_args="$( awk <<<"${zfsbe_args}" '
+      BEGIN {
+        quot = 0;
+        supp = 0;
+        ORS = " ";
+      }
+
+      {
+        for (i=1; i <= NF; i++) {
+          if ( quot == 0 ) {
+            # If unquoted, determine if output should be suppressed
+            if ( $(i) ~ /^resume=/ ) {
+              # Argument starts with "resume=", suppress
+              supp = 1;
+            } else {
+              # Nothing else is suppressed
+              supp = 0;
+            }
+          }
+
+          # If output is not suppressed, print the field
+          if ( supp == 0 && length($(i)) > 0 ) {
+            print $(i);
+          }
+
+          # If an odd number of quotes are in this field, toggle quoting
+          if ( gsub(/"/, "\"", $(i)) % 2 == 1 ) {
+            quot = (quot + 1) % 2;
+          }
+        }
+        printf "noresume";
+      }
+    ' )"
   fi
 
-  # No arguments found, return something generic
-  echo "quiet loglevel=3"
+  echo "${zfsbe_args}"
 }
 
 # no arguments
