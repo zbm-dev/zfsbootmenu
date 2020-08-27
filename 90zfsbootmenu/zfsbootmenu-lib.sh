@@ -188,6 +188,43 @@ kexec_kernel() {
   cli_args="$( find_kernel_args "${fs}" "${mnt}" )"
   root_prefix="$( find_root_prefix "${fs}" "${mnt}" )"
 
+  if [ -e "${BASE}/noresume" ]; then
+    # Must replace resume= arguments and append a noresume
+    cli_args="$( awk <<<"${cli_args}" '
+      BEGIN {
+        quot = 0;
+        supp = 0;
+        ORS = " ";
+      }
+
+      {
+        for (i=1; i <= NF; i++) {
+          if ( quot == 0 ) {
+            # If unquoted, determine if output should be suppressed
+            if ( $(i) ~ /^resume=/ ) {
+              # Argument starts with "resume=", suppress
+              supp = 1;
+            } else {
+              # Nothing else is suppressed
+              supp = 0;
+            }
+          }
+
+          # If output is not suppressed, print the field
+          if ( supp == 0 && length($(i)) > 0 ) {
+            print $(i);
+          }
+
+          # If an odd number of quotes are in this field, toggle quoting
+          if ( gsub(/"/, "\"", $(i)) % 2 == 1 ) {
+            quot = (quot + 1) % 2;
+          }
+        }
+        printf "noresume";
+      }
+    ' )"
+  fi
+
   # restore kernel log level just before we kexec
   # shellcheck disable=SC2154
   echo "${printk}" > /proc/sys/kernel/printk
@@ -689,17 +726,31 @@ resume_prompt() {
 	be imported read-write. Importing read-write and then resuming
 	from an active suspend partition may DESTROY YOUR POOL.
 
-	If you are certain you want to proceed, type NORESUME. You are
-	also STRONGLY ADVISED to boot with the "noresume" option added to
-	your kernel command-line to prevent your system from attempting
-	to restore this image.
+	If you choose to proceed, ZFSBootMenu can attempt to remove any
+	"resume=" arguments from your kernel command line and append a
+	"noresume" argument to prevent your system from attempting to
+	restore from the active suspend partition.
+
+	Type NORESUME to proceed with the import, allowing ZFSBootMenu
+	to add a "noresume" argument to your kernel command line.
+
+	Type DANGEROUS to proceed with the import without allowing
+	ZFSBootMenu to modify your kernel command line. Make sure to
+	add the "noresume" argument yourself if necesary.
+
+	Type any other text, or just press enter, to abort.
 
 	Proceed [No] ?
 	EOF
 
     read -r decision
 
-    if [ "x${decision}" != "xNORESUME" ]; then
+    if [ "x${decision}" = "xDANGEROUS" ]; then
+      return 0
+    elif [ "x${decision}" = "xNORESUME" ]; then
+      : > "${BASE}/noresume"
+      return 0
+    else
       return 1
     fi
   fi

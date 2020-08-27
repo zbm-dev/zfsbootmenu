@@ -79,6 +79,7 @@ install() {
     "tr"
     "tac"
     "blkid"
+    "awk"
   )
 
   for _exec in "${essential_execs[@]}"; do
