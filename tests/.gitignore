@@ -1,0 +1,7 @@
+*.img
+*.qcow2
+*.raw
+vmlinuz*
+vmlinux*
+local.yaml
+.config
