@@ -1,18 +1,21 @@
 #!/bin/bash
 
 MNT="$( mktemp -d )"
+LOOP="$( losetup -f )"
 
 qemu-img create zfsbootmenu-pool.img 1G
-losetup /dev/loop0 zfsbootmenu-pool.img
-kpartx -u /dev/loop0
-echo 'label: gpt' | sfdisk /dev/loop0
+
+losetup "${LOOP}" zfsbootmenu-pool.img
+kpartx -u "${LOOP}"
+
+echo 'label: gpt' | sfdisk "${LOOP}"
 zpool create -f \
  -O compression=lz4 \
  -O acltype=posixacl \
  -O xattr=sa \
  -O relatime=on \
  -o autotrim=on \
- -m none ztest /dev/loop0
+ -m none ztest "${LOOP}"
 
 zfs create -o mountpoint=none ztest/ROOT
 zfs create -o mountpoint=/ -o canmount=noauto ztest/ROOT/void
@@ -39,15 +42,14 @@ cp /var/db/xbps/keys/*.plist "${MNT}/var/db/xbps/keys/."
 mkdir -p "${MNT}/etc/xbps.d"
 cp /etc/xbps.d/*.conf "${MNT}/etc/xbps.d/."
 
-xbps-install -y -S -r "${MNT}" --repository="${URL}"
-
 # /etc/runit/core-services/03-console-setup.sh depends on loadkeys from kbd
 # /etc/runit/core-services/05-misc.sh depends on ip from iproute2
-xbps-install -y -r "${MNT}" --repository="${URL}" \
+xbps-install -y -S -M -r "${MNT}" --repository="${URL}" \
   base-minimal dracut ncurses-base kbd iproute2
 
 cp /etc/hostid "${MNT}/etc/"
 cp /etc/resolv.conf "${MNT}/etc/" 
+cp /etc/rc.conf "${MNT}/etc/"
 
 mount -t proc proc "${MNT}/proc"
 mount -t sysfs sys "${MNT}/sys"
@@ -60,6 +62,6 @@ chroot "${MNT}" /root/chroot.sh
 umount -R "${MNT}" && rmdir "${MNT}"
 
 zpool export ztest
-losetup -d /dev/loop0
+losetup -d "${LOOP}"
 
 chown "$( stat -c %U . ):$( stat -c %G . )" zfsbootmenu-pool.img
