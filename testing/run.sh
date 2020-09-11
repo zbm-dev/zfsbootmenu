@@ -1,14 +1,5 @@
 #!/bin/bash
 
-# Setup a local config file
-if [ ! -f local.yaml ]; then 
-  cp ../etc/zfsbootmenu/config.yaml local.yaml
-  yq-go w -i local.yaml Components.ImageDir "$( pwd )"
-  yq-go w -i local.yaml Components.Versions false
-  yq-go w -i local.yaml Global.ManageImages true 
-  yq-go d -i local.yaml Global.BootMountPoint
-fi
-
 # Support x86_64 and ppc64(le)
 case "$(uname -m)" in
   ppc64*)

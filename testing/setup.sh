@@ -48,7 +48,7 @@ xbps-install -y -S -M -r "${MNT}" --repository="${URL}" \
   base-minimal dracut ncurses-base kbd iproute2
 
 cp /etc/hostid "${MNT}/etc/"
-cp /etc/resolv.conf "${MNT}/etc/" 
+cp /etc/resolv.conf "${MNT}/etc/"
 cp /etc/rc.conf "${MNT}/etc/"
 
 mount -t proc proc "${MNT}/proc"
@@ -65,3 +65,12 @@ zpool export ztest
 losetup -d "${LOOP}"
 
 chown "$( stat -c %U . ):$( stat -c %G . )" zfsbootmenu-pool.img
+
+# Setup a local config file
+if [ ! -f local.yaml ]; then
+  cp ../etc/zfsbootmenu/config.yaml local.yaml
+  yq-go w -i local.yaml Components.ImageDir "$( pwd )"
+  yq-go w -i local.yaml Components.Versions false
+  yq-go w -i local.yaml Global.ManageImages true
+  yq-go d -i local.yaml Global.BootMountPoint
+fi

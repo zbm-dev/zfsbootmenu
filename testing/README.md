@@ -1,3 +1,13 @@
+# Requirements
+
+The testing environment setup and runtime depends on the following tools:
+
+* kpartx
+* qemu
+* yq-go
+* ZFS
+* kvm kernel module
+
 # Creating a ZFSBootMenu Test Pool for QEMU
 
 First, run (as root) `./setup.sh` to:
