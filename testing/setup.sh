@@ -17,8 +17,13 @@ zpool create -f \
  -o autotrim=on \
  -m none ztest "${LOOP}"
 
+zfs snapshot -r ztest@barepool
+
 zfs create -o mountpoint=none ztest/ROOT
 zfs create -o mountpoint=/ -o canmount=noauto ztest/ROOT/void
+
+zfs snapshot -r ztest@barebe
+
 zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) ro quiet" ztest/ROOT
 zpool set bootfs=ztest/ROOT/void ztest
 
@@ -55,6 +60,8 @@ mount -t proc proc "${MNT}/proc"
 mount -t sysfs sys "${MNT}/sys"
 mount -B /dev "${MNT}/dev"
 mount -t devpts pts "${MNT}/dev/pts"
+
+zfs snapshot -r ztest@pre-chroot
 
 cp chroot.sh "${MNT}/root"
 chroot "${MNT}" /root/chroot.sh

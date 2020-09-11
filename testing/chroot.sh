@@ -28,3 +28,9 @@ echo 'root:zfsbootmenu' | chpasswd -c SHA256
 
 # delete ourself
 rm /root/chroot.sh
+
+zfs snapshot -r ztest@full-setup
+
+touch /root/IN_THE_MATRIX
+zfs snapshot -r ztest@minor-changes
+rm /root/IN_THE_MATRIX
