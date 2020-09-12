@@ -20,27 +20,35 @@ MEMORY="2048M"
 SMP="2"
 DISPLAY="gtk"
 APPEND="loglevel=7 timeout=5 zfsbotmenu:POOL=ztest"
+NOCREATE=0
 
 # Override any default variables
 #shellcheck disable=SC1091
 [ -f .config ] && source .config
 
-while getopts "a:" opt; do
+while getopts "a:n" opt; do
   case "${opt}" in
     a)
       APPEND="${OPTARG}"
+      ;;
+    n)
+      NOCREATE=1
       ;;
     *)
       ;;
   esac
 done
 
-# Purge kernel/initramfs from the previous run
-[ -f "${KERNEL}" ] && rm "${KERNEL}"
-[ -f "${INITRD}" ] && rm "${INITRD}"
-
-# Generate a new initramfs
-../bin/generate-zbm -c local.yaml
+if ((NOCREATE)) ; then
+  # Don't create anything
+  [ -f "${KERNEL}" ] || echo "Missing kernel: ${KERNEL}" && exit
+  [ -f "${INITRD}" ] || echo "Missing initramfs: ${INITRD}" && exit
+else
+  # Create our initramfs
+  [ -f "${KERNEL}" ] && rm "${KERNEL}"
+  [ -f "${INITRD}" ] && rm "${INITRD}"
+  ../bin/generate-zbm -c local.yaml
+fi
 
 # Boot it up
 "${BIN}" \
@@ -54,4 +62,4 @@ done
 	-object rng-random,id=rng0,filename=/dev/urandom \
 	-device virtio-rng-pci,rng=rng0 \
 	-display "${DISPLAY}" \
-	-append "${APPEND}"
+	-append "${APPEND}" > /dev/null 2>&1

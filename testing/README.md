@@ -37,4 +37,4 @@ APPEND="loglevel=7 timeout=5 zfsbotmenu:POOL=ztest"
 ```
 
 The ZFSBootMenu kernel command line (specified in the `APPEND` variable) can be
-overridden per run by passing an optional `-a` argument to `./run.sh`.
+overridden per run by passing an optional `-a` argument to `./run.sh`. The `-n` argument can be used to skip image regeneration, allowing you to boot the existing initramfs.
