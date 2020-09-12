@@ -23,6 +23,11 @@ xbps-reconfigure -f linux5.8
 # Set kernel commandline
 zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) ro quiet" ztest/ROOT
 
+# Configure the system to create a recursive snapshot every boot
+cat << \EOF > /etc/rc.local
+zfs snapshot -r ztest@$(date +%m%d%Y-%H%M)
+EOF
+
 # Set root password
 echo 'root:zfsbootmenu' | chpasswd -c SHA256
 

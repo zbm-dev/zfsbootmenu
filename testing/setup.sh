@@ -15,6 +15,7 @@ zpool create -f \
  -O xattr=sa \
  -O relatime=on \
  -o autotrim=on \
+ -o cachefile=none \
  -m none ztest "${LOOP}"
 
 zfs snapshot -r ztest@barepool
