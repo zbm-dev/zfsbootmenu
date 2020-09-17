@@ -1,3 +1,30 @@
+# ZFSBootMenu v1.5.0 (2020-09-16)
+
+## Fixes
+* The required binaries were audited, cleaning up tools that were no longer used.
+* The installation of required binaries, core scripts and other files is checked during initramfs creation. If any of these critical files can not be installed, the image is not created.
+* Parameters are passed to the pool import function to control how a pool is imported. This allows for more than just readonly changes when importing.
+* `config.yaml` defaults were adjusted to more closely match normal use cases. This works in tandem with the `--enable` toggle in `generate-zbm` to provide a better out-of-the-box experience.
+
+## New features
+* When importing a pool as R/W, and a resume image is found, the kernel command line is modified to remove `resume=` and to subsequently append `noresume`.
+* Support `skim` in place of `fzf` for greater platform availability. `fzf` is preferred when creating an initramfs.
+* The health of discovered pools can now be viewed. Optionally, a checkpoint rewind can be performed if one has been set. Use caution, this action can NOT be undone.
+* Global image creation can be toggled via `generate-zbm --enable` or `generate-zbm --disable`
+
+## Significant commits in this release
+
+* cfec416 - Support automatic "noresume" when importing pools R/W (Andrew J. Hesford)
+* a6a36bf - Add support for pool status and checkpoints (Zach Dykstra)
+* 79bcca3 - Fix logic inversion in import_pool handling of $read_write (Andrew J. Hesford)
+* 14b88b9 - generate-zbm: enable components in config.yaml (Andrew J. Hesford)
+* 71cd075 - Add --enable/--disable (Zach Dykstra)
+* 999e6c2 - Drop import_args variable and let import_pool build its own arguments (Andrew J. Hesford)
+* b85d836 - support sk, an fzf workalike, for menu presentation (Zach Dykstra)
+* 2225fea - module-setup.sh: catch installation failures, warn or fail as appropriate (#72) (Andrew J. Hesford)
+* 5801e00 - Prune everything not explicitly needed (Zach Dykstra)
+
+
 # ZFSBootMenu v1.4.1 (2020-08-19)
 
 ZFSBootMenu 1.4.1 is a minor update, updating the provided Makefile for packagers.

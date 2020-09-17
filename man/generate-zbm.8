@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "generate-zbm 8"
-.TH generate-zbm 8 "2020-08-20" "1.4.1" "generate-zbm"
+.TH generate-zbm 8 "2020-09-17" "1.5.0" "generate-zbm"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -173,6 +173,12 @@ Specify the path to a configuration file; default: \fI/etc/zfsbootmenu/config.ya
 .IP "\fB\-\-migrate|\-m\fR [\fIini-config\fR]" 4
 .IX Item "--migrate|-m [ini-config]"
 Migrate a legacy \s-1INI\s0 file to the new \s-1YAML\s0 format, writing the converted file to the path specified by \fB\-\-config\fR. If \fIini-config\fR is not specified, a default path is chosen by removing any \fI.yaml\fR suffix in the \fB\-\-config\fR path and appending a \fI.ini\fR suffix.
+.IP "\fB\-\-enable\fR" 4
+.IX Item "--enable"
+Set the \fIGlobal.ManageImages\fR option to true, enabling image generation.
+.IP "\fB\-\-disable\fR" 4
+.IX Item "--disable"
+Set the \fIGlobal.ManageImages\fR option to false, disabling image generation.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
 \&\fBgenerate-zbm\fR(5) \fBzfsbootmenu\fR(7)
