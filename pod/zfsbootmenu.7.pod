@@ -103,6 +103,6 @@ B<generate-zbm>(5) B<generate-zbm>(8)
 
 =head1 AUTHOR
 
-ZFSBootMenu Team L<https://github.com/zdykstra/zfsbootmenu>
+ZFSBootMenu Team L<https://github.com/zbm-dev/zfsbootmenu>
 
 =cut
