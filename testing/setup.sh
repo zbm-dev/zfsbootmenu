@@ -3,7 +3,22 @@ YAML=0
 MODULES=0
 IMAGE=0
 
-while getopts "ymi" opt; do
+usage() {
+  cat <<EOF
+Usage: $0 [options]
+  -y  Create local.yaml
+  -m  Create modules.d
+  -i  Create a test VM image
+  -a  Perform all setup options
+EOF
+}
+
+if [ $# -eq 0 ]; then
+  usage
+  exit
+fi
+
+while getopts "ymia" opt; do
   case "${opt}" in
     y)
       YAML=1
@@ -14,6 +29,14 @@ while getopts "ymi" opt; do
     i)
       IMAGE=1
       ;;
+    a)
+      YAML=1
+      MODULES=1
+      IMAGE=1
+      ;;
+    \?)
+      usage
+      exit
   esac
 done
 
