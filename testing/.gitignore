@@ -5,3 +5,4 @@ vmlinuz*
 vmlinux*
 local.yaml
 .config
+modules.d

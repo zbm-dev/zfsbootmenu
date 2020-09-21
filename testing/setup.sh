@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Setup our dracut directory
+test -d modules.d || mkdir modules.d
+for mod in $( find /usr/lib/dracut/modules.d/ -type d | grep -v zfsbootmenu ); do
+  TARGET="modules.d/$( basename "${mod}" )"
+  test -L "${TARGET}" || ln -s "${mod}" "${TARGET}"
+done
+
+test -L "modules.d/90zfsbootmenu" || ln -s "../../90zfsbootmenu" "modules.d/90zfsbootmenu"
+
 MNT="$( mktemp -d )"
 LOOP="$( losetup -f )"
 
@@ -81,4 +90,5 @@ if [ ! -f local.yaml ]; then
   yq-go w -i local.yaml Components.Versions false
   yq-go w -i local.yaml Global.ManageImages true
   yq-go d -i local.yaml Global.BootMountPoint
+  yq-go w -i local.yaml Global.DracutFlags[+] -- "--local"
 fi

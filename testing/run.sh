@@ -47,7 +47,9 @@ else
   # Create our initramfs
   [ -f "${KERNEL}" ] && rm "${KERNEL}"
   [ -f "${INITRD}" ] && rm "${INITRD}"
-  ../bin/generate-zbm -c local.yaml
+  #shellcheck disable=SC2164
+  cd modules.d
+  ../../bin/generate-zbm -c ../local.yaml
 fi
 
 # Boot it up
