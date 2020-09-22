@@ -1,4 +1,5 @@
 #!/bin/bash
+TESTING_DIR="$( pwd )"
 
 # Support x86_64 and ppc64(le)
 case "$(uname -m)" in
@@ -41,13 +42,23 @@ done
 
 if ((NOCREATE)) ; then
   # Don't create anything
-  [ -f "${KERNEL}" ] || echo "Missing kernel: ${KERNEL}" && exit
-  [ -f "${INITRD}" ] || echo "Missing initramfs: ${INITRD}" && exit
+  if [ ! -f "${KERNEL}" ] ; then
+    echo "Missing kernel: ${KERNEL}"
+    exit
+  fi
+  if [ ! -f "${INITRD}" ] ; then
+    echo "Missing initramfs: ${INITRD}"
+    exit
+  fi
 else
   # Create our initramfs
   [ -f "${KERNEL}" ] && rm "${KERNEL}"
   [ -f "${INITRD}" ] && rm "${INITRD}"
-  ../bin/generate-zbm -c local.yaml
+  #shellcheck disable=SC2164
+  cd "${TESTING_DIR}/modules.d"
+  ../../bin/generate-zbm -c ../local.yaml
+  #shellcheck disable=SC2164
+  cd "${TESTING_DIR}"
 fi
 
 # Boot it up

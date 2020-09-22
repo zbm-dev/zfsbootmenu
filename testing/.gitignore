@@ -5,3 +5,5 @@ vmlinuz*
 vmlinux*
 local.yaml
 .config
+modules.d
+dracut.conf.d

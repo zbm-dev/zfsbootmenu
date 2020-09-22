@@ -34,6 +34,10 @@ In general, this should be the location of your EFI System Partition. B<generate
 
 A specific ZFSBootMenu version string to use in producing images. In the string, the value I<%{current}> will be replaced with the release version of ZFSBootMenu. The default value is simply I<%{current}>.
 
+=item B<DracutFlags>
+
+An array of additional arguments that will be passed to B<dracut> when generating an initramfs.
+
 =back
 
 =head2 Kernel
