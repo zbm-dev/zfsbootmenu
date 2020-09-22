@@ -78,6 +78,8 @@ fi
 
 # Create an image
 if ((IMAGE)) ; then
+  SHELL=/bin/bash sudo -s <<"EOF"
+
 	MNT="$( mktemp -d )"
 	LOOP="$( losetup -f )"
 
@@ -151,4 +153,5 @@ if ((IMAGE)) ; then
 	losetup -d "${LOOP}"
 
 	chown "$( stat -c %U . ):$( stat -c %G . )" zfsbootmenu-pool.img
+EOF
 fi
