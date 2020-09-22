@@ -2,12 +2,14 @@
 YAML=0
 MODULES=0
 IMAGE=0
+CONFD=0
 
 usage() {
   cat <<EOF
 Usage: $0 [options]
   -y  Create local.yaml
   -m  Create modules.d
+  -c  Create dracut.conf.d
   -i  Create a test VM image
   -a  Perform all setup options
 EOF
@@ -18,7 +20,7 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "ymia" opt; do
+while getopts "ymcai" opt; do
   case "${opt}" in
     y)
       YAML=1
@@ -26,12 +28,16 @@ while getopts "ymia" opt; do
     m)
       MODULES=1
       ;;
+    c)
+      CONFD=1
+      ;;
     i)
       IMAGE=1
       ;;
     a)
       YAML=1
       MODULES=1
+      CONFD=1
       IMAGE=1
       ;;
     \?)
@@ -50,7 +56,10 @@ if ((MODULES)) ; then
   done
 
   test -L "modules.d/90zfsbootmenu" || ln -s "../../90zfsbootmenu" "modules.d/90zfsbootmenu"
+fi
 
+if ((CONFD)) ; then
+  echo "Creating dracut.conf.d"
   test -d "dracut.conf.d" || cp -Rp ../etc/zfsbootmenu/dracut.conf.d .
 fi
 
