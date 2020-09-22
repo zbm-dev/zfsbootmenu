@@ -26,7 +26,7 @@ Then run as your local user `./setup.sh -ymc` to:
 * Create a local dracut.conf.d configuration directory (`dracut.conf.d`) with a default configuration file
 * Create a local dracut modules directory (`modules.d`) with symlinks to all of the system modules, and a symlink to the `90zfsbootmenu` directory in the current git checkout.
 
-These options can be individually executed if you need to re:qset any single portion of your testing environment.
+These options can be individually executed if you need to reset any single portion of your testing environment.
 
 The root password in the test installation will be set to `zfsbootmenu`.
 
