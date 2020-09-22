@@ -80,78 +80,78 @@ fi
 if ((IMAGE)) ; then
   SHELL=/bin/bash sudo -s <<"EOF"
 
-	MNT="$( mktemp -d )"
-	LOOP="$( losetup -f )"
+  MNT="$( mktemp -d )"
+  LOOP="$( losetup -f )"
 
-	qemu-img create zfsbootmenu-pool.img 1G
+  qemu-img create zfsbootmenu-pool.img 1G
 
-	losetup "${LOOP}" zfsbootmenu-pool.img
-	kpartx -u "${LOOP}"
+  losetup "${LOOP}" zfsbootmenu-pool.img
+  kpartx -u "${LOOP}"
 
-	echo 'label: gpt' | sfdisk "${LOOP}"
-	zpool create -f \
-	 -O compression=lz4 \
-	 -O acltype=posixacl \
-	 -O xattr=sa \
-	 -O relatime=on \
-	 -o autotrim=on \
-	 -o cachefile=none \
-	 -m none ztest "${LOOP}"
+  echo 'label: gpt' | sfdisk "${LOOP}"
+  zpool create -f \
+   -O compression=lz4 \
+   -O acltype=posixacl \
+   -O xattr=sa \
+   -O relatime=on \
+   -o autotrim=on \
+   -o cachefile=none \
+   -m none ztest "${LOOP}"
 
-	zfs snapshot -r ztest@barepool
+  zfs snapshot -r ztest@barepool
 
-	zfs create -o mountpoint=none ztest/ROOT
-	zfs create -o mountpoint=/ -o canmount=noauto ztest/ROOT/void
+  zfs create -o mountpoint=none ztest/ROOT
+  zfs create -o mountpoint=/ -o canmount=noauto ztest/ROOT/void
 
-	zfs snapshot -r ztest@barebe
+  zfs snapshot -r ztest@barebe
 
-	zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) ro quiet" ztest/ROOT
-	zpool set bootfs=ztest/ROOT/void ztest
+  zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) ro quiet" ztest/ROOT
+  zpool set bootfs=ztest/ROOT/void ztest
 
-	zpool export ztest
-	zpool import -R "${MNT}" ztest
-	zfs mount ztest/ROOT/void
+  zpool export ztest
+  zpool import -R "${MNT}" ztest
+  zfs mount ztest/ROOT/void
 
-	case "$(uname -m)" in
-	  ppc64le)
-	    URL="https://mirrors.servercentral.com/void-ppc/current"
-	    ;;
-	  x86_64)
-	    URL="https://mirrors.servercentral.com/voidlinux/current"
-	    ;;
-	esac
+  case "$(uname -m)" in
+    ppc64le)
+      URL="https://mirrors.servercentral.com/void-ppc/current"
+      ;;
+    x86_64)
+      URL="https://mirrors.servercentral.com/voidlinux/current"
+      ;;
+  esac
 
-	# https://github.com/project-trident/trident-installer/blob/master/src-sh/void-install-zfs.sh#L541
-	mkdir -p "${MNT}/var/db/xbps/keys"
-	cp /var/db/xbps/keys/*.plist "${MNT}/var/db/xbps/keys/."
+  # https://github.com/project-trident/trident-installer/blob/master/src-sh/void-install-zfs.sh#L541
+  mkdir -p "${MNT}/var/db/xbps/keys"
+  cp /var/db/xbps/keys/*.plist "${MNT}/var/db/xbps/keys/."
 
-	mkdir -p "${MNT}/etc/xbps.d"
-	cp /etc/xbps.d/*.conf "${MNT}/etc/xbps.d/."
+  mkdir -p "${MNT}/etc/xbps.d"
+  cp /etc/xbps.d/*.conf "${MNT}/etc/xbps.d/."
 
-	# /etc/runit/core-services/03-console-setup.sh depends on loadkeys from kbd
-	# /etc/runit/core-services/05-misc.sh depends on ip from iproute2
-	xbps-install -y -S -M -r "${MNT}" --repository="${URL}" \
-	  base-minimal dracut ncurses-base kbd iproute2
+  # /etc/runit/core-services/03-console-setup.sh depends on loadkeys from kbd
+  # /etc/runit/core-services/05-misc.sh depends on ip from iproute2
+  xbps-install -y -S -M -r "${MNT}" --repository="${URL}" \
+    base-minimal dracut ncurses-base kbd iproute2
 
-	cp /etc/hostid "${MNT}/etc/"
-	cp /etc/resolv.conf "${MNT}/etc/"
-	cp /etc/rc.conf "${MNT}/etc/"
+  cp /etc/hostid "${MNT}/etc/"
+  cp /etc/resolv.conf "${MNT}/etc/"
+  cp /etc/rc.conf "${MNT}/etc/"
 
-	mount -t proc proc "${MNT}/proc"
-	mount -t sysfs sys "${MNT}/sys"
-	mount -B /dev "${MNT}/dev"
-	mount -t devpts pts "${MNT}/dev/pts"
+  mount -t proc proc "${MNT}/proc"
+  mount -t sysfs sys "${MNT}/sys"
+  mount -B /dev "${MNT}/dev"
+  mount -t devpts pts "${MNT}/dev/pts"
 
-	zfs snapshot -r ztest@pre-chroot
+  zfs snapshot -r ztest@pre-chroot
 
-	cp chroot.sh "${MNT}/root"
-	chroot "${MNT}" /root/chroot.sh
+  cp chroot.sh "${MNT}/root"
+  chroot "${MNT}" /root/chroot.sh
 
-	umount -R "${MNT}" && rmdir "${MNT}"
+  umount -R "${MNT}" && rmdir "${MNT}"
 
-	zpool export ztest
-	losetup -d "${LOOP}"
+  zpool export ztest
+  losetup -d "${LOOP}"
 
-	chown "$( stat -c %U . ):$( stat -c %G . )" zfsbootmenu-pool.img
+  chown "$( stat -c %U . ):$( stat -c %G . )" zfsbootmenu-pool.img
 EOF
 fi
