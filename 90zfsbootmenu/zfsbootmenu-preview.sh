@@ -10,22 +10,20 @@ BLUE='\033[0;34m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
+# shellcheck disable=SC1091
+test -f /lib/zfsbootmenu-lib.sh && source /lib/zfsbootmenu-lib.sh
+
 while IFS= read -r line
 do
   selected_kernel="${line}"
 done < "${BASE}/${ENV}/default_kernel"
 
-if [ -f "${BASE}/default_args" ]
-then
-  ARGS="${BASE}/default_args"
-else
-  ARGS="${BASE}/${ENV}/default_args"
-fi
+BE_ARGS="$( load_be_cmdline "${ENV}" )"
 
 while IFS= read -r line
 do
   selected_arguments="${line}"
-done < "${ARGS}"
+done <<< "${BE_ARGS}"
 
 if [[ "${BOOTFS}" =~ ${ENV} ]]; then
   selected_env_str="${ENV} (default) - ${selected_kernel}"

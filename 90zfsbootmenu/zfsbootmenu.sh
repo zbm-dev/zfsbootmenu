@@ -333,21 +333,15 @@ while true; do
         echo ""
         zfsbootmenu-preview.sh "${BASE}" "${selected_be}" "${BOOTFS}"
 
-        if [ -f "${BASE}/default_args" ]
-        then
-          ARGS="${BASE}/default_args"
-        else
-          ARGS="${BASE}/${selected_be}/default_args"
-        fi
-
-        while IFS= read -r line
-        do
+        BE_ARGS="$( load_be_cmdline "${selected_be}" )"
+        while IFS= read -r line; do
           def_args="${line}"
-        done < "${ARGS}"
+        done <<< "${BE_ARGS}"
+
         echo -e "\nNew kernel command line"
         read -r -e -i "${def_args}" -p "> " cmdline
         if [ -n "${cmdline}" ] ; then
-          echo "${cmdline}" > "${BASE}/default_args"
+          echo "${cmdline}" > "${BASE}/cmdline"
         fi
         ;;
     esac
