@@ -118,9 +118,7 @@ draw_diff() {
   pool="${snapshot%%/*}"
 
   if set_rw_pool "${pool}"; then
-    CLEAR_SCREEN=1
-    key_wrapper "${pool}"
-    CLEAR_SCREEN=0
+    CLEAR_SCREEN=1 key_wrapper "${pool}"
   else
     return
   fi
@@ -224,9 +222,7 @@ duplicate_snapshot() {
   pool="${selected%%/*}"
 
   set_rw_pool "${pool}" || return 1
-  CLEAR_SCREEN=0
-  key_wrapper "${pool}"
-  CLEAR_SCREEN=1
+  CLEAR_SCREEN=0 key_wrapper "${pool}"
 
   recv_args=( "-u" "-o" "canmount=noauto" "-o" "mountpoint=/" "${target}" )
 
@@ -305,9 +301,7 @@ set_default_kernel() {
 
   # Make sure the pool is writable
   set_rw_pool "${pool}" || return 1
-  CLEAR_SCREEN=1
-  key_wrapper "${pool}"
-  CLEAR_SCREEN=0
+  CLEAR_SCREEN=1 key_wrapper "${pool}"
 
   # Restore nonspecific default when no kernel specified
   if [ -z "$kernel" ]; then
@@ -326,9 +320,7 @@ set_default_env() {
   pool="${selected%%/*}"
 
   set_rw_pool "${pool}" || return 1
-  CLEAR_SCREEN=1
-  key_wrapper "${pool}"
-  CLEAR_SCREEN=0
+  CLEAR_SCREEN=1 key_wrapper "${pool}"
 
   # shellcheck disable=SC2034
   if output="$( zpool set bootfs="${selected}" "${pool}" )"; then
@@ -851,7 +843,7 @@ load_key() {
 
   keylocation="$( zfs get -H -o value keylocation "${encroot}" )"
   if [ "${keylocation}" = "prompt" ]; then
-    if [ ${CLEAR_SCREEN} -eq 1 ] ; then
+    if [ "${CLEAR_SCREEN}" -eq 1 ] ; then
       tput clear
       tput cup 0 0
     fi
@@ -864,7 +856,7 @@ load_key() {
       zfs load-key "${encroot}"
       ret=$?
     elif [ "${keyformat}" = "passphrase" ]; then
-      if [ ${CLEAR_SCREEN} -eq 1 ] ; then
+      if [ "${CLEAR_SCREEN}" -eq 1 ] ; then
         tput clear
         tput cup 0 0
       fi
