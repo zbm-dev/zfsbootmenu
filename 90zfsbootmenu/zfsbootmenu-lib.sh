@@ -185,45 +185,8 @@ kexec_kernel() {
     return 1
   fi
 
-  cli_args="$( find_kernel_args "${fs}" "${mnt}" )"
+  cli_args="$( load_be_cmdline "${fs}" )"
   root_prefix="$( find_root_prefix "${fs}" "${mnt}" )"
-
-  if [ -e "${BASE}/noresume" ]; then
-    # Must replace resume= arguments and append a noresume
-    cli_args="$( awk <<<"${cli_args}" '
-      BEGIN {
-        quot = 0;
-        supp = 0;
-        ORS = " ";
-      }
-
-      {
-        for (i=1; i <= NF; i++) {
-          if ( quot == 0 ) {
-            # If unquoted, determine if output should be suppressed
-            if ( $(i) ~ /^resume=/ ) {
-              # Argument starts with "resume=", suppress
-              supp = 1;
-            } else {
-              # Nothing else is suppressed
-              supp = 0;
-            }
-          }
-
-          # If output is not suppressed, print the field
-          if ( supp == 0 && length($(i)) > 0 ) {
-            print $(i);
-          }
-
-          # If an odd number of quotes are in this field, toggle quoting
-          if ( gsub(/"/, "\"", $(i)) % 2 == 1 ) {
-            quot = (quot + 1) % 2;
-          }
-        }
-        printf "noresume";
-      }
-    ' )"
-  fi
 
   # restore kernel log level just before we kexec
   # shellcheck disable=SC2154
@@ -383,7 +346,7 @@ find_be_kernels() {
 
 
   local kernel kernel_base labels version kernel_records
-  local defaults def_kernel def_kernel_file def_args def_args_file
+  local defaults def_kernel def_kernel_file
 
   # Check if /boot even exists in the environment
   mnt="$( mount_zfs "${fs}" )"
@@ -437,19 +400,18 @@ find_be_kernels() {
   IFS=' ' read -r def_fs def_kernel def_initramfs <<<"${defaults}"
 
   def_kernel_file="${mnt/mnt/default_kernel}"
-  def_args_file="${mnt/mnt/default_args}"
 
   # If no default kernel is found, there are no kernels; leave the BE
   # directory in the same state it would be in had no /boot existed
   if [ -z "${def_kernel}" ]; then
-    rm -f "${kernel_records}" "${def_kernel_file}" "${def_args_file}"
+    rm -f "${kernel_records}" "${def_kernel_file}"
     return 1
   fi
 
   basename "${def_kernel}" > "${def_kernel_file}"
 
-  def_args="$( find_kernel_args "${fs}" "${mnt}" )"
-  echo "${def_args}" > "${def_args_file}"
+  # Pre-load cmdline arguments, possibly from files on the mount
+  preload_be_cmdline "${fs}" "${mnt}"
 
   umount "${mnt}"
   return 0
@@ -541,43 +503,97 @@ find_root_prefix() {
 
 # arg1: ZFS filesystem
 # arg2: path for a mounted filesystem
-# prints: discovered kernel command line arguments
-# returns: nothing
+# prints: nothing
+# returns: 0 on success
 
-find_kernel_args() {
-  local zfsbe_mnt zfsbe_fs zfsbe_args
+preload_be_cmdline() {
+  local zfsbe_mnt zfsbe_fs zfsbe_args args_file
   zfsbe_fs="${1}"
   zfsbe_mnt="${2}"
 
-  if [ -f "${BASE}/default_args" ]; then
-    head -1 "${BASE}/default_args" | tr -d '\n'
-    return
-  fi
+  args_file="${BASE}/${zfsbe_fs}/cmdline"
 
   if [ -n "${zfsbe_fs}" ]; then
     zfsbe_args="$( zfs get -H -o value org.zfsbootmenu:commandline "${zfsbe_fs}" )"
     if [ "${zfsbe_args}" != "-" ]; then
-      echo "${zfsbe_args}"
+      echo "${zfsbe_args}" > "${args_file}"
       return
     fi
   fi
 
-  if [ -n "${zfsbe_mnt}" ] && [ -f "${zfsbe_mnt}/etc/default/zfsbootmenu" ]; then
-    head -1 "${zfsbe_mnt}/etc/default/zfsbootmenu" | tr -d '\n'
+  if [ -n "${zfsbe_mnt}" ] && [ -r "${zfsbe_mnt}/etc/default/zfsbootmenu" ]; then
+    head -1 "${zfsbe_mnt}/etc/default/zfsbootmenu" | tr -d '\n' > "${args_file}"
     return
   fi
 
-  if [ -n "${zfsbe_mnt}" ] && [ -f "${zfsbe_mnt}/etc/default/grub" ]; then
+  if [ -n "${zfsbe_mnt}" ] && [ -r "${zfsbe_mnt}/etc/default/grub" ]; then
     echo "$(
       # shellcheck disable=SC1090
       . "${zfsbe_mnt}/etc/default/grub" ;
       echo "${GRUB_CMDLINE_LINUX_DEFAULT}"
-    )"
+    )" > "${args_file}"
+    return
+  fi
+}
+
+# arg1: ZFS filesystem
+# prints: kernel command line arguments
+# returns: nothing
+
+load_be_cmdline() {
+  local zfsbe_fs zfsbe_args
+  zfsbe_fs="${1}"
+
+  # If a user-entered cmdline is found, it is not modified
+  if [ -r "${BASE}/cmdline" ]; then
+    head -1 "${BASE}/cmdline" | tr -d '\n'
     return
   fi
 
-  # No arguments found, return something generic
-  echo "quiet loglevel=3"
+  # Use BE-specific cmdline if found, fall back to generic default
+  zfsbe_args="quiet loglevel=4"
+  if [ -f "${BASE}/${zfsbe_fs}/cmdline" ]; then
+    zfsbe_args="$(head -1 "${BASE}/${zfsbe_fs}/cmdline" | tr -d '\n')"
+  fi
+
+  if [ -e "${BASE}/noresume" ]; then
+    # Must replace resume= arguments and append a noresume
+    zfsbe_args="$( awk <<< "${zfsbe_args}" '
+      BEGIN {
+        quot = 0;
+        supp = 0;
+        ORS = " ";
+      }
+
+      {
+        for (i=1; i <= NF; i++) {
+          if ( quot == 0 ) {
+            # If unquoted, determine if output should be suppressed
+            if ( $(i) ~ /^resume=/ ) {
+              # Argument starts with "resume=", suppress
+              supp = 1;
+            } else {
+              # Nothing else is suppressed
+              supp = 0;
+            }
+          }
+
+          # If output is not suppressed, print the field
+          if ( supp == 0 && length($(i)) > 0 ) {
+            print $(i);
+          }
+
+          # If an odd number of quotes are in this field, toggle quoting
+          if ( gsub(/"/, "\"", $(i)) % 2 == 1 ) {
+            quot = (quot + 1) % 2;
+          }
+        }
+        printf "noresume";
+      }
+    ' )"
+  fi
+
+  echo "${zfsbe_args}"
 }
 
 # no arguments
