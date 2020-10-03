@@ -19,8 +19,8 @@ DRIVE="format=raw,file=zfsbootmenu-pool.img"
 INITRD="initramfs-bootmenu.img"
 MEMORY="2048M"
 SMP="2"
-DISPLAY="gtk"
-APPEND="loglevel=7 timeout=5 zfsbotmenu:POOL=ztest"
+DISPLAY_TYPE="gtk"
+APPEND="loglevel=7 timeout=5 zfsbootmenu:POOL=ztest"
 NOCREATE=0
 
 # Override any default variables
@@ -72,5 +72,5 @@ fi
 	-machine "${MACHINE}" \
 	-object rng-random,id=rng0,filename=/dev/urandom \
 	-device virtio-rng-pci,rng=rng0 \
-	-display "${DISPLAY}" \
-	-append "${APPEND}" > /dev/null 2>&1
+	-display "${DISPLAY_TYPE}" \
+	-append "${APPEND}"

@@ -9,7 +9,7 @@ xbps-reconfigure -f glibc-locales
 
 # Install a kernel and ZFS
 xbps-install -S
-xbps-install -y linux5.8 zfs
+xbps-install -y linux5.8 linux5.8-headers zfs
 
 # Setup ZFS in Dracut
 cat << EOF > /etc/dracut.conf.d/zol.conf
