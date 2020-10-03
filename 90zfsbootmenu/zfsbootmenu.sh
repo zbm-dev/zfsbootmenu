@@ -8,6 +8,9 @@ printk=${printk:0:1}
 # Set it to 0
 echo 0 > /proc/sys/kernel/printk
 
+# disable ctrl-c (SIGINT)
+trap '' SIGINT
+
 # shellcheck disable=SC1091
 test -f /lib/zfsbootmenu-lib.sh && source /lib/zfsbootmenu-lib.sh
 # shellcheck disable=SC1091
@@ -288,7 +291,12 @@ while true; do
         while true;
         do
           echo -e "\nNew boot environment name"
-          read -r -e -i "${pre_populated}" -p "> " new_be
+          new_be="$( zfsbootmenu-input "${pre_populated}" )"
+
+          if [ -z "${new_be}" ] ; then
+            break
+          fi
+
           if [ -n "${new_be}" ] ; then
             valid_name=$( echo "${new_be}" | tr -c -d 'a-zA-Z0-9-_.,' )
             # If the entered name is invalid, set the prompt to the valid form of the name
@@ -339,7 +347,8 @@ while true; do
         done <<< "${BE_ARGS}"
 
         echo -e "\nNew kernel command line"
-        read -r -e -i "${def_args}" -p "> " cmdline
+        cmdline="$( zfsbootmenu-input "${def_args}" )"
+
         if [ -n "${cmdline}" ] ; then
           echo "${cmdline}" > "${BASE}/cmdline"
         fi

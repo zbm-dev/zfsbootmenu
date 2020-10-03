@@ -131,6 +131,7 @@ install() {
   inst_simple "${moddir}/zfsbootmenu-preview.sh" "/bin/zfsbootmenu-preview.sh" || _ret=$?
   inst_simple "${moddir}/zfs-chroot" "/bin/zfs-chroot" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu.sh" "/bin/zfsbootmenu" || _ret=$?
+  inst_simple "${moddir}/zfsbootmenu-input.sh" "/bin/zfsbootmenu-input" || _ret=$?
   inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh" || _ret=$?
   inst_hook pre-mount 90 "${moddir}/zfsbootmenu-exec.sh" || _ret=$?
 

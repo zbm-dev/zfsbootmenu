@@ -86,4 +86,5 @@ fi
 	-object rng-random,id=rng0,filename=/dev/urandom \
 	-device virtio-rng-pci,rng=rng0 \
 	-display "${DISPLAY_TYPE}" \
+	-serial mon:stdio \
 	-append "${APPEND}"
