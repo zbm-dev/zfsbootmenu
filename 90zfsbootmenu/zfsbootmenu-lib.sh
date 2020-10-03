@@ -131,7 +131,7 @@ draw_diff() {
   fi
 
   # shellcheck disable=SC2016
-  ( zfs diff -H "${snapshot}" "${diff_target}" & echo $! >&3 ) 3>/tmp/diff.pid | \
+  ( zfs diff -F -H "${snapshot}" "${diff_target}" & echo $! >&3 ) 3>/tmp/diff.pid | \
     sed "s,${mnt},," | \
     ${FUZZYSEL} --prompt "Files > " \
       --preview="zfsbootmenu-preview.sh ${BASE} ${diff_target} ${BOOTFS}" \
