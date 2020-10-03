@@ -1,4 +1,12 @@
 #!/bin/bash
+usage() {
+  cat <<EOF
+Usage: $0 [options]
+  -a  Set kernel command line
+  -n  Do not recreate the initramfs
+EOF
+}
+
 TESTING_DIR="$( pwd )"
 
 # Support x86_64 and ppc64(le)
@@ -27,13 +35,18 @@ NOCREATE=0
 #shellcheck disable=SC1091
 [ -f .config ] && source .config
 
-while getopts "a:n" opt; do
+while getopts "a:nh" opt; do
   case "${opt}" in
     a)
       APPEND="${OPTARG}"
       ;;
     n)
       NOCREATE=1
+      ;;
+
+    \?|h)
+      usage
+      exit
       ;;
     *)
       ;;
