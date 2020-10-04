@@ -2,12 +2,14 @@
 YAML=0
 IMAGE=0
 CONFD=0
+DRACUT=0
 
 usage() {
   cat <<EOF
 Usage: $0 [options]
   -y  Create local.yaml
   -c  Create dracut.conf.d
+  -d  Create a local dracut tree for local mode
   -i  Create a test VM image
   -a  Perform all setup options
 EOF
@@ -18,7 +20,7 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "ycai" opt; do
+while getopts "ycdai" opt; do
   case "${opt}" in
     y)
       YAML=1
@@ -29,10 +31,14 @@ while getopts "ycai" opt; do
     i)
       IMAGE=1
       ;;
+    d)
+      DRACUT=1
+      ;;
     a)
       YAML=1
       CONFD=1
       IMAGE=1
+      DRACUT=1
       ;;
     \?)
       usage
@@ -45,6 +51,29 @@ if ((CONFD)) ; then
   test -d "dracut.conf.d" || cp -Rp ../etc/zfsbootmenu/dracut.conf.d .
 fi
 
+if ((DRACUT)) ; then
+  if [ ! -d /usr/lib/dracut ]; then
+    echo "ERROR: missing /usr/lib/dracut"
+    exit 1
+  fi
+
+  DRACUTBIN="$(command -v dracut)"
+  if [ ! -x "${DRACUTBIN}" ]; then
+    echo "ERROR: missing dracut script"
+    exit 1
+  fi
+
+  if [ ! -d dracut ]; then
+    echo "Creating local dracut tree"
+    cp -a /usr/lib/dracut .
+    cp "${DRACUTBIN}" ./dracut
+  fi
+
+  # Make sure the zfsbootmenu module is a link to the repo version
+  test -d dracut/modules.d/90zfsbootmenu && rm -rf dracut/modules.d/90zfsbootmenu
+  test -L dracut/modules.d/90zfsbootmenu || ln -s ../../../90zfsbootmenu dracut/modules.d
+fi
+
 # Setup a local config file
 if ((YAML)) ; then
   echo "Configuring local.yaml"
@@ -53,6 +82,7 @@ if ((YAML)) ; then
   yq-go w -i local.yaml Components.Versions false
   yq-go w -i local.yaml Global.ManageImages true
   yq-go w -i local.yaml Global.DracutConfDir "$( pwd )/dracut.conf.d"
+  yq-go w -i local.yaml Global.DracutFlags[+] -- "--local"
   yq-go d -i local.yaml Global.BootMountPoint
   yq-go r -P -C local.yaml
 fi
