@@ -7,8 +7,6 @@ Usage: $0 [options]
 EOF
 }
 
-TESTING_DIR="$( pwd )"
-
 # Support x86_64 and ppc64(le)
 case "$(uname -m)" in
   ppc64*)

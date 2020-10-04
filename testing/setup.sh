@@ -18,7 +18,7 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "ymcai" opt; do
+while getopts "ycai" opt; do
   case "${opt}" in
     y)
       YAML=1
