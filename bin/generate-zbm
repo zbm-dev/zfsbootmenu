@@ -475,12 +475,14 @@ sub createInitramfs {
   my $output_file = join( '/', $temp, "zfsbootmenu" );
   my @cmd         = ( qw(dracut -q -f --confdir), $runConf{confd}, $output_file, qw(--kver), $kver, );
 
-  if ( defined $config{Global}{DracutFlags} and ref $config{Global}{DracutFlags} eq REFARRAY ) {
-    foreach my $flag ( @{ $config{Global}{DracutFlags} } ) {
-      push( @cmd, $flag );
+  if ( defined $config{Global}{DracutFlags} ) {
+    if ( ref $config{Global}{DracutFlags} eq REFARRAY ) {
+      foreach my $flag ( @{ $config{Global}{DracutFlags} } ) {
+        push( @cmd, $flag );
+      }
+    } else {
+      push( @cmd, $config{Global}{DracutFlags} );
     }
-  } else {
-    push( @cmd, $config{Global}{DracutFlags} );
   }
 
   my @output = execute(@cmd);
