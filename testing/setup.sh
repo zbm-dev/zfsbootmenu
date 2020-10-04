@@ -49,8 +49,9 @@ done
 if ((MODULES)) ; then
 # Setup our dracut directory
   echo "Creating local modules.d/"
-  test -d modules.d || mkdir modules.d
-  for mod in $( find /usr/lib/dracut/modules.d/ -type d | grep -v zfsbootmenu ); do
+  mkdir -p modules.d
+  for mod in $( find /usr/lib/dracut/modules.d/ \
+                  -mindepth 1 -maxdepth 1 -type d | grep -v zfsbootmenu ); do
     TARGET="modules.d/$( basename "${mod}" )"
     test -L "${TARGET}" || ln -s "${mod}" "${TARGET}"
   done
@@ -70,7 +71,6 @@ if ((YAML)) ; then
   yq-go w -i local.yaml Components.ImageDir "$( pwd )"
   yq-go w -i local.yaml Components.Versions false
   yq-go w -i local.yaml Global.ManageImages true
-  yq-go w -i local.yaml Global.DracutFlags[+] -- "--local"
   yq-go w -i local.yaml Global.DracutConfDir "$( pwd )/dracut.conf.d"
   yq-go d -i local.yaml Global.BootMountPoint
   yq-go r -P -C local.yaml
