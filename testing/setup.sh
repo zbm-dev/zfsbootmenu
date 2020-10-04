@@ -1,6 +1,5 @@
 #!/bin/bash
 YAML=0
-MODULES=0
 IMAGE=0
 CONFD=0
 
@@ -8,7 +7,6 @@ usage() {
   cat <<EOF
 Usage: $0 [options]
   -y  Create local.yaml
-  -m  Create modules.d
   -c  Create dracut.conf.d
   -i  Create a test VM image
   -a  Perform all setup options
@@ -25,9 +23,6 @@ while getopts "ymcai" opt; do
     y)
       YAML=1
       ;;
-    m)
-      MODULES=1
-      ;;
     c)
       CONFD=1
       ;;
@@ -36,7 +31,6 @@ while getopts "ymcai" opt; do
       ;;
     a)
       YAML=1
-      MODULES=1
       CONFD=1
       IMAGE=1
       ;;
@@ -45,19 +39,6 @@ while getopts "ymcai" opt; do
       exit
   esac
 done
-
-if ((MODULES)) ; then
-# Setup our dracut directory
-  echo "Creating local modules.d/"
-  mkdir -p modules.d
-  for mod in $( find /usr/lib/dracut/modules.d/ \
-                  -mindepth 1 -maxdepth 1 -type d | grep -v zfsbootmenu ); do
-    TARGET="modules.d/$( basename "${mod}" )"
-    test -L "${TARGET}" || ln -s "${mod}" "${TARGET}"
-  done
-
-  test -L "modules.d/90zfsbootmenu" || ln -s "../../90zfsbootmenu" "modules.d/90zfsbootmenu"
-fi
 
 if ((CONFD)) ; then
   echo "Creating dracut.conf.d"

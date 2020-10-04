@@ -29,7 +29,7 @@ MEMORY="2048M"
 SMP="2"
 DISPLAY_TYPE="gtk"
 APPEND="loglevel=7 timeout=5 zfsbootmenu:POOL=ztest"
-NOCREATE=0
+CREATE=1
 
 # Override any default variables
 #shellcheck disable=SC1091
@@ -41,9 +41,8 @@ while getopts "a:nh" opt; do
       APPEND="${OPTARG}"
       ;;
     n)
-      NOCREATE=1
+      CREATE=0
       ;;
-
     \?|h)
       usage
       exit
@@ -53,25 +52,21 @@ while getopts "a:nh" opt; do
   esac
 done
 
-if ((NOCREATE)) ; then
-  # Don't create anything
-  if [ ! -f "${KERNEL}" ] ; then
-    echo "Missing kernel: ${KERNEL}"
-    exit
-  fi
-  if [ ! -f "${INITRD}" ] ; then
-    echo "Missing initramfs: ${INITRD}"
-    exit
-  fi
-else
+if ((CREATE)) ; then
   # Create our initramfs
   [ -f "${KERNEL}" ] && rm "${KERNEL}"
   [ -f "${INITRD}" ] && rm "${INITRD}"
-  #shellcheck disable=SC2164
-  cd "${TESTING_DIR}/modules.d"
-  ../../bin/generate-zbm -c ../local.yaml
-  #shellcheck disable=SC2164
-  cd "${TESTING_DIR}"
+
+  ../bin/generate-zbm -c ./local.yaml
+fi
+
+# Ensure kernel and initramfs exist
+if [ ! -f "${KERNEL}" ] ; then
+  echo "Missing kernel: ${KERNEL}"
+  exit
+elif [ ! -f "${INITRD}" ] ; then
+  echo "Missing initramfs: ${INITRD}"
+  exit
 fi
 
 # Boot it up
