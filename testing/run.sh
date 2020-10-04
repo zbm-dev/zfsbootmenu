@@ -55,7 +55,8 @@ if ((CREATE)) ; then
   [ -f "${KERNEL}" ] && rm "${KERNEL}"
   [ -f "${INITRD}" ] && rm "${INITRD}"
 
-  ../bin/generate-zbm -c ./local.yaml
+  # Try to find the local dracut first
+  PATH=./dracut:${PATH} ../bin/generate-zbm -c ./local.yaml
 fi
 
 # Ensure kernel and initramfs exist
