@@ -710,7 +710,7 @@ has_resume_device() {
 # returns: 0 on success, 1 on failure
 
 resume_prompt() {
-  local pool
+  local pool decision
 
   pool="${1}"
   [ -n "${pool}" ] || return 1
@@ -751,7 +751,8 @@ resume_prompt() {
 	Proceed [No] ?
 	EOF
 
-    read -r decision
+
+    decision="$( zfsbootmenu-input )"
 
     if [ "x${decision}" = "xDANGEROUS" ]; then
       return 0
