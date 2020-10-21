@@ -94,7 +94,7 @@ if ((IMAGE)) ; then
   MNT="$( mktemp -d )"
   LOOP="$( losetup -f )"
 
-  qemu-img create zfsbootmenu-pool.img 1G
+  qemu-img create zfsbootmenu-pool.img 2G
 
   losetup "${LOOP}" zfsbootmenu-pool.img
   kpartx -u "${LOOP}"
@@ -142,7 +142,7 @@ if ((IMAGE)) ; then
   # /etc/runit/core-services/03-console-setup.sh depends on loadkeys from kbd
   # /etc/runit/core-services/05-misc.sh depends on ip from iproute2
   xbps-install -y -S -M -r "${MNT}" --repository="${URL}" \
-    base-minimal dracut ncurses-base kbd iproute2 dhclient
+    base-minimal dracut ncurses-base kbd iproute2 dhclient openssh
 
   cp /etc/hostid "${MNT}/etc/"
   cp /etc/resolv.conf "${MNT}/etc/"

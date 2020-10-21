@@ -33,9 +33,13 @@ echo 'root:zfsbootmenu' | chpasswd -c SHA256
 
 # enable dhclient
 ln -s /etc/sv/dhclient /etc/runit/runsvdir/default
+ln -s /etc/sv/sshd /etc/runit/runsvdir/default
 
 # /bin/dash sucks
 chsh -s /bin/bash
+
+# enable root login over ssh with a password
+sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 zfs snapshot -r ztest@full-setup
 
