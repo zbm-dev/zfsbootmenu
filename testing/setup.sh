@@ -142,7 +142,7 @@ if ((IMAGE)) ; then
   # /etc/runit/core-services/03-console-setup.sh depends on loadkeys from kbd
   # /etc/runit/core-services/05-misc.sh depends on ip from iproute2
   xbps-install -y -S -M -r "${MNT}" --repository="${URL}" \
-    base-minimal dracut ncurses-base kbd iproute2
+    base-minimal dracut ncurses-base kbd iproute2 dhclient
 
   cp /etc/hostid "${MNT}/etc/"
   cp /etc/resolv.conf "${MNT}/etc/"

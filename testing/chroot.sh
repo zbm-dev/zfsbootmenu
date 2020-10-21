@@ -31,11 +31,17 @@ EOF
 # Set root password
 echo 'root:zfsbootmenu' | chpasswd -c SHA256
 
-# delete ourself
-rm /root/chroot.sh
+# enable dhclient
+ln -s /etc/sv/dhclient /etc/runit/runsvdir/default
+
+# /bin/dash sucks
+chsh -s /bin/bash
 
 zfs snapshot -r ztest@full-setup
 
 touch /root/IN_THE_MATRIX
 zfs snapshot -r ztest@minor-changes
 rm /root/IN_THE_MATRIX
+
+# delete ourself
+rm /root/chroot.sh

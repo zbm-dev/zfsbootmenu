@@ -81,4 +81,5 @@ fi
 	-device virtio-rng-pci,rng=rng0 \
 	-display "${DISPLAY_TYPE}" \
 	-serial mon:stdio \
+	-netdev user,id=n1 -device virtio-net-pci,netdev=n1 \
 	-append "${APPEND}"
