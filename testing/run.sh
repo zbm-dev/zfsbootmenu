@@ -3,6 +3,7 @@ usage() {
   cat <<EOF
 Usage: $0 [options]
   -a  Set kernel command line
+  -d  Set a different boot drive
   -n  Do not recreate the initramfs
 EOF
 }
@@ -33,10 +34,13 @@ CREATE=1
 #shellcheck disable=SC1091
 [ -f .config ] && source .config
 
-while getopts "a:nh" opt; do
+while getopts "a:d:nh" opt; do
   case "${opt}" in
     a)
       APPEND="${OPTARG}"
+      ;;
+    d)
+      DRIVE="format=raw,file=${OPTARG}"
       ;;
     n)
       CREATE=0

@@ -1,6 +1,6 @@
-*.img
-*.qcow2
-*.raw
+*.img*
+*.qcow2*
+*.raw*
 vmlinuz*
 vmlinux*
 local.yaml
