@@ -37,7 +37,6 @@ fi
 BASE="$( mktemp -d /tmp/zfs.XXXX )"
 export BASE
 
-# I should probably just modprobe zfs right off the bat
 modprobe zfs 2>/dev/null
 udevadm settle
 
@@ -67,8 +66,9 @@ if [ $ret -eq 0 ]; then
   unsupported=0
   while IFS=$'\t' read -r _pool _property; do
     if [[ "${_property}" =~ "unsupported@" ]]; then
-      # TODO: dedupe this file
-      echo "${_pool}" >> "${BASE}/degraded"
+      if ! grep -q "${_pool}" "${BASE}/degraded" >/dev/null 2>&1 ; then
+        echo "${_pool}" >> "${BASE}/degraded"
+      fi
       unsupported=1
     fi
   done <<<"$( zpool get all -H -o name,property )"
