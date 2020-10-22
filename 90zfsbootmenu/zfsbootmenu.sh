@@ -90,7 +90,6 @@ fi
 
 # Attempt to find the bootfs property
 # shellcheck disable=SC2086
-datasets="$( zpool list -H -o bootfs ${boot_pool} )"
 while read -r line; do
   if [ "${line}" = "-" ]; then
     BOOTFS=
@@ -98,7 +97,7 @@ while read -r line; do
     BOOTFS="${line}"
     break
   fi
-done <<<"${datasets}"
+done <<<"$( zpool list -H -o bootfs ${boot_pool} )"
 
 # If BOOTFS is not empty display the fast boot menu
 fast_boot=0
