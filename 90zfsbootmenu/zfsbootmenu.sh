@@ -35,6 +35,7 @@ elif command -v sk >/dev/null 2>&1; then
 fi
 
 BASE="$( mktemp -d /tmp/zfs.XXXX )"
+export BASE
 
 # I should probably just modprobe zfs right off the bat
 modprobe zfs 2>/dev/null
@@ -44,28 +45,53 @@ udevadm settle
 # this is sometimes run as an initqueue hook, but cannot be guaranteed
 test -x /lib/udev/console_init -a -c /dev/tty0 && /lib/udev/console_init tty0
 
-# Find all pools by name that are listed as ONLINE, then import them
-response="$( find_online_pools )"
+# Attempt to import all pools read-only
+read_write='' all_pools=yes import_pool
 ret=$?
 
-if [ $ret -gt 0 ]; then
+if [ $ret -eq 0 ]; then
   import_success=0
-  # shellcheck disable=SC2162
-  IFS=',' read -a zpools <<<"${response}"
-  for pool in "${zpools[@]}"; do
-    import_pool "${pool}"
-    ret=$?
-    if [ $ret -eq 0 ]; then
-      import_success=1
+  while IFS=$'\t' read -r _pool _health; do
+    if [ "${_health}" != "ONLINE" ]; then
+      echo "${_pool}" >> "${BASE}/degraded"
     fi
-  done
-  if [ $import_success -ne 1 ]; then
+    # We were able to successfully import at least one pool
+    import_success=1
+  done <<<"$( zpool list -H -o name,health )"
+
+  if [ "${import_success}" -ne 1 ]; then
     emergency_shell "unable to successfully import a pool"
     exit
   fi
+
+  unsupported=0
+  while IFS=$'\t' read -r _pool _property; do
+    if [[ "${_property}" =~ "unsupported@" ]]; then
+      # TODO: dedupe this file
+      echo "${_pool}" >> "${BASE}/degraded"
+      unsupported=1
+    fi
+  done <<<"$( zpool get all -H -o name,property )"
+
+  if [ "${unsupported}" -ne 0 ]; then
+    tput civis
+    HEIGHT=$( tput lines )
+    WIDTH=$( tput cols )
+    tput clear
+
+    warning="Unsupported features detected, upgrade ZFS in ZFSBootMenu"
+    x=$(( (HEIGHT - 0) / 2 ))
+    y=$(( (WIDTH - ${#warning}) / 2 ))
+    tput cup $x $y
+    echo -n "${warning}"
+
+    # shellcheck disable=SC2162
+    read -s -N 1 -t 30 key
+    tput clear
+  fi
 else
-  emergency_shell "no pools available to import"
-  exit;
+  emergency_shell "zpool import 1 handler"
+  exit
 fi
 
 # Prefer a specific pool when checking for a bootfs value

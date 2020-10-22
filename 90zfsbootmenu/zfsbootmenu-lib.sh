@@ -588,36 +588,6 @@ load_be_cmdline() {
   echo "${zfsbe_args}"
 }
 
-# no arguments
-# prints: nothing
-# returns: number of pools that can be imported
-
-find_online_pools() {
-  local importable pool state
-  importable=()
-  while read -r line; do
-    case "$line" in
-      pool*)
-        pool="${line#pool: }"
-        ;;
-      state*)
-        state="${line#state: }"
-        if [ "${state}" == "ONLINE" ]; then
-          importable+=("${pool}")
-        fi
-        ;;
-      status*)
-        pool_status="${line#status: }"
-        if [[ "${pool_status}" =~ "read-only" ]]; then
-          importable+=("${pool}")
-        fi
-      ;;
-    esac
-  done <<<"$( zpool import )"
-  (IFS=',' ; printf '%s' "${importable[*]}")
-  return "${#importable[@]}"
-}
-
 # arg1: pool name
 # prints: nothing
 # returns: 0 on success, 1 on failure
@@ -645,6 +615,12 @@ import_pool() {
   # shellcheck disable=SC2154
   if [ -n "${rewind_to_checkpoint}" ]; then
     import_args+=( "--rewind-to-checkpoint" )
+  fi
+
+  # shellcheck disable=SC2154
+  if [ -n "${all_pools}" ]; then
+    import_args+=( "-a" )
+    pool=''
   fi
 
   # shellcheck disable=SC2086
