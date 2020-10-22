@@ -2,7 +2,6 @@
 
 export spl_hostid
 export force_import
-export read_write
 export menu_timeout
 export root
 
