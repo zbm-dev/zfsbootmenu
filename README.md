@@ -128,7 +128,7 @@ efibootmgr --disk /dev/sda \
   --verbose
 ```
 
-Take note to adjust `zfsbootmenu:POOL=`, `spl_hostid=`, `--disk` and `--part` to match your system configuration.
+Take note to adjust `root=zfsbootmenu:POOL=`, `spl_hostid=`, `--disk` and `--part` to match your system configuration.
 
 Each time the bootmenu is updated, a new EFI entry will need to be manually added.
 
@@ -137,12 +137,12 @@ Each time the bootmenu is updated, a new EFI entry will need to be manually adde
 `rEFInd` is considerably easier to install and manage. Refer to your distributions packages for installation. Once rEFInd has been installed, you can create `refind_linux.conf` in the directory holding the ZFSBootMenu files (`/boot/efi/EFI/void` in our example):
 
 ```
-"Boot Default BE" "ro quiet loglevel=0 timeout=0 zfsbootmenu:POOL= spl_hostid="
-"Select BE" "ro quiet loglevel=0 timeout=-1 zfsbootmenu:POOL= spl_hostid="
+"Boot Default BE" "ro quiet loglevel=0 timeout=0 root=zfsbootmenu:POOL= spl_hostid="
+"Select BE" "ro quiet loglevel=0 timeout=-1 root=zfsbootmenu:POOL= spl_hostid="
 ```
 
 
-As with the efibootmgr section, the `zfsbootmenu:POOL=` and `spl_hostid=` options need to be configured to match your environment.
+As with the efibootmgr section, the `root=zfsbootmenu:POOL=` and `spl_hostid=` options need to be configured to match your environment.
 
 This file will configure `rEFInd` to create two entries for each kernel and initrams pair it finds. The first will directly boot into the environment set via the `bootfs` pool property. The second will force ZFSBootMenu to display an environment / kernel / snapshot selection menu, allowing you to boot alternate environments, kernels and snapshots.
 

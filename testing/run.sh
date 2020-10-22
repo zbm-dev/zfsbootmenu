@@ -27,7 +27,7 @@ INITRD="initramfs-bootmenu.img"
 MEMORY="2048M"
 SMP="2"
 DISPLAY_TYPE="gtk"
-APPEND="loglevel=7 timeout=5 zfsbootmenu:POOL=ztest"
+APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest"
 CREATE=1
 
 # Override any default variables
