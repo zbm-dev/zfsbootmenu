@@ -687,8 +687,44 @@ has_resume_device() {
   return 1
 }
 
+# arg1: warning message
+# arg2: persistence in seconds (optional, default 30)
+# prints: warning message
+# returns: nothing
+
+warning_prompt() {
+  local delay prompt warning x y
+
+  warning="$1"
+  [ -n "${warning}" ] || return
+
+  delay="${2:-30}"
+
+  prompt="Press [ENTER] or wait ${delay} seconds to continue"
+
+  tput civis
+  HEIGHT=$( tput lines )
+  WIDTH=$( tput cols )
+  tput clear
+
+  x=$(( (HEIGHT - 0) / 2))
+  y=$(( (WIDTH - ${#warning}) / 2 ))
+
+  tput cup $x $y
+  echo -n "${warning}"
+
+  x=$(( x + 1 ))
+  y=$(( (WIDTH - ${#prompt}) / 2 ))
+  tput cup $x $y
+  echo -n "${prompt}"
+
+  # shellcheck disable=SC2162
+  read -s -N 1 -t "${delay}" key
+  tput clear
+}
+
 # arg1: pool name
-# prints: nothing
+# prints: warning message
 # returns: 0 on success, 1 on failure
 
 resume_prompt() {
@@ -758,6 +794,11 @@ set_rw_pool() {
 
   pool="${1}"
   [ -n "${pool}" ] || return 1
+
+  if [ -r "${BASE}/degraded" ] && grep -q "${pool}" "${BASE}/degraded"; then
+    warning_prompt "Operation prohibited: ZFSBootMenu cannot import '${pool}' read-write" "10"
+    return 1
+  fi
 
   # If force_export is set, skip evaluating if the pool is already read-write
   # shellcheck disable=SC2154

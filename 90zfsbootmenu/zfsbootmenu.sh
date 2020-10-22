@@ -74,20 +74,7 @@ if [ $ret -eq 0 ]; then
   done <<<"$( zpool get all -H -o name,property )"
 
   if [ "${unsupported}" -ne 0 ]; then
-    tput civis
-    HEIGHT=$( tput lines )
-    WIDTH=$( tput cols )
-    tput clear
-
-    warning="Unsupported features detected, upgrade ZFS in ZFSBootMenu"
-    x=$(( (HEIGHT - 0) / 2 ))
-    y=$(( (WIDTH - ${#warning}) / 2 ))
-    tput cup $x $y
-    echo -n "${warning}"
-
-    # shellcheck disable=SC2162
-    read -s -N 1 -t 30 key
-    tput clear
+    warning_prompt "Unsupported features detected, upgrade ZFS modules in ZFSBootMenu"
   fi
 else
   emergency_shell "zpool import 1 handler"
