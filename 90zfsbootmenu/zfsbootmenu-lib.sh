@@ -606,6 +606,12 @@ find_online_pools() {
           importable+=("${pool}")
         fi
         ;;
+      status*)
+        pool_status="${line#status: }"
+        if [[ "${pool_status}" =~ "read-only" ]]; then
+          importable+=("${pool}")
+        fi
+      ;;
     esac
   done <<<"$( zpool import )"
   (IFS=',' ; printf '%s' "${importable[*]}")

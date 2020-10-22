@@ -61,13 +61,11 @@ if [ $ret -gt 0 ]; then
   done
   if [ $import_success -ne 1 ]; then
     emergency_shell "unable to successfully import a pool"
+    exit
   fi
 else
-  # shellcheck disable=SC2154,SC2086
-  if [ ${die_on_import_failure} -eq 1 ]; then
-    emergency_shell "no pools available to import"
-    exit;
-  fi
+  emergency_shell "no pools available to import"
+  exit;
 fi
 
 # Prefer a specific pool when checking for a bootfs value
