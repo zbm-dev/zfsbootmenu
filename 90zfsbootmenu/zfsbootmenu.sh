@@ -46,52 +46,51 @@ test -x /lib/udev/console_init -a -c /dev/tty0 && /lib/udev/console_init tty0
 
 # Attempt to import all pools read-only
 read_write='' all_pools=yes import_pool
-ret=$?
 
-if [ $ret -eq 0 ]; then
-  import_success=0
-  while IFS=$'\t' read -r _pool _health; do
-    if [ "${_health}" != "ONLINE" ]; then
-      echo "${_pool}" >> "${BASE}/degraded"
-    fi
-    # We were able to successfully import at least one pool
-    import_success=1
-  done <<<"$( zpool list -H -o name,health )"
-
-  if [ "${import_success}" -ne 1 ]; then
-    emergency_shell "unable to successfully import a pool"
-    exit
+import_success=0
+while IFS=$'\t' read -r _pool _health; do
+  if [ "${_health}" != "ONLINE" ]; then
+    echo "${_pool}" >> "${BASE}/degraded"
   fi
+  # We were able to successfully import at least one pool
+  import_success=1
+done <<<"$( zpool list -H -o name,health )"
 
-  unsupported=0
-  while IFS=$'\t' read -r _pool _property; do
-    if [[ "${_property}" =~ "unsupported@" ]]; then
-      if ! grep -q "${_pool}" "${BASE}/degraded" >/dev/null 2>&1 ; then
-        echo "${_pool}" >> "${BASE}/degraded"
-      fi
-      unsupported=1
-    fi
-  done <<<"$( zpool get all -H -o name,property )"
-
-  if [ "${unsupported}" -ne 0 ]; then
-    warning_prompt "Unsupported features detected, upgrade ZFS modules in ZFSBootMenu"
-  fi
-else
-  emergency_shell "zpool import 1 handler"
+if [ "${import_success}" -ne 1 ]; then
+  emergency_shell "unable to successfully import a pool"
   exit
 fi
 
 # Prefer a specific pool when checking for a bootfs value
 # shellcheck disable=SC2154
 if [ "${root}" = "zfsbootmenu" ]; then
-  pool=
+  boot_pool=
 else
-  pool="${root}"
+  boot_pool="${root}"
+fi
+
+# Make sure the preferred pool was imported
+if [ -n "${boot_pool}" ] && ! zpool list -H -o name "${boot_pool}" >/dev/null 2>&1; then
+  emergency_shell "\nCannot import requested pool '${boot_pool}'\nType 'exit' to try booting anyway"
+fi
+
+unsupported=0
+while IFS=$'\t' read -r _pool _property; do
+  if [[ "${_property}" =~ "unsupported@" ]]; then
+    if ! grep -q "${_pool}" "${BASE}/degraded" >/dev/null 2>&1 ; then
+      echo "${_pool}" >> "${BASE}/degraded"
+    fi
+    unsupported=1
+  fi
+done <<<"$( zpool get all -H -o name,property )"
+
+if [ "${unsupported}" -ne 0 ]; then
+  warning_prompt "Unsupported features detected, upgrade ZFS modules in ZFSBootMenu"
 fi
 
 # Attempt to find the bootfs property
 # shellcheck disable=SC2086
-datasets="$( zpool list -H -o bootfs ${pool} )"
+datasets="$( zpool list -H -o bootfs ${boot_pool} )"
 while read -r line; do
   if [ "${line}" = "-" ]; then
     BOOTFS=
