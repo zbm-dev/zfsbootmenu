@@ -624,7 +624,7 @@ import_pool() {
   fi
 
   # shellcheck disable=SC2086
-  status="$( zpool import "${import_args[@]}" ${pool} )"
+  status="$( zpool import "${import_args[@]}" ${pool} >/dev/null 2>&1 )"
   ret=$?
 
   return ${ret}
