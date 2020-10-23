@@ -49,11 +49,12 @@ read_write='' all_pools=yes import_pool
 
 import_success=0
 while IFS=$'\t' read -r _pool _health; do
+  [ -n "${_pool}" ] || continue
+
+  import_success=1
   if [ "${_health}" != "ONLINE" ]; then
     echo "${_pool}" >> "${BASE}/degraded"
   fi
-  # We were able to successfully import at least one pool
-  import_success=1
 done <<<"$( zpool list -H -o name,health )"
 
 if [ "${import_success}" -ne 1 ]; then
