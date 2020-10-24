@@ -1,3 +1,24 @@
+# ZFSBootMenu v1.6.0 (2020-10-24)
+
+This release brings significant improvements to the pool import process. Previously, all available pools were discovered and then their health was scraped to confirm that they were in an 'ONLINE' state before importing them. This process had a few subtle shortcomings that were highlighted by the pending release of OpenZFS 2.0.0. In particular, if a zpool has been upgraded via `zpool upgrade` to enable OpenZFS 2.0.0 feature flags, but the ZFSBootMenu initramfs contains an older version of OpenZFS, the pool was not able to be automatically imported in ZFSBootMenu. The import process now relies on `zpool import -N -a -o readonly=on` to attempt to import all available and otherwise healthy pools in read-only mode. By using zpool itself to determine all of the pools that can/should be imported, ZFSBootMenu now avoids the fragile process of scraping and interpreting the human-friendly text output of `zpool import`.
+
+## Fixes
+* Improve the reliability of returning the correct kernel command line at all times. A helper function can now return corrected arguments in cases where `resume` is on the command line, but the pool has been imported read-write. This function is now used when generating a preview, making the modification more transparent to user inspection.
+* Omit systemd and other modules from ZFSBootMenu by default. These install hooks that interfere with the correct operation of ZFSBootMenu.
+* The testing/virtualiztion frame work has received a lot of attention during this development cycle. This has allowed us to create a variety of pool configurations that would be otherwise difficult to accomplish with physical hardware.
+
+## New features
+* When accepting user input (new filesystem name, resume protections), allow CTRL-C to be used to cancel the process.
+
+## Significant commits in this release
+* 219a632 - Rewrite pool import ahead of OpenZFS 2.0.0 (Zach Dykstra, Andrew J. Hesford)
+* fb866c8 - Use zfsbootmenu-input in noresume prompt (Andrew J. Hesford)
+* 1bb4f41 - Allow ctrl-c to be used during user input (Zach Dykstra)
+* ca8eda8 - use -F to display the file type for more filtering options (Zach Dykstra)
+* 08f22e2 - Simplify handling of BE command lines, use in previews (Andrew J. Hesford)
+* cd8f889 - omit rootfs-block; it will never generate a correct KCL (Zach Dykstra)
+* c96165c - Omit systemd related modules (Zach Dykstra)
+
 # ZFSBootMenu v1.5.0 (2020-09-16)
 
 ## Fixes
