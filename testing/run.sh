@@ -3,7 +3,7 @@ usage() {
   cat <<EOF
 Usage: $0 [options]
   -a  Set kernel command line
-  -d  Set a different boot drive
+  -d+ Set one or more non-standard disk images 
   -n  Do not recreate the initramfs
 EOF
 }
@@ -22,7 +22,7 @@ case "$(uname -m)" in
   ;;
 esac
 
-DRIVE="format=raw,file=zfsbootmenu-pool.img"
+DRIVE="-drive format=raw,file=zfsbootmenu-pool.img"
 INITRD="initramfs-bootmenu.img"
 MEMORY="2048M"
 SMP="2"
@@ -40,7 +40,7 @@ while getopts "a:d:nh" opt; do
       APPEND="${OPTARG}"
       ;;
     d)
-      DRIVE="format=raw,file=${OPTARG}"
+      MDRIVE+=("-drive format=raw,file=${OPTARG}")
       ;;
     n)
       CREATE=0
@@ -53,6 +53,10 @@ while getopts "a:d:nh" opt; do
       ;;
   esac
 done
+
+if [ "${#MDRIVE[@]}" -gt 0 ]; then
+  DRIVE="${MDRIVE[*]}"
+fi
 
 if ((CREATE)) ; then
   # Create our initramfs
@@ -72,11 +76,11 @@ elif [ ! -f "${INITRD}" ] ; then
   exit
 fi
 
-# Boot it up
+# shellcheck disable=SC2086
 "${BIN}" \
 	-kernel "${KERNEL}" \
 	-initrd "${INITRD}" \
-	-drive "${DRIVE}" \
+	${DRIVE} \
 	-m "${MEMORY}" \
 	-smp "${SMP}" \
 	-cpu host \
