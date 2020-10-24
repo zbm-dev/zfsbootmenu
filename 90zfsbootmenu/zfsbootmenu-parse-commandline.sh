@@ -23,23 +23,12 @@ if getargbool 0 force_import ; then
   info "ZFSBootMenu: Enabling force import of ZFS pools"
 fi
 
-# Import pools by default in read-write mode
-if getargbool 0 read_write ; then
-  # shellcheck disable=SC2034
-  read_write="yes"
-  info "ZFSBootMenu: Enabling read-write ZFS pool import"
-fi
-
 # Set a menu timeout, to allow immediate booting
 menu_timeout=$( getarg timeout=)
 if [ -n "${menu_timeout}" ]; then
   info "ZFSBootMenu: Setting menu timeout from command line: ${menu_timeout}"
 else
   menu_timeout=10
-fi
-
-if getargbool 1 die_on_import_failure ; then
-  info "ZFSBootMenu: Disabling die on import failure"
 fi
 
 wait_for_zfs=0

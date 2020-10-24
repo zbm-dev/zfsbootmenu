@@ -35,8 +35,8 @@ elif command -v sk >/dev/null 2>&1; then
 fi
 
 BASE="$( mktemp -d /tmp/zfs.XXXX )"
+export BASE
 
-# I should probably just modprobe zfs right off the bat
 modprobe zfs 2>/dev/null
 udevadm settle
 
@@ -44,43 +44,53 @@ udevadm settle
 # this is sometimes run as an initqueue hook, but cannot be guaranteed
 test -x /lib/udev/console_init -a -c /dev/tty0 && /lib/udev/console_init tty0
 
-# Find all pools by name that are listed as ONLINE, then import them
-response="$( find_online_pools )"
-ret=$?
+# Attempt to import all pools read-only
+read_write='' all_pools=yes import_pool
 
-if [ $ret -gt 0 ]; then
-  import_success=0
-  # shellcheck disable=SC2162
-  IFS=',' read -a zpools <<<"${response}"
-  for pool in "${zpools[@]}"; do
-    import_pool "${pool}"
-    ret=$?
-    if [ $ret -eq 0 ]; then
-      import_success=1
-    fi
-  done
-  if [ $import_success -ne 1 ]; then
-    emergency_shell "unable to successfully import a pool"
+import_success=0
+while IFS=$'\t' read -r _pool _health; do
+  [ -n "${_pool}" ] || continue
+
+  import_success=1
+  if [ "${_health}" != "ONLINE" ]; then
+    echo "${_pool}" >> "${BASE}/degraded"
   fi
-else
-  # shellcheck disable=SC2154,SC2086
-  if [ ${die_on_import_failure} -eq 1 ]; then
-    emergency_shell "no pools available to import"
-    exit;
-  fi
+done <<<"$( zpool list -H -o name,health )"
+
+if [ "${import_success}" -ne 1 ]; then
+  emergency_shell "unable to successfully import a pool"
+  exit
 fi
 
 # Prefer a specific pool when checking for a bootfs value
 # shellcheck disable=SC2154
 if [ "${root}" = "zfsbootmenu" ]; then
-  pool=
+  boot_pool=
 else
-  pool="${root}"
+  boot_pool="${root}"
+fi
+
+# Make sure the preferred pool was imported
+if [ -n "${boot_pool}" ] && ! zpool list -H -o name "${boot_pool}" >/dev/null 2>&1; then
+  emergency_shell "\nCannot import requested pool '${boot_pool}'\nType 'exit' to try booting anyway"
+fi
+
+unsupported=0
+while IFS=$'\t' read -r _pool _property; do
+  if [[ "${_property}" =~ "unsupported@" ]]; then
+    if ! grep -q "${_pool}" "${BASE}/degraded" >/dev/null 2>&1 ; then
+      echo "${_pool}" >> "${BASE}/degraded"
+    fi
+    unsupported=1
+  fi
+done <<<"$( zpool get all -H -o name,property )"
+
+if [ "${unsupported}" -ne 0 ]; then
+  warning_prompt "Unsupported features detected, upgrade ZFS modules in ZFSBootMenu"
 fi
 
 # Attempt to find the bootfs property
 # shellcheck disable=SC2086
-datasets="$( zpool list -H -o bootfs ${pool} )"
 while read -r line; do
   if [ "${line}" = "-" ]; then
     BOOTFS=
@@ -88,7 +98,7 @@ while read -r line; do
     BOOTFS="${line}"
     break
   fi
-done <<<"${datasets}"
+done <<<"$( zpool list -H -o bootfs ${boot_pool} )"
 
 # If BOOTFS is not empty display the fast boot menu
 fast_boot=0
