@@ -31,7 +31,7 @@ This tool makes uses of the following additional software:
  * [ZFS on Linux](https://zfsonlinux.org)
  * [dracut](https://github.com/dracutdevs/dracut)
 
- ZFSBootMenu has been tested successfully with Kernel 5.7.13, Dracut 050 and ZFS On Linux 0.8.4.
+ ZFSBootMenu has been tested successfully with Kernel 5.8.14, Dracut 050 and OpenZFS 2.0.0-rc4
 
 # System prereqs
 
