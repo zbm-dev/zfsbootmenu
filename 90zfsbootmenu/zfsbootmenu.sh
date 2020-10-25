@@ -26,16 +26,22 @@ OLDIFS="$IFS"
 
 if command -v fzf >/dev/null 2>&1; then
   export FUZZYSEL=fzf
-  export FZF_DEFAULT_OPTS="--layout=reverse-list --cycle --inline-info --tac"
+  #shellcheck disable=SC2016
+  export FZF_DEFAULT_OPTS='--layout=reverse-list --cycle --inline-info --tac --color=16 --bind "alt-h:execute[ zfsbootmenu-help -L ${_SECTION} ]"'
   export PREVIEW_HEIGHT=2
 elif command -v sk >/dev/null 2>&1; then
   export FUZZYSEL=sk
-  export SKIM_DEFAULT_OPTIONS="--layout=reverse-list --inline-info --tac --color=16"
+  #shellcheck disable=SC2016
+  export SKIM_DEFAULT_OPTIONS='--layout=reverse-list --inline-info --tac --color=16 --bind "alt-h:execute[ zfsbootmenu-help -L ${_SECTION} ]"'
   export PREVIEW_HEIGHT=3
 fi
 
 BASE="$( mktemp -d /tmp/zfs.XXXX )"
 export BASE
+
+# Set a default help section
+_SECTION="MAIN"
+export _SECTION
 
 modprobe zfs 2>/dev/null
 udevadm settle
