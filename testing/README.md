@@ -45,7 +45,7 @@ INITRD="initramfs-bootmenu.img"
 MEMORY="2048M"
 SMP="2"
 DISPLAY="gtk"
-APPEND="loglevel=7 timeout=5 zfsbotmenu:POOL=ztest"
+APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest"
 ```
 
 The ZFSBootMenu kernel command line (specified in the `APPEND` variable) can be
