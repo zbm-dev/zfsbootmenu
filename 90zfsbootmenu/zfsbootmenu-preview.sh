@@ -25,10 +25,14 @@ do
   selected_arguments="${line}"
 done <<< "${BE_ARGS}"
 
+pool="${ENV%%/*}"
+readonly_prop="$( zpool get -H -o value readonly "${pool}" )"
+[[ ${readonly_prop} = "on" ]] && _readonly="r/o" || _readonly="r/w"
+
 if [[ "${BOOTFS}" =~ ${ENV} ]]; then
-  selected_env_str="${ENV} (default) - ${selected_kernel}"
+  selected_env_str="${ENV} (default, ${_readonly}) - ${selected_kernel}"
 else
-  selected_env_str="${ENV} - ${selected_kernel}"
+  selected_env_str="${ENV} (${_readonly}) - ${selected_kernel}"
 fi
 
 if [ -z "${FZF_PREVIEW_COLUMNS}" ]

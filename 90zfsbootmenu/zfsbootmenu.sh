@@ -344,6 +344,12 @@ while true; do
       "alt-r")
         emergency_shell "alt-r invoked"
         ;;
+      "alt-w")
+        pool="${selected_be%%/*}"
+        if set_rw_pool "${pool}"; then
+          CLEAR_SCREEN=1 key_wrapper "${pool}"
+        fi
+        ;;
       "alt-c")
         tput clear
         tput cnorm
