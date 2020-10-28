@@ -57,7 +57,7 @@ draw_be() {
   test -f "${env}" || return 130
 
   selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
-    --expect=alt-k,alt-d,alt-s,alt-c,alt-r,alt-p \
+    --expect=alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w \
     --preview-window="up:${PREVIEW_HEIGHT}" \
     --header="[ENTER] boot [ALT+K] kernel [ALT+D] set bootfs [ALT+S] snapshots [ALT+C] cmdline [ALT+P] Pool status" \
     --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}" < "${env}" )"
