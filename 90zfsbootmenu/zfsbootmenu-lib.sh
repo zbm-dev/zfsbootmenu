@@ -50,22 +50,23 @@ csv_cat() {
 # returns: nothing
 
 header_wrap() {
-  local token tokens footer width
+  local tokens footer
 
   # Nothing to print if there is no header
   [ $# -gt 0 ] || return
 
   # Encode spaces in tokens so wrap won't break them
   while [ $# -gt 0 ]; do
-    token="${1// /_}"
-    token="${token/\[/\\033\[0;32m\[}"
-    token="${token/\]/\]\\033\[0m}"
-    tokens+=( "${token}" )
+    tokens+=( "${1// /_}" )
     shift
   done
 
-  width="$( tput cols )"
-  footer="$( echo -n -e "${tokens[@]}" | fold -s -w "${width}" )"
+  # Pick a wrap width if none was specified
+  [ -n "$wrap_width" ] || wrap_width="$( tput cols )"
+
+  footer="$( echo -n -e "${tokens[@]}" | fold -s -w "${wrap_width}" )"
+  footer="${footer//\[/\\033\[0;32m\[}"
+  footer="${footer//\]/\]\\033\[0m}"
   echo -n -e "${footer//_/ }"
 }
 
@@ -180,9 +181,12 @@ draw_diff() {
 # returns: 130 on error, 0 otherwise
 
 draw_pool_status() {
-  local selected ret header
+  local selected ret header hdr_width
 
-  header="$( header_wrap "[ALT+R] Rewind checkpoint" "[ESC] back" "[ALT+H] help" )"
+  # Wrap to half width to avoid the preview window
+  hdr_width="$(( $( tput cols ) / 2 ))"
+  header="$( wrap_width="$hdr_width" header_wrap \
+    "[ALT+R] Rewind checkpoint" "[ESC] back" "[ALT+H] help" )"
 
   selected="$( zpool list -H -o name |
     HELP_SECTION=POOL ${FUZZYSEL} --prompt "Pool > " --tac \
