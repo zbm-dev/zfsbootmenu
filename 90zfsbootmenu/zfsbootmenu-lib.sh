@@ -45,19 +45,28 @@ csv_cat() {
   (IFS=',' ; printf '%s' "${CSV[*]}")
 }
 
-# arg1: string to word wrap
-# prints: word-wrapped string, wrapped on whitespace
+# arg1...argN: tokens to wrap
+# prints: string, wrapped to width without breaking tokens
 # returns: nothing
 
 header_wrap() {
-  local footer width
-  footer="${1}"
+  local token tokens footer width
+
+  # Nothing to print if there is no header
+  [ $# -gt 0 ] || return
+
+  # Encode spaces in tokens so wrap won't break them
+  while [ $# -gt 0 ]; do
+    token="${1// /_}"
+    token="${token/\[/\\033\[0;32m\[}"
+    token="${token/\]/\]\\033\[0m}"
+    tokens+=( "${token}" )
+    shift
+  done
 
   width="$( tput cols )"
-  footer="$( echo -n -e "${footer}" | fold -s -w "${width}" )"
-  footer="${footer//\[/\\033[0;32m\[}"
-  footer="${footer//]/]\\033[0m}"
-  echo -n -e "${footer}"
+  footer="$( echo -n -e "${tokens[@]}" | fold -s -w "${width}" )"
+  echo -n -e "${footer//_/ }"
 }
 
 # arg1: Path to file with detected boot environments, 1 per line
@@ -71,12 +80,13 @@ draw_be() {
 
   test -f "${env}" || return 130
 
-  header="$( header_wrap "[ENTER]_boot [ALT+K]_kernel [ALT+D]_set_bootfs [ALT+S]_snapshots [ALT+C]_cmdline [ALT+P]_pool_status [ALT+R]_recovery_shell [ALT+H]_help")"
+  header="$( header_wrap "[ENTER] boot" "[ALT+K] kernel" \
+    "[ALT+D] set bootfs" "[ALT+S] snapshots" "[ALT+C] cmdline" \
+    "[ALT+P] pool status" "[ALT+R] recovery shell" "[ALT+H] help")"
 
   selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
     --expect=alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w \
-    --preview-window="up:${PREVIEW_HEIGHT}" \
-    --header="${header//_/ }" \
+    --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}" \
     --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}" < "${env}" )"
   ret=$?
   # shellcheck disable=SC2119
@@ -93,11 +103,10 @@ draw_kernel() {
 
   benv="${1}"
 
-  header="$( header_wrap "[ENTER]_boot [ALT+D]_set_default [ESC]_back [ALT+H]_help" )"
+  header="$( header_wrap "[ENTER] boot" "[ALT+D] set default" "[ESC] back" "[ALT+H] help" )"
 
   selected="$( HELP_SECTION=KERNEL ${FUZZYSEL} --prompt "${benv} > " \
-    --tac --expect=alt-d --with-nth=2 \
-    --header="${header//_/ }" \
+    --tac --expect=alt-d --with-nth=2 --header="${header}" \
     --preview-window="up:${PREVIEW_HEIGHT}" \
     --preview="zfsbootmenu-preview.sh ${BASE} ${benv} ${BOOTFS}" < "${BASE}/${benv}/kernels" )"
   ret=$?
@@ -115,14 +124,15 @@ draw_snapshots() {
 
   benv="${1}"
 
-  header="$( header_wrap "[ENTER]_duplicate [ALT+X]_clone_and_promote [ALT+C]_clone_only [ALT+D]_show_diff [ESC]_back [ALT+H]_help" )"
+  header="$( header_wrap "[ENTER] duplicate" "[ALT+X] clone and promote" \
+    "[ALT+C] clone only" "[ALT+D] show diff" "[ESC] back" "[ALT+H] help" )"
 
   selected="$( zfs list -t snapshot -H -o name "${benv}" |
       HELP_SECTION=SNAPSHOT ${FUZZYSEL} --prompt "Snapshot > " \
         --tac --expect=alt-x,alt-c,alt-d \
         --preview="zfsbootmenu-preview.sh ${BASE} ${benv} ${BOOTFS}" \
         --preview-window="up:${PREVIEW_HEIGHT}" \
-        --header="${header//_/ }" )"
+        --header="${header}" )"
   ret=$?
   # shellcheck disable=SC2119
   csv_cat <<< "${selected}"
@@ -172,13 +182,11 @@ draw_diff() {
 draw_pool_status() {
   local selected ret header
 
-  header="$( header_wrap "[ALT+R]_Rewind_checkpoint [ESC]_back [ALT+H]_help" )"
+  header="$( header_wrap "[ALT+R] Rewind checkpoint" "[ESC] back" "[ALT+H] help" )"
 
   selected="$( zpool list -H -o name |
-    HELP_SECTION=POOL ${FUZZYSEL} --prompt "Pool > " \
-      --tac --expect=alt-r \
-      --preview="zpool status -v {}" \
-        --header="${header//_/ }"
+    HELP_SECTION=POOL ${FUZZYSEL} --prompt "Pool > " --tac \
+      --expect=alt-r --preview="zpool status -v {}" --header="${header}"
   )"
   ret=$?
   csv_cat <<< "${selected}"
