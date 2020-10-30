@@ -122,7 +122,7 @@ draw_snapshots() {
         --tac --expect=alt-x,alt-c,alt-d \
         --preview="zfsbootmenu-preview.sh ${BASE} ${benv} ${BOOTFS}" \
         --preview-window="up:${PREVIEW_HEIGHT}" \
-        --header="${header//_/ }"
+        --header="${header//_/ }" )"
   ret=$?
   # shellcheck disable=SC2119
   csv_cat <<< "${selected}"
