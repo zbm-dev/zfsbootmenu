@@ -62,7 +62,7 @@ header_wrap() {
   done
 
   # Pick a wrap width if none was specified
-  [ -n "$wrap_width" ] || wrap_width="$( tput cols )"
+  [ -n "$wrap_width" ] || wrap_width="$(( $( tput cols ) - 4 ))"
 
   footer="$( echo -n -e "${tokens[@]}" | fold -s -w "${wrap_width}" )"
   footer="${footer//\[/\\033\[0;32m\[}"
@@ -81,8 +81,8 @@ draw_be() {
 
   test -f "${env}" || return 130
 
-  header="$( header_wrap "[ENTER] boot" "[ALT+K] kernel" \
-    "[ALT+D] set bootfs" "[ALT+S] snapshots" "[ALT+C] cmdline" \
+  header="$( header_wrap "[ENTER] boot" "[ALT+K] kernels" \
+    "[ALT+S] snapshots" "[ALT+D] set bootfs" "[ALT+C] edit kcl" \
     "[ALT+P] pool status" "[ALT+R] recovery shell" "[ALT+H] help")"
 
   selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
@@ -184,9 +184,9 @@ draw_pool_status() {
   local selected ret header hdr_width
 
   # Wrap to half width to avoid the preview window
-  hdr_width="$(( $( tput cols ) / 2 ))"
+  hdr_width="$(( ( $( tput cols ) / 2 ) - 4 ))"
   header="$( wrap_width="$hdr_width" header_wrap \
-    "[ALT+R] Rewind checkpoint" "[ESC] back" "[ALT+H] help" )"
+    "[ALT+R] rewind checkpoint" "[ESC] back" "[ALT+H] help" )"
 
   selected="$( zpool list -H -o name |
     HELP_SECTION=POOL ${FUZZYSEL} --prompt "Pool > " --tac \
