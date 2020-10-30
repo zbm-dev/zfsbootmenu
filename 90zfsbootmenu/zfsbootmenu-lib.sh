@@ -55,7 +55,7 @@ header_wrap() {
 
   width="$( tput cols )"
   footer="$( echo -n -e "${footer}" | fold -s -w "${width}" )"
-  footer="${footer//[/\\033[0;32m[}"
+  footer="${footer//\[/\\033[0;32m\[}"
   footer="${footer//]/]\\033[0m}"
   echo -n -e "${footer}"
 }
@@ -170,13 +170,15 @@ draw_diff() {
 # returns: 130 on error, 0 otherwise
 
 draw_pool_status() {
-  local selected ret
+  local selected ret header
+
+  header="$( header_wrap "[ALT+R]_Rewind_checkpoint [ESC]_back [ALT+H]_help" )"
 
   selected="$( zpool list -H -o name |
     HELP_SECTION=POOL ${FUZZYSEL} --prompt "Pool > " \
       --tac --expect=alt-r \
       --preview="zpool status -v {}" \
-      --header="[ALT+R] Rewind checkpoint [ESC] back" \
+        --header="${header//_/ }"
   )"
   ret=$?
   csv_cat <<< "${selected}"
