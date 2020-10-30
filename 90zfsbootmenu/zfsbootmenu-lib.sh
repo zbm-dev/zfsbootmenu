@@ -56,7 +56,7 @@ draw_be() {
 
   test -f "${env}" || return 130
 
-  selected="$( _SECTION="MAIN" ${FUZZYSEL} -0 --prompt "BE > " \
+  selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
     --expect=alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w \
     --preview-window="up:${PREVIEW_HEIGHT}" \
     --header="[ENTER] boot [ALT+K] kernel [ALT+D] set bootfs [ALT+S] snapshots [ALT+C] cmdline [ALT+P] Pool status" \
@@ -76,8 +76,9 @@ draw_kernel() {
 
   benv="${1}"
 
-  selected="$( _SECTION="KERNEL" ${FUZZYSEL} --prompt "${benv} > " --tac --expect=alt-d \
-    --with-nth=2 --header="[ENTER] boot [ALT+D] set default [ESC] back" \
+  selected="$( HELP_SECTION=KERNEL ${FUZZYSEL} --prompt "${benv} > " \
+    --tac --expect=alt-d --with-nth=2 \
+    --header="[ENTER] boot [ALT+D] set default [ESC] back" \
     --preview-window="up:${PREVIEW_HEIGHT}" \
     --preview="zfsbootmenu-preview.sh ${BASE} ${benv} ${BOOTFS}" < "${BASE}/${benv}/kernels" )"
   ret=$?
@@ -95,11 +96,12 @@ draw_snapshots() {
 
   benv="${1}"
 
-  selected="$( _SECTION="SNAPSHOT" ; export _SECTION ; zfs list -t snapshot -H -o name "${benv}" |
-      ${FUZZYSEL} --prompt "Snapshot > " --tac --expect=alt-x,alt-c,alt-d \
-      --preview="zfsbootmenu-preview.sh ${BASE} ${benv} ${BOOTFS}" \
-      --preview-window="up:${PREVIEW_HEIGHT}" \
-      --header="[ENTER] duplicate [ALT+X] clone and promote [ALT+C] clone only [ALT+D] show diff [ESC] back" )"
+  selected="$( zfs list -t snapshot -H -o name "${benv}" |
+      HELP_SECTION=SNAPSHOT ${FUZZYSEL} --prompt "Snapshot > " \
+        --tac --expect=alt-x,alt-c,alt-d \
+        --preview="zfsbootmenu-preview.sh ${BASE} ${benv} ${BOOTFS}" \
+        --preview-window="up:${PREVIEW_HEIGHT}" \
+        --header="[ENTER] duplicate [ALT+X] clone and promote [ALT+C] clone only [ALT+D] show diff [ESC] back" )"
   ret=$?
   # shellcheck disable=SC2119
   csv_cat <<< "${selected}"
@@ -128,12 +130,10 @@ draw_diff() {
     return
   fi
 
-  _SECTION=DIFF
-  export _SECTION
   # shellcheck disable=SC2016
   ( zfs diff -F -H "${snapshot}" "${diff_target}" & echo $! >&3 ) 3>/tmp/diff.pid | \
     sed "s,${mnt},," | \
-    ${FUZZYSEL} --prompt "${snapshot} > " \
+    HELP_SECTION=DIFF ${FUZZYSEL} --prompt "${snapshot} > " \
       --preview="zfsbootmenu-preview.sh ${BASE} ${diff_target} ${BOOTFS}" \
       --preview-window="up:${PREVIEW_HEIGHT}" \
       --bind 'esc:execute-silent( kill $( cat /tmp/diff.pid ) )+abort'
@@ -141,8 +141,6 @@ draw_diff() {
   test -f /tmp/diff.pid  && rm /tmp/diff.pid
   umount "${mnt}"
 
-  _SECTION=MAIN
-  export _SECTION
   return
 }
 
@@ -153,10 +151,11 @@ draw_diff() {
 draw_pool_status() {
   local selected ret
 
-  selected="$( _SECTION="POOL" ; export _SECTION ; zpool list -H -o name |
-    ${FUZZYSEL} --prompt "Pool > " --tac --expect=alt-r \
-    --preview="zpool status -v {}" \
-    --header="[ALT+R] Rewind checkpoint [ESC] back" \
+  selected="$( zpool list -H -o name |
+    HELP_SECTION=POOL ${FUZZYSEL} --prompt "Pool > " \
+      --tac --expect=alt-r \
+      --preview="zpool status -v {}" \
+      --header="[ALT+R] Rewind checkpoint [ESC] back" \
   )"
   ret=$?
   csv_cat <<< "${selected}"
