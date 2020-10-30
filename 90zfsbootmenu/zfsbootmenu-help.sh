@@ -2,6 +2,7 @@
 # vim: softtabstop=2 shiftwidth=2 expandtab
 WIDTH="$( tput cols )"
 PREVIEW_SIZE=$(( WIDTH - 26 ))
+[ ${PREVIEW_SIZE} -lt 10 ] && PREVIEW_SIZE=10
 
 [ -z "${FUZZYSEL}" ] && FUZZYSEL="fzf"
 
@@ -70,13 +71,13 @@ Access a list of kernels available in the boot environment.
 $( colorize lightblue "[ALT+D] set bootfs" )
 Set the selected boot environment as the default for the pool.
 
-The operation will gracefully fail if the pool can not be set $( colorize red "read/write" ).
+The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
 
 $( colorize lightblue "[ALT+S] snapshots" )
 Access a list of snapshots of the selected boot environment. New boot environments can be created here.
 
 $( colorize lightblue "[ALT+C] cmdline" )
-Temporarily edit the kernel command line that will be used to boot the next kernel and boot environment. This change is not persisted between boots.
+Temporarily edit the kernel command line that will be used to boot the chosen kernel in the selected boot environment. This change does not persist across reboots.
 
 $( colorize lightblue "[ALT+P] Pool status" )
 View the health and status of each imported pool.
@@ -93,7 +94,7 @@ This creates a boot environment that does not depend on any other snapshots, all
 
 A duplicated boot environment is commonly used if you need a new boot environment without any associated snapshots.
 
-The operation will gracefully fail if the pool can not be set $( colorize red "read/write" ).
+The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
 
 If $( colorize red "mbuffer" ) is available, it is used to provide feedback.
 
@@ -102,19 +103,19 @@ Creation method: $( colorize red "zfs clone" ) , $( colorize red "zfs promote" )
 
 This creates a boot environment that is not dependent on the origin snapshot, allowing you to destroy the file system that the clone was created from. A cloned and promoted boot environment is commonly used when you've done an upgrade but want to preserve historical snapshots.
 
-The operation will gracefully fail if the pool can not be set $( colorize red "read/write" ).
+The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
 
 $( colorize lightblue "[ALT+C] clone" )
 Creation method: $( colorize red "zfs clone" )
 
 This creates a boot environment from a snapshot with out modifying snapshot inheritence. A cloned boot environment is commonly used if you need to boot a previous system state for a short time and then discard the environment.
 
-The operation will gracefully fail if the pool can not be set $( colorize red "read/write" ).
+The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
 
 $( colorize lightblue "[ALT+D] diff" )
 Compare the differences between the selected snapshot and the current state of the boot environment.
 
-The operation will gracefully fail if the pool can not be set $( colorize red "read/write" ).
+The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
 EOF
 SECTIONS+=("SNAPSHOT Snapshot Management")
 
@@ -122,14 +123,14 @@ SECTIONS+=("SNAPSHOT Snapshot Management")
 read -r -d '' KERNEL <<EOF
 $( colorize magenta "$( center "Kernel Management")" )
 $( colorize lightblue "[ENTER] boot" )
-Immediately boot the selected kernel in the boot environment, with the kernel command line shown at the top of the screen.
+Immediately boot the chosen kernel in the selected boot environment, with the kernel command line shown at the top of the screen.
 
 $( colorize lightblue "[ALT+D] set default" )
 Set the selected kernel as the default for the boot environment.
 
 The ZFS property $( colorize green "org.zfsbootmenu:kernel" ) is used to store the default kernel for the boot environment.
 
-The operation will gracefully fail if the pool can not be set $( colorize red "read/write" ).
+The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
 
 EOF
 SECTIONS+=("KERNEL Kernel Management")
@@ -161,9 +162,9 @@ SECTIONS+=("DIFF Diff Viewer")
 read -r -d '' POOL <<EOF
 $( colorize magenta "$( center "zpool Health")" )
 $( colorize lightblue "[ALT+R] Rewind checkpoint" )
-If a pool checkpoint is available, the selected pool is exported and then imported with $( colorize red "--rewind-to-checkpoint" ) set.
+If a pool checkpoint is available, the selected pool is exported and then imported with the $( colorize red "--rewind-to-checkpoint" ) flag set.
 
-The operation will gracefully fail if the pool can not be set $( colorize red "read/write" ).
+The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
 EOF
 SECTIONS+=("POOL ZPOOL Health")
 
