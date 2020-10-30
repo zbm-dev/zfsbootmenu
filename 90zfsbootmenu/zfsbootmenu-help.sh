@@ -59,6 +59,7 @@ help_pager() {
     --bind pgup:preview-up,pgdn:preview-down \
     --preview="$0 -s {1}" \
     --preview-window="right:${PREVIEW_SIZE}:sharp:wrap" \
+    --header="[ESC] back" \
     --tac \
     --color='border:6'
 }
