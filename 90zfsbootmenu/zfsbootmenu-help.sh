@@ -1,7 +1,11 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
+
+# zfsbootmenu-help invokes itself, so the value of $WIDTH depends
+# on if $0 is launching fzf/sk (-L) or is being launched inside
+# fzf/sk (-s).
 WIDTH="$( tput cols )"
-PREVIEW_SIZE=$(( WIDTH - 26 ))
+PREVIEW_SIZE="$(( WIDTH - 26 ))"
 [ ${PREVIEW_SIZE} -lt 10 ] && PREVIEW_SIZE=10
 
 [ -z "${FUZZYSEL}" ] && FUZZYSEL="fzf"
@@ -180,7 +184,7 @@ while getopts "lL:s:" opt; do
       ;;
     s)
       section="${OPTARG}"
-      echo "${!section}" | fold -s -w "${FZF_PREVIEW_COLUMNS}"
+      echo "${!section}" | fold -s -w "${WIDTH}"
       exit
       ;;
     ?)
