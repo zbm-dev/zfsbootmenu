@@ -14,11 +14,13 @@ case "$(uname -m)" in
     BIN="qemu-system-ppc64"
     KERNEL="vmlinux-bootmenu"
     MACHINE="pseries,accel=kvm,kvm-type=HV,cap-hpt-max-page-size=4096"
+    APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest console=hvc0 console=tty0"
   ;;
   x86_64)
     BIN="qemu-system-x86_64"
     KERNEL="vmlinuz-bootmenu"
     MACHINE="type=q35,accel=kvm"
+    APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest console=ttyS0 console=tty0"
   ;;
 esac
 
@@ -27,7 +29,6 @@ INITRD="initramfs-bootmenu.img"
 MEMORY="2048M"
 SMP="2"
 DISPLAY_TYPE="gtk"
-APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest"
 CREATE=1
 
 # Override any default variables
