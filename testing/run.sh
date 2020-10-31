@@ -35,8 +35,11 @@ CREATE=1
 #shellcheck disable=SC1091
 [ -f .config ] && source .config
 
-while getopts "a:d:nh" opt; do
+while getopts "A:a:d:nh" opt; do
   case "${opt}" in
+    A)
+      AAPPEND+=( "$OPTARG" )
+      ;;
     a)
       APPEND="${OPTARG}"
       ;;
@@ -57,6 +60,10 @@ done
 
 if [ "${#MDRIVE[@]}" -gt 0 ]; then
   DRIVE="${MDRIVE[*]}"
+fi
+
+if [ "${#AAPPEND[@]}" -gt 0 ]; then
+  APPEND="${APPEND} ${AAPPEND[*]}"
 fi
 
 if ((CREATE)) ; then
