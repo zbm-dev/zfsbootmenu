@@ -59,6 +59,7 @@ help_pager() {
     --bind pgup:preview-up,pgdn:preview-down \
     --preview="$0 -s {1}" \
     --preview-window="right:${PREVIEW_SIZE}:sharp:wrap" \
+    --header="[ESC] back" \
     --tac \
     --color='border:6'
 }
@@ -69,21 +70,21 @@ $( colorize magenta "$( center "Main Menu")" )
 $( colorize lightblue "[ENTER] boot" )
 Boot the selected boot environment, with the listed kernel and kernel command line visible at the top of the screen.
 
-$( colorize lightblue "[ALT+K] kernel" )
+$( colorize lightblue "[ALT+K] kernels" )
 Access a list of kernels available in the boot environment.
+
+$( colorize lightblue "[ALT+S] snapshots" )
+Access a list of snapshots of the selected boot environment. New boot environments can be created here.
 
 $( colorize lightblue "[ALT+D] set bootfs" )
 Set the selected boot environment as the default for the pool.
 
 The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
 
-$( colorize lightblue "[ALT+S] snapshots" )
-Access a list of snapshots of the selected boot environment. New boot environments can be created here.
-
-$( colorize lightblue "[ALT+C] cmdline" )
+$( colorize lightblue "[ALT+C] edit kcl" )
 Temporarily edit the kernel command line that will be used to boot the chosen kernel in the selected boot environment. This change does not persist across reboots.
 
-$( colorize lightblue "[ALT+P] Pool status" )
+$( colorize lightblue "[ALT+P] pool status" )
 View the health and status of each imported pool.
 EOF
 SECTIONS+=("MAIN Main Menu")
@@ -164,8 +165,8 @@ SECTIONS+=("DIFF Diff Viewer")
 
 # shellcheck disable=SC2034
 read -r -d '' POOL <<EOF
-$( colorize magenta "$( center "zpool Health")" )
-$( colorize lightblue "[ALT+R] Rewind checkpoint" )
+$( colorize magenta "$( center "ZPOOL Health")" )
+$( colorize lightblue "[ALT+R] rewind checkpoint" )
 If a pool checkpoint is available, the selected pool is exported and then imported with the $( colorize red "--rewind-to-checkpoint" ) flag set.
 
 The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
