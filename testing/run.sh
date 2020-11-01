@@ -20,7 +20,7 @@ case "$(uname -m)" in
     BIN="qemu-system-x86_64"
     KERNEL="vmlinuz-bootmenu"
     MACHINE="type=q35,accel=kvm"
-    APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest console=ttyS0 console=tty0"
+    APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest"
   ;;
 esac
 

@@ -31,9 +31,11 @@ EOF
 # Set root password
 echo 'root:zfsbootmenu' | chpasswd -c SHA256
 
-# enable dhclient
+# enable services
 ln -s /etc/sv/dhclient /etc/runit/runsvdir/default
 ln -s /etc/sv/sshd /etc/runit/runsvdir/default
+ln -s /etc/sv/ttyS0 /etc/runit/runsvdir/default
+ln -s /etc/sv/hvc0 /etc/runit/runsvdir/default
 
 # /bin/dash sucks
 chsh -s /bin/bash

@@ -44,7 +44,8 @@ udevadm settle
 
 # try to set console options for display and interaction
 # this is sometimes run as an initqueue hook, but cannot be guaranteed
-test -x /lib/udev/console_init -a -c /dev/tty0 && /lib/udev/console_init tty0
+#shellcheck disable=SC2154
+test -x /lib/udev/console_init -a -c "${control_term}" && /lib/udev/console_init "${control_term##*/}"
 
 # Attempt to import all pools read-only
 read_write='' all_pools=yes import_pool

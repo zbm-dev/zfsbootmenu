@@ -31,6 +31,15 @@ else
   menu_timeout=10
 fi
 
+control_term=$( getarg console=)
+if [ -n "${control_term}" ]; then
+  info "ZFSBootMenu: Setting controlling terminal to: ${control_term}"
+  control_term="/dev/${control_term}"
+else
+  control_term="/dev/tty0"
+  info "ZFSBootMenu: Defaulting controlling terminal to: ${control_term}"
+fi
+
 wait_for_zfs=0
 case "${root}" in
   ""|zfsbootmenu|zfsbootmenu:)
