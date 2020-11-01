@@ -25,12 +25,12 @@ OLDIFS="$IFS"
 if command -v fzf >/dev/null 2>&1; then
   export FUZZYSEL=fzf
   #shellcheck disable=SC2016
-  export FZF_DEFAULT_OPTS='--ansi --layout=reverse-list --cycle --inline-info --tac --color=16 --bind "alt-h:execute[ zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
+  export FZF_DEFAULT_OPTS='--ansi --no-clear --layout=reverse-list --cycle --inline-info --tac --color=16 --bind "alt-h:execute[ zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
   export PREVIEW_HEIGHT=2
 elif command -v sk >/dev/null 2>&1; then
   export FUZZYSEL=sk
   #shellcheck disable=SC2016
-  export SKIM_DEFAULT_OPTIONS='--ansi --layout=reverse-list --inline-info --tac --color=16 --bind "alt-h:execute[ zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
+  export SKIM_DEFAULT_OPTIONS='--ansi --no-clear --layout=reverse-list --inline-info --tac --color=16 --bind "alt-h:execute[ zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
   export PREVIEW_HEIGHT=3
 fi
 
