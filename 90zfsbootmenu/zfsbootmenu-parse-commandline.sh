@@ -40,6 +40,10 @@ else
   info "ZFSBootMenu: Defaulting controlling terminal to: ${control_term}"
 fi
 
+# Allow setting of console size; there are no defaults here
+zbm_lines=$( getarg zbm.lines=)
+zbm_columns=$( getarg zbm.columns=)
+
 wait_for_zfs=0
 case "${root}" in
   ""|zfsbootmenu|zfsbootmenu:)
