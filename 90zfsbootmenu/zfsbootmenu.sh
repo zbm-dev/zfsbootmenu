@@ -43,7 +43,8 @@ udevadm settle
 # try to set console options for display and interaction
 # this is sometimes run as an initqueue hook, but cannot be guaranteed
 #shellcheck disable=SC2154
-test -x /lib/udev/console_init -a -c "${control_term}" && /lib/udev/console_init "${control_term##*/}"
+test -x /lib/udev/console_init -a -c "${control_term}" \
+  && /lib/udev/console_init "${control_term##*/}" >/dev/null 2>&1
 
 # set the console size, if indicated
 #shellcheck disable=SC2154
