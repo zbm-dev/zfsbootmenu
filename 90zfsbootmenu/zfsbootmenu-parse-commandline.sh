@@ -41,7 +41,9 @@ else
 fi
 
 # Allow setting of console size; there are no defaults here
+# shellcheck disable=SC2034
 zbm_lines=$( getarg zbm.lines=)
+# shellcheck disable=SC2034
 zbm_columns=$( getarg zbm.columns=)
 
 wait_for_zfs=0

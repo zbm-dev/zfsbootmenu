@@ -18,8 +18,6 @@ test -f zfsbootmenu-lib.sh && source zfsbootmenu-lib.sh
 
 echo "Loading boot menu ..."
 TERM=linux
-# shellcheck disable=SC2034
-CLEAR_SCREEN=0
 tput reset
 
 OLDIFS="$IFS"
@@ -48,10 +46,12 @@ udevadm settle
 test -x /lib/udev/console_init -a -c "${control_term}" && /lib/udev/console_init "${control_term##*/}"
 
 # set the console size, if indicated
+#shellcheck disable=SC2154
 if [ -n "$zbm_lines" ]; then
   stty rows "$zbm_lines"
 fi
 
+#shellcheck disable=SC2154
 if [ -n "$zbm_columns" ]; then
   stty cols "$zbm_columns"
 fi
