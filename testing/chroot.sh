@@ -21,7 +21,16 @@ EOF
 xbps-reconfigure -f linux5.8
 
 # Set kernel commandline
-zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) ro quiet" ztest/ROOT
+case "$(uname -m)" in
+  ppc64*)
+    consoles="console=tty0 console=hvc0"
+    ;;
+  x86_64)
+    consoles="console=tty0 console=ttyS0"
+    ;;
+esac
+
+zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) ro quiet ${consoles}" ztest/ROOT
 
 # Configure the system to create a recursive snapshot every boot
 cat << \EOF > /etc/rc.local
@@ -34,8 +43,8 @@ echo 'root:zfsbootmenu' | chpasswd -c SHA256
 # enable services
 ln -s /etc/sv/dhclient /etc/runit/runsvdir/default
 ln -s /etc/sv/sshd /etc/runit/runsvdir/default
-ln -s /etc/sv/ttyS0 /etc/runit/runsvdir/default
-ln -s /etc/sv/hvc0 /etc/runit/runsvdir/default
+ln -s /etc/sv/agetty-ttyS0 /etc/runit/runsvdir/default
+ln -s /etc/sv/agetty-hvc0 /etc/runit/runsvdir/default
 
 # /bin/dash sucks
 chsh -s /bin/bash
