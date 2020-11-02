@@ -18,8 +18,6 @@ test -f zfsbootmenu-lib.sh && source zfsbootmenu-lib.sh
 
 echo "Loading boot menu ..."
 TERM=linux
-# shellcheck disable=SC2034
-CLEAR_SCREEN=0
 tput reset
 
 OLDIFS="$IFS"
@@ -27,12 +25,12 @@ OLDIFS="$IFS"
 if command -v fzf >/dev/null 2>&1; then
   export FUZZYSEL=fzf
   #shellcheck disable=SC2016
-  export FZF_DEFAULT_OPTS='--ansi --layout=reverse-list --cycle --inline-info --tac --color=16 --bind "alt-h:execute[ zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
+  export FZF_DEFAULT_OPTS='--ansi --no-clear --layout=reverse-list --cycle --inline-info --tac --color=16 --bind "alt-h:execute[ zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
   export PREVIEW_HEIGHT=2
 elif command -v sk >/dev/null 2>&1; then
   export FUZZYSEL=sk
   #shellcheck disable=SC2016
-  export SKIM_DEFAULT_OPTIONS='--ansi --layout=reverse-list --inline-info --tac --color=16 --bind "alt-h:execute[ zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
+  export SKIM_DEFAULT_OPTIONS='--ansi --no-clear --layout=reverse-list --inline-info --tac --color=16 --bind "alt-h:execute[ zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
   export PREVIEW_HEIGHT=3
 fi
 
@@ -44,7 +42,20 @@ udevadm settle
 
 # try to set console options for display and interaction
 # this is sometimes run as an initqueue hook, but cannot be guaranteed
-test -x /lib/udev/console_init -a -c /dev/tty0 && /lib/udev/console_init tty0
+#shellcheck disable=SC2154
+test -x /lib/udev/console_init -a -c "${control_term}" \
+  && /lib/udev/console_init "${control_term##*/}" >/dev/null 2>&1
+
+# set the console size, if indicated
+#shellcheck disable=SC2154
+if [ -n "$zbm_lines" ]; then
+  stty rows "$zbm_lines"
+fi
+
+#shellcheck disable=SC2154
+if [ -n "$zbm_columns" ]; then
+  stty cols "$zbm_columns"
+fi
 
 # Attempt to import all pools read-only
 read_write='' all_pools=yes import_pool

@@ -1,10 +1,14 @@
 #!/bin/bash
+
 usage() {
   cat <<EOF
 Usage: $0 [options]
   -a  Set kernel command line
+  -A+ Append additional arguments to kernel command line
   -d+ Set one or more non-standard disk images 
   -n  Do not recreate the initramfs
+  -s  Enable serial console on stdio
+  -v  Set type of qemu display to use
 EOF
 }
 
@@ -14,13 +18,15 @@ case "$(uname -m)" in
     BIN="qemu-system-ppc64"
     KERNEL="vmlinux-bootmenu"
     MACHINE="pseries,accel=kvm,kvm-type=HV,cap-hpt-max-page-size=4096"
-    APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest console=hvc0 console=tty0"
+    APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest"
+    SERDEV="hvc0"
   ;;
   x86_64)
     BIN="qemu-system-x86_64"
     KERNEL="vmlinuz-bootmenu"
     MACHINE="type=q35,accel=kvm"
-    APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest console=ttyS0 console=tty0"
+    APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest"
+    SERDEV="ttyS0"
   ;;
 esac
 
@@ -28,14 +34,15 @@ DRIVE="-drive format=raw,file=zfsbootmenu-pool.img"
 INITRD="initramfs-bootmenu.img"
 MEMORY="2048M"
 SMP="2"
-DISPLAY_TYPE="gtk"
 CREATE=1
+SERIAL=0
+DISPLAY_TYPE=
 
 # Override any default variables
 #shellcheck disable=SC1091
 [ -f .config ] && source .config
 
-while getopts "A:a:d:nh" opt; do
+while getopts "A:a:d:nsv:h" opt; do
   case "${opt}" in
     A)
       AAPPEND+=( "$OPTARG" )
@@ -44,10 +51,16 @@ while getopts "A:a:d:nh" opt; do
       APPEND="${OPTARG}"
       ;;
     d)
-      MDRIVE+=("-drive format=raw,file=${OPTARG}")
+      MDRIVE+=("-drive" "format=raw,file=${OPTARG}")
       ;;
     n)
       CREATE=0
+      ;;
+    s)
+      SERIAL=1
+      ;;
+    v)
+      DISPLAY_TYPE="${OPTARG}"
       ;;
     \?|h)
       usage
@@ -60,6 +73,25 @@ done
 
 if [ "${#MDRIVE[@]}" -gt 0 ]; then
   DRIVE="${MDRIVE[*]}"
+fi
+
+if [ -n "${DISPLAY_TYPE}" ]; then
+  # Use the indicated graphical display
+  DISPLAY_ARGS=( "-display" "${DISPLAY_TYPE}" )
+else
+  # Suppress graphical display (implies serial mode)
+  DISPLAY_ARGS=( "-nographic" )
+  SERIAL=1
+fi
+
+if ((SERIAL)) ; then
+  AAPPEND+=( "console=tty0" "console=${SERDEV}" )
+  LINES="$( tput lines 2>/dev/null )"
+  COLUMNS="$( tput cols 2>/dev/null )"
+  [ -n "${LINES}" ] && AAPPEND+=( "zbm.lines=${LINES}" )
+  [ -n "${COLUMNS}" ] && AAPPEND+=( "zbm.columns=${COLUMNS}" )
+else
+  AAPPEND+=("console=${SERDEV}" "console=tty0")
 fi
 
 if [ "${#AAPPEND[@]}" -gt 0 ]; then
@@ -95,7 +127,11 @@ fi
 	-machine "${MACHINE}" \
 	-object rng-random,id=rng0,filename=/dev/urandom \
 	-device virtio-rng-pci,rng=rng0 \
-	-display "${DISPLAY_TYPE}" \
+	"${DISPLAY_ARGS[@]}" \
 	-serial mon:stdio \
 	-netdev user,id=n1,hostfwd=tcp::2222-:22 -device virtio-net-pci,netdev=n1 \
 	-append "${APPEND}"
+
+if ((SERIAL)) ; then
+  reset
+fi
