@@ -8,6 +8,7 @@ BOOTFS="${3}"
 # shellcheck disable=SC2034
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # shellcheck disable=SC1091
@@ -46,5 +47,10 @@ fi
 selected_env_str="$( printf "%*s\n" $(( (${#selected_env_str} + WIDTH ) / 2)) "${selected_env_str}" )"
 selected_arguments="$( printf "%*s\n" $(( (${#selected_arguments} + WIDTH ) / 2)) "${selected_arguments}" )"
 
-echo -e "${GREEN}${selected_env_str}${NC}"
+if [ "${_readonly}" = "r/o" ]; then
+  echo -e "${GREEN}${selected_env_str}${NC}"
+else
+  echo -e "${RED}${selected_env_str}${NC}"
+fi
+
 echo "${selected_arguments}"
