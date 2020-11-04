@@ -977,8 +977,16 @@ populate_be_list() {
       # All other datasets are ignored
       continue
     fi
+    if [ "x${BOOTFS}" = "x${fs}" ] ; then
+      # If BOOTFS is defined, we'll manually append it to the array
+      continue
+    fi
+
     candidates+=( "${fs}" )
-  done <<< "$(zfs list -H -o name,mountpoint,org.zfsbootmenu:active)"
+  done <<< "$(zfs list -H -o name,mountpoint,org.zfsbootmenu:active | sort -r)"
+
+  # put bootfs on the end, so it is shown first with --tac
+  [ -n "${BOOTFS}" ] && candidates+=( "${BOOTFS}" )
 
   for fs in "${candidates[@]}"; do
     # Unlock if necessary
