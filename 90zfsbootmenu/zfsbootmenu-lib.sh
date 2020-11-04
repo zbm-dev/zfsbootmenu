@@ -957,7 +957,7 @@ key_wrapper() {
 # returns: 0 on success, 1 on failure
 
 populate_be_list() {
-  local be_list fs mnt active candidates sorted
+  local be_list fs mnt active candidates
 
   be_list="${1}"
   [ -n "${be_list}" ] || return 1
@@ -977,19 +977,18 @@ populate_be_list() {
       # All other datasets are ignored
       continue
     fi
-    if [ -n "${BOOTFS}" ] && [ "${BOOTFS}" = "${fs}" ] ; then
+    if [ "x${BOOTFS}" = "x${fs}" ] ; then
       # If BOOTFS is defined, we'll manually append it to the array
       continue
     fi
 
     candidates+=( "${fs}" )
-  done <<< "$(zfs list -H -o name,mountpoint,org.zfsbootmenu:active)"
+  done <<< "$(zfs list -H -o name,mountpoint,org.zfsbootmenu:active | sort -r)"
 
-  # Reverse sort the list, to line up with our global usage of --tac
-  readarray -t sorted < <( for env in "${candidates[@]}" ; do echo "$env" ; done | sort -r )
-  [ -n "${BOOTFS}" ] && sorted+=( "${BOOTFS}" )
+  # put bootfs on the end, so it is shown first with --tac
+  [ -n "${BOOTFS}" ] && candidates+=( "${BOOTFS}" )
 
-  for fs in "${sorted[@]}"; do
+  for fs in "${candidates[@]}"; do
     # Unlock if necessary
     key_wrapper "${fs}" || continue
 
