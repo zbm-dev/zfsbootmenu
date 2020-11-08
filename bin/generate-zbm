@@ -111,6 +111,7 @@ if ( defined $runConf{migrate} ) {
 
 if ( -r $runConf{config} ) {
   eval {
+    local $SIG{'__DIE__'};
     my $yaml = YAML::PP->new( boolean => 'boolean' )->load_file( $runConf{config} );
     %config = %$yaml;
   } or do {
@@ -127,8 +128,13 @@ omit the `--config` option, an output location
   $default_config
 
 will be used by default.
+
+----
+
 EOF
     print $error;
+
+    warn $@ if $@;
     exit 1;
   };
 } else {
