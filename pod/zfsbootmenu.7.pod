@@ -6,7 +6,7 @@ B<zfsbootmenu> - System integration
 
 ZFSBootMenu behavior is controlled through ZFS filesystem properties and command-line options provided to the ZFSBootMenu kernel.
 
-=head1 CLI Parameters 
+=head1 Command-Line Parameters
 
 These options are set on the kernel command line when booting the initramfs or UEFI bundle. Default options were chosen to allow general systems to boot without setting any values.
 
@@ -45,13 +45,13 @@ Display a countdown timer for the specified number of seconds before booting the
 
 =back
 
-=item B<zfsbootmenu:POOL=E<lt>poolE<gt>>
+=item B<root=zfsbootmenu:POOL=E<lt>poolE<gt>>
 
-By default, ZFSBootMenu will look for the I<bootfs> property on the first pool it imports to select the default boot environment. If you have multiple pools, substitute the name of your preferred pool for B<E<lt>poolE<gt>> in the argument B<zfsbootmenu:POOL=E<lt>poolE<gt>>.
+By default, ZFSBootMenu will look for the I<bootfs> property on the first pool it imports to select the default boot environment. If you have multiple pools, substitute the name of your preferred pool for B<E<lt>poolE<gt>> in the argument B<root=zfsbootmenu:POOL=E<lt>poolE<gt>>.
 
 =back
 
-=head1 ZFS Properties 
+=head1 ZFS Properties
 
 The following properties can be set at any level of the boot-environment hierarchy to control boot behavior.
 
