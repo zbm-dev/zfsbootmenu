@@ -153,7 +153,16 @@ install() {
   fi
 
   # Synchronize initramfs and system hostid
-  HOSTID="$( hostid )"
-  # shellcheck disable=SC2154
-  echo -ne "\\x${HOSTID:6:2}\\x${HOSTID:4:2}\\x${HOSTID:2:2}\\x${HOSTID:0:2}" > "${initdir}/etc/hostid"
+  if [ -e /etc/hostid ]; then
+    # Prefer the hostid file if it exists
+    inst /etc/hostid
+    type mark_hostonly >/dev/null 2>&1 && mark_hostonly /etc/hostid
+  elif HOSTID="$( hostid 2>/dev/null )" && [ "${HOSTID}" != "00000000" ]; then
+    # Fall back to `hostid` output when it is nonzero
+    # The order will be wrong on big-endian architectures; in such a case,
+    # the right thing to do is make sure /etc/hostid exists on the system
+    # shellcheck disable=SC2154
+    echo -ne "\\x${HOSTID:6:2}\\x${HOSTID:4:2}\\x${HOSTID:2:2}\\x${HOSTID:0:2}" > "${initdir}/etc/hostid"
+    type mark_hostonly >/dev/null 2>&1 && mark_hostonly /etc/hostid
+  fi
 }
