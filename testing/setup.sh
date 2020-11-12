@@ -12,6 +12,7 @@ Usage: $0 [options]
   -d  Create a local dracut tree for local mode
   -i  Create a test VM image
   -a  Perform all setup options
+  -m  When making an image, use musl instead of glibc
 EOF
 }
 
@@ -20,7 +21,7 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "ycdai" opt; do
+while getopts "ycdaim" opt; do
   case "${opt}" in
     y)
       YAML=1
@@ -39,6 +40,9 @@ while getopts "ycdai" opt; do
       CONFD=1
       IMAGE=1
       DRACUT=1
+      ;;
+    m)
+      MUSL=1
       ;;
     \?)
       usage
@@ -89,17 +93,39 @@ fi
 
 # Create an image
 if ((IMAGE)) ; then
-  SHELL=/bin/bash sudo -s <<"EOF"
+  SHELL=/bin/bash sudo -s <<EOF
 
-  MNT="$( mktemp -d )"
-  LOOP="$( losetup -f )"
+  XBPS_ARCH="\$(uname -m)"
+
+  case "\${XBPS_ARCH}" in
+    ppc64le)
+      URL="https://mirrors.servercentral.com/void-ppc/current"
+      ;;
+    x86_64)
+      URL="https://mirrors.servercentral.com/voidlinux/current"
+      ;;
+    *)
+      echo "ERROR: unsupported architecture"
+      exit 1
+      ;;
+  esac
+
+  if [ -n "${MUSL}" ]; then
+    URL="\${URL}/musl"
+    XBPS_ARCH="\${XBPS_ARCH}-musl"
+  fi
+
+  export XBPS_ARCH
+
+  MNT="\$( mktemp -d )"
+  LOOP="\$( losetup -f )"
 
   qemu-img create zfsbootmenu-pool.img 2G
 
-  losetup "${LOOP}" zfsbootmenu-pool.img
-  kpartx -u "${LOOP}"
+  losetup "\${LOOP}" zfsbootmenu-pool.img
+  kpartx -u "\${LOOP}"
 
-  echo 'label: gpt' | sfdisk "${LOOP}"
+  echo 'label: gpt' | sfdisk "\${LOOP}"
   zpool create -f \
    -O compression=lz4 \
    -O acltype=posixacl \
@@ -107,7 +133,7 @@ if ((IMAGE)) ; then
    -O relatime=on \
    -o autotrim=on \
    -o cachefile=none \
-   -m none ztest "${LOOP}"
+   -m none ztest "\${LOOP}"
 
   zfs snapshot -r ztest@barepool
 
@@ -116,53 +142,47 @@ if ((IMAGE)) ; then
 
   zfs snapshot -r ztest@barebe
 
-  zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) ro quiet" ztest/ROOT
+  zfs set org.zfsbootmenu:commandline="spl_hostid=\$( hostid ) ro quiet" ztest/ROOT
   zpool set bootfs=ztest/ROOT/void ztest
 
   zpool export ztest
-  zpool import -R "${MNT}" ztest
+  zpool import -R "\${MNT}" ztest
   zfs mount ztest/ROOT/void
 
-  case "$(uname -m)" in
-    ppc64le)
-      URL="https://mirrors.servercentral.com/void-ppc/current"
-      ;;
-    x86_64)
-      URL="https://mirrors.servercentral.com/voidlinux/current"
-      ;;
-  esac
-
   # https://github.com/project-trident/trident-installer/blob/master/src-sh/void-install-zfs.sh#L541
-  mkdir -p "${MNT}/var/db/xbps/keys"
-  cp /var/db/xbps/keys/*.plist "${MNT}/var/db/xbps/keys/."
+  mkdir -p "\${MNT}/var/db/xbps/keys"
+  cp /var/db/xbps/keys/*.plist "\${MNT}/var/db/xbps/keys/."
 
-  mkdir -p "${MNT}/etc/xbps.d"
-  cp /etc/xbps.d/*.conf "${MNT}/etc/xbps.d/."
+  mkdir -p "\${MNT}/etc/xbps.d"
+  cp /etc/xbps.d/*.conf "\${MNT}/etc/xbps.d/."
 
   # /etc/runit/core-services/03-console-setup.sh depends on loadkeys from kbd
   # /etc/runit/core-services/05-misc.sh depends on ip from iproute2
-  xbps-install -y -S -M -r "${MNT}" --repository="${URL}" \
+  xbps-install -y -S -M -r "\${MNT}" --repository="\${URL}" \
     base-minimal dracut ncurses-base kbd iproute2 dhclient openssh
 
-  cp /etc/hostid "${MNT}/etc/"
-  cp /etc/resolv.conf "${MNT}/etc/"
-  cp /etc/rc.conf "${MNT}/etc/"
+  cp /etc/hostid "\${MNT}/etc/"
+  cp /etc/resolv.conf "\${MNT}/etc/"
+  cp /etc/rc.conf "\${MNT}/etc/"
 
-  mount -t proc proc "${MNT}/proc"
-  mount -t sysfs sys "${MNT}/sys"
-  mount -B /dev "${MNT}/dev"
-  mount -t devpts pts "${MNT}/dev/pts"
+  mkdir -p "\${MNT}/etc/xbps.d"
+  echo "repository=\${URL}" > "\${MNT}/etc/xbps.d/00-repository-main.conf"
+
+  mount -t proc proc "\${MNT}/proc"
+  mount -t sysfs sys "\${MNT}/sys"
+  mount -B /dev "\${MNT}/dev"
+  mount -t devpts pts "\${MNT}/dev/pts"
 
   zfs snapshot -r ztest@pre-chroot
 
-  cp chroot.sh "${MNT}/root"
-  chroot "${MNT}" /root/chroot.sh
+  cp chroot.sh "\${MNT}/root"
+  chroot "\${MNT}" /root/chroot.sh
 
-  umount -R "${MNT}" && rmdir "${MNT}"
+  umount -R "\${MNT}" && rmdir "\${MNT}"
 
   zpool export ztest
-  losetup -d "${LOOP}"
+  losetup -d "\${LOOP}"
 
-  chown "$( stat -c %U . ):$( stat -c %G . )" zfsbootmenu-pool.img
+  chown "\$( stat -c %U . ):\$( stat -c %G . )" zfsbootmenu-pool.img
 EOF
 fi
