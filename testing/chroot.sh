@@ -23,10 +23,10 @@ xbps-reconfigure -f linux5.8
 # Set kernel commandline
 case "$(uname -m)" in
   ppc64*)
-    consoles="console=tty0 console=hvc0"
+    consoles="console=tty1 console=hvc0"
     ;;
   x86_64)
-    consoles="console=tty0 console=ttyS0"
+    consoles="console=tty1 console=ttyS0"
     ;;
 esac
 

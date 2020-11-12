@@ -36,7 +36,7 @@ if [ -n "${control_term}" ]; then
   info "ZFSBootMenu: Setting controlling terminal to: ${control_term}"
   control_term="/dev/${control_term}"
 else
-  control_term="/dev/tty0"
+  control_term="/dev/tty1"
   info "ZFSBootMenu: Defaulting controlling terminal to: ${control_term}"
 fi
 

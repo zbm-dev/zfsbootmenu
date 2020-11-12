@@ -85,13 +85,13 @@ else
 fi
 
 if ((SERIAL)) ; then
-  AAPPEND+=( "console=tty0" "console=${SERDEV}" )
+  AAPPEND+=( "console=tty1" "console=${SERDEV}" )
   LINES="$( tput lines 2>/dev/null )"
   COLUMNS="$( tput cols 2>/dev/null )"
   [ -n "${LINES}" ] && AAPPEND+=( "zbm.lines=${LINES}" )
   [ -n "${COLUMNS}" ] && AAPPEND+=( "zbm.columns=${COLUMNS}" )
 else
-  AAPPEND+=("console=${SERDEV}" "console=tty0")
+  AAPPEND+=("console=${SERDEV}" "console=tty1")
 fi
 
 if [ "${#AAPPEND[@]}" -gt 0 ]; then

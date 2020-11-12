@@ -206,6 +206,7 @@ kexec_kernel() {
 
   selected="${1}"
 
+  tput cnorm
   tput clear
 
   # zfs filesystem
