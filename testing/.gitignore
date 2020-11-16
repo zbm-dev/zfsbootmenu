@@ -7,3 +7,4 @@ local.yaml
 .config
 dracut
 dracut.conf.d
+generate-zbm

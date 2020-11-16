@@ -1,4 +1,5 @@
 #!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
 
 usage() {
   cat <<EOF
@@ -9,58 +10,17 @@ Usage: $0 [options]
   -n  Do not recreate the initramfs
   -s  Enable serial console on stdio
   -v  Set type of qemu display to use
+  -D  Set test directory
 EOF
 }
 
-# Support x86_64 and ppc64(le)
-case "$(uname -m)" in
-  ppc64*)
-    BIN="qemu-system-ppc64"
-    KERNEL="vmlinux-bootmenu"
-    MACHINE="pseries,accel=kvm,kvm-type=HV,cap-hpt-max-page-size=4096"
-    APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest"
-    SERDEV="hvc0"
-  ;;
-  x86_64)
-    BIN="qemu-system-x86_64"
-    KERNEL="vmlinuz-bootmenu"
-    MACHINE="type=q35,accel=kvm"
-    APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest"
-    SERDEV="ttyS0"
-  ;;
-esac
+CMDOPTS="D:A:a:d:nsv:h"
 
-DRIVE="-drive format=raw,file=zfsbootmenu-pool.img"
-INITRD="initramfs-bootmenu.img"
-MEMORY="2048M"
-SMP="2"
-CREATE=1
-SERIAL=0
-DISPLAY_TYPE=
-
-# Override any default variables
-#shellcheck disable=SC1091
-[ -f .config ] && source .config
-
-while getopts "A:a:d:nsv:h" opt; do
+# First-pass option parsing just looks for test directory
+while getopts "${CMDOPTS}" opt; do
   case "${opt}" in
-    A)
-      AAPPEND+=( "$OPTARG" )
-      ;;
-    a)
-      APPEND="${OPTARG}"
-      ;;
-    d)
-      MDRIVE+=("-drive" "format=raw,file=${OPTARG}")
-      ;;
-    n)
-      CREATE=0
-      ;;
-    s)
-      SERIAL=1
-      ;;
-    v)
-      DISPLAY_TYPE="${OPTARG}"
+    D)
+      TESTDIR="${OPTARG}"
       ;;
     \?|h)
       usage
@@ -71,9 +31,78 @@ while getopts "A:a:d:nsv:h" opt; do
   esac
 done
 
-if [ "${#MDRIVE[@]}" -gt 0 ]; then
-  DRIVE="${MDRIVE[*]}"
+if [ -n "${TESTDIR}" ]; then
+  # If a test directory was specified, it must exist
+  if [ ! -d "${TESTDIR}" ]; then
+    echo "ERROR: test directory '${TESTDIR}' does not exist"
+    exit 1
+  fi
+else
+  # If a test directory was not specified, try a default
+  TESTDIR="./test.$(uname -m)"
+  [ -d "${TESTDIR}" ] || TESTDIR="."
 fi
+
+# Support x86_64 and ppc64(le)
+case "$(uname -m)" in
+  ppc64*)
+    BIN="qemu-system-ppc64"
+    KERNEL="${TESTDIR}/vmlinux-bootmenu"
+    MACHINE="pseries,accel=kvm,kvm-type=HV,cap-hpt-max-page-size=4096"
+    APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest"
+    SERDEV="hvc0"
+  ;;
+  x86_64)
+    BIN="qemu-system-x86_64"
+    KERNEL="${TESTDIR}/vmlinuz-bootmenu"
+    MACHINE="type=q35,accel=kvm"
+    APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest"
+    SERDEV="ttyS0"
+  ;;
+esac
+
+DRIVE=("-drive" "format=raw,file=${TESTDIR}/zfsbootmenu-pool.img")
+INITRD="${TESTDIR}/initramfs-bootmenu.img"
+MEMORY="2048M"
+SMP="2"
+CREATE=1
+SERIAL=0
+DISPLAY_TYPE=
+
+# Override any default variables
+#shellcheck disable=SC1091
+[ -f .config ] && source .config
+
+# Second-pass option parsing grabs all other options
+OPTIND=1
+while getopts "${CMDOPTS}" opt; do
+  case "${opt}" in
+    A)
+      AAPPEND+=( "$OPTARG" )
+      ;;
+    a)
+      APPEND="${OPTARG}"
+      ;;
+    d)
+      if ! _dimg="$(realpath -e "${TESTDIR}/${OPTARG}")"; then
+        echo "ERROR: disk image '${TESTDIR}/${OPTARG}' does not exist"
+        exit 1
+      fi
+      DRIVE+=("-drive" "format=raw,file=${_dimg}")
+      ;;
+    n)
+      CREATE=0
+      ;;
+    s)
+      SERIAL=1
+      ;;
+    v)
+      DISPLAY_TYPE="${OPTARG}"
+      ;;
+    *)
+      ;;
+  esac
+done
 
 if [ -n "${DISPLAY_TYPE}" ]; then
   # Use the indicated graphical display
@@ -103,24 +132,27 @@ if ((CREATE)) ; then
   [ -f "${KERNEL}" ] && rm "${KERNEL}"
   [ -f "${INITRD}" ] && rm "${INITRD}"
 
-  # Try to find the local dracut first
-  PATH=./dracut:${PATH} ../bin/generate-zbm -c ./local.yaml
+  # Try to find the local dracut and generate-zbm first
+  if ! ( cd "${TESTDIR}" && PATH=./dracut:${PATH} ./generate-zbm -c ./local.yaml ); then
+    echo "ERROR: unable to create ZFSBootMenu images"
+    exit 1
+  fi
 fi
 
 # Ensure kernel and initramfs exist
 if [ ! -f "${KERNEL}" ] ; then
   echo "Missing kernel: ${KERNEL}"
-  exit
+  exit 1
 elif [ ! -f "${INITRD}" ] ; then
   echo "Missing initramfs: ${INITRD}"
-  exit
+  exit 1
 fi
 
 # shellcheck disable=SC2086
 "${BIN}" \
 	-kernel "${KERNEL}" \
 	-initrd "${INITRD}" \
-	${DRIVE} \
+	"${DRIVE[@]}" \
 	-m "${MEMORY}" \
 	-smp "${SMP}" \
 	-cpu host \
@@ -130,8 +162,8 @@ fi
 	"${DISPLAY_ARGS[@]}" \
 	-serial mon:stdio \
 	-netdev user,id=n1,hostfwd=tcp::2222-:22 -device virtio-net-pci,netdev=n1 \
-	-append "${APPEND}"
+	-append "${APPEND}" || exit 1
 
-if ((SERIAL)) ; then
+if ((SERIAL)); then
   reset
 fi

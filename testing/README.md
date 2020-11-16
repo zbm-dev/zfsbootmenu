@@ -10,11 +10,13 @@ The testing environment setup and runtime depends on the following tools:
 
 # Creating a ZFSBootMenu Test Pool for QEMU
 
-First, run `./setup.sh -a` to:
+First, run `./setup.sh -a`; this will create, if necessary, a test directory
+(chosen automatically or specified with the `-D` command-line flag) and, within
+the test directory:
 
 * Create a test pool
-  1. Create a 1GB RAW image file,
-  2. Attach it to the `loop0` loopback device,
+  1. Create a 2GB RAW image file,
+  2. Attach it to a loopback device,
   3. Create a GPT label and a ZFS pool `ztest`,
   4. Install Void base-minimal onto the pool,
   5. Configure the installation, and
