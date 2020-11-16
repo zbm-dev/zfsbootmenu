@@ -1,3 +1,29 @@
+# ZFSBootMenu v1.7.0 (2020-11-15)
+
+In addition to a bug fixes, this release targets refinements that improve usability and offer contextual help within the menus.
+
+## Fixes
+* ZFSBootMenu now respects the `console` kernel command-line option and should behave as expected over a serial console.
+* Command lists at the bottom of each menu are now sensibly wrapped to the terminal width, with extra coloring to highlight key combinations.
+* Rather than rely solely on the `hostid(1)` command to populate the default hostid in the ZFSBootMenu initramfs, the dracut module will prefer to copy the `/etc/hostid` from the host, which should produce more consistent behavior on musl systems.
+* Boot environments are now explicitly sorted, with the default boot environment appearing at the top of the list and selected by default.
+
+## New features
+* An online help system, accessible from `alt-h` within any menu, provides descriptions of functionality provided by ZFSBootMenu.
+* The description at the top of the menu now indicates whether the selected boot environment is on a pool currently imported readonly or writable.
+* New command-line arguments `zbm.lines` and `zbm.columns` allow the size of the terminal at boot time.
+* When `generate-zbm` fails to parse the YAML configuration, more detailed messages pinpoint parsing errors.
+
+## Significant commits in this release
+dbe91a1 - Fix console handling when attached to a serial line (Andrew J. Hesford)
+9959d10 - Respect ZFS hostid behavior on musl (Andrew J. Hesford)
+f4a60e6 - Capture and print config.yaml eval failure (Zach Dykstra)
+2ebad45 - Sort environments, fix preview (Zach Dykstra)
+cc6e27c - Control size/target of ZFSBootMenu output (Zach Dykstra)
+bb294b3 - Enable dynamic line wrapping for header (Zach Dykstra)
+8993591 - Enable global help system (Zach Dykstra)
+7879876 - Read-only helpers (Zach Dykstra)
+
 # ZFSBootMenu v1.6.1 (2020-10-27)
 
 Revert omitting `rootfs-block` by default from the ZFSBootMenu initramfs. `rootfs-block` is a hard requirement of `crypt`, which is used to setup LUKS beneath ZFS.
@@ -76,8 +102,8 @@ ZFSBootMenu 1.4 includes significant internal changes and some user-visible func
 
 ## Significant commits in this release
 * 0979051 - Add documentation for generate-zbm, its config and initramfs options (Zach Dykstra, et al.)
-* ee1d9d8 - Unmask import_args in functions calling import_pool (Zach Dykstra)
-* 3b2b2f0 - Add explicit --migrate option to generate-zbm (Andrew J. Hesford)
+* ee1d9d8 - Unmask `import_args` in functions calling `import_pool` (Zach Dykstra)
+* 3b2b2f0 - Add explicit `--migrate` option to generate-zbm (Andrew J. Hesford)
 * 3cd3a8e - Improve error handling and automatic config conversion (Andrew J. Hesford)
 * 80e0c30 - Switch syslinux entry to heredoc, fix syslinux.cfg file copy (Zach Dykstra)
 * 6351226 - Move to YAML configuration, improve version handling (Andrew J. Hesford, Zach Dykstra)
