@@ -60,20 +60,25 @@ fi
 # Attempt to import all pools read-only
 read_write='' all_pools=yes import_pool
 
+# Make sure at least one pool can be imported; if not,
+# drop to an emergency shell to allow the user to attempt recovery
 import_success=0
-while IFS=$'\t' read -r _pool _health; do
-  [ -n "${_pool}" ] || continue
+while true; do
+  while IFS=$'\t' read -r _pool _health; do
+    [ -n "${_pool}" ] || continue
 
-  import_success=1
-  if [ "${_health}" != "ONLINE" ]; then
-    echo "${_pool}" >> "${BASE}/degraded"
+    import_success=1
+    if [ "${_health}" != "ONLINE" ]; then
+      echo "${_pool}" >> "${BASE}/degraded"
+    fi
+  done <<<"$( zpool list -H -o name,health )"
+
+  if [ "${import_success}" -ne 1 ]; then
+    emergency_shell "unable to successfully import a pool"
+  else
+    break
   fi
-done <<<"$( zpool list -H -o name,health )"
-
-if [ "${import_success}" -ne 1 ]; then
-  emergency_shell "unable to successfully import a pool"
-  exit
-fi
+done
 
 # Prefer a specific pool when checking for a bootfs value
 # shellcheck disable=SC2154
