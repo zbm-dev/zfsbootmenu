@@ -729,17 +729,27 @@ has_resume_device() {
   return 1
 }
 
-# arg1: warning message
-# arg2: persistence in seconds (optional, default 30)
+# arg1..argN: lines of warning message
 # prints: warning message
-# returns: nothing
+# returns: 1 if user pressed ESC, 0 otherwise
 
-warning_prompt() {
-  local prompt x y
+timed_prompt() {
+  local prompt x y cnum
 
   [ $# -gt 0 ] || return
   [ -n "${delay}" ] || delay="30"
   [ -n "${prompt}" ] || prompt="Press [ENTER] or wait %0.2d seconds to continue"
+
+  # shellcheck disable=SC2154
+  case "${color}" in
+    red) cnum=1 ;;
+    green) cnum=2 ;;
+    yellow) cnum=3 ;;
+    blue) cnum=4 ;;
+    magenta) cnum=5 ;;
+    cyan) cnum=6 ;;
+    *) cnum="" ;;
+  esac
 
   tput civis
   HEIGHT=$( tput lines )
@@ -748,16 +758,16 @@ warning_prompt() {
 
   x=$(( (HEIGHT - 0) / 2))
 
+  [ -n "${cnum}" ] && tput setaf "${cnum}"
   while [ $# -gt 0 ]; do
     local line=${1}
     y=$(( (WIDTH - ${#line}) / 2 ))
     tput cup $x $y
-    line="${line//\[/\\033\[0;32m\[}"
-    line="${line//\]/\]\\033\[0m}"
     echo -n -e "${line}"
     x=$(( x + 1 ))
     shift
   done
+  [ -n "${cnum}" ] && tput sgr0
 
   IFS=''
   for (( i=delay; i>0; i-- )); do
@@ -853,8 +863,8 @@ set_rw_pool() {
   pool="${1}"
   [ -n "${pool}" ] || return 1
 
-  if [ -r "${BASE}/degraded" ] && grep -q "${pool}" "${BASE}/degraded"; then
-    warning_prompt "Operation prohibited: ZFSBootMenu cannot import '${pool}' read-write" "10"
+  if grep -q "${pool}" "${BASE}/degraded" >/dev/null 2>&1; then
+    color=red delay=10 timed_prompt "Operation prohibited" "Pool '${pool}' cannot be imported read-write"
     return 1
   fi
 

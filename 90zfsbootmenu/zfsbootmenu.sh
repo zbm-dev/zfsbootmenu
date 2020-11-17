@@ -102,7 +102,7 @@ while IFS=$'\t' read -r _pool _property; do
 done <<<"$( zpool get all -H -o name,property )"
 
 if [ "${unsupported}" -ne 0 ]; then
-  warning_prompt "Unsupported features detected, upgrade ZFS modules in ZFSBootMenu"
+  color=red timed_prompt "Unsupported features detected" "Upgrade ZFS modules in ZFSBootMenu"
 fi
 
 # Attempt to find the bootfs property
@@ -121,7 +121,7 @@ if [[ -n "${BOOTFS}" ]]; then
   # Draw a countdown menu
   # shellcheck disable=SC2154
   if [[ ${menu_timeout} -gt 0 ]]; then
-    if delay=10 prompt="Booting in %0.2d seconds" warning_prompt "[ENTER] to boot ${BOOTFS}" "[ESC] boot menu" ; then
+    if delay="${menu_timeout}" prompt="Booting in %0.2d seconds" timed_prompt "[ENTER] to boot ${BOOTFS}" "[ESC] boot menu" ; then
       # Clear screen before a possible password prompt
       tput clear
       if ! key_wrapper "${BOOTFS}" ; then
@@ -262,8 +262,8 @@ while true; do
             if [ "${leftover_space}" -le 0 ]; then
               avail_space="$( zfs list -H -o available "${selected_snap%/*}" )"
               be_size="$( zfs list -H -o refer "${selected_snap}" )"
-              delay=10 warning_prompt "Insufficient space in '${selected_snap%/*}' for duplication" \
-                "${avail_space} available, ${be_size} needed"
+              color=red delay=10 timed_prompt "Insufficient space for duplication" \
+                "'${selected_snap%/*}' has ${avail_space} free but needs ${be_size}"
               continue
             fi
           ;;
