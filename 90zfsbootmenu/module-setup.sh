@@ -152,17 +152,36 @@ install() {
     type mark_hostonly >/dev/null 2>&1 && mark_hostonly /etc/zfs/vdev_id.conf
   fi
 
-  # Synchronize initramfs and system hostid
-  if [ -e /etc/hostid ]; then
-    # Prefer the hostid file if it exists
+  # Try to synchronize hostid between host and ZFSBootMenu
+  #
+  # DEPRECATION NOTICE: on musl systems, zfs < 2.0 produced a bad hostid in
+  # dracut images. Unfortunately, this should be replicated for now to ensure
+  # those images are bootable. After some time, remove this version check.
+  ZVER="$( zfs version | head -n1 | sed 's/zfs-\(kmod-\)\?//' )"
+  if [ -n "${ZVER}" ] && printf '%s\n' "${ZVER}" "2.0" | sort -VCr; then
+    NEWZFS=yes
+  else
+    NEWZFS=""
+  fi
+
+  if [ -n "${NEWZFS}" ] && [ -e /etc/hostid ]; then
+    # With zfs >= 2.0, prefer the hostid file if it exists
     inst /etc/hostid
-    type mark_hostonly >/dev/null 2>&1 && mark_hostonly /etc/hostid
-  elif HOSTID="$( hostid 2>/dev/null )" && [ "${HOSTID}" != "00000000" ]; then
-    # Fall back to `hostid` output when it is nonzero
-    # The order will be wrong on big-endian architectures; in such a case,
-    # the right thing to do is make sure /etc/hostid exists on the system
-    # shellcheck disable=SC2154
-    echo -ne "\\x${HOSTID:6:2}\\x${HOSTID:4:2}\\x${HOSTID:2:2}\\x${HOSTID:0:2}" > "${initdir}/etc/hostid"
-    type mark_hostonly >/dev/null 2>&1 && mark_hostonly /etc/hostid
+  elif HOSTID="$( hostid 2>/dev/null )"; then
+    # Fall back to `hostid` output when it is nonzero or with zfs < 2.0
+    if [ -z "${NEWZFS}" ]; then
+      # In zfs < 2.0, zgenhostid does not provide necessary behavior
+      # shellcheck disable=SC2154
+      echo -ne "\\x${HOSTID:6:2}\\x${HOSTID:4:2}\\x${HOSTID:2:2}\\x${HOSTID:0:2}" > "${initdir}/etc/hostid"
+    elif [ "${HOSTID}" != "00000000" ]; then
+      # In zfs >= 2.0, zgenhostid writes the output, but only with nonzero hostid
+      # shellcheck disable=SC2154
+      zgenhostid -o "${initdir}/etc/hostid" "${HOSTID}"
+    fi
+  fi
+
+  # shellcheck disable=SC2154
+  if [ -e "${initdir}/etc/hostid" ] && type mark_hostonly >/dev/null 2>&1; then
+    mark_hostonly /etc/hostid
   fi
 }
