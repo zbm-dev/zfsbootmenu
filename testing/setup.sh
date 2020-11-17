@@ -6,6 +6,7 @@ GENZBM=0
 IMAGE=0
 CONFD=0
 DRACUT=0
+SIZE="2G"
 
 usage() {
   cat <<EOF
@@ -18,6 +19,7 @@ Usage: $0 [options]
   -a  Perform all setup options
   -m  When making an image, use musl instead of glibc
   -D  Specify a test directory to use
+  -s  Specify size of VM image
 EOF
 }
 
@@ -26,7 +28,7 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "ycgdaimD:" opt; do
+while getopts "ycgdaimD:s:" opt; do
   case "${opt}" in
     y)
       YAML=1
@@ -55,6 +57,9 @@ while getopts "ycgdaimD:" opt; do
       ;;
     D)
       TESTDIR="${OPTARG}"
+      ;;
+    s)
+      SIZE="${OPTARG}"
       ;;
     \?)
       usage
@@ -125,5 +130,5 @@ fi
 
 # Create an image
 if ((IMAGE)) ; then
-  sudo env MUSL="${MUSL}" ./image.sh "${TESTDIR}"
+  sudo env MUSL="${MUSL}" ./image.sh "${TESTDIR}" "${SIZE}"
 fi

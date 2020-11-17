@@ -1,7 +1,8 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
-TESTDIR="${1?Usage: $0 <testdir>}"
+TESTDIR="${1?Usage: $0 <testdir> <size>}"
+SIZE="${2?Usage: $0 <testdir> <size>}"
 
 if [ -z "${TESTDIR}" ] || [ ! -d "${TESTDIR}" ]; then
   echo "ERROR: test directory must be specified and must exist"
@@ -34,7 +35,7 @@ MNT="$( mktemp -d )" || exit 1
 # shellcheck disable=SC2064
 trap "rmdir '${MNT}'" EXIT
 
-qemu-img create "${TESTDIR}/zfsbootmenu-pool.img" 2G
+qemu-img create "${TESTDIR}/zfsbootmenu-pool.img" "${SIZE}" 
 chown "$( stat -c %U . ):$( stat -c %G . )" "${TESTDIR}/zfsbootmenu-pool.img"
 
 LOOP="$( losetup -f )" || exit 1
