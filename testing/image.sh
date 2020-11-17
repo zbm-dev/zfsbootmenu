@@ -34,7 +34,7 @@ MNT="$( mktemp -d )" || exit 1
 # shellcheck disable=SC2064
 trap "rmdir '${MNT}'" EXIT
 
-qemu-img create "${TESTDIR}/zfsbootmenu-pool.img" 2G
+qemu-img create "${TESTDIR}/zfsbootmenu-pool.img" "${SIZE}" 
 chown "$( stat -c %U . ):$( stat -c %G . )" "${TESTDIR}/zfsbootmenu-pool.img"
 
 LOOP="$( losetup -f )" || exit 1
