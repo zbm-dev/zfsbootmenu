@@ -20,6 +20,7 @@ EOF
 
 # Make sure any ZFS keyfiles are included
 for keyfile in /etc/zfs/*.key; do
+  [ -e "${keyfile}" ] || continue
   echo "install_items+=\" ${keyfile} \"" >> /etc/dracut.conf.d/zol.conf
 done
 
