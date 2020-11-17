@@ -8,3 +8,4 @@ local.yaml
 dracut
 dracut.conf.d
 generate-zbm
+test.*

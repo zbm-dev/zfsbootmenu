@@ -18,6 +18,11 @@ add_dracutmodules+=" zfs "
 omit_dracutmodules+=" btrfs "
 EOF
 
+# Make sure any ZFS keyfiles are included
+for keyfile in /etc/zfs/*.key; do
+  echo "install_items+=\" ${keyfile} \"" >> /etc/dracut.conf.d/zol.conf
+done
+
 xbps-reconfigure -f linux5.9
 
 # Set kernel commandline

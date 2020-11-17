@@ -28,8 +28,11 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "ycgdaimD:s:" opt; do
+while getopts "eycgdaimD:s:" opt; do
   case "${opt}" in
+    e)
+      ENCRYPT=1
+      ;;
     y)
       YAML=1
       ;;
@@ -130,5 +133,5 @@ fi
 
 # Create an image
 if ((IMAGE)) ; then
-  sudo env MUSL="${MUSL}" ./image.sh "${TESTDIR}" "${SIZE}"
+  sudo env ENCRYPT="${ENCRYPT}" MUSL="${MUSL}" ./image.sh "${TESTDIR}" "${SIZE}"
 fi
