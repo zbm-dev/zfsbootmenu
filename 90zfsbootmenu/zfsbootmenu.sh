@@ -309,6 +309,19 @@ while true; do
             BE_SELECTED=1
             continue
           ;;
+          # Check avail space early in the process
+          "enter")
+            avail_space_exact="$( zfs list -p -H -o available "${selected_snap%/*}" )"
+            be_size_exact="$( zfs list -p -H -o refer "${selected_snap}" )"
+            leftover_space=$(( avail_space_exact - be_size_exact ))
+            if [ "${leftover_space}" -le 0 ]; then
+              avail_space="$( zfs list -H -o available "${selected_snap%/*}" )"
+              be_size="$( zfs list -H -o refer "${selected_snap}" )"
+              delay=10 warning_prompt "Insufficient space in '${selected_snap%/*}' for duplication" \
+                "${avail_space} available, ${be_size} needed"
+              continue
+            fi
+          ;;
         esac
 
         # Strip parent datasets

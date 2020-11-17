@@ -735,12 +735,10 @@ has_resume_device() {
 # returns: nothing
 
 warning_prompt() {
-  local delay prompt warning x y
+  local prompt x y
 
-  warning="$1"
-  [ -n "${warning}" ] || return
-
-  delay="${2:-30}"
+  [ $# -gt 0 ] || return
+  [ -n "${delay}" ] || delay="30"
 
   prompt="Press [ENTER] or wait ${delay} seconds to continue"
 
@@ -750,10 +748,15 @@ warning_prompt() {
   tput clear
 
   x=$(( (HEIGHT - 0) / 2))
-  y=$(( (WIDTH - ${#warning}) / 2 ))
 
-  tput cup $x $y
-  echo -n "${warning}"
+  while [ $# -gt 0 ]; do
+    local line=${1}
+    y=$(( (WIDTH - ${#line}) / 2 ))
+    tput cup $x $y
+    echo -n "${line}"
+    x=$(( x + 1 ))
+    shift
+  done
 
   x=$(( x + 1 ))
   y=$(( (WIDTH - ${#prompt}) / 2 ))
