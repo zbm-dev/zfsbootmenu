@@ -739,8 +739,7 @@ warning_prompt() {
 
   [ $# -gt 0 ] || return
   [ -n "${delay}" ] || delay="30"
-
-  prompt="Press [ENTER] or wait ${delay} seconds to continue"
+  [ -n "${prompt}" ] || prompt="Press [ENTER] or wait %0.2d seconds to continue"
 
   tput civis
   HEIGHT=$( tput lines )
@@ -753,19 +752,33 @@ warning_prompt() {
     local line=${1}
     y=$(( (WIDTH - ${#line}) / 2 ))
     tput cup $x $y
-    echo -n "${line}"
+    line="${line//\[/\\033\[0;32m\[}"
+    line="${line//\]/\]\\033\[0m}"
+    echo -n -e "${line}"
     x=$(( x + 1 ))
     shift
   done
 
-  x=$(( x + 1 ))
-  y=$(( (WIDTH - ${#prompt}) / 2 ))
-  tput cup $x $y
-  echo -n "${prompt}"
+  IFS=''
+  for (( i=delay; i>0; i-- )); do
+    # shellcheck disable=SC2059
+    mes="$( printf "${prompt}" "${i}" )"
+    y=$(( (WIDTH - ${#mes}) / 2 ))
+    tput cup $x $y
+    echo -ne "${mes}"
 
-  # shellcheck disable=SC2162
-  read -s -N 1 -t "${delay}" key
-  tput clear
+    # shellcheck disable=SC2162
+    read -s -N 1 -t 1 key
+    # escape key
+    if [ "$key" = $'\e' ]; then
+      return 1
+    # enter key
+    elif [ "$key" = $'\x0a' ]; then
+      return 0
+    fi
+  done
+
+  return 0
 }
 
 # arg1: pool name

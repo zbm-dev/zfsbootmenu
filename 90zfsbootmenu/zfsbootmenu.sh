@@ -20,8 +20,6 @@ echo "Loading boot menu ..."
 TERM=linux
 tput reset
 
-OLDIFS="$IFS"
-
 if command -v fzf >/dev/null 2>&1; then
   export FUZZYSEL=fzf
   #shellcheck disable=SC2016
@@ -119,72 +117,19 @@ while read -r line; do
 done <<<"$( zpool list -H -o bootfs ${boot_pool} )"
 
 # If BOOTFS is not empty display the fast boot menu
-fast_boot=0
 if [[ -n "${BOOTFS}" ]]; then
   # Draw a countdown menu
   # shellcheck disable=SC2154
   if [[ ${menu_timeout} -gt 0 ]]; then
-    # Clear the screen
-    tput civis
-    HEIGHT=$(tput lines)
-    WIDTH=$(tput cols)
-    tput clear
-
-    # Draw the line centered on the screen
-    mes="[ENTER] to boot"
-    x=$(( (HEIGHT - 0) / 2 ))
-    y=$(( (WIDTH - ${#mes}) / 2 ))
-    tput cup $x $y
-    echo -n "${mes}"
-
-    # Draw the line centered on the screen
-    mes="[ESC] boot menu"
-    x=$(( x + 1 ))
-    y=$(( (WIDTH - ${#mes}) / 2 ))
-    tput cup $x $y
-    echo -n "${mes}"
-
-    x=$(( x + 1 ))
-    tput cup $x $y
-
-    IFS=''
-    for (( i=menu_timeout; i>0; i--)); do
-      mes="$( printf 'Booting %s in %0.2d seconds' "${BOOTFS}" "${i}" )"
-      y=$(( (WIDTH - ${#mes}) / 2 ))
-      tput cup $x $y
-      echo -ne "${mes}"
-
-      # Wait 1 second for input
-      # shellcheck disable=SC2162
-      read -s -N 1 -t 1 key
-      # Escape key
-      if [ "$key" = $'\e' ]; then
-        break
-      # Enter key
-      elif [ "$key" = $'\x0a' ]; then
-        fast_boot=1
-        break
-      fi
-    done
-    IFS="${OLDIFS}"
-  elif [[ ${menu_timeout} -eq 0 ]]; then
-    # Bypass the menu, immediately boot $BOOTFS
-    fast_boot=1
-  else
-    # Make sure we bypass the other fastboot check
-    i=1
-  fi
-
-  # Boot up if we timed out, or if the enter key was pressed
-  # shellcheck disable=SC2034
-  if [[ ${fast_boot} -eq 1 || $i -eq 0 ]]; then
-    # Clear screen before a possible password prompt
-    tput clear
-    if ! key_wrapper "${BOOTFS}" ; then
-      emergency_shell "unable to load required key for ${BOOTFS}"
-    elif output=$( find_be_kernels "${BOOTFS}" ); then
+    if delay=10 prompt="Booting in %0.2d seconds" warning_prompt "[ENTER] to boot ${BOOTFS}" "[ESC] boot menu" ; then
+      # Clear screen before a possible password prompt
+      tput clear
+      if ! key_wrapper "${BOOTFS}" ; then
+        emergency_shell "unable to load required key for ${BOOTFS}"
+      elif  find_be_kernels "${BOOTFS}" ; then
       # Automatically select a kernel and boot it
-      kexec_kernel "$( select_kernel "${BOOTFS}" )"
+        kexec_kernel "$( select_kernel "${BOOTFS}" )"
+      fi
     fi
   fi
 fi
@@ -309,7 +254,7 @@ while true; do
             BE_SELECTED=1
             continue
           ;;
-          # Check avail space early in the process
+          # Check available space early in the process
           "enter")
             avail_space_exact="$( zfs list -p -H -o available "${selected_snap%/*}" )"
             be_size_exact="$( zfs list -p -H -o refer "${selected_snap}" )"
