@@ -237,7 +237,7 @@ kexec_kernel() {
 
   # Export if read-write, to ensure a clean pool
   pool="${selected%%/*}"
-  if [ "$( zpool get -H -o value readonly "${pool}" )" = "off" ]; then
+  if is_writable "${pool}"; then
     export_pool "${pool}"
   fi
 
@@ -854,6 +854,27 @@ resume_prompt() {
 }
 
 # arg1: pool name
+# prints nothing
+# returns: 0 when pool is writable, 1 otherwise
+
+is_writable() {
+  local pool roflag
+
+  pool="${1}"
+  [ -n "${pool}" ] || return 1
+
+  # Pool is not writable if the property can't be read
+  roflag="$( zpool get -H -o value readonly "${pool}" 2>/dev/null )" || return 1
+
+  if [ "x${roflag}" = "xoff" ]; then
+    return 0
+  fi
+
+  # Otherwise, pool is not writable
+  return 1
+}
+
+# arg1: pool name
 # prints: nothing
 # returns: 0 on success, 1 on failure
 
@@ -863,14 +884,14 @@ set_rw_pool() {
   pool="${1}"
   [ -n "${pool}" ] || return 1
 
+  # If force_export is set, skip evaluating if the pool is already read-write
+  # shellcheck disable=SC2154
+  [ -n "${force_export}" ] || ! is_writable "${pool}" || return 0
+
   if grep -q "${pool}" "${BASE}/degraded" >/dev/null 2>&1; then
     color=red delay=10 timed_prompt "Operation prohibited" "Pool '${pool}' cannot be imported read-write"
     return 1
   fi
-
-  # If force_export is set, skip evaluating if the pool is already read-write
-  # shellcheck disable=SC2154
-  [ -n "${force_export}" ] || [ "x$( zpool get -H -o value readonly "${pool}" )" = "xon" ] || return 0
 
   resume_prompt "${pool}" || return 1
 

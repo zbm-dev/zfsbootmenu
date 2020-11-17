@@ -126,8 +126,8 @@ if [[ -n "${BOOTFS}" ]]; then
       tput clear
       if ! key_wrapper "${BOOTFS}" ; then
         emergency_shell "unable to load required key for ${BOOTFS}"
-      elif  find_be_kernels "${BOOTFS}" ; then
-      # Automatically select a kernel and boot it
+      elif find_be_kernels "${BOOTFS}" ; then
+        # Automatically select a kernel and boot it
         kexec_kernel "$( select_kernel "${BOOTFS}" )"
       fi
     fi
@@ -256,14 +256,14 @@ while true; do
           ;;
           # Check available space early in the process
           "enter")
-            avail_space_exact="$( zfs list -p -H -o available "${selected_snap%/*}" )"
+            avail_space_exact="$( zfs list -p -H -o available "${parent_ds}" )"
             be_size_exact="$( zfs list -p -H -o refer "${selected_snap}" )"
             leftover_space=$(( avail_space_exact - be_size_exact ))
             if [ "${leftover_space}" -le 0 ]; then
-              avail_space="$( zfs list -H -o available "${selected_snap%/*}" )"
+              avail_space="$( zfs list -H -o available "${parent_ds}" )"
               be_size="$( zfs list -H -o refer "${selected_snap}" )"
               color=red delay=10 timed_prompt "Insufficient space for duplication" \
-                "'${selected_snap%/*}' has ${avail_space} free but needs ${be_size}"
+                "'${parent_ds}' has ${avail_space} free but needs ${be_size}"
               continue
             fi
           ;;
@@ -322,7 +322,17 @@ while true; do
         ;;
       "alt-w")
         pool="${selected_be%%/*}"
-        if set_rw_pool "${pool}"; then
+        need_key=''
+
+        if is_writable "${pool}"; then
+          if export_pool "${pool}" && read_write='' import_pool "${pool}"; then
+            need_key=1
+          fi
+        elif set_rw_pool "${pool}"; then
+          need_key=1
+        fi
+
+        if [ -n "${need_key}" ]; then
           CLEAR_SCREEN=1 key_wrapper "${pool}"
         fi
         ;;
