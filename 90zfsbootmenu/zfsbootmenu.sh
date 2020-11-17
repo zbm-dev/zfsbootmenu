@@ -121,7 +121,7 @@ if [[ -n "${BOOTFS}" ]]; then
   # Draw a countdown menu
   # shellcheck disable=SC2154
   if [[ ${menu_timeout} -gt 0 ]]; then
-    if delay="${menu_timeout}" prompt="Booting in %0.2d seconds" timed_prompt "[ENTER] to boot ${BOOTFS}" "[ESC] boot menu" ; then
+    if delay="${menu_timeout}" prompt="Booting ${BOOTFS} in %0.2d seconds" timed_prompt "[ENTER] to boot" "[ESC] boot menu" ; then
       # Clear screen before a possible password prompt
       tput clear
       if ! key_wrapper "${BOOTFS}" ; then
