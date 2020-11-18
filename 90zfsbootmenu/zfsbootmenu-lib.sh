@@ -355,6 +355,10 @@ set_default_kernel() {
   return 0
 }
 
+# arg1: ZFS filesystem
+# prints: nothing
+# returns: nothing
+
 set_default_env() {
   local selected pool output
   selected="${1}"
