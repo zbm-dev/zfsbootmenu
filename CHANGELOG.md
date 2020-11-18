@@ -1,3 +1,17 @@
+# ZFSBootMenu v1.7.1 (2020-11-18)
+
+This is a minor bug-fix release.
+
+## Fixes
+* When ZFSBootMenu fails to import any usable pools on startup and drops to an emergency shell, the user can now manually import a pool if possible and exit the shell to attempt to continue the boot process. Previously, a reboot was required to retry the boot process.
+* An oversight in the loading of encryption keys caused a harmless error message to be displayed above the password prompt. This oversight has been fixed and the error no longer appears.
+* Changes made to the handling of `/etc/hostid` in the ZFSBootMenu dracut module in anticipation of similar changes in the upcoming OpenZFS 2.0.0 release. This caused inconsistent behavior on systems using the musl C library with current versions of ZFS on Linux, resulting in potentially unbootable systems without forcing the `spl_hostid` command-line parameter. Now, the ZFSBootMenu dracut module attempts to discover the installed version of ZFS and behave consistently.
+
+## Significant commits in this release
+940cd4c - Fall back to legacy hostid creation for ZFS < 2.0 (Andrew J. Hesford)
+6cc0076 - Fix key_wrapper calls with out CLEAR_SCREEN defined (Zach Dykstra)
+65a1a33 - Loop the emergency shell when initial pool imports fail (Andrew J. Hesford)
+
 # ZFSBootMenu v1.7.0 (2020-11-15)
 
 In addition to a bug fixes, this release targets refinements that improve usability and offer contextual help within the menus.
@@ -15,14 +29,14 @@ In addition to a bug fixes, this release targets refinements that improve usabil
 * When `generate-zbm` fails to parse the YAML configuration, more detailed messages pinpoint parsing errors.
 
 ## Significant commits in this release
-dbe91a1 - Fix console handling when attached to a serial line (Andrew J. Hesford)
-9959d10 - Respect ZFS hostid behavior on musl (Andrew J. Hesford)
-f4a60e6 - Capture and print config.yaml eval failure (Zach Dykstra)
-2ebad45 - Sort environments, fix preview (Zach Dykstra)
-cc6e27c - Control size/target of ZFSBootMenu output (Zach Dykstra)
-bb294b3 - Enable dynamic line wrapping for header (Zach Dykstra)
-8993591 - Enable global help system (Zach Dykstra)
-7879876 - Read-only helpers (Zach Dykstra)
+* dbe91a1 - Fix console handling when attached to a serial line (Andrew J. Hesford)
+* 9959d10 - Respect ZFS hostid behavior on musl (Andrew J. Hesford)
+* f4a60e6 - Capture and print config.yaml eval failure (Zach Dykstra)
+* 2ebad45 - Sort environments, fix preview (Zach Dykstra)
+* cc6e27c - Control size/target of ZFSBootMenu output (Zach Dykstra)
+* bb294b3 - Enable dynamic line wrapping for header (Zach Dykstra)
+* 8993591 - Enable global help system (Zach Dykstra)
+* 7879876 - Read-only helpers (Zach Dykstra)
 
 # ZFSBootMenu v1.6.1 (2020-10-27)
 
@@ -64,7 +78,6 @@ This release brings significant improvements to the pool import process. Previou
 * Global image creation can be toggled via `generate-zbm --enable` or `generate-zbm --disable`
 
 ## Significant commits in this release
-
 * cfec416 - Support automatic "noresume" when importing pools R/W (Andrew J. Hesford)
 * a6a36bf - Add support for pool status and checkpoints (Zach Dykstra)
 * 79bcca3 - Fix logic inversion in import_pool handling of $read_write (Andrew J. Hesford)
