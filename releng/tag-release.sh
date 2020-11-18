@@ -90,5 +90,11 @@ if echo "${release}" | grep -q "[A-Za-z]"; then
   prerelease="--prerelease"
 fi
 
-# Hub creates the tag for us
-hub release create ${prerelease} -F "${relnotes}" "${tag}"
+# Use github-cli or hub to push the release
+if command -v gh >/dev/null 2>&1; then
+  gh release create "${tag}" ${prerelease} -F "${relnotes}"
+elif command -v hub >/dev/null 2>&1; then
+  hub release create ${prerelease} -F "${relnotes}" "${tag}"
+else
+  error "ERROR: Please install github-cli or hub"
+fi
