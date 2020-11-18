@@ -92,7 +92,9 @@ fi
 
 # Use github-cli or hub to push the release
 if command -v gh >/dev/null 2>&1; then
-  gh release create "${tag}" ${prerelease} -F "${relnotes}"
+  # github-cli does not automatically strip header that hub uses for a title
+  sed -i '1,/^$/d' "${relnotes}"
+  gh release create "${tag}" ${prerelease} -F "${relnotes}" -t "ZFSBootMenu ${tag}"
 elif command -v hub >/dev/null 2>&1; then
   hub release create ${prerelease} -F "${relnotes}" "${tag}"
 else
