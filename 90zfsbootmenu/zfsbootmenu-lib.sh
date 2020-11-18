@@ -904,6 +904,9 @@ load_key() {
   local encroot ret key keyformat keylocation
   encroot="${1}"
 
+  # Default to 0 when unset
+  [ -n "${CLEAR_SCREEN}" ] || CLEAR_SCREEN=0
+
   keylocation="$( zfs get -H -o value keylocation "${encroot}" )"
   if [ "${keylocation}" = "prompt" ]; then
     if [ "${CLEAR_SCREEN}" -eq 1 ] ; then
