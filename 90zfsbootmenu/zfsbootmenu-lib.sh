@@ -773,7 +773,6 @@ timed_prompt() {
   done
   [ -n "${cnum}" ] && tput sgr0
 
-  IFS=''
   for (( i=delay; i>0; i-- )); do
     # shellcheck disable=SC2059
     mes="$( printf "${prompt}" "${i}" )"
@@ -782,7 +781,7 @@ timed_prompt() {
     echo -ne "${mes}"
 
     # shellcheck disable=SC2162
-    read -s -N 1 -t 1 key
+    IFS='' read -s -N 1 -t 1 key
     # escape key
     if [ "$key" = $'\e' ]; then
       return 1
