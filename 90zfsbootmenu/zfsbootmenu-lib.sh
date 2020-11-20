@@ -773,6 +773,8 @@ timed_prompt() {
   done
   [ -n "${cnum}" ] && tput sgr0
 
+  # Restore the IFS before leaving this function!
+  local OLDIFS="$IFS"
   IFS=''
   for (( i=delay; i>0; i-- )); do
     # shellcheck disable=SC2059
@@ -785,13 +787,16 @@ timed_prompt() {
     read -s -N 1 -t 1 key
     # escape key
     if [ "$key" = $'\e' ]; then
+      IFS="$OLDIFS"
       return 1
     # enter key
     elif [ "$key" = $'\x0a' ]; then
+      IFS="$OLDIFS"
       return 0
     fi
   done
 
+  IFS="$OLDIFS"
   return 0
 }
 
