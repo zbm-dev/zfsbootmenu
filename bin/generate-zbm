@@ -9,7 +9,7 @@ our $VERSION = '1.7.1';
 use Getopt::Long qw(:config no_ignore_case auto_version);
 use Pod::Usage qw(pod2usage);
 use File::Basename;
-use File::Temp qw(tempdir);
+use File::Temp qw(tempdir tempfile);
 use File::Copy;
 use File::stat;
 use File::Path qw(make_path remove_tree);
@@ -297,12 +297,12 @@ if ( enabled $config{EFI} ) {
 
   my $efi_target;
 
-  my $efi_prefix =
-    sprintf( "%s/%s", $config{EFI}{ImageDir}, $runConf{kernel_prefix} );
+  my $efi_prefix = sprintf( "%s/%s", $config{EFI}{ImageDir}, $runConf{kernel_prefix} );
   Log("Setting \$efi_prefix: $efi_prefix");
+
   my $efi_versions = int $config{EFI}{Versions};
 
-  my $postAction;
+  make_path $config{EFI}{ImageDir};
 
   if ( $efi_versions > 0 ) {
     Log("EFI.Versions is $efi_versions");
@@ -313,35 +313,43 @@ if ( enabled $config{EFI} ) {
     Log($efi_groups);
 
     # Determine the revision to use for this image
-    my $revision =
-      maxRevision( $efi_groups->{ $runConf{version} }, ".EFI" ) + 1;
+    my $revision = maxRevision( $efi_groups->{ $runConf{version} }, ".EFI" ) + 1;
     $efi_target = sprintf( "%s-%s_%s.EFI", $efi_prefix, $runConf{version}, $revision );
     Log("Setting \$efi_target: $efi_target");
 
-    $postAction = sub {
-
-      # Prune the old versions
-      pruneVersions( $efi_groups, $runConf{version}, $efi_versions );
+    # Attempt to copy the file, clean up if it does not
+    unless ( safeCopy( $unified_efi, $efi_target, 0 ) ) {
+      verboseUnlink( $efi_target, "Failed to create $efi_target" );
+      exit 1;
     }
+
+    # Prune the old versions
+    pruneVersions( $efi_groups, $runConf{version}, $efi_versions );
   } else {
-    $postAction = sub {
-      $efi_target = sprintf( "%s.EFI", $efi_prefix );
-      my $efi_backup = sprintf( "%s-backup.EFI", $efi_prefix );
+    $efi_target = sprintf( "%s.EFI", $efi_prefix );
 
-      if ( -f $efi_target and safeCopy( $efi_target, $efi_backup ) ) {
-        printf "Created backup %s -> %s\n", $efi_target, $efi_backup;
-      }
+    # Copy to a placeholder location to ensure success
+    my ( $efi_fh, $efi_tempfile ) = tempfile( "zbm.XXXXXX", DIR => $config{EFI}{ImageDir}, UNLINK => 0 );
+    close $efi_fh;
+
+    unless ( safeCopy( $unified_efi, $efi_tempfile, 0 ) ) {
+      verboseUnlink( $efi_tempfile, "Failed to create $efi_target" );
+      exit 1;
+    }
+
+    # Roll backups
+    my $efi_backup = sprintf( "%s-backup.EFI", $efi_prefix );
+    if ( -f $efi_target and rename( $efi_target, $efi_backup ) ) {
+      printf "Created backup %s -> %s\n", $efi_target, $efi_backup;
+    }
+
+    unless ( rename( $efi_tempfile, $efi_target ) ) {
+      verboseUnlink( $efi_tempfile, "Failed to create $efi_target" );
+      exit 1;
     }
   }
 
-  make_path $config{EFI}{ImageDir};
-  unless ( safeCopy( $unified_efi, $efi_target, 0 ) ) {
-    verboseUnlink($efi_target);
-    exit 1;
-  }
   printf "Created new UEFI image %s\n", $efi_target;
-
-  $postAction->();
 }
 
 # Create a separate kernel / initramfs. Used by syslinux/extlinux/grub.
@@ -353,7 +361,7 @@ if ( enabled $config{Components} ) {
   my $component_prefix   = sprintf( "%s/%s", $config{Components}{ImageDir}, $runConf{kernel_prefix} );
   my $component_versions = int $config{Components}{Versions};
 
-  my $postAction;
+  make_path $config{Components}{ImageDir};
 
   if ( $component_versions > 0 ) {
 
@@ -366,59 +374,76 @@ if ( enabled $config{Components} ) {
     $initramfs_target =
       sprintf( "%s/initramfs-%s_%s.img", $config{Components}{ImageDir}, $runConf{version}, $revision );
 
-    $postAction = sub {
-
-      # Prune old versions
-      pruneVersions( $kern_groups, $runConf{version}, $component_versions );
-
-      # Map kernel to initramfs and prune
-      keys %$kern_groups;
-      while ( my ( $kver, $image ) = each %$kern_groups ) {
-        foreach (@$image) {
-          s/\Q$component_prefix\E/$config{Components}{ImageDir}\/initramfs/;
-          s/$/.img/;
-        }
-      }
-      pruneVersions( $kern_groups, $runConf{version}, $component_versions );
+    unless ( safeCopy( $initramfs, $initramfs_target, 0 ) ) {
+      verboseUnlink( $initramfs_target, "Failed to create $initramfs_target" );
+      exit 1;
     }
+
+    unless ( safeCopy( $runConf{kernel}, $kernel_target, 0 ) ) {
+      verboseUnlink( $kernel_target,    "Failed to create $kernel_target" );
+      verboseUnlink( $initramfs_target, "" );
+      exit 1;
+    }
+
+    # Prune old versions of the kernel
+    pruneVersions( $kern_groups, $runConf{version}, $component_versions );
+
+    # Map each kernel to initramfs and prune those too
+    keys %$kern_groups;
+    while ( my ( $kver, $image ) = each %$kern_groups ) {
+      foreach (@$image) {
+        s/\Q$component_prefix\E/$config{Components}{ImageDir}\/initramfs/;
+        s/$/.img/;
+      }
+    }
+    pruneVersions( $kern_groups, $runConf{version}, $component_versions );
   } else {
-    $kernel_target = sprintf( "%s-bootmenu", $component_prefix );
-    $initramfs_target =
-      sprintf( "%s/initramfs-bootmenu.img", $config{Components}{ImageDir} );
+    $kernel_target    = sprintf( "%s-bootmenu",               $component_prefix );
+    $initramfs_target = sprintf( "%s/initramfs-bootmenu.img", $config{Components}{ImageDir} );
 
-    my $kernel_backup    = sprintf( "%s-backup",                        $kernel_target );
+    # Copy to a placeholder location to ensure success
+    my ( $init_fh, $init_tempfile ) = tempfile( "init.XXXXXX", DIR => $config{Components}{ImageDir}, UNLINK => 0 );
+    close $init_fh;
+
+    unless ( safeCopy( $initramfs, $init_tempfile, 0 ) ) {
+      verboseUnlink( $init_tempfile, "Failed to create $initramfs_target" );
+      exit 1;
+    }
+
+    my ( $kern_fh, $kern_tempfile ) = tempfile( "kern.XXXXXX", DIR => $config{Components}{ImageDir}, UNLINK => 0 );
+    close $kern_fh;
+
+    unless ( safeCopy( $runConf{kernel}, $kern_tempfile, 0 ) ) {
+      verboseUnlink( $kern_tempfile, "Failed to create $kernel_target" );
+      verboseUnlink( $init_tempfile, "" );
+      exit 1;
+    }
+
+    # Roll backups
+    my $kernel_backup = sprintf( "%s-backup", $kernel_target );
+    if ( -f $kernel_target and rename( $kernel_target, $kernel_backup ) ) {
+      printf "Created backup %s -> %s\n", $kernel_target, $kernel_backup;
+    }
+
     my $initramfs_backup = sprintf( "%s/initramfs-bootmenu-backup.img", $config{Components}{ImageDir} );
+    if ( -f $initramfs_target and rename( $initramfs_target, $initramfs_backup ) ) {
+      printf "Created backup %s -> %s\n", $initramfs_target, $initramfs_backup;
+    }
 
-    $postAction = sub {
-      if ( -f $kernel_target
-        and safeCopy( $kernel_target, $kernel_backup ) )
-      {
-        printf "Created backup %s -> %s\n", $kernel_target, $kernel_backup;
-      }
+    unless ( rename( $init_tempfile, $initramfs_target ) ) {
+      verboseUnlink( $init_tempfile, "Failed to create $initramfs_target" );
+      verboseUnlink( $kern_tempfile, "" );
+      exit 1;
+    }
 
-      if ( -f $initramfs_target
-        and safeCopy( $initramfs_target, $initramfs_backup ) )
-      {
-        printf "Created backup %s -> %s\n", $initramfs_target, $initramfs_backup;
-      }
+    unless ( rename( $kern_tempfile, $kernel_target ) ) {
+      verboseUnlink( $kern_tempfile, "Failed to create $kernel_target" );
+      exit 1;
     }
   }
 
-  make_path $config{Components}{ImageDir};
-
-  unless ( safeCopy( $initramfs, $initramfs_target, 0 ) ) {
-    verboseUnlink($initramfs_target);
-    exit 1;
-  }
   printf "Created initramfs image %s\n", $initramfs_target;
-
-  unless ( safeCopy( $runConf{kernel}, $kernel_target, 0 ) ) {
-    verboseUnlink($kernel_target);
-    exit 1;
-  }
-  printf "Created kernel image %s\n", $kernel_target;
-
-  $postAction->();
+  printf "Created kernel image %s\n",    $kernel_target;
 }
 
 # Generate syslinux.cfg, requires components to be built
@@ -705,14 +730,21 @@ sub purgeFiles {
 }
 
 sub verboseUnlink {
-  my $file = shift;
+  my ( $file, $message ) = @_;
 
   return unless ( -f $file );
 
+  # If a message is defined, display regardless of unlink success
+  if ( defined $message and ( $message ne "" ) ) {
+    print "$message\n";
+  }
+
   if ( unlink $file ) {
-    print "Removed file $file\n";
+
+    # Print a default success message if none was defined
+    print "Removed file $file\n" unless ( defined $message );
   } else {
-    print "Unable to remove $file: $!\n";
+    print "ERROR: unable to remove $file: $!\n";
   }
 }
 
