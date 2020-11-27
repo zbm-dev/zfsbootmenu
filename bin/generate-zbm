@@ -590,9 +590,8 @@ sub execute {
 sub safeCopy {
   my ( $source, $dest, $savetime ) = @_;
 
-  Log("safeCopy called with: $source, $dest, $savetime");
-
   my $preserve = ( defined $savetime ) ? boolean($savetime) : true;
+  Log("safeCopy called with: $source, $dest, $preserve");
 
   unless ( copy( $source, $dest ) ) {
     printf "Unable to copy %s to %s: %s\n", $source, $dest, $!;
