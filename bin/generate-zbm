@@ -72,6 +72,7 @@ GetOptions(
   "config|c=s"  => \$runConf{config},
   "enable"      => \$runConf{enable},
   "disable"     => \$runConf{disable},
+  "debug|d"     => \$runConf{debug},
   "help|h"      => sub {
     pod2usage( -verbose => 2 );
     exit;
@@ -544,6 +545,7 @@ sub safeCopy {
   my ( $source, $dest, $savetime ) = @_;
 
   my $preserve = ( defined $savetime ) ? boolean($savetime) : true;
+  Log("safeCopy called with: $source, $dest, $preserve");
 
   unless ( copy( $source, $dest ) ) {
     printf "Unable to copy %s to %s: %s\n", $source, $dest, $!;
@@ -617,6 +619,9 @@ sub groupKernels {
 sub pruneVersions {
   my ( $versions, $current, $keep ) = @_;
   my $old_version;
+
+  Log("pruneVersions called with: $current, $keep");
+  Log($versions);
 
   $keep = 0 unless ( defined $keep and $keep gt 0 );
 
@@ -733,6 +738,18 @@ sub convertImageConfig {
 
   delete $section->{Versioned};
   delete $section->{Copies};
+}
+
+sub Log {
+  my $entry = shift;
+
+  return unless $runConf{debug};
+  chomp($entry);
+  unless ( ref($entry) ) {
+    print STDERR "## $entry\n";
+  } else {
+    print STDERR Dumper($entry);
+  }
 }
 
 __END__
