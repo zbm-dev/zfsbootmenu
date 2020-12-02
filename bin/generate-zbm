@@ -206,7 +206,6 @@ my $tempdir = $dir->dirname;
 if ( nonempty $config{Kernel}{Path} and !nonempty $runConf{kernel} ) {
   $runConf{kernel} = $config{Kernel}{Path};
 }
-
 if ( nonempty $config{Kernel}{Prefix} and !nonempty $runConf{kernel_prefix} ) {
   $runConf{kernel_prefix} = $config{Kernel}{Prefix};
 }
@@ -537,6 +536,7 @@ sub latestKernel {
     my @kernels = glob($glob);
     next if !@kernels;
     for ( sort { versioncmp( $b, $a ) } @kernels ) {
+      Log("Latest kernel: $_");
       return $_;
     }
   }
@@ -580,6 +580,9 @@ sub createInitramfs {
   }
 
   push( @cmd, ( $output_file, $kver ) );
+
+  my $command = join(' ', @cmd);
+  Log("Executing: $command");
 
   my @output = execute(@cmd);
   my $status = pop(@output);
@@ -656,6 +659,7 @@ sub maxRevision {
     }
   }
 
+  Log("maxRevision discovered: $revision");
   return $revision;
 }
 
@@ -877,6 +881,10 @@ Set the I<Global.ManageImages> option to true, enabling image generation.
 =item B<--disable>
 
 Set the I<Global.ManageImages> option to false, disabling image generation.
+
+=item B<--debug|d>
+
+Enable debug output
 
 =back
 
