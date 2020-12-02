@@ -35,7 +35,6 @@ use constant REFARRAY => ref [];
 sub versionedKernel;
 sub latestKernel;
 sub createInitramfs;
-sub unifiedEFI;
 sub execute;
 sub safeCopy;
 sub nonempty;
@@ -289,7 +288,7 @@ printf "Creating ZFSBootMenu %s from kernel %s\n", $runConf{version}, $runConf{k
 
 # Create a unified kernel/initramfs/command line EFI file
 if ( enabled $config{EFI} ) {
-  my $unified_efi = unifiedEFI( $tempdir, $runConf{kernel}, $runConf{kernel_version} );
+  my $unified_efi = createInitramfs( $tempdir, $runConf{kernel_version}, $runConf{kernel} );
 
   my $efi_target;
 
@@ -477,10 +476,11 @@ sub latestKernel {
 
 # Returns the path to an initramfs, or dies with an error
 sub createInitramfs {
-  my ( $temp, $kver ) = @_;
+  my ( $imagedir, $kver, $kernfile ) = @_;
 
-  my $output_file = join( '/', $temp, "zfsbootmenu" );
-  my @cmd         = ( qw(dracut -q -f --confdir), $runConf{confd}, $output_file, qw(--kver), $kver, );
+  my $output_file = join( '/', $imagedir, "zfsbootmenu.img" );
+
+  my @cmd = ( qw(dracut -q -f --confdir), $runConf{confd} );
 
   if ( defined $config{Global}{DracutFlags} ) {
     if ( ref $config{Global}{DracutFlags} eq REFARRAY ) {
@@ -492,37 +492,24 @@ sub createInitramfs {
     }
   }
 
-  my @output = execute(@cmd);
-  my $status = pop(@output);
-  if ( $status eq 0 ) {
-    return $output_file;
-  } else {
-    foreach my $line (@output) {
-      print $line;
+  # If $kernfile is provided, make a unified EFI image with the named kernel
+  if ( defined $kernfile ) {
+    my $efi_stub = $config{EFI}{Stub} || "/usr/lib/gummiboot/linuxx64.efi.stub";
+
+    unless ( -e $efi_stub ) {
+      die "Missing EFI stub: $efi_stub";
     }
-    print "Failed to create $output_file\n";
-    exit $status;
-  }
-}
 
-sub unifiedEFI {
-  my ( $temp, $kernfile, $kver ) = @_;
+    push( @cmd, ( qw(--uefi --uefi-stub), $efi_stub, qq(--kernel-image), $kernfile ) );
 
-  my $output_file = join( '/', $temp, "zfsbootmenu.efi" );
-  my $efi_stub    = $config{EFI}{Stub} || "/usr/lib/gummiboot/linuxx64.efi.stub";
+    if ( nonempty $runConf{cmdline} ) {
+      push( @cmd, qq(--kernel-cmdline=\"$runConf{cmdline}\") );
+    }
 
-  unless ( -e $efi_stub ) {
-    die "Missing EFI stub: $efi_stub";
+    $output_file = join( '/', $imagedir, "zfsbootmenu.efi" );
   }
 
-  my @cmd =
-    ( qw(dracut -q -f --uefi --confdir), $runConf{confd}, qq(--uefi-stub), $efi_stub, qq(--kernel-image), $kernfile, );
-
-  if ( nonempty $runConf{cmdline} ) {
-    push( @cmd, qq(--kernel-cmdline=\"$runConf{cmdline}\") );
-  }
-
-  push( @cmd, ( qq(--kver), $kver, $output_file, ) );
+  push( @cmd, ( $output_file, $kver ) );
 
   my @output = execute(@cmd);
   my $status = pop(@output);
