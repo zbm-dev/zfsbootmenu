@@ -102,7 +102,7 @@ while IFS=$'\t' read -r _pool _property; do
 done <<<"$( zpool get all -H -o name,property )"
 
 if [ "${unsupported}" -ne 0 ]; then
-  color=red timed_prompt "Unsupported features detected" "Upgrade ZFS modules in ZFSBootMenu"
+  color=red timed_prompt "Unsupported features detected" "Upgrade ZFS modules in ZFSBootMenu with generate-zbm"
 fi
 
 # Attempt to find the bootfs property
