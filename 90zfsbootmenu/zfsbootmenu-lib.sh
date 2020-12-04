@@ -217,7 +217,7 @@ kexec_kernel() {
   mnt="$( mount_zfs "${fs}" )"
 
   ret=$?
-  if [ $ret != 0 ]; then
+  if [ $ret -ne 0 ]; then
     emergency_shell "unable to mount ${fs}"
     return 1
   fi
@@ -227,7 +227,7 @@ kexec_kernel() {
 
   # restore kernel log level just before we kexec
   # shellcheck disable=SC2154
-  echo "${printk}" > /proc/sys/kernel/printk
+  [ -n "${PRINTK}" ] && echo "${PRINTK}" > /proc/sys/kernel/printk
 
   kexec -l "${mnt}${kernel}" \
     --initrd="${mnt}${initramfs}" \

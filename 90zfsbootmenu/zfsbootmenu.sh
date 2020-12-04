@@ -1,24 +1,40 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
-# store current kernel log level
-read -r printk < /proc/sys/kernel/printk
-printk=${printk:0:1}
-
-# Set it to 0
-echo 0 > /proc/sys/kernel/printk
-
-# disable ctrl-c (SIGINT)
-trap '' SIGINT
+##
+# Look for BEs with kernels and present a selection menu
+##
 
 # shellcheck disable=SC1091
 test -f /lib/zfsbootmenu-lib.sh && source /lib/zfsbootmenu-lib.sh
 # shellcheck disable=SC1091
 test -f zfsbootmenu-lib.sh && source zfsbootmenu-lib.sh
 
-echo "Loading boot menu ..."
-TERM=linux
-tput reset
+if [ -z "${BASE}" ]; then
+  export BASE="/zfsbootmenu"
+fi
+
+while [ ! -e "${BASE}/initialized" ]; do
+  if ! delay=5 prompt="Press [ESC] to cancel" timed_prompt "Waiting for ZFSBootMenu initialization"; then
+    tput cnorm
+    tput clear
+    exit
+  fi
+done
+
+while [ -e "${BASE}/active" ]; do
+  if ! delay=5 prompt="Press [ESC] to cancel" timed_prompt "Waiting for other ZFSBootMenu instace to terminate"; then
+    tput cnorm
+    tput clear
+    exit
+  fi
+done
+
+: > "${BASE}/active"
+
+# shellcheck disable=SC2064
+trap "rm -f '${BASE}/active'" EXIT
+trap '' SIGINT
 
 if command -v fzf >/dev/null 2>&1; then
   export FUZZYSEL=fzf
@@ -32,121 +48,19 @@ elif command -v sk >/dev/null 2>&1; then
   export PREVIEW_HEIGHT=3
 fi
 
-BASE="$( mktemp -d /tmp/zfs.XXXX )"
-export BASE
-
-modprobe zfs 2>/dev/null
-udevadm settle
-
-# try to set console options for display and interaction
-# this is sometimes run as an initqueue hook, but cannot be guaranteed
-#shellcheck disable=SC2154
-test -x /lib/udev/console_init -a -c "${control_term}" \
-  && /lib/udev/console_init "${control_term##*/}" >/dev/null 2>&1
-
-# set the console size, if indicated
-#shellcheck disable=SC2154
-if [ -n "$zbm_lines" ]; then
-  stty rows "$zbm_lines"
-fi
-
-#shellcheck disable=SC2154
-if [ -n "$zbm_columns" ]; then
-  stty cols "$zbm_columns"
-fi
-
-# Attempt to import all pools read-only
-read_write='' all_pools=yes import_pool
-
-# Make sure at least one pool can be imported; if not,
-# drop to an emergency shell to allow the user to attempt recovery
-import_success=0
-while true; do
-  while IFS=$'\t' read -r _pool _health; do
-    [ -n "${_pool}" ] || continue
-
-    import_success=1
-    if [ "${_health}" != "ONLINE" ]; then
-      echo "${_pool}" >> "${BASE}/degraded"
-    fi
-  done <<<"$( zpool list -H -o name,health )"
-
-  if [ "${import_success}" -ne 1 ]; then
-    emergency_shell "unable to successfully import a pool"
-  else
-    break
-  fi
-done
-
-# Prefer a specific pool when checking for a bootfs value
-# shellcheck disable=SC2154
-if [ "${root}" = "zfsbootmenu" ]; then
-  boot_pool=
-else
-  boot_pool="${root}"
-fi
-
-# Make sure the preferred pool was imported
-if [ -n "${boot_pool}" ] && ! zpool list -H -o name "${boot_pool}" >/dev/null 2>&1; then
-  emergency_shell "\nCannot import requested pool '${boot_pool}'\nType 'exit' to try booting anyway"
-fi
-
-unsupported=0
-while IFS=$'\t' read -r _pool _property; do
-  if [[ "${_property}" =~ "unsupported@" ]]; then
-    if ! grep -q "${_pool}" "${BASE}/degraded" >/dev/null 2>&1 ; then
-      echo "${_pool}" >> "${BASE}/degraded"
-    fi
-    unsupported=1
-  fi
-done <<<"$( zpool get all -H -o name,property )"
-
-if [ "${unsupported}" -ne 0 ]; then
-  color=red timed_prompt "Unsupported features detected" "Upgrade ZFS modules in ZFSBootMenu with generate-zbm"
-fi
-
-# Attempt to find the bootfs property
-# shellcheck disable=SC2086
-while read -r line; do
-  if [ "${line}" = "-" ]; then
-    BOOTFS=
-  else
-    BOOTFS="${line}"
-    break
-  fi
-done <<<"$( zpool list -H -o bootfs ${boot_pool} )"
-
-# If BOOTFS is not empty display the fast boot menu
-if [[ -n "${BOOTFS}" ]]; then
-  # Draw a countdown menu
-  # shellcheck disable=SC2154
-  if [[ ${menu_timeout} -gt 0 ]]; then
-    if delay="${menu_timeout}" prompt="Booting ${BOOTFS} in %0.2d seconds" timed_prompt "[ENTER] to boot" "[ESC] boot menu" ; then
-      # Clear screen before a possible password prompt
-      tput clear
-      if ! key_wrapper "${BOOTFS}" ; then
-        emergency_shell "unable to load required key for ${BOOTFS}"
-      elif find_be_kernels "${BOOTFS}" ; then
-        # Automatically select a kernel and boot it
-        kexec_kernel "$( select_kernel "${BOOTFS}" )"
-      fi
-    fi
-  fi
-fi
-
-##
-# No automatic boot has taken place
-# Look for BEs with kernels and present a selection menu
-##
-
-# Clear screen before a possible password prompt
-tput clear
-
 # The menu will not work if a fuzzy menu isn't available
 if [ -z "${FUZZYSEL}" ]; then
   emergency_shell "no fuzzy menu available"
   exit
 fi
+
+if [ -r "${BASE}/bootfs" ]; then
+  read -r BOOTFS < "${BASE}/bootfs"
+  export BOOTFS
+fi
+
+# Clear screen before a possible password prompt
+tput clear
 
 BE_SELECTED=0
 
@@ -230,6 +144,7 @@ while true; do
         ;;
       "alt-d")
         set_default_env "${selected_be}"
+        echo "${BOOTFS}" > "${BASE}/bootfs"
         ;;
       "alt-s")
         selection="$( draw_snapshots "${selected_be}" )"
@@ -318,7 +233,7 @@ while true; do
         esac
         ;;
       "alt-r")
-        emergency_shell "alt-r invoked"
+        break
         ;;
       "alt-w")
         pool="${selected_be%%/*}"

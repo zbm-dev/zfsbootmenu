@@ -129,6 +129,7 @@ install() {
   _ret=0
   # shellcheck disable=SC2154
   inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh" || _ret=$?
+  inst_simple "${moddir}/zfsbootmenu-countdown.sh" "/libexec/zfsbootmenu-countdown" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu-preview.sh" "/bin/zfsbootmenu-preview.sh" || _ret=$?
   inst_simple "${moddir}/zfs-chroot" "/bin/zfs-chroot" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu.sh" "/bin/zfsbootmenu" || _ret=$?

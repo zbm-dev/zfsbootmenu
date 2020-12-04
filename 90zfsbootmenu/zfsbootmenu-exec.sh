@@ -9,4 +9,4 @@ export zbm_lines
 export zbm_columns
 
 # https://busybox.net/FAQ.html#job_control
-exec setsid bash -c "exec /bin/zfsbootmenu <${control_term} >${control_term} 2>&1"
+exec setsid bash -c "exec /libexec/zfsbootmenu-countdown <${control_term} >${control_term} 2>&1"
