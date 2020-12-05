@@ -580,6 +580,9 @@ sub createInitramfs {
   my @output = execute(@cmd);
   my $status = pop(@output);
   if ( $status eq 0 ) {
+    foreach my $line (@output) {
+      Log($line);
+    }
     return $output_file;
   } else {
     foreach my $line (@output) {

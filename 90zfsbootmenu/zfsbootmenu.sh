@@ -237,7 +237,7 @@ while true; do
         ;;
       "alt-w")
         pool="${selected_be%%/*}"
-        need_key=''
+        need_key=0
 
         if is_writable "${pool}"; then
           if export_pool "${pool}" && read_write='' import_pool "${pool}"; then
@@ -247,8 +247,8 @@ while true; do
           need_key=1
         fi
 
-        if [ -n "${need_key}" ]; then
-          CLEAR_SCREEN=1 key_wrapper "${pool}"
+        if [ "$need_key" -eq 1 ]; then
+          CLEAR_SCREEN=1 load_key "${selected_be}"
         fi
         ;;
       "alt-c")

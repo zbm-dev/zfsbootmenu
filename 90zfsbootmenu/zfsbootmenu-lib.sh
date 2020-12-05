@@ -6,11 +6,16 @@
 # arg1: ZFS filesystem name
 # prints: mountpoint
 # returns: 0 on success
+#
+# If the filesystem is locked, this method fails without attempting unlock
 
 mount_zfs() {
   local fs mnt ret
 
   fs="${1}"
+  if be_is_locked "${fs}" >/dev/null; then
+    return 1
+  fi
 
   mnt="${BASE}/${fs}/mnt"
   test -d "${mnt}" || mkdir -p "${mnt}"
@@ -146,18 +151,18 @@ draw_snapshots() {
 # returns: nothing
 
 draw_diff() {
-  local snapshot diff_target mnt
+  local snapshot pool diff_target mnt
 
   snapshot="${1}"
   pool="${snapshot%%/*}"
 
-  if set_rw_pool "${pool}"; then
-    CLEAR_SCREEN=1 key_wrapper "${pool}"
-  else
+  if ! set_rw_pool "${pool}"; then
     return
   fi
 
   diff_target="${snapshot%%@*}"
+  CLEAR_SCREEN=1 load_key "${diff_target}"
+
   if ! mnt="$( mount_zfs "${diff_target}" )" ; then
     return
   fi
@@ -206,15 +211,16 @@ kexec_kernel() {
 
   selected="${1}"
 
-  tput cnorm
-  tput clear
-
   # zfs filesystem
   # kernel
   # initramfs
   IFS=' ' read -r fs kernel initramfs <<<"${selected}"
 
+  CLEAR_SCREEN=1 load_key "${fs}"
   mnt="$( mount_zfs "${fs}" )"
+
+  tput cnorm
+  tput clear
 
   ret=$?
   if [ $ret -ne 0 ]; then
@@ -250,7 +256,7 @@ kexec_kernel() {
 # returns: 0 on success
 
 duplicate_snapshot() {
-  local selected target recv_args
+  local selected target target_parent pool recv_args
 
   selected="${1}"
   target="${2}"
@@ -259,9 +265,20 @@ duplicate_snapshot() {
   [ -n "$target" ] || return 1
 
   pool="${selected%%/*}"
-
   set_rw_pool "${pool}" || return 1
-  CLEAR_SCREEN=0 key_wrapper "${pool}"
+
+
+
+  # Make sure both the source and the parent of the target are unlocked
+  # NOTE: load_key should work as expected without stripping snapshot from name
+  CLEAR_SCREEN=0 load_key "${selected}"
+
+  # It is possible that the target is a top-level filesystem
+  # If it is not, the parent might be locked, so make sure to unlock
+  target_parent="${target%/*}"
+  if [ -n "${target_parent}" ]; then
+    CLEAR_SCREEN=0 load_key "${target_parent}"
+  fi
 
   recv_args=( "-u" "-o" "canmount=noauto" "-o" "mountpoint=/" "${target}" )
 
@@ -296,7 +313,7 @@ clone_snapshot() {
   parent="${selected%%@*}"
 
   set_rw_pool "${pool}" || return 1
-  key_wrapper "${pool}"
+  load_key "${parent}"
 
   while read -r PROPERTY VALUE
   do
@@ -343,7 +360,7 @@ set_default_kernel() {
 
   # Make sure the pool is writable
   set_rw_pool "${pool}" || return 1
-  CLEAR_SCREEN=1 key_wrapper "${pool}"
+  CLEAR_SCREEN=1 load_key "${fs}"
 
   # Restore nonspecific default when no kernel specified
   if [ -z "$kernel" ]; then
@@ -366,7 +383,7 @@ set_default_env() {
   pool="${selected%%/*}"
 
   set_rw_pool "${pool}" || return 1
-  CLEAR_SCREEN=1 key_wrapper "${pool}"
+  CLEAR_SCREEN=1 load_key "${pool}"
 
   # shellcheck disable=SC2034
   if output="$( zpool set bootfs="${selected}" "${pool}" )"; then
@@ -386,9 +403,12 @@ find_be_kernels() {
   local kernel kernel_base labels version kernel_records
   local defaults def_kernel def_kernel_file
 
-  # Check if /boot even exists in the environment
-  mnt="$( mount_zfs "${fs}" )"
+  # Try to mount, just skip the list otherwise
+  if ! mnt="$( mount_zfs "${fs}" )"; then
+    return 1
+  fi
 
+  # Check if /boot even exists in the environment
   if [ ! -d "${mnt}/boot" ]; then
     umount "${mnt}"
     return 1
@@ -908,59 +928,79 @@ set_rw_pool() {
 
 # arg1: ZFS filesystem
 # prints: name of encryption root, if present
-# returns: 1 if key is needed, 0 if not
+# returns: 0 if system has an encryption root, 1 otherwise
 
-be_key_needed() {
+be_has_encroot() {
   local fs pool encroot
   fs="${1}"
   pool="${fs%%/*}"
 
-  if [ "$( zpool list -H -o feature@encryption "${pool}" )" == "active" ]; then
-    encroot="$( zfs get -H -o value encryptionroot "${fs}" )"
-    if [ "${encroot}" == "-" ]; then
-      echo ""
-      return 0
-    else
-      echo "${encroot}"
-      return 1
-    fi
-  else
+  if [ "$( zpool list -H -o feature@encryption "${pool}" )" != "active" ]; then
     echo ""
-    return 0
+    return 1
   fi
+
+  if encroot="$( zfs get -H -o value encryptionroot "${fs}" 2>/dev/null )"; then
+    if [ "x${encroot}" != "x-" ]; then
+      echo "${encroot}"
+      return 0
+    fi
+  fi
+
+  echo ""
+  return 1
 }
 
-# arg1: ZFS filesystem (encryption root)
-# prints: nothing
-# returns: 0 if unavailable, 1 if available
+# arg1: ZFS filesystem
+# prints: name of encryption root, iff filesystem is locked
+# returns: 0 if filesystem is locked, 1 otherwise
 
-be_key_status() {
-  local encroot keystatus
-  encroot="${1}"
+be_is_locked() {
+  local fs keystatus encroot
+  fs="${1}"
 
-  keystatus="$( zfs get -H -o value keystatus "${encroot}" )"
-  case "${keystatus}" in
-    unavailable)
-      return 0;
-      ;;
-    available)
-      return 1;
-      ;;
-  esac
+  if encroot="$( be_has_encroot "${fs}" )"; then
+    keystatus="$( zfs get -H -o value keystatus "${encroot}" )"
+    case "${keystatus}" in
+      unavailable)
+        echo "${encroot}"
+        return 0;
+        ;;
+      *)
+        ;;
+    esac
+  fi
+
+  echo ""
+  return 1
 }
 
-# arg1: ZFS filesystem (encryption root)
+# arg1: ZFS filesystem
 # prints: nothing
 # returns: 0 on success, 1 on failure
+#
+# NOTE: this function should *not* be called from a subshell
 
 load_key() {
-  local encroot ret key keyformat keylocation
-  encroot="${1}"
+  local fs encroot ret key keyformat keylocation
+  fs="${1}"
+
+  # Nothing to do if filesystem is not locked
+  if ! encroot="$( be_is_locked "${fs}" )" || [ -z "$encroot" ]; then
+    return 0
+  fi
 
   # Default to 0 when unset
   [ -n "${CLEAR_SCREEN}" ] || CLEAR_SCREEN=0
 
-  keylocation="$( zfs get -H -o value keylocation "${encroot}" )"
+  # If something goes wrong discovering key location, just prompt
+  if ! keylocation="$( zfs get -H -o value keylocation "${encroot}" )"; then
+    keylocation="prompt"
+  fi
+
+  # Assume failure unless the load expicitly succeeds
+  ret=1
+
   if [ "${keylocation}" = "prompt" ]; then
     if [ "${CLEAR_SCREEN}" -eq 1 ] ; then
       tput clear
@@ -981,28 +1021,6 @@ load_key() {
       fi
       zfs load-key -L prompt "${encroot}"
       ret=$?
-    fi
-  fi
-
-  return ${ret}
-}
-
-# arg1: ZFS filesystem
-# prints: nothing
-# returns 0 on success, 1 on failure
-
-key_wrapper() {
-  local encroot fs ret
-  fs="${1}"
-  ret=0
-
-  encroot="$( be_key_needed "${fs}" )"
-
-  if [ $? -eq 1 ]; then
-    if be_key_status "${encroot}" ; then
-      if ! load_key "${encroot}" ; then
-        ret=1
-      fi
     fi
   fi
 
@@ -1047,7 +1065,7 @@ populate_be_list() {
 
   for fs in "${candidates[@]}"; do
     # Unlock if necessary
-    key_wrapper "${fs}" || continue
+    load_key "${fs}" || continue
 
     # Candidates are added to BE list if they have kernels in /boot
     # shellcheck disable=SC2034
