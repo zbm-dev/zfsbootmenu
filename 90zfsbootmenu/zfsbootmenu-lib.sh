@@ -22,10 +22,10 @@ mount_zfs() {
 
   # zfsutil is required for non-legacy mounts and omitted for legacy mounts
   if [ "x$(zfs get -H -o value mountpoint "${fs}")" = "xlegacy" ]; then
-    mount -t zfs "${fs}" "${mnt}"
+    mount -o ro -t zfs "${fs}" "${mnt}"
     ret=$?
   else
-    mount -o zfsutil -t zfs "${fs}" "${mnt}"
+    mount -o zfsutil,ro -t zfs "${fs}" "${mnt}"
     ret=$?
   fi
 
