@@ -81,6 +81,7 @@ install() {
     "blkid"
     "awk"
     "fold"
+    "ps"
   )
 
   for _exec in "${essential_execs[@]}"; do

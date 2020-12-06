@@ -1,14 +1,6 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
-# store current kernel log level
-read -r PRINTK < /proc/sys/kernel/printk
-PRINTK=${PRINTK:0:1}
-export PRINTK
-
-# Set it to 0
-echo 0 > /proc/sys/kernel/printk
-
 # disable ctrl-c (SIGINT)
 trap '' SIGINT
 
@@ -16,33 +8,6 @@ trap '' SIGINT
 test -f /lib/zfsbootmenu-lib.sh && source /lib/zfsbootmenu-lib.sh
 # shellcheck disable=SC1091
 test -f zfsbootmenu-lib.sh && source zfsbootmenu-lib.sh
-
-echo "Loading boot menu ..."
-TERM=linux
-tput reset
-
-export BASE="/zfsbootmenu"
-mkdir -p "${BASE}"
-
-modprobe zfs 2>/dev/null
-udevadm settle
-
-# try to set console options for display and interaction
-# this is sometimes run as an initqueue hook, but cannot be guaranteed
-#shellcheck disable=SC2154
-test -x /lib/udev/console_init -a -c "${control_term}" \
-  && /lib/udev/console_init "${control_term##*/}" >/dev/null 2>&1
-
-# set the console size, if indicated
-#shellcheck disable=SC2154
-if [ -n "$zbm_lines" ]; then
-  stty rows "$zbm_lines"
-fi
-
-#shellcheck disable=SC2154
-if [ -n "$zbm_columns" ]; then
-  stty cols "$zbm_columns"
-fi
 
 # Attempt to import all pools read-only
 read_write='' all_pools=yes import_pool

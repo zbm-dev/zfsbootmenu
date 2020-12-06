@@ -46,6 +46,13 @@ zbm_lines=$( getarg zbm.lines=)
 # shellcheck disable=SC2034
 zbm_columns=$( getarg zbm.columns=)
 
+# Turn on tmux integrations
+# shellcheck disable=SC2034
+if getargbool 0 zbm.tmux ; then
+  zbm_tmux="yes"
+  info "ZFSBootMenu: Enabling tmux integrations"
+fi
+
 wait_for_zfs=0
 case "${root}" in
   ""|zfsbootmenu|zfsbootmenu:)
