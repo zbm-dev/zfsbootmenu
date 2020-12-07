@@ -764,6 +764,8 @@ timed_prompt() {
   [ -n "${delay}" ] || delay="30"
   [ -n "${prompt}" ] || prompt="Press [ENTER] or wait %0.2d seconds to continue"
 
+  [ "${delay}" -eq 0 ] && return
+
   # shellcheck disable=SC2154
   case "${color}" in
     red) cnum=1 ;;
