@@ -247,6 +247,9 @@ kexec_kernel() {
     export_pool "${pool}"
   fi
 
+  # Run a teardown script, if one exists
+  [ -x /libexec/zfsbootmenu-teardown ] && /libexec/zfsbootmenu-teardown
+
   kexec -e -i
 }
 

@@ -139,6 +139,16 @@ install() {
   inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh" || _ret=$?
   inst_hook pre-mount 90 "${moddir}/zfsbootmenu-exec.sh" || _ret=$?
 
+  # Install a "teardown" hook if specified and it exists
+  # shellcheck disable=SC2154
+  if [ -n "${zfsbootmenu_teardown}" ]; then
+    if [ -x "${zfsbootmenu_teardown}" ]; then
+      inst_simple "${zfsbootmenu_teardown}" "/libexec/zfsbootmenu-teardown" || _ret=$?
+    else
+      dwarning "no executable teardown script (${zfsbootmenu_teardown}); cannot install"
+    fi
+  fi
+
   if [ ${_ret} -ne 0 ]; then
     dfatal "Unable to install core ZFSBootMenu functions"
     exit 1

@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "zfsbootmenu 7"
-.TH zfsbootmenu 7 "2020-11-11" "1.7.1" "ZFSBootMenu"
+.TH zfsbootmenu 7 "2020-12-08" "1.7.1" "ZFSBootMenu"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -211,9 +211,17 @@ This specifies the prefix added to the \s-1ZFS\s0 filesystem provided as the roo
 The default prefix is \fIroot=zfs:\fR on all systems except those that appear to be Arch Linux. For Arch, the default root prefix is \fIzfs=\fR.
 .Sp
 Set this property to override the value determined from inspecting the boot environment.
+.SH "Dracut Options"
+.IX Header "Dracut Options"
+In addition to standard dracut configuration options, the ZFSBootMenu dracut module supports an addtional option to customize boot behavior.
+.IP "\fBzfsbootmenu_teardown=<executable>\fR" 4
+.IX Item "zfsbootmenu_teardown=<executable>"
+An optional variable specifying the path to a teardown script that will be installed in the ZFSBootMenu initramfs. If this key is set but no file exists at the path \fB<executable>\fR or the file is not executable, a warning will be issued but initramfs creation will proceed.
+.Sp
+Some hardware initialized by the kernel used to boot ZFSBootMenu may not be properly reinitialized when a boot environment is launched. A teardown executable, if provided, will be inovked by ZFSBootMenu immediately before \fBkexec\fR is invoked to jump into the selected kernel. This script can be used, for example, to unbind drivers from hardware or remove kernel modules.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-\&\fBgenerate-zbm\fR(5) \fBgenerate-zbm\fR(8)
+\&\fBgenerate-zbm\fR(5) \fBgenerate-zbm\fR(8) \fBdracut.conf\fR(5)
 .SH "AUTHOR"
 .IX Header "AUTHOR"
 ZFSBootMenu Team <https://github.com/zbm\-dev/zfsbootmenu>
