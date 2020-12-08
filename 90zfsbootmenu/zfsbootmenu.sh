@@ -30,10 +30,26 @@ while [ -e "${BASE}/active" ]; do
   fi
 done
 
+# Prevent conflicting use of the boot menu
 : > "${BASE}/active"
 
 # shellcheck disable=SC2064
 trap "rm -f '${BASE}/active'" EXIT
+
+if [ -r "${BASE}/bootfs" ]; then
+  read -r BOOTFS < "${BASE}/bootfs"
+  export BOOTFS
+fi
+
+# Run setup hooks, if they exist
+if [ -d /libexec/setup.d ]; then
+  tput clear
+  for _hook in /libexec/setup.d/*; do
+    [ -x "${_hook}" ] && "${_hook}"
+  done
+  unset _hook
+fi
+
 trap '' SIGINT
 
 if command -v fzf >/dev/null 2>&1; then
@@ -52,11 +68,6 @@ fi
 if [ -z "${FUZZYSEL}" ]; then
   emergency_shell "no fuzzy menu available"
   exit
-fi
-
-if [ -r "${BASE}/bootfs" ]; then
-  read -r BOOTFS < "${BASE}/bootfs"
-  export BOOTFS
 fi
 
 # Clear screen before a possible password prompt
