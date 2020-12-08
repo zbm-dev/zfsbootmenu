@@ -154,6 +154,29 @@ install() {
     exit 1
   fi
 
+  # Optionally install tmux
+  # shellcheck disable=SC2154
+  if [ "${zfsbootmenu_tmux}" = true ]; then
+    # user-defined configuration file
+    if [ -n "${zfsbotmenu_tmux_conf}" ] && [ -e "${zfsbootmenu_tmux_conf}" ]; then
+      tmux_conf="${zfsbootmenu_tmux_conf}"
+    # default file shipped with zfsbootmenu
+    elif [ -e "${moddir}/tmux.conf" ]; then
+      tmux_conf="${moddir}/tmux.conf"
+    fi
+
+    # Only attempt to install if we have a configuration file available
+    if [ -n "${tmux_conf}" ] ; then
+      dracut_install tmux
+      inst_simple "${tmux_conf}" "/etc/tmux.conf"
+      
+      # glibc locale file
+      if [ -e "/usr/lib/locale/locale-archive" ]; then
+        inst_simple "/usr/lib/locale/locale-archive" "/usr/lib/locale/locale-archive"
+      fi
+    fi
+  fi
+
   if [ -e /etc/zfs/zpool.cache ]; then
     inst /etc/zfs/zpool.cache
     type mark_hostonly >/dev/null 2>&1 && mark_hostonly /etc/zfs/zpool.cache

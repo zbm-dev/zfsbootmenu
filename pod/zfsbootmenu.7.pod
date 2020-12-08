@@ -95,11 +95,15 @@ The default prefix is I<root=zfs:> on all systems except those that appear to be
 
 Set this property to override the value determined from inspecting the boot environment.
 
+=item B<zbm.tmux>
+
+Indicate that ZFSBootMenu should be run under B<tmux> in the initramfs. With this enabled, debug-level logging for the ZFSBootMenu scripts can be easily viewed. The tooling must also be installed with an additional dracut configuration option listed below.
+
 =back
 
 =head1 Dracut Options
 
-In addition to standard dracut configuration options, the ZFSBootMenu dracut module supports an addtional option to customize boot behavior.
+In addition to standard dracut configuration options, the ZFSBootMenu dracut module supports addtional options to customize boot behavior.
 
 =over 4
 
@@ -108,6 +112,14 @@ In addition to standard dracut configuration options, the ZFSBootMenu dracut mod
 An optional variable specifying the path to a teardown script that will be installed in the ZFSBootMenu initramfs. If this key is set but no file exists at the path B<E<lt>executableE<gt>> or the file is not executable, a warning will be issued but initramfs creation will proceed.
 
 Some hardware initialized by the kernel used to boot ZFSBootMenu may not be properly reinitialized when a boot environment is launched. A teardown executable, if provided, will be inovked by ZFSBootMenu immediately before B<kexec> is invoked to jump into the selected kernel. This script can be used, for example, to unbind drivers from hardware or remove kernel modules.
+
+=item B<zfsbootmenu_tmux=true>
+
+An optional variable enabling the installation of B<tmux> and a minimal B<tmux.conf> in the initramfs.
+
+=item B<zfsbootmenu_tmux_conf=E<lt>tmux.confE<gt>>
+
+An optional variable specifying the path to an alternate B<tmux> configuration file. If this key is set but no file exists at the path B<E<lt>tmux.confE<gt>>, the default configuration file is instead used.
 
 =back
 
