@@ -3,6 +3,46 @@
 
 # ZFS boot menu functions
 
+# arg1: log level
+# arg2: log line
+# prints: nothing
+# returns: nothing
+
+zlog() {
+  local _script _func
+  [ -z "${1}" ] && return
+  [ -z "${2}" ] && return
+
+  # shellcheck disable=SC2154
+  [ "${1}" -le "${loglevel}" ] || return
+
+  # shellcheck disable=SC2086
+  _script="$( basename $0 )"
+  _func="${FUNCNAME[2]}"
+
+  echo -e "<${1}>ZBM:\033[0;33m${_script}[$$]\033[0;31m:${_func}()\033[0m: ${2}" > /dev/kmsg
+}
+
+# arg1: log line
+# prints: nothing
+# returns: nothing
+
+zdebug() {
+  zlog 7 "$@"
+}
+
+zinfo() {
+  zlog 6 "$@"
+}
+
+zwarn() {
+  zlog 4 "$@"
+}
+
+zerror() {
+  zlog 3 "$@"
+}
+
 # arg1: ZFS filesystem name
 # prints: mountpoint
 # returns: 0 on success
@@ -14,6 +54,7 @@ mount_zfs() {
 
   fs="${1}"
   if be_is_locked "${fs}" >/dev/null; then
+    zdebug "${fs} is locked, returning"
     return 1
   fi
 
@@ -22,14 +63,17 @@ mount_zfs() {
 
   # zfsutil is required for non-legacy mounts and omitted for legacy mounts
   if [ "x$(zfs get -H -o value mountpoint "${fs}")" = "xlegacy" ]; then
+    zdebug "mounting ${fs} at ${mnt}"
     mount -o ro -t zfs "${fs}" "${mnt}"
     ret=$?
   else
+    zdebug "mounting ${fs} at ${mnt} with zfsutil"
     mount -o zfsutil,ro -t zfs "${fs}" "${mnt}"
     ret=$?
   fi
 
   echo "${mnt}"
+  zdebug "mount return code: ${ret}"
   return ${ret}
 }
 
@@ -84,6 +128,8 @@ draw_be() {
 
   env="${1}"
 
+  zdebug "using environment file: ${env}"
+
   test -f "${env}" || return 130
 
   header="$( header_wrap "[ENTER] boot" "[ALT+K] kernels" \
@@ -95,8 +141,12 @@ draw_be() {
     --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}" \
     --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}" < "${env}" )"
   ret=$?
+
   # shellcheck disable=SC2119
-  csv_cat <<< "${selected}"
+  selected="$( csv_cat <<< "${selected}" )"
+  echo "${selected}"
+  zdebug "selected: ${selected}"
+
   return ${ret}
 }
 
@@ -105,19 +155,28 @@ draw_be() {
 # returns: 130 on error, 0 otherwise
 
 draw_kernel() {
-  local benv selected ret header
+  local benv selected ret header _kernels
 
   benv="${1}"
+  _kernels="${BASE}/${benv}/kernels"
+
+  zdebug "using kernels file: ${_kernels}"
+
+  test -f "${_kernels}" || return 130
 
   header="$( header_wrap "[ENTER] boot" "[ALT+D] set default" "[ESC] back" "[ALT+H] help" )"
 
   selected="$( HELP_SECTION=KERNEL ${FUZZYSEL} --prompt "${benv} > " \
     --tac --expect=alt-d --with-nth=2 --header="${header}" \
     --preview-window="up:${PREVIEW_HEIGHT}" \
-    --preview="zfsbootmenu-preview.sh ${BASE} ${benv} ${BOOTFS}" < "${BASE}/${benv}/kernels" )"
+    --preview="zfsbootmenu-preview.sh ${BASE} ${benv} ${BOOTFS}" < "${_kernels}" )"
   ret=$?
+
   # shellcheck disable=SC2119
-  csv_cat <<< "${selected}"
+  selected="$( csv_cat <<< "${selected}" )"
+  echo "${selected}"
+  zdebug "selected: ${selected}"
+
   return ${ret}
 }
 
@@ -130,6 +189,8 @@ draw_snapshots() {
 
   benv="${1}"
 
+  zdebug "using boot environment: ${benv}"
+
   header="$( header_wrap "[ENTER] duplicate" "[ALT+X] clone and promote" \
     "[ALT+C] clone only" "[ALT+D] show diff" "[ESC] back" "[ALT+H] help" )"
 
@@ -140,8 +201,12 @@ draw_snapshots() {
         --preview-window="up:${PREVIEW_HEIGHT}" \
         --header="${header}" )"
   ret=$?
+
   # shellcheck disable=SC2119
-  csv_cat <<< "${selected}"
+  selected="$( csv_cat <<< "${selected}" )"
+  echo "${selected}"
+  zdebug "selected: ${selected}"
+
   return ${ret}
 }
 
@@ -156,14 +221,21 @@ draw_diff() {
   snapshot="${1}"
   pool="${snapshot%%/*}"
 
+  zdebug "snapshot: ${snapshot}"
+  zdebug "pool: ${pool}"
+
   if ! set_rw_pool "${pool}"; then
+    zerror "unable to set ${pool} read/write"
     return
   fi
 
   diff_target="${snapshot%%@*}"
+  zdebug "base filesystem: ${diff_target}"
+
   CLEAR_SCREEN=1 load_key "${diff_target}"
 
   if ! mnt="$( mount_zfs "${diff_target}" )" ; then
+    zerror "unable to mount ${diff_target}"
     return
   fi
 
@@ -198,7 +270,12 @@ draw_pool_status() {
       --expect=alt-r --preview="zpool status -v {}" --header="${header}"
   )"
   ret=$?
-  csv_cat <<< "${selected}"
+
+  # shellcheck disable=SC2119
+  selected="$( csv_cat <<< "${selected}" )"
+  echo "${selected}"
+  zdebug "selected: ${selected}"
+
   return ${ret}
 }
 
@@ -216,14 +293,14 @@ kexec_kernel() {
   # initramfs
   IFS=' ' read -r fs kernel initramfs <<<"${selected}"
 
+  zdebug "fs: ${fs}, kernel: ${kernel}, initramfs: ${initramfs}"
+
   CLEAR_SCREEN=1 load_key "${fs}"
-  mnt="$( mount_zfs "${fs}" )"
 
   tput cnorm
   tput clear
 
-  ret=$?
-  if [ $ret -ne 0 ]; then
+  if ! mnt=$( mount_zfs "${fs}" ); then
     emergency_shell "unable to mount ${fs}"
     return 1
   fi
@@ -233,29 +310,37 @@ kexec_kernel() {
 
   # restore kernel log level just before we kexec
   # shellcheck disable=SC2154
-  [ -n "${PRINTK}" ] && echo "${PRINTK}" > /proc/sys/kernel/printk
+  if [ -n "${PRINTK}" ] ; then
+    echo "${PRINTK}" > /proc/sys/kernel/printk
+    zdebug "restored kernel log level to ${PRINTK}"
+  fi
 
   kexec -l "${mnt}${kernel}" \
     --initrd="${mnt}${initramfs}" \
     --command-line="${root_prefix}${fs} ${cli_args}"
 
+  zdebug "kexec arguments: $_"
+
   umount "${mnt}"
 
-  # Export if read-write, to ensure a clean pool
-  pool="${selected%%/*}"
-  if is_writable "${pool}"; then
-    export_pool "${pool}"
-  fi
+  while read -r _pool; do
+    if is_writable "${_pool}"; then
+      zdebug "${_pool} is read/write, exporting"
+      export_pool "${_pool}"
+    fi
+  done <<<"$( zpool list -H -o name )"
 
   # Run teardown hooks, if they exist
   if [ -d /libexec/teardown.d ]; then
     for tdhook in /libexec/teardown.d/*; do
+      zinfo "Processing hook: ${tdhook}"
       [ -x "${tdhook}" ] && "${tdhook}"
     done
     unset tdhook
   fi
 
   kexec -e -i
+
 }
 
 # arg1: snapshot name
@@ -272,10 +357,11 @@ duplicate_snapshot() {
   [ -n "$selected" ] || return 1
   [ -n "$target" ] || return 1
 
+  zdebug "selected: ${selected}"
+  zdebug "target: ${target}"
+
   pool="${selected%%/*}"
   set_rw_pool "${pool}" || return 1
-
-
 
   # Make sure both the source and the parent of the target are unlocked
   # NOTE: load_key should work as expected without stripping snapshot from name
@@ -317,6 +403,10 @@ clone_snapshot() {
   [ -n "$selected" ] || return 1
   [ -n "$target" ] || return 1
 
+  zdebug "selected: ${selected}"
+  zdebug "target: ${target}"
+  zdebug "promote: ${promote}"
+
   pool="${selected%%/*}"
   parent="${selected%%@*}"
 
@@ -333,17 +423,25 @@ clone_snapshot() {
         # explicitly set in the clone
         ;;
       *)
+        zdebug "setting ${PROPERTY}=${VALUE}"
         opts+=("-o" "${PROPERTY}=${VALUE}")
         ;;
     esac
   done <<< "$( zfs get -o property,value -s local,received -H all "${parent}" )"
 
   # Clone must succeed to continue
-  zfs clone -o mountpoint=/ -o canmount=noauto "${opts[@]}" "${selected}" "${target}" || return 1
+  if ! zfs clone -o mountpoint=/ -o canmount=noauto "${opts[@]}" "${selected}" "${target}" ; then
+    zerror "clone failed with $?"
+    return 1
+  fi
 
   if [ "x$promote" != "xnopromote" ]; then
     # Promotion must succeed to continue
-    zfs promote "${target}" || return 1
+    zdebug "promoting ${target}"
+    if ! zfs promote "${target}"; then
+      zerror "unable to promote ${target}"
+      return 1
+    fi
   fi
 
   return 0
@@ -359,12 +457,15 @@ set_default_kernel() {
 
   fs="$1"
   [ -n "${fs}" ] || return 1
+  zdebug "fs set to ${fs}"
 
   pool="${fs%%/*}"
   [ -n "${pool}" ] || return 1
+  zdebug "pool set to ${pool}"
 
   # Strip /boot/ to list only the file
   kernel="${2#/boot/}"
+  zdebug "kernel set to ${kernel}"
 
   # Make sure the pool is writable
   set_rw_pool "${pool}" || return 1
@@ -385,17 +486,21 @@ set_default_kernel() {
 # returns: nothing
 
 set_default_env() {
-  local selected pool output
-  selected="${1}"
+  local environment pool output
 
-  pool="${selected%%/*}"
+  environment="${1}"
+  [ -n "${environment}" ] || return 1
+  zdebug "environment set to: ${environment}"
+
+  pool="${environment%%/*}"
+  zdebug "pool set to: ${pool}"
 
   set_rw_pool "${pool}" || return 1
   CLEAR_SCREEN=1 load_key "${pool}"
 
-  # shellcheck disable=SC2034
-  if output="$( zpool set bootfs="${selected}" "${pool}" )"; then
-    BOOTFS="${selected}"
+  if zpool set bootfs="${environment}" "${pool}" >/dev/null 2>&1 ; then
+    BOOTFS="${environment}"
+    zdebug "BOOTFS set to ${BOOTFS}"
   fi
 }
 
@@ -413,11 +518,13 @@ find_be_kernels() {
 
   # Try to mount, just skip the list otherwise
   if ! mnt="$( mount_zfs "${fs}" )"; then
+    zerror "unable to mount ${fs}"
     return 1
   fi
 
   # Check if /boot even exists in the environment
   if [ ! -d "${mnt}/boot" ]; then
+    zdebug "${mnt}/boot not present"
     umount "${mnt}"
     return 1
   fi
@@ -432,12 +539,14 @@ find_be_kernels() {
     # Pull basename and validate
     kernel=$( basename "${kernel}" )
     [ -e "${mnt}/boot/${kernel}" ] || continue
+    zdebug "found ${mnt}/boot/${kernel}"
 
     # Kernel "base" extends to first hyphen
     kernel_base="${kernel%%-*}"
     # Kernel "version" is everything after base and may be empty
     version="${kernel#${kernel_base}}"
     version="${version#-}"
+    zdebug "kernel version: ${version}"
 
     # initramfs images can take many forms, look for a sensible one
     labels=( "$kernel" )
@@ -451,6 +560,7 @@ find_be_kernels() {
         for lbl in "${labels[@]}"; do
           for i in "${pfx}-${lbl}${ext}" "${pfx}${ext}-${lbl}"; do
             if [ -e "${mnt}/boot/${i}" ]; then
+              zdebug "matching ${i} to ${kernel}"
               echo "${fs} /boot/${kernel} /boot/${i}" >> "${kernel_records}"
               break 4
             fi
@@ -470,9 +580,11 @@ find_be_kernels() {
   # If no default kernel is found, there are no kernels; leave the BE
   # directory in the same state it would be in had no /boot existed
   if [ -z "${def_kernel}" ]; then
+    zdebug "no default kernel found for ${fs}"
     rm -f "${kernel_records}" "${def_kernel_file}"
     return 1
   fi
+  zdebug "default kernel set to ${def_kernel}"
 
   basename "${def_kernel}" > "${def_kernel_file}"
 
@@ -499,10 +611,12 @@ select_kernel() {
   # If a specific kernel is listed, prefer it when possible
   specific_kernel="$( zfs get -H -o value org.zfsbootmenu:kernel "${zfsbe}" )"
   if [ "${specific_kernel}" != "-" ]; then
+    zdebug "org.zfsbootmenu:kernel set to ${specific_kernel}"
     while read -r spec_kexec_args; do
       local fs kernel initramfs
       IFS=' ' read -r fs kernel initramfs <<<"${spec_kexec_args}"
       if [[ "${kernel}" =~ ${specific_kernel} ]]; then
+        zdebug "matched ${kernel} to ${specific_kernel}"
         kexec_args="${spec_kexec_args}"
         break
       fi
@@ -524,6 +638,7 @@ find_root_prefix() {
   # Grab the root prefix from a property if possible
   if prefix="$( zfs get -H -o value org.zfsbootmenu:rootprefix "${zfsbe_fs}" )"; then
     if [ "${prefix}" != "-" ]; then
+      zdebug "using org.zfsbootmenu:rootprefix: ${prefix}"
       echo "${prefix}"
       return
     fi
@@ -558,12 +673,14 @@ find_root_prefix() {
     )
 
     if [ -n "${prefix}" ]; then
+      zdebug "using os-release: ${prefix}"
       echo "${prefix}"
       return;
     fi
   fi
 
   # Just return a default
+  zdebug "using default"
   echo "root=zfs:"
 }
 
@@ -582,17 +699,20 @@ preload_be_cmdline() {
   if [ -n "${zfsbe_fs}" ]; then
     zfsbe_args="$( zfs get -H -o value org.zfsbootmenu:commandline "${zfsbe_fs}" )"
     if [ "${zfsbe_args}" != "-" ]; then
+      zdebug "using org.zfsbootmenu:commandline"
       echo "${zfsbe_args}" > "${args_file}"
       return
     fi
   fi
 
   if [ -n "${zfsbe_mnt}" ] && [ -r "${zfsbe_mnt}/etc/default/zfsbootmenu" ]; then
+    zdebug "using ${zfsbe_mnt}/etc/default/zfsbootmenu"
     head -1 "${zfsbe_mnt}/etc/default/zfsbootmenu" | tr -d '\n' > "${args_file}"
     return
   fi
 
   if [ -n "${zfsbe_mnt}" ] && [ -r "${zfsbe_mnt}/etc/default/grub" ]; then
+    zdebug "using ${zfsbe_mnt}/etc/default/grub"
     echo "$(
       # shellcheck disable=SC1090
       . "${zfsbe_mnt}/etc/default/grub" ;
@@ -612,6 +732,7 @@ load_be_cmdline() {
 
   # If a user-entered cmdline is found, it is not modified
   if [ -r "${BASE}/cmdline" ]; then
+    zdebug "using ${BASE}/cmdline as commandline for ${zfsbe_fs}"
     head -1 "${BASE}/cmdline" | tr -d '\n'
     return
   fi
@@ -619,10 +740,12 @@ load_be_cmdline() {
   # Use BE-specific cmdline if found, fall back to generic default
   zfsbe_args="quiet loglevel=4"
   if [ -f "${BASE}/${zfsbe_fs}/cmdline" ]; then
+    zdebug "using ${BASE}/${zfsbe_fs}/cmdline as commandline for ${zfsbe_fs}"
     zfsbe_args="$(head -1 "${BASE}/${zfsbe_fs}/cmdline" | tr -d '\n')"
   fi
 
   if [ -e "${BASE}/noresume" ]; then
+    zdebug "${BASE}/noresume set, processing ${zfsbe_args}"
     # Must replace resume= arguments and append a noresume
     zfsbe_args="$( awk <<< "${zfsbe_args}" '
       BEGIN {
@@ -659,6 +782,7 @@ load_be_cmdline() {
     ' )"
   fi
 
+  zdebug "processed commandline: ${zfsbe_args}"
   echo "${zfsbe_args}"
 }
 
@@ -677,30 +801,37 @@ import_pool() {
   # shellcheck disable=SC2154
   if [ -n "${force_import}" ]; then
     import_args+=( "-f" )
+    zdebug "force_import set: ${force_import}"
   fi
 
   # shellcheck disable=SC2154
   if [ -n "${read_write}" ]; then
     import_args+=( "-o" "readonly=off" )
+    zdebug "read_write set: ${read_write}"
   else
     import_args+=( "-o" "readonly=on" )
+    zdebug "read_write unset"
   fi
 
   # shellcheck disable=SC2154
   if [ -n "${rewind_to_checkpoint}" ]; then
     import_args+=( "--rewind-to-checkpoint" )
+    zdebug "rewind_to_checkpoint set: ${rewind_to_checkpoint}"
   fi
 
   # shellcheck disable=SC2154
   if [ -n "${all_pools}" ]; then
     import_args+=( "-a" )
     pool=''
+    zdebug "all_pools set: ${all_pools}"
   fi
 
+  zdebug "zpool import arguments: ${import_args[*]} ${pool}"
   # shellcheck disable=SC2086
   status="$( zpool import "${import_args[@]}" ${pool} >/dev/null 2>&1 )"
   ret=$?
 
+  zdebug "import process return: ${ret}"
   return ${ret}
 }
 
@@ -712,9 +843,13 @@ export_pool() {
   local pool
   pool="${1}"
 
+  zdebug "pool: ${pool}"
+
   # shellcheck disable=SC2034
   status="$( zpool export "${pool}" )"
   ret=$?
+
+  zdebug "${pool} export process return: ${ret}"
 
   return ${ret}
 }
@@ -754,6 +889,7 @@ has_resume_device() {
   # These partition types come from the dracut 95resume module
   for stype in suspend swsuspend swsupend; do
     if blkid -t TYPE="${stype}" >/dev/null 2>&1; then
+      zdebug "resume device: ${stype}"
       return 0
     fi
   done
@@ -898,6 +1034,7 @@ is_writable() {
 
   # Pool is not writable if the property can't be read
   roflag="$( zpool get -H -o value readonly "${pool}" 2>/dev/null )" || return 1
+  zdebug "${pool} readonly property: ${roflag}"
 
   if [ "x${roflag}" = "xoff" ]; then
     return 0
@@ -912,16 +1049,22 @@ is_writable() {
 # returns: 0 on success, 1 on failure
 
 set_rw_pool() {
-  local pool
+  local pool ret
 
   pool="${1}"
+
+  zdebug "pool: ${pool}"
+
   [ -n "${pool}" ] || return 1
 
   # If force_export is set, skip evaluating if the pool is already read-write
   # shellcheck disable=SC2154
   [ -n "${force_export}" ] || ! is_writable "${pool}" || return 0
 
+  zdebug "${pool} is not already writable"
+
   if grep -q "${pool}" "${BASE}/degraded" >/dev/null 2>&1; then
+    zdebug "prohibited: ${BASE}/degraded is set"
     color=red delay=10 timed_prompt "Operation prohibited" "Pool '${pool}' cannot be imported read-write"
     return 1
   fi
@@ -930,7 +1073,11 @@ set_rw_pool() {
 
   if export_pool "${pool}" ; then
     read_write=yes import_pool "${pool}"
-    return $?
+    ret=$?
+
+    zdebug "import_pool: ${ret}"
+
+    return ${ret}
   fi
 
   return 1
@@ -946,11 +1093,13 @@ be_has_encroot() {
   pool="${fs%%/*}"
 
   if [ "$( zpool list -H -o feature@encryption "${pool}" )" != "active" ]; then
+    zdebug "feature@encryption not active on ${pool}"
     echo ""
     return 1
   fi
 
   if encroot="$( zfs get -H -o value encryptionroot "${fs}" 2>/dev/null )"; then
+    zdebug "${fs} encryptionroot property: ${encroot}"
     if [ "x${encroot}" != "x-" ]; then
       echo "${encroot}"
       return 0
@@ -970,7 +1119,9 @@ be_is_locked() {
   fs="${1}"
 
   if encroot="$( be_has_encroot "${fs}" )"; then
+    zdebug "${encroot} discovered as encryption root for ${fs}"
     keystatus="$( zfs get -H -o value keystatus "${encroot}" )"
+    zdebug "${encroot} keystatus: ${keystatus}"
     case "${keystatus}" in
       unavailable)
         echo "${encroot}"
