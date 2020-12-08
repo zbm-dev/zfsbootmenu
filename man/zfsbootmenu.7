@@ -217,11 +217,16 @@ Indicate that ZFSBootMenu should be run under \fBtmux\fR in the initramfs. With 
 .SH "Dracut Options"
 .IX Header "Dracut Options"
 In addition to standard dracut configuration options, the ZFSBootMenu dracut module supports addtional options to customize boot behavior.
-.IP "\fBzfsbootmenu_teardown=<executable>\fR" 4
-.IX Item "zfsbootmenu_teardown=<executable>"
-An optional variable specifying the path to a teardown script that will be installed in the ZFSBootMenu initramfs. If this key is set but no file exists at the path \fB<executable>\fR or the file is not executable, a warning will be issued but initramfs creation will proceed.
+.IP "\fBzfsbootmenu_setup=<executable\-list>\fR" 4
+.IX Item "zfsbootmenu_setup=<executable-list>"
+An optional variable specifying a space-separated list of paths to setup hooks that will be installed in the ZFSBootMenu initramfs. Any path in the list \fB<executable\-list>\fR that exists and is executable will be installed.
 .Sp
-Some hardware initialized by the kernel used to boot ZFSBootMenu may not be properly reinitialized when a boot environment is launched. A teardown executable, if provided, will be inovked by ZFSBootMenu immediately before \fBkexec\fR is invoked to jump into the selected kernel. This script can be used, for example, to unbind drivers from hardware or remove kernel modules.
+Any installed hooks are run right before the ZFSBootMenu menu will be presented; \s-1ZFS\s0 pools will generally have been imported and the default boot environment will be available in the \fI\s-1BOOTFS\s0\fR environment variable. Hooks will not be run if the countdown timer expires (or was set to zero) and the default boot environment is automatically selected. \fBNote:\fR The hooks may be run multiple times if the menu is invoked multiple times, e.g., by dropping to an emergency shell and then returning to the menu. If a script should only run once, the script is responsible for keeping track of this.
+.IP "\fBzfsbootmenu_teardown=<executable\-list>\fR" 4
+.IX Item "zfsbootmenu_teardown=<executable-list>"
+An optional variable specifying a space-separated list of paths to teardown hooks that will be installed in the ZFSBootMenu initramfs. Any path in the list \fB<executable\-list>\fR that exists and is executable will be installed.
+.Sp
+Some hardware initialized by the kernel used to boot ZFSBootMenu may not be properly reinitialized when a boot environment is launched. Any teardown hooks installed into the ZFSBootMenu initramfs, will be run immediately before \fBkexec\fR is invoked to jump into the selected kernel. This script can be used, for example, to unbind drivers from hardware or remove kernel modules.
 .IP "\fBzfsbootmenu_tmux=true\fR" 4
 .IX Item "zfsbootmenu_tmux=true"
 An optional variable enabling the installation of \fBtmux\fR and a minimal \fBtmux.conf\fR in the initramfs.

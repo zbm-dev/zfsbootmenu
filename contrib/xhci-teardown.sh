@@ -12,10 +12,13 @@
 ##
 ## This could be adapted to other drivers, including {O,U,E}HCI as necessary.
 ##
-## To use, put this script somewhere, make sure it is executable, and set the
-## option `zfsbootmenu_teardown=<path to script>` in a dracut.conf(5) file
-## inside the directory specified for `Global.DracutConfDir` in the ZFSBootMenu
-## `config.yaml`.
+## To use, put this script somewhere, make sure it is executable, and add the
+## path to the `zfsbootmenu_teardown` space-separated list with, e.g.,
+##
+##     zfsbootmenu_teardown+=" <path to script> "
+##
+## in a dracut.conf(5) file inside the directory specified for the option
+## `Global.DracutConfDir` in the ZFSBootMenu `config.yaml`.
 
 SYS_XHCI=/sys/bus/pci/drivers/xhci_hcd
 

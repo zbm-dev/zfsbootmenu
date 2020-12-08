@@ -207,7 +207,7 @@ draw_pool_status() {
 # returns: 1 on error, otherwise does not return
 
 kexec_kernel() {
-  local selected fs kernel initramfs
+  local selected fs kernel initramfs tdhook
 
   selected="${1}"
 
@@ -247,8 +247,13 @@ kexec_kernel() {
     export_pool "${pool}"
   fi
 
-  # Run a teardown script, if one exists
-  [ -x /libexec/zfsbootmenu-teardown ] && /libexec/zfsbootmenu-teardown
+  # Run teardown hooks, if they exist
+  if [ -d /libexec/teardown.d ]; then
+    for tdhook in /libexec/teardown.d/*; do
+      [ -x "${tdhook}" ] && "${tdhook}"
+    done
+    unset tdhook
+  fi
 
   kexec -e -i
 }
