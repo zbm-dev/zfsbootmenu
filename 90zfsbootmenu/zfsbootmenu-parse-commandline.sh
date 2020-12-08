@@ -53,6 +53,13 @@ if getargbool 0 zbm.tmux ; then
   info "ZFSBootMenu: Enabling tmux integrations"
 fi
 
+loglevel=$( getarg loglevel=)
+if [ -n "${loglevel}" ]; then
+  info "ZFSBootMenu: setting log level from command line: ${loglevel}"
+else
+  loglevel=3
+fi
+
 wait_for_zfs=0
 case "${root}" in
   ""|zfsbootmenu|zfsbootmenu:)

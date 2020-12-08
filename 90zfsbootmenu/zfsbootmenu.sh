@@ -16,6 +16,7 @@ fi
 
 while [ ! -e "${BASE}/initialized" ]; do
   if ! delay=5 prompt="Press [ESC] to cancel" timed_prompt "Waiting for ZFSBootMenu initialization"; then
+    zdebug "exited while waiting for initialization"
     tput cnorm
     tput clear
     exit
@@ -24,6 +25,7 @@ done
 
 while [ -e "${BASE}/active" ]; do
   if ! delay=5 prompt="Press [ESC] to cancel" timed_prompt "Waiting for other ZFSBootMenu instace to terminate"; then
+    zdebug "exited while waiting to own ${BASE}/active"
     tput cnorm
     tput clear
     exit
@@ -32,6 +34,7 @@ done
 
 # Prevent conflicting use of the boot menu
 : > "${BASE}/active"
+zdebug "creating ${BASE}/active"
 
 # shellcheck disable=SC2064
 trap "rm -f '${BASE}/active'" EXIT
@@ -39,12 +42,14 @@ trap "rm -f '${BASE}/active'" EXIT
 if [ -r "${BASE}/bootfs" ]; then
   read -r BOOTFS < "${BASE}/bootfs"
   export BOOTFS
+  zdebug "setting BOOTFS to ${BOOTFS}"
 fi
 
 # Run setup hooks, if they exist
 if [ -d /libexec/setup.d ]; then
   tput clear
   for _hook in /libexec/setup.d/*; do
+    zinfo "Processing hook: ${_hook}"
     [ -x "${_hook}" ] && "${_hook}"
   done
   unset _hook
@@ -57,11 +62,13 @@ if command -v fzf >/dev/null 2>&1; then
   #shellcheck disable=SC2016
   export FZF_DEFAULT_OPTS='--ansi --no-clear --layout=reverse-list --cycle --inline-info --tac --color=16 --bind "alt-h:execute[ zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
   export PREVIEW_HEIGHT=2
+  zdebug "using fzf for pager"
 elif command -v sk >/dev/null 2>&1; then
   export FUZZYSEL=sk
   #shellcheck disable=SC2016
   export SKIM_DEFAULT_OPTIONS='--ansi --no-clear --layout=reverse-list --inline-info --tac --color=16 --bind "alt-h:execute[ zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
   export PREVIEW_HEIGHT=3
+  zdebug "using sk for pager"
 fi
 
 # The menu will not work if a fuzzy menu isn't available
@@ -93,9 +100,11 @@ while true; do
     # bootenv
     # shellcheck disable=SC2162
     IFS=, read key selected_be <<<"${bootenv}"
+    zdebug "selected key: ${key}"
 
     if [ $ret -eq 0 ]; then
       BE_SELECTED=1
+      zdebug "selected bootenv: ${selected_be}"
     fi
   fi
 
@@ -106,6 +115,7 @@ while true; do
     case "${key}" in
       "enter")
         if ! kexec_kernel "$( select_kernel "${selected_be}" )"; then
+          zdebug "kexec failed for ${selected_be}"
           continue
         fi
         exit
@@ -119,10 +129,12 @@ while true; do
 
         # shellcheck disable=SC2162
         IFS=, read subkey selected_kernel <<< "${selection}"
+        zdebug "selected kernel: ${selected_kernel}"
 
         case "${subkey}" in
           "enter")
             if ! kexec_kernel "${selected_kernel}"; then
+              zdebug "kexec failed for ${selected_kernel}"
               continue
             fi
             exit
@@ -143,6 +155,7 @@ while true; do
 
         # shellcheck disable=SC2162
         IFS=, read subkey selected_pool <<< "${selection}"
+        zdebug "selected pool: ${selected_pool}"
 
         case "${subkey}" in
           "enter")
@@ -166,6 +179,7 @@ while true; do
 
         # shellcheck disable=SC2162
         IFS=, read subkey selected_snap <<< "${selection}"
+        zdebug "selected snapshot: ${selected_snap}"
 
         # Parent of the selected dataset, must be nonempty
         parent_ds="${selected_snap%/*}"

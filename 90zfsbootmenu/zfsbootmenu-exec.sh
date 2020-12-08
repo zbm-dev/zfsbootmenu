@@ -4,6 +4,7 @@
 export spl_hostid
 export force_import
 export menu_timeout
+export loglevel
 export root
 
 # store current kernel log level
@@ -43,7 +44,7 @@ test -x /lib/udev/console_init -a -c "${control_term}" \
 #shellcheck disable=SC2154
 if [ -n "${zbm_tmux}" ] && [ -x /bin/tmux ]; then
   tmux new-session -n ZFSBootMenu -d /libexec/zfsbootmenu-countdown
-  tmux new-window -n logs dmesg -W -T
+  tmux new-window -n logs /bin/zlogtail
   tmux new-window -n shell /bin/bash
   exec tmux attach-session \; select-window -t ZFSBootMenu
 else
