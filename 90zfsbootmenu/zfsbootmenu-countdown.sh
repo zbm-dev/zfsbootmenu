@@ -86,7 +86,7 @@ if [ -n "${BOOTFS}" ]; then
     if delay="${menu_timeout}" prompt="Booting ${BOOTFS} in %0.2d seconds" timed_prompt "[ENTER] to boot" "[ESC] boot menu" ; then
       # Clear screen before a possible password prompt
       tput clear
-      if ! load_key "${BOOTFS}"; then
+      if ! NO_CACHE=1 load_key "${BOOTFS}"; then
         emergency_shell "unable to load key for ${BOOTFS}; type 'exit' to continue"
       elif find_be_kernels "${BOOTFS}" && [ ! -e "${BASE}/active" ]; then
         # Automatically select a kernel and boot it

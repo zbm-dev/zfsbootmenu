@@ -99,6 +99,14 @@ The default prefix is I<root=zfs:> on all systems except those that appear to be
 
 Set this property to override the value determined from inspecting the boot environment.
 
+=item B<org.zfsbootmenu:keysource=E<lt>filesystemE<gt>>
+
+If specified, this provides the name of the ZFS filesystem from which keys for a particular boot environment will be sourced.
+
+Normally, when ZFSBootMenu attempts to load encryption keys for a boot environment, it will attempt to look for a key file at the path specified by the I<keylocation> property on the I<encryptionroot> for that boot environment. If that file does not exist, and I<keyformat=passphrase> is set for the I<encryptionroot> (or I<keylocation=prompt>), ZFSBootMenu will prompt for a passphrase to unlock the boot environment. These passphrases entered are not cached by default.
+
+When B<org.zfsbootmenu:keysource> is a mountable ZFS filesystem, before prompting for a passphrase when I<keylocation> is not set to I<prompt>, ZFSBootMenu will attempt to mount B<E<lt>filesystemE<gt>> (unlocking that, if necessary) and search for the key file at I<keylocation> relative to B<E<lt>filesystemE<gt>>. If such a file is found, it will be copied to the initramfs, and the copy in the initramfs will be used to decrypt the original boot environment. Any copied keys are retained until ZFSBootMenu boots an environment, so a single password prompt can be sufficient to unlock several pools with the same I<keysource> or prevent prompts from reappearing when the pool must be exported and reimported (for example, to alter boot parameters from within ZFSBootMenu).
+
 =back
 
 =head1 Dracut Options
