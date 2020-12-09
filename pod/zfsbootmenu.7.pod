@@ -49,6 +49,10 @@ Display a countdown timer for the specified number of seconds before booting the
 
 By default, ZFSBootMenu will look for the I<bootfs> property on the first pool it imports to select the default boot environment. If you have multiple pools, substitute the name of your preferred pool for B<E<lt>poolE<gt>> in the argument B<root=zfsbootmenu:POOL=E<lt>poolE<gt>>.
 
+=item B<zbm.tmux>
+
+Indicate that ZFSBootMenu should be run under B<tmux> in the initramfs. With this enabled, debug-level logging for the ZFSBootMenu scripts can be easily viewed. The tooling must also be installed with an additional dracut configuration option listed below.
+
 =back
 
 =head1 ZFS Properties
@@ -94,10 +98,6 @@ This specifies the prefix added to the ZFS filesystem provided as the root files
 The default prefix is I<root=zfs:> on all systems except those that appear to be Arch Linux. For Arch, the default root prefix is I<zfs=>.
 
 Set this property to override the value determined from inspecting the boot environment.
-
-=item B<zbm.tmux>
-
-Indicate that ZFSBootMenu should be run under B<tmux> in the initramfs. With this enabled, debug-level logging for the ZFSBootMenu scripts can be easily viewed. The tooling must also be installed with an additional dracut configuration option listed below.
 
 =back
 

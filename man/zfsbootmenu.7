@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "zfsbootmenu 7"
-.TH zfsbootmenu 7 "2020-12-08" "1.7.1" "ZFSBootMenu"
+.TH zfsbootmenu 7 "2020-12-09" "1.7.1" "ZFSBootMenu"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -176,6 +176,9 @@ Display a countdown timer for the specified number of seconds before booting the
 .IP "\fBroot=zfsbootmenu:POOL=<pool>\fR" 4
 .IX Item "root=zfsbootmenu:POOL=<pool>"
 By default, ZFSBootMenu will look for the \fIbootfs\fR property on the first pool it imports to select the default boot environment. If you have multiple pools, substitute the name of your preferred pool for \fB<pool>\fR in the argument \fBroot=zfsbootmenu:POOL=<pool>\fR.
+.IP "\fBzbm.tmux\fR" 4
+.IX Item "zbm.tmux"
+Indicate that ZFSBootMenu should be run under \fBtmux\fR in the initramfs. With this enabled, debug-level logging for the ZFSBootMenu scripts can be easily viewed. The tooling must also be installed with an additional dracut configuration option listed below.
 .SH "ZFS Properties"
 .IX Header "ZFS Properties"
 The following properties can be set at any level of the boot-environment hierarchy to control boot behavior.
@@ -211,9 +214,6 @@ This specifies the prefix added to the \s-1ZFS\s0 filesystem provided as the roo
 The default prefix is \fIroot=zfs:\fR on all systems except those that appear to be Arch Linux. For Arch, the default root prefix is \fIzfs=\fR.
 .Sp
 Set this property to override the value determined from inspecting the boot environment.
-.IP "\fBzbm.tmux\fR" 4
-.IX Item "zbm.tmux"
-Indicate that ZFSBootMenu should be run under \fBtmux\fR in the initramfs. With this enabled, debug-level logging for the ZFSBootMenu scripts can be easily viewed. The tooling must also be installed with an additional dracut configuration option listed below.
 .SH "Dracut Options"
 .IX Header "Dracut Options"
 In addition to standard dracut configuration options, the ZFSBootMenu dracut module supports addtional options to customize boot behavior.
