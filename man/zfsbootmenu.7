@@ -214,6 +214,13 @@ This specifies the prefix added to the \s-1ZFS\s0 filesystem provided as the roo
 The default prefix is \fIroot=zfs:\fR on all systems except those that appear to be Arch Linux. For Arch, the default root prefix is \fIzfs=\fR.
 .Sp
 Set this property to override the value determined from inspecting the boot environment.
+.IP "\fBorg.zfsbootmenu:keysource=<filesystem>\fR" 4
+.IX Item "org.zfsbootmenu:keysource=<filesystem>"
+If specified, this provides the name of the \s-1ZFS\s0 filesystem from which keys for a particular boot environment will be sourced.
+.Sp
+Normally, when ZFSBootMenu attempts to load encryption keys for a boot environment, it will attempt to look for a key file at the path specified by the \fIkeylocation\fR property on the \fIencryptionroot\fR for that boot environment. If that file does not exist, and \fIkeyformat=passphrase\fR is set for the \fIencryptionroot\fR (or \fIkeylocation=prompt\fR), ZFSBootMenu will prompt for a passphrase to unlock the boot environment. These passphrases entered are not cached by default.
+.Sp
+When \fBorg.zfsbootmenu:keysource\fR is a mountable \s-1ZFS\s0 filesystem, before prompting for a passphrase when \fIkeylocation\fR is not set to \fIprompt\fR, ZFSBootMenu will attempt to mount \fB<filesystem>\fR (unlocking that, if necessary) and search for the key file at \fIkeylocation\fR relative to \fB<filesystem>\fR. If such a file is found, it will be copied to the initramfs, and the copy in the initramfs will be used to decrypt the original boot environment. Any copied keys are retained until ZFSBootMenu boots an environment, so a single password prompt can be sufficient to unlock several pools with the same \fIkeysource\fR or prevent prompts from reappearing when the pool must be exported and reimported (for example, to alter boot parameters from within ZFSBootMenu).
 .SH "Dracut Options"
 .IX Header "Dracut Options"
 In addition to standard dracut configuration options, the ZFSBootMenu dracut module supports addtional options to customize boot behavior.

@@ -13,8 +13,9 @@ zlog() {
   [ -z "${1}" ] && return
   [ -z "${2}" ] && return
 
+  # Assume a default log severity of "warning" if not specified
   # shellcheck disable=SC2154
-  [ "${1}" -le "${loglevel}" ] || return
+  [ "${1}" -le "${loglevel:=4}" ] || return
 
   # shellcheck disable=SC2086
   _script="$( basename $0 )"
@@ -1136,6 +1137,120 @@ be_is_locked() {
   return 1
 }
 
+# arg1: BE key source
+# prints: value of org.zfsbootmenu:keysource for BE, iff it is a valid filesystem
+# returns: 0 iff the value is defined, not empty and is a valid filesystem
+
+be_keysource() {
+  local fs keysrc
+  fs="${1}"
+
+  if ! keysrc="$( zfs get -H -o value org.zfsbootmenu:keysource "${fs}" )"; then
+    zwarn "failed to read org.zfsbootmenu:keysource on ${fs}"
+    echo ""
+    return 1
+  fi
+
+  if [ "x${keysrc}" = "x-" ] || [ -z "${keysrc}" ]; then
+    echo ""
+    return 1;
+  fi
+
+  if ! zfs list -o name -H "${keysrc}" >/dev/null 2>&1; then
+    zdebug "keysource ${keysrc} for ${fs} is not a filesystem"
+    echo ""
+    return 1;
+  fi
+
+  echo "${keysrc}"
+  return 0
+}
+
+# arg1: ZFS filesystem
+# arg2: key location
+# prints: nothing
+# returns: 0 iff a key was cached
+
+cache_key() {
+  local fs keylocation keyfile keydir keysrc keycache mutex mnt ret
+  fs="${1}"
+  keylocation="${2}"
+
+  # Strip scheme if it exists
+  keyfile="${keylocation#file://}"
+  # Make file relative to root
+  keyfile="${keyfile#/}"
+
+  if [ "x${keyfile}" = "x${keylocation}" ] || [ -z "${keyfile}" ]; then
+    # No change or no file => keylocation is not a file => nothing to cache
+    return 1;
+  fi
+
+  # Make sure a key source is defined
+  if ! keysrc="$( be_keysource "${fs}" )"; then
+    zdebug "no key source found for $fs"
+    return 1
+  fi
+
+  keycache="${BASE}/.keys/${keysrc}"
+  mutex="${keycache}/.cachemutex"
+
+  if [ -e "${mutex}" ]; then
+    # Attempting to load key source could lead to infinite recursion
+    # Break the chain by only attempting to cache if not previously attempted
+    zdebug "will not repeat cache attempt for ${keysrc}:${keyfile}"
+    return 1
+  fi
+
+  # Populate the cache if possible
+  zdebug "attempting to cache ${keysrc}:${keyfile}"
+
+  if ! mkdir -p "${keycache}"; then
+    return 1
+  fi
+
+  # Make sure to touch the cache mutex
+  : > "${mutex}"
+  if [ ! -e "${mutex}" ]; then
+    zerror "failed to acquire mutex ${mutex}"
+    return 1
+  fi
+
+  if ! load_key "${keysrc}"; then
+    # Key failed to load, clean up mutex
+    zwarn "failed to load key for ${keysrc}"
+    rm -f "${mutex}"
+    return 1
+  fi
+
+  if ! mnt="$( mount_zfs "${keysrc}" )"; then
+    # Mount failed (this shouldn't happen), clean up mutex
+    zerror "failed to mount ${keysrc}"
+    rm -f "${mutex}"
+    return 1
+  fi
+
+  ret=1
+  if [ -f "${mnt}/${keyfile}" ]; then
+    keydir="${keyfile%/*}"
+    if [ "x${keydir}" != "x${keyfile}" ] && [ -n "${keydir}" ]; then
+      mkdir -p "${keycache}/${keydir}"
+    fi
+
+    if cp "${mnt}/${keyfile}" "${keycache}/${keyfile}"; then
+      zdebug "copied key ${mnt}/${keyfile} to ${keycache}/${keyfile}"
+      ret=0
+    fi
+  else
+    zdebug "key file ${keysrc}:${keyfile} not found at ${mnt}/${keyfile}"
+  fi
+
+  # Clean up mount and mutex
+  umount "${mnt}"
+  rm -f "${mutex}"
+  return $ret
+}
+
 # arg1: ZFS filesystem
 # prints: nothing
 # returns: 0 on success, 1 on failure
@@ -1143,7 +1258,7 @@ be_is_locked() {
 # NOTE: this function should *not* be called from a subshell
 
 load_key() {
-  local fs encroot ret key keyformat keylocation
+  local fs encroot key keypath keyformat keylocation keysource
   fs="${1}"
 
   # Nothing to do if filesystem is not locked
@@ -1153,39 +1268,72 @@ load_key() {
 
   # Default to 0 when unset
   [ -n "${CLEAR_SCREEN}" ] || CLEAR_SCREEN=0
+  [ -n "${NO_CACHE}" ] || NO_CACHE=0
 
   # If something goes wrong discovering key location, just prompt
   if ! keylocation="$( zfs get -H -o value keylocation "${encroot}" )"; then
+    zdebug "failed to read keylocation on ${encroot}"
     keylocation="prompt"
   fi
 
-  # Assume failure unless the load expicitly succeeds
-  ret=1
-
   if [ "${keylocation}" = "prompt" ]; then
+    zdebug "prompting for passphrase for ${encroot}"
     if [ "${CLEAR_SCREEN}" -eq 1 ] ; then
       tput clear
       tput cup 0 0
     fi
+
     zfs load-key -L prompt "${encroot}"
-    ret=$?
-  else
-    key="${keylocation#file://}"
-    keyformat="$( zfs get -H -o value keyformat "${encroot}" )"
-    if [[ -f "${key}" ]]; then
-      zfs load-key "${encroot}"
-      ret=$?
-    elif [ "${keyformat}" = "passphrase" ]; then
-      if [ "${CLEAR_SCREEN}" -eq 1 ] ; then
-        tput clear
-        tput cup 0 0
-      fi
-      zfs load-key -L prompt "${encroot}"
-      ret=$?
+    return $?
+  fi
+
+  # Strip file path, relative to root
+  key="${keylocation#file://}"
+  key="${key#/}"
+
+  if [ -f "/${key}" ]; then
+    # Prefer the actual path to the key file
+    keypath="/${key}"
+  elif keysource="$( be_keysource "${fs}" )" && [ "${NO_CACHE}" -eq 0 ]; then
+    # Otherwise, try to pre-seed a cache location
+    # Don't care if this succeeds because it may already be cached
+    cache_key "${fs}" "${keylocation}"
+    # Cache loading may have unlocked this BE, don't try again
+    if ! be_is_locked "${fs}" >/dev/null 2>&1; then
+      zdebug "cache attempt has unlocked ${encroot}"
+      return 0
+    fi
+
+    # If the cached key exists, prefer it
+    if [ -f "${BASE}/.keys/${keysource}/${key}" ]; then
+      keypath="${BASE}/.keys/${keysource}/${key}"
+      zdebug "cached key path for $fs is ${keypath}"
     fi
   fi
 
-  return ${ret}
+  # Load a key from a file, if possible and necessary
+  if [ -f "${keypath}" ] && be_is_locked "${fs}" >/dev/null 2>&1; then
+    if zfs load-key -L "file://${keypath}" "${encroot}"; then
+      zdebug "unlocked ${encroot} from key at ${keypath}"
+      return 0
+    fi
+  fi
+
+  # Otherwise, try to prompt for "passphrase" keys
+  keyformat="$( zfs get -H -o value keyformat "${encroot}" )" || keyformat=""
+  if [ "x${keyformat}" != "xpassphrase" ]; then
+    zdebug "unable to load key with format ${keyformat} for ${encroot}"
+    return 1
+  fi
+
+  if [ "${CLEAR_SCREEN}" -eq 1 ] ; then
+    tput clear
+    tput cup 0 0
+  fi
+
+  zdebug "prompting for passphrase for ${encroot}"
+  zfs load-key -L prompt "${encroot}"
+  return $?
 }
 
 # arg1: path to BE list
