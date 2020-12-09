@@ -87,10 +87,13 @@ while true; do
 
   if [ ${BE_SELECTED} -eq 0 ]; then
     # Populate the BE list, load any keys as necessary
-    populate_be_list "${BASE}/env"
-    if [ ! -f "${BASE}/env" ]; then
-      emergency_shell "no boot environments with kernels found"
-      continue
+    if ! populate_be_list "${BASE}/env" || [ ! -f "${BASE}/env" ]; then
+      color=red delay=10 timed_prompt \
+        "No boot environments with kernels found" \
+        "Dropping to an emergency shell to allow recovery attempts"
+      tput clear
+      tput cnorm
+      exit 1
     fi
 
     bootenv="$( draw_be "${BASE}/env" )"

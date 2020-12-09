@@ -395,7 +395,7 @@ duplicate_snapshot() {
 # returns: 0 on success
 
 clone_snapshot() {
-  local selected target pool output opts parent
+  local selected target pool opts parent
 
   selected="${1}"
   target="${2}"
@@ -487,7 +487,7 @@ set_default_kernel() {
 # returns: nothing
 
 set_default_env() {
-  local environment pool output
+  local environment pool
 
   environment="${1}"
   [ -n "${environment}" ] || return 1
@@ -1338,10 +1338,10 @@ load_key() {
 
 # arg1: path to BE list
 # prints: nothing
-# returns: 0 on success, 1 on failure
+# returns: 0 iff at least one valid BE was found
 
 populate_be_list() {
-  local be_list fs mnt active candidates
+  local be_list fs mnt active candidates ret
 
   be_list="${1}"
   [ -n "${be_list}" ] || return 1
@@ -1372,17 +1372,18 @@ populate_be_list() {
   # put bootfs on the end, so it is shown first with --tac
   [ -n "${BOOTFS}" ] && candidates+=( "${BOOTFS}" )
 
+  ret=1
   for fs in "${candidates[@]}"; do
     # Unlock if necessary
     load_key "${fs}" || continue
 
     # Candidates are added to BE list if they have kernels in /boot
-    # shellcheck disable=SC2034
-    if output="$( find_be_kernels "${fs}" )" ; then
+    if find_be_kernels "${fs}"; then
       echo "${fs}" >> "${be_list}"
+      ret=0
     fi
   done
-  return 0
+  return $ret
 }
 
 
