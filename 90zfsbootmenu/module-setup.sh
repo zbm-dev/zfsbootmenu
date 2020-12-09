@@ -131,11 +131,11 @@ install() {
   # shellcheck disable=SC2154
   inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu-countdown.sh" "/libexec/zfsbootmenu-countdown" || _ret=$?
-  inst_simple "${moddir}/zfsbootmenu-preview.sh" "/bin/zfsbootmenu-preview.sh" || _ret=$?
+  inst_simple "${moddir}/zfsbootmenu-preview.sh" "/libexec/zfsbootmenu-preview" || _ret=$?
+  inst_simple "${moddir}/zfsbootmenu-input.sh" "/libexec/zfsbootmenu-input" || _ret=$?
+  inst_simple "${moddir}/zfsbootmenu-help.sh" "/libexec/zfsbootmenu-help" || _ret=$?
   inst_simple "${moddir}/zfs-chroot" "/bin/zfs-chroot" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu.sh" "/bin/zfsbootmenu" || _ret=$?
-  inst_simple "${moddir}/zfsbootmenu-input.sh" "/bin/zfsbootmenu-input" || _ret=$?
-  inst_simple "${moddir}/zfsbootmenu-help.sh" "/bin/zfsbootmenu-help" || _ret=$?
   inst_simple "${moddir}/zlogtail.sh" "/bin/zlogtail" || _ret=$?
   inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh" || _ret=$?
   inst_hook pre-mount 90 "${moddir}/zfsbootmenu-exec.sh" || _ret=$?
@@ -184,7 +184,7 @@ install() {
     if [ -n "${tmux_conf}" ] ; then
       dracut_install tmux
       inst_simple "${tmux_conf}" "/etc/tmux.conf"
-      
+
       # glibc locale file
       if [ -e "/usr/lib/locale/locale-archive" ]; then
         inst_simple "/usr/lib/locale/locale-archive" "/usr/lib/locale/locale-archive"
