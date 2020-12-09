@@ -135,10 +135,10 @@ draw_be() {
 
   header="$( header_wrap "[ENTER] boot" "[ALT+K] kernels" \
     "[ALT+S] snapshots" "[ALT+D] set bootfs" "[ALT+C] edit kcl" \
-    "[ALT+P] pool status" "[ALT+R] recovery shell" "[ALT+H] help")"
+    "[ALT+P] pool status" "[ALT+R] recovery shell" "[ALT+E] chroot" "[ALT+H] help")"
 
   selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
-    --expect=alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w \
+    --expect=alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-e \
     --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}" \
     --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}" < "${env}" )"
   ret=$?

@@ -1,21 +1,26 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
-BASE="$( mktemp -d /tmp/zfs.XXXX )"
-fs="$( zfs list -H -o name "${1}" )"
+# shellcheck disable=SC1091
+test -f /lib/zfsbootmenu-lib.sh && source /lib/zfsbootmenu-lib.sh
+# shellcheck disable=SC1091
+test -f zfsbootmenu-lib.sh && source zfsbootmenu-lib.sh
 
-if [ "$fs" != "${1}" ]; then
-  echo "Filesystem $1 doesn't exist"
-  exit
+zdebug "started with ${1}"
+
+[ -n "${1}" ] || exit 0
+
+if mountpoint="$( mount_zfs "${1}" )"; then
+  zdebug "Mounted ${1} to ${mountpoint}"
+  mount -t proc proc "${mountpoint}/proc"
+  mount -t sysfs sys "${mountpoint}/sys"
+  mount -B /dev "${mountpoint}/dev"
+  mount -B /tmp "${mountpoint}/var/tmp"
+  mount -t devpts pts "${mountpoint}/dev/pts"
+
+  chroot "${mountpoint}" /bin/bash
+
+  if ! umount -R "${mountpoint}"; then
+    zdebug "unable to unmount ${mountpoint}"
+  fi
 fi
-
-mount -o zfsutil -t zfs "${1}" "${BASE}"
-mount -t proc proc "${BASE}/proc"
-mount -t sysfs sys "${BASE}/sys"
-mount -B /dev "${BASE}/dev"
-mount -B /tmp "${BASE}/var/tmp"
-mount -t devpts pts "${BASE}/dev/pts"
-
-chroot "${BASE}" /bin/bash
-
-umount "${1}"

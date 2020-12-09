@@ -298,6 +298,13 @@ while true; do
           echo "${cmdline}" > "${BASE}/cmdline"
         fi
         ;;
+      "alt-e")
+        tput clear
+        tput cnorm
+        zdebug "chroot environment: ${selected_be}"
+        echo "Entering chroot for ${selected_be}"
+        /bin/bash -c "zfs-chroot ${selected_be}"
+      ;;
     esac
   fi
 done
