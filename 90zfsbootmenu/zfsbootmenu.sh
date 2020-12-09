@@ -60,13 +60,13 @@ trap '' SIGINT
 if command -v fzf >/dev/null 2>&1; then
   export FUZZYSEL=fzf
   #shellcheck disable=SC2016
-  export FZF_DEFAULT_OPTS='--ansi --no-clear --layout=reverse-list --cycle --inline-info --tac --color=16 --bind "alt-h:execute[ zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
+  export FZF_DEFAULT_OPTS='--ansi --no-clear --layout=reverse-list --cycle --inline-info --tac --color=16 --bind "alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
   export PREVIEW_HEIGHT=2
   zdebug "using fzf for pager"
 elif command -v sk >/dev/null 2>&1; then
   export FUZZYSEL=sk
   #shellcheck disable=SC2016
-  export SKIM_DEFAULT_OPTIONS='--ansi --no-clear --layout=reverse-list --inline-info --tac --color=16 --bind "alt-h:execute[ zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
+  export SKIM_DEFAULT_OPTIONS='--ansi --no-clear --layout=reverse-list --inline-info --tac --color=16 --bind "alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
   export PREVIEW_HEIGHT=3
   zdebug "using sk for pager"
 fi
@@ -220,7 +220,7 @@ while true; do
         while true;
         do
           echo -e "\nNew boot environment name"
-          new_be="$( zfsbootmenu-input "${pre_populated}" )"
+          new_be="$( /libexec/zfsbootmenu-input "${pre_populated}" )"
 
           if [ -z "${new_be}" ] ; then
             break
@@ -284,7 +284,7 @@ while true; do
         tput cnorm
 
         echo ""
-        zfsbootmenu-preview.sh "${BASE}" "${selected_be}" "${BOOTFS}"
+        /libexec/zfsbootmenu-preview "${BASE}" "${selected_be}" "${BOOTFS}"
 
         BE_ARGS="$( load_be_cmdline "${selected_be}" )"
         while IFS= read -r line; do
@@ -292,7 +292,7 @@ while true; do
         done <<< "${BE_ARGS}"
 
         echo -e "\nNew kernel command line"
-        cmdline="$( zfsbootmenu-input "${def_args}" )"
+        cmdline="$( /libexec/zfsbootmenu-input "${def_args}" )"
 
         if [ -n "${cmdline}" ] ; then
           echo "${cmdline}" > "${BASE}/cmdline"

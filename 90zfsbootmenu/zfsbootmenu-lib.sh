@@ -140,7 +140,7 @@ draw_be() {
   selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
     --expect=alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-e \
     --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}" \
-    --preview="zfsbootmenu-preview.sh ${BASE} {} ${BOOTFS}" < "${env}" )"
+    --preview="/libexec/zfsbootmenu-preview ${BASE} {} ${BOOTFS}" < "${env}" )"
   ret=$?
 
   # shellcheck disable=SC2119
@@ -170,7 +170,7 @@ draw_kernel() {
   selected="$( HELP_SECTION=KERNEL ${FUZZYSEL} --prompt "${benv} > " \
     --tac --expect=alt-d --with-nth=2 --header="${header}" \
     --preview-window="up:${PREVIEW_HEIGHT}" \
-    --preview="zfsbootmenu-preview.sh ${BASE} ${benv} ${BOOTFS}" < "${_kernels}" )"
+    --preview="/libexec/zfsbootmenu-preview ${BASE} ${benv} ${BOOTFS}" < "${_kernels}" )"
   ret=$?
 
   # shellcheck disable=SC2119
@@ -198,7 +198,7 @@ draw_snapshots() {
   selected="$( zfs list -t snapshot -H -o name "${benv}" |
       HELP_SECTION=SNAPSHOT ${FUZZYSEL} --prompt "Snapshot > " \
         --tac --expect=alt-x,alt-c,alt-d \
-        --preview="zfsbootmenu-preview.sh ${BASE} ${benv} ${BOOTFS}" \
+        --preview="/libexec/zfsbootmenu-preview ${BASE} ${benv} ${BOOTFS}" \
         --preview-window="up:${PREVIEW_HEIGHT}" \
         --header="${header}" )"
   ret=$?
@@ -244,7 +244,7 @@ draw_diff() {
   ( zfs diff -F -H "${snapshot}" "${diff_target}" & echo $! >&3 ) 3>/tmp/diff.pid | \
     sed "s,${mnt},," | \
     HELP_SECTION=DIFF ${FUZZYSEL} --prompt "${snapshot} > " \
-      --preview="zfsbootmenu-preview.sh ${BASE} ${diff_target} ${BOOTFS}" \
+      --preview="/libexec/zfsbootmenu-preview ${BASE} ${diff_target} ${BOOTFS}" \
       --preview-window="up:${PREVIEW_HEIGHT}" \
       --bind 'esc:execute-silent( kill $( cat /tmp/diff.pid ) )+abort'
 
@@ -1008,7 +1008,7 @@ resume_prompt() {
 	EOF
 
 
-    decision="$( zfsbootmenu-input )"
+    decision="$( /libexec/zfsbootmenu-input )"
 
     if [ "x${decision}" = "xDANGEROUS" ]; then
       return 0
