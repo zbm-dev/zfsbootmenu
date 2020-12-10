@@ -61,7 +61,7 @@ case "$(uname -m)" in
   ;;
 esac
 
-DRIVE=("-drive" "format=raw,file=${TESTDIR}/zfsbootmenu-pool.img")
+DRIVE=()
 INITRD="${TESTDIR}/initramfs-bootmenu.img"
 MEMORY="2048M"
 SMP="2"
@@ -84,11 +84,14 @@ while getopts "${CMDOPTS}" opt; do
       APPEND="${OPTARG}"
       ;;
     d)
-      if ! _dimg="$(realpath -e "${TESTDIR}/${OPTARG}")"; then
-        echo "ERROR: disk image '${TESTDIR}/${OPTARG}' does not exist"
+      if _dimg="$( realpath -e "${OPTARG}")"; then
+        DRIVE+=("-drive" "format=raw,file=${_dimg}")
+      elif _dimg="$(realpath -e "${TESTDIR}/${OPTARG}")"; then
+        DRIVE+=("-drive" "format=raw,file=${_dimg}")
+      else
+        echo "ERROR: disk image '${OPTARG}' does not exist"
         exit 1
       fi
-      DRIVE+=("-drive" "format=raw,file=${_dimg}")
       ;;
     n)
       CREATE=0
@@ -103,6 +106,13 @@ while getopts "${CMDOPTS}" opt; do
       ;;
   esac
 done
+
+# If no drives were specified, glob all -pool.img disks
+if [ "${#DRIVE[@]}" -eq 0 ]; then
+  for _dimg in "${TESTDIR}"/*-pool.img; do
+    DRIVE+=("-drive" "format=raw,file=${_dimg}")
+  done
+fi
 
 if [ -n "${DISPLAY_TYPE}" ]; then
   # Use the indicated graphical display
