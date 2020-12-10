@@ -87,6 +87,7 @@ mkdir -p "${TESTDIR}" || exit 1
 if ((CONFD)) && [ ! -d "${TESTDIR}/dracut.conf.d" ]; then
   echo "Creating dracut.conf.d"
   cp -Rp ../etc/zfsbootmenu/dracut.conf.d "${TESTDIR}"
+  echo 'zfsbootmenu_tmux=true' > "${TESTDIR}/dracut.conf.d/tmux.conf"
 fi
 
 if ((DRACUT)) ; then
