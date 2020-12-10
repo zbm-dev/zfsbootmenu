@@ -20,6 +20,7 @@ Usage: $0 [options]
   -m  When making an image, use musl instead of glibc
   -D  Specify a test directory to use
   -s  Specify size of VM image
+  -e  Enable native ZFS encryption
 EOF
 }
 
