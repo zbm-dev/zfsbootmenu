@@ -1,3 +1,43 @@
+# UNRELEASED v1.8.0 (2020-12-XX)
+
+ZFSBootMenu 1.8.0 offers a significant list of new features, fixes and general improvements.
+
+## Fixes
+* When duplicating snapshots, the process can now be interrupted with SIGINT (Ctrl-C).
+* Availability of sufficient free space is confirmed before attempting snapshot duplication.
+* The `generate-zbm` command now ensures that the target directory for boot images has sufficient space, rather than copying partial and generally broken files.
+* Because ZFSBootMenu never modifies filesystem contents, ZFS filesystems are always mounted read-only, even if the pool is writable.
+* Changes to the handling of encryption keys correctly handle some corner cases, such as duplicating a snapshot of a filesystem with a different encryptionroot than its parent.
+
+## New features
+* Colored text and timed messages are used to bring emphasis to important messages presented by ZFSBootMenu.
+* Extensive logging to the kernel ring-buffer has been enabled throughout ZFSBootMenu, with verbosity controlled by the `loglevel` kernel-command-line argument.
+* Much of the core menu functionality has been separated into a standalone `zfsbootmenu` program on the initramfs, allowing the menu to be accessed over SSH using something like the [dracut-crypt-ssh](https://github.com/dracut-crypt-ssh/dracut-crypt-ssh) module.
+* Boot images can be configured to include [tmux](https://github.com/tmux/tmux), allowing the boot menu to be presented in a multi-pane, detachable view. This is primarily aimed at development/debugging efforts. See descriptions of the `zbm.tmux` command-line option and the `zfsbootmenu_tmux` dracut option in the [zfsbootmenu(7)](https://github.com/zbm-dev/zfsbootmenu/blob/master/pod/zfsbootmenu.7.pod) manual page.
+* ZFSBootMenu can now execute arbitrary, user-supplied "setup" hooks before the menu is displayed and "teardown" hooks immediately before jumping into a selected boot environment. See descriptions of the `zfsbootmenu_setup` and `zfsbootmenu_teardown` dracut options in the [zfsbootmenu(7)](https://github.com/zbm-dev/zfsbootmenu/blob/master/pod/zfsbootmenu.7.pod) manual page.
+* Encryption keys can now be cached by pointing the `org.zfsbootmenu:keysource` property of a ZFS encryptionroot to a specific filesystem. When ZFSBootMenu attempts to load a key from a `file://` location, it will first attempt to load the key at that location relative to the filesystem specified by `org.zfsbootmenu:keysource`. If this succeeds, ZFSBootMenu will retain a copy of the key in the initramfs so that subsequent need for the key (for example, when re-importing a pool read-write to set default boot options or duplicate a snapshot) will not require re-entry of the passphrase. See descriptions of the `org.zfsbootmenu:keysource` ZFS property in the [zfsbootmenu(7)](https://github.com/zbm-dev/zfsbootmenu/blob/master/pod/zfsbootmenu.7.pod) manual page.
+
+## Significant commits in this release
+* 8ffe139 - Add a keybind for zfs-chroot, rework script with -lib in mind (Zach Dykstra)
+* 2c3e9b5 - Support configurable, opt-in caching of key files (Andrew J. Hesford)
+* 45d0066 - Add zlog() logging helper, along with debug-level logging (Zach Dykstra)
+* 47aa434 - Add support for richer setup and teardown hooks (Andrew J. Hesford)
+* 88818a9 - Support optional "teardown" script to run before kexec (Andrew J. Hesford)
+* 2045315 - Optionally launch under tmux (Zach Dykstra)
+* 7f71d4f - Mount ZFS filesystems readonly (Andrew J. Hesford)
+* d559b96 - Improve key handling (Andrew J. Hesford)
+* ee468aa - Initial split of core menu logic from initialization (Andrew J. Hesford)
+* 25baa48 - Log dracut command, add man page documentation (Zach Dykstra)
+* 3f02b8f - Prevent copying of partial files when target volume is full (Andrew J. Hesford)
+* 258d18a - Merge fuctionality of createInitramfs and unifiedEFI (Andrew J. Hesford)
+* 4b6e9ae - Add subroutine for debug logging (Zach Dykstra)
+* 82bbdc4 - Rely on local IFS override instead of global changes (Zach Dykstra)
+* 402474b - Make alt-w a toggle between R/O and R/W imports (Andrew J. Hesford)
+* 953c724 - Richer color handling in timed_prompt (formerly warning_prompt) (Andrew J. Hesford)
+* eb39ea6 - Show countdown in warning_prompt, use to display auto-boot countdown (Zach Dykstra)
+* f10e7e8 - Rough avail space validation in duplicate_snapshot (Zach Dykstra)
+* bc0e117 - Move duplicate to sub shell, exit on sigint (Zach Dykstra)
+
 # ZFSBootMenu v1.7.1 (2020-11-18)
 
 This is a minor bug-fix release.
@@ -8,9 +48,9 @@ This is a minor bug-fix release.
 * Changes made to the handling of `/etc/hostid` in the ZFSBootMenu dracut module in anticipation of similar changes in the upcoming OpenZFS 2.0.0 release. This caused inconsistent behavior on systems using the musl C library with current versions of ZFS on Linux, resulting in potentially unbootable systems without forcing the `spl_hostid` command-line parameter. Now, the ZFSBootMenu dracut module attempts to discover the installed version of ZFS and behave consistently.
 
 ## Significant commits in this release
-940cd4c - Fall back to legacy hostid creation for ZFS < 2.0 (Andrew J. Hesford)
-6cc0076 - Fix key_wrapper calls with out CLEAR_SCREEN defined (Zach Dykstra)
-65a1a33 - Loop the emergency shell when initial pool imports fail (Andrew J. Hesford)
+* 940cd4c - Fall back to legacy hostid creation for ZFS < 2.0 (Andrew J. Hesford)
+* 6cc0076 - Fix key_wrapper calls with out CLEAR_SCREEN defined (Zach Dykstra)
+* 65a1a33 - Loop the emergency shell when initial pool imports fail (Andrew J. Hesford)
 
 # ZFSBootMenu v1.7.0 (2020-11-15)
 
