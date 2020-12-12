@@ -81,11 +81,18 @@ Set the selected boot environment as the default for the pool.
 
 The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
 
-$( colorize lightblue "[ALT+C] edit kcl" )
+$( colorize lightblue "[ALT+E] edit kcl" )
 Temporarily edit the kernel command line that will be used to boot the chosen kernel in the selected boot environment. This change does not persist across reboots.
 
 $( colorize lightblue "[ALT+P] pool status" )
 View the health and status of each imported pool.
+
+$( colorize lightblue "[ALT+R] recovery shell" )
+Execute a Bash shell with minimal tooling, enabling system maintenance.
+
+$( colorize lightblue "[ALT+C] chroot" )
+Enter a chroot of the selected boot environment. The boot environment is mounted $( colorize red "read/write") if the zpool is imported $( colorize red "read/write" ). 
+
 EOF
 SECTIONS+=("MAIN Main Menu")
 

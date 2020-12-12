@@ -29,6 +29,14 @@ while true; do
   if [ "${import_success}" -ne 1 ]; then
     emergency_shell "unable to successfully import a pool"
   else
+    zdebug "$(
+      echo "zpool list" ; \
+      zpool list
+    )"
+    zdebug "$(
+      echo "zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource" ;\
+      zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource
+    )"
     break
   fi
 done

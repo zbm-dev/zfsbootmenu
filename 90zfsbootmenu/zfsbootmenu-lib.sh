@@ -51,7 +51,7 @@ zerror() {
 # If the filesystem is locked, this method fails without attempting unlock
 
 mount_zfs() {
-  local fs rwo mnt ret
+  local fs rwo mnt ret pool
 
   fs="${1}"
   if be_is_locked "${fs}" >/dev/null; then
@@ -66,7 +66,8 @@ mount_zfs() {
   rwo="ro"
   # shellcheck disable=SC2154
   if [ -n "${allow_rw}" ]; then
-    if is_writable "${fs%%/*}"; then
+    pool="${fs%%/*}"
+    if is_writable "${pool}"; then
       rwo="rw"
     else
       zwarn "read-write mount of ${fs} forbidden, pool ${pool} is not writable"
@@ -145,8 +146,8 @@ draw_be() {
   test -f "${env}" || return 130
 
   header="$( header_wrap "[ENTER] boot" "[ALT+K] kernels" \
-    "[ALT+S] snapshots" "[ALT+D] set bootfs" "[ALT+C] edit kcl" \
-    "[ALT+P] pool status" "[ALT+R] recovery shell" "[ALT+E] chroot" "[ALT+H] help")"
+    "[ALT+S] snapshots" "[ALT+D] set bootfs" "[ALT+E] edit kcl" \
+    "[ALT+P] pool status" "[ALT+R] recovery shell" "[ALT+C] chroot" "[ALT+H] help")"
 
   selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
     --expect=alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-e \
