@@ -279,7 +279,7 @@ while true; do
           CLEAR_SCREEN=1 load_key "${selected_be}"
         fi
         ;;
-      "alt-c")
+      "alt-e")
         tput clear
         tput cnorm
 
@@ -298,7 +298,7 @@ while true; do
           echo "${cmdline}" > "${BASE}/cmdline"
         fi
         ;;
-      "alt-e")
+      "alt-c")
         tput clear
         tput cnorm
         zdebug "chroot environment: ${selected_be}"

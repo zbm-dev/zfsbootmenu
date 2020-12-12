@@ -82,6 +82,8 @@ install() {
     "awk"
     "fold"
     "ps"
+    "env"
+    "chmod"
   )
 
   for _exec in "${essential_execs[@]}"; do
@@ -134,7 +136,7 @@ install() {
   inst_simple "${moddir}/zfsbootmenu-preview.sh" "/libexec/zfsbootmenu-preview" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu-input.sh" "/libexec/zfsbootmenu-input" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu-help.sh" "/libexec/zfsbootmenu-help" || _ret=$?
-  inst_simple "${moddir}/zfs-chroot" "/bin/zfs-chroot" || _ret=$?
+  inst_simple "${moddir}/zfs-chroot.sh" "/bin/zfs-chroot" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu.sh" "/bin/zfsbootmenu" || _ret=$?
   inst_simple "${moddir}/zlogtail.sh" "/bin/zlogtail" || _ret=$?
   inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh" || _ret=$?
