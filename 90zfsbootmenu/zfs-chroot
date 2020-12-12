@@ -10,7 +10,7 @@ zdebug "started with ${1}"
 
 [ -n "${1}" ] || exit 0
 
-if mountpoint="$( mount_zfs "${1}" )"; then
+if mountpoint="$( allow_rw=yes mount_zfs "${1}" )"; then
   zdebug "Mounted ${1} to ${mountpoint}"
   mount -t proc proc "${mountpoint}/proc"
   mount -t sysfs sys "${mountpoint}/sys"
