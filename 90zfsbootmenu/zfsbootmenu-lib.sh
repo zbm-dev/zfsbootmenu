@@ -51,7 +51,7 @@ zerror() {
 # If the filesystem is locked, this method fails without attempting unlock
 
 mount_zfs() {
-  local fs mnt ret
+  local fs rwo mnt ret
 
   fs="${1}"
   if be_is_locked "${fs}" >/dev/null; then
@@ -62,14 +62,25 @@ mount_zfs() {
   mnt="${BASE}/${fs}/mnt"
   test -d "${mnt}" || mkdir -p "${mnt}"
 
+  # filesystems are readonly by default, but read-write mounts may be requested
+  rwo="ro"
+  # shellcheck disable=SC2154
+  if [ -n "${allow_rw}" ]; then
+    if is_writable "${fs%%/*}"; then
+      rwo="rw"
+    else
+      zwarn "read-write mount of ${fs} forbidden, pool ${pool} is not writable"
+    fi
+  fi
+
   # zfsutil is required for non-legacy mounts and omitted for legacy mounts
   if [ "x$(zfs get -H -o value mountpoint "${fs}")" = "xlegacy" ]; then
-    zdebug "mounting ${fs} at ${mnt}"
-    mount -o ro -t zfs "${fs}" "${mnt}"
+    zdebug "mounting ${fs} at ${mnt} (${rwo})"
+    mount -o "${rwo}" -t zfs "${fs}" "${mnt}"
     ret=$?
   else
-    zdebug "mounting ${fs} at ${mnt} with zfsutil"
-    mount -o zfsutil,ro -t zfs "${fs}" "${mnt}"
+    zdebug "mounting ${fs} at ${mnt} (${rwo}) with zfsutil"
+    mount -o "zfsutil,${rwo}" -t zfs "${fs}" "${mnt}"
     ret=$?
   fi
 
