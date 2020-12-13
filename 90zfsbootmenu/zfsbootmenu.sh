@@ -125,11 +125,7 @@ while true; do
       exit
       ;;
     "alt-k")
-      selection="$( draw_kernel "${selected_be}" )"
-      ret=$?
-
-      # Only continue if a selection was made
-      [ $ret -eq 0 ] || continue
+      selection="$( draw_kernel "${selected_be}" )" || continue
 
       # shellcheck disable=SC2162
       IFS=, read subkey selected_kernel <<< "${selection}"
@@ -151,11 +147,7 @@ while true; do
       esac
       ;;
     "alt-p")
-      selection="$( draw_pool_status )"
-      ret=$?
-
-      # Only continue if a selection was made
-      [ $ret -eq 0 ] || continue
+      selection="$( draw_pool_status )" || continue
 
       # shellcheck disable=SC2162
       IFS=, read subkey selected_pool <<< "${selection}"
@@ -175,11 +167,7 @@ while true; do
       echo "${BOOTFS}" > "${BASE}/bootfs"
       ;;
     "alt-s")
-      selection="$( draw_snapshots "${selected_be}" )"
-      ret=$?
-
-      # Only continue if a selection was made
-      [ $ret -eq 0 ] || continue
+      selection="$( draw_snapshots "${selected_be}" )" || continue
 
       # shellcheck disable=SC2162
       IFS=, read subkey selected_snap <<< "${selection}"
