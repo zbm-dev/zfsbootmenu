@@ -1,4 +1,4 @@
-# UNRELEASED v1.8.0 (2020-12-XX)
+# ZFSBootMenu v1.8.0 (2020-12-15)
 
 ZFSBootMenu 1.8.0 offers a significant list of new features, fixes and general improvements.
 
