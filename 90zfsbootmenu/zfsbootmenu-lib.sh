@@ -112,55 +112,85 @@ csv_cat() {
 # returns: nothing
 
 header_wrap() {
-  local tokens footer
-
-  # Nothing to print if there is no header
-  [ $# -gt 0 ] || return
-
-  # Encode spaces in tokens so wrap won't break them
-  while [ $# -gt 0 ]; do
-    tokens+=( "${1// /_}" )
-    shift
-  done
+  local hardbreak tokens tok footer nlines
 
   # Pick a wrap width if none was specified
   [ -n "$wrap_width" ] || wrap_width="$(( $( tput cols ) - 4 ))"
 
-  footer="$( echo -n -e "${tokens[@]}" | fold -s -w "${wrap_width}" )"
-  footer="${footer//\[/\\033\[0;32m\[}"
-  footer="${footer//\]/\]\\033\[0m}"
-  echo -n -e "${footer//_/ }"
+  nlines="$( tput lines 2>/dev/null )" || nlines=0
+
+  # Processing is done line-by-line
+  while [ $# -gt 0 ]; do
+    hardbreak=0
+    tokens=()
+
+    # Process up to the first empty string, which is a hard break
+    while [ $# -gt 0 ]; do
+      tok="${1// /_}"
+      shift
+
+      if [ -n "${tok}" ]; then
+        tokens+=( "${tok}" )
+      elif [ "$nlines" -ge 24 ]; then
+        # Hard wrap on empty tokens only with sufficient space
+        hardbreak=1
+        break
+      fi
+    done
+
+    # Print the header if there were tokens
+    if [ "${#tokens[@]}" -gt 0 ]; then
+      # Only try to wrap if the width is long enough
+      if [ "${wrap_width}" -gt 0 ]; then
+        footer="$( echo -n -e "${tokens[@]}" | fold -s -w "${wrap_width}" )"
+      else
+        footer="$( echo -n -e "${tokens[@]}" )"
+      fi
+
+      # Add some color for emphasis
+      footer="${footer//\[/\\033\[0;32m\[}"
+      footer="${footer//\]/\]\\033\[0m}"
+
+      echo -n -e "${footer//_/ }"
+    fi
+
+    # Add a hard break if an empty token was provided
+    if [ "${hardbreak}" -ne 0 ]; then
+      echo ""
+    fi
+  done
 }
 
 # arg1: Path to file with detected boot environments, 1 per line
-# prints: key pressed, boot environment
-# returns: 130 on error, 0 otherwise
+# prints: key pressed, boot environment on successful selection
+# returns: 0 on successful selection, 1 if Esc was pressed, 130 if BE list is missing
 
 draw_be() {
-  local env selected ret header
+  local env selected header
 
   env="${1}"
 
   zdebug "using environment file: ${env}"
 
-  test -f "${env}" || return 130
+  [ -f "${env}" ] || return 130
 
-  header="$( header_wrap "[ENTER] boot" "[ALT+K] kernels" \
-    "[ALT+S] snapshots" "[ALT+D] set bootfs" "[ALT+E] edit kcl" \
-    "[ALT+P] pool status" "[ALT+R] recovery shell" "[ALT+C] chroot" "[ALT+H] help")"
+  header="$( header_wrap "[ENTER] boot" "[ESC] refresh view" "" \
+    "[ALT+E] edit kcl" "[ALT+K] kernels" "[ALT+D] set bootfs" "[ALT+S] snapshots" "" \
+    "[ALT+C] chroot" "[ALT+R] recovery shell" "[ALT+P] pool status" "[ALT+H] help" )"
 
-  selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
-    --expect=alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-e \
-    --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}" \
-    --preview="/libexec/zfsbootmenu-preview ${BASE} {} ${BOOTFS}" < "${env}" )"
-  ret=$?
+  if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
+      --expect=alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-e \
+      --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}" \
+      --preview="/libexec/zfsbootmenu-preview ${BASE} {} ${BOOTFS}" < "${env}" )"; then
+    return 1
+  fi
 
   # shellcheck disable=SC2119
   selected="$( csv_cat <<< "${selected}" )"
   echo "${selected}"
   zdebug "selected: ${selected}"
 
-  return ${ret}
+  return 0
 }
 
 # arg1: ZFS filesystem name
@@ -168,7 +198,7 @@ draw_be() {
 # returns: 130 on error, 0 otherwise
 
 draw_kernel() {
-  local benv selected ret header _kernels
+  local benv selected header _kernels
 
   benv="${1}"
   _kernels="${BASE}/${benv}/kernels"
@@ -177,20 +207,23 @@ draw_kernel() {
 
   test -f "${_kernels}" || return 130
 
-  header="$( header_wrap "[ENTER] boot" "[ALT+D] set default" "[ESC] back" "[ALT+H] help" )"
+  header="$( header_wrap \
+    "[ENTER] boot" "[ESC] back" "" "[ALT+D] set default" "[ALT+H] help" )"
 
-  selected="$( HELP_SECTION=KERNEL ${FUZZYSEL} --prompt "${benv} > " \
-    --tac --expect=alt-d --with-nth=2 --header="${header}" \
-    --preview-window="up:${PREVIEW_HEIGHT}" \
-    --preview="/libexec/zfsbootmenu-preview ${BASE} ${benv} ${BOOTFS}" < "${_kernels}" )"
-  ret=$?
+  if ! selected="$( HELP_SECTION=KERNEL ${FUZZYSEL} --prompt "${benv} > " \
+      --tac --expect=alt-d --with-nth=2 --header="${header}" \
+      --preview-window="up:${PREVIEW_HEIGHT}" \
+      --preview="/libexec/zfsbootmenu-preview \
+      ${BASE} ${benv} ${BOOTFS}" < "${_kernels}" )"; then
+    return 1
+  fi
 
   # shellcheck disable=SC2119
   selected="$( csv_cat <<< "${selected}" )"
   echo "${selected}"
   zdebug "selected: ${selected}"
 
-  return ${ret}
+  return 0
 }
 
 # arg1: ZFS filesystem name
@@ -198,29 +231,31 @@ draw_kernel() {
 # returns: 130 on error, 0 otherwise
 
 draw_snapshots() {
-  local benv selected ret header
+  local benv selected header
 
   benv="${1}"
 
   zdebug "using boot environment: ${benv}"
 
-  header="$( header_wrap "[ENTER] duplicate" "[ALT+X] clone and promote" \
-    "[ALT+C] clone only" "[ALT+D] show diff" "[ESC] back" "[ALT+H] help" )"
+  header="$( header_wrap \
+    "[ENTER] duplicate" "[ESC] back" "" \
+    "[ALT+D] show diff" "[ALT+X] clone and promote" "[ALT+C] clone only" "[ALT+H] help" )"
 
-  selected="$( zfs list -t snapshot -H -o name "${benv}" |
+  if ! selected="$( zfs list -t snapshot -H -o name "${benv}" |
       HELP_SECTION=SNAPSHOT ${FUZZYSEL} --prompt "Snapshot > " \
         --tac --expect=alt-x,alt-c,alt-d \
         --preview="/libexec/zfsbootmenu-preview ${BASE} ${benv} ${BOOTFS}" \
         --preview-window="up:${PREVIEW_HEIGHT}" \
-        --header="${header}" )"
-  ret=$?
+        --header="${header}" )"; then
+    return 1
+  fi
 
   # shellcheck disable=SC2119
   selected="$( csv_cat <<< "${selected}" )"
   echo "${selected}"
   zdebug "selected: ${selected}"
 
-  return ${ret}
+  return 0
 }
 
 # arg1: ZFS snapshot
@@ -271,25 +306,25 @@ draw_diff() {
 # returns: 130 on error, 0 otherwise
 
 draw_pool_status() {
-  local selected ret header hdr_width
+  local selected header hdr_width
 
   # Wrap to half width to avoid the preview window
   hdr_width="$(( ( $( tput cols ) / 2 ) - 4 ))"
   header="$( wrap_width="$hdr_width" header_wrap \
-    "[ALT+R] rewind checkpoint" "[ESC] back" "[ALT+H] help" )"
+    "[ESC] back" "" "[ALT+R] rewind checkpoint" "" "[ALT+H] help" )"
 
-  selected="$( zpool list -H -o name |
-    HELP_SECTION=POOL ${FUZZYSEL} --prompt "Pool > " --tac \
-      --expect=alt-r --preview="zpool status -v {}" --header="${header}"
-  )"
-  ret=$?
+  if ! selected="$( zpool list -H -o name |
+      HELP_SECTION=POOL ${FUZZYSEL} --prompt "Pool > " --tac \
+      --expect=alt-r --preview="zpool status -v {}" --header="${header}" )"; then
+    return 1
+  fi
 
   # shellcheck disable=SC2119
   selected="$( csv_cat <<< "${selected}" )"
   echo "${selected}"
   zdebug "selected: ${selected}"
 
-  return ${ret}
+  return 0
 }
 
 # arg1: bootfs kernel initramfs
