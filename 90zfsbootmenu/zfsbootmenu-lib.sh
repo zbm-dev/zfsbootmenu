@@ -51,7 +51,7 @@ zerror() {
 # If the filesystem is locked, this method fails without attempting unlock
 
 mount_zfs() {
-  local fs rwo mnt ret pool
+  local fs rwo mnt ret pool is_snapshot
 
   fs="${1}"
   if be_is_locked "${fs}" >/dev/null; then
@@ -62,25 +62,35 @@ mount_zfs() {
   mnt="${BASE}/${fs}/mnt"
   test -d "${mnt}" || mkdir -p "${mnt}"
 
+  # @ always denotes a snapshot
+  if [[ "${fs}" =~ @ ]]; then
+    is_snapshot=1
+  fi
+
   # filesystems are readonly by default, but read-write mounts may be requested
   rwo="ro"
   # shellcheck disable=SC2154
   if [ -n "${allow_rw}" ]; then
     pool="${fs%%/*}"
-    if is_writable "${pool}"; then
+    if is_writable "${pool}" && [ -z "${is_snapshot}" ]; then
       rwo="rw"
     else
-      zwarn "read-write mount of ${fs} forbidden, pool ${pool} is not writable"
+      if [ -n "${is_snapshot}" ]; then
+        zwarn "read-write mount of ${fs} forbidden, filesystem is a snapshot"
+      else
+        zwarn "read-write mount of ${fs} forbidden, pool ${pool} is not writable"
+      fi
     fi
   fi
 
-  # zfsutil is required for non-legacy mounts and omitted for legacy mounts
-  if [ "x$(zfs get -H -o value mountpoint "${fs}")" = "xlegacy" ]; then
+  # zfsutil is required for non-legacy mounts and omitted for legacy mounts or snapshots
+  if [ "x$(zfs get -H -o value mountpoint "${fs}")" = "xlegacy" ] || [ -n "${is_snapshot}" ]; then
     zdebug "mounting ${fs} at ${mnt} (${rwo})"
     mount -o "${rwo}" -t zfs "${fs}" "${mnt}"
     ret=$?
   else
     zdebug "mounting ${fs} at ${mnt} (${rwo}) with zfsutil"
+    zdebug "mount -o zfsutil,${rwo} -t zfs ${fs} ${mnt}"
     mount -o "zfsutil,${rwo}" -t zfs "${fs}" "${mnt}"
     ret=$?
   fi
@@ -239,11 +249,12 @@ draw_snapshots() {
 
   header="$( header_wrap \
     "[ENTER] duplicate" "[ESC] back" "" \
-    "[ALT+D] show diff" "[ALT+X] clone and promote" "[ALT+C] clone only" "[ALT+H] help" )"
+    "[ALT+D] show diff" "[ALT+E] chroot" "" \
+    "[ALT+X] clone and promote" "[ALT+C] clone only" "[ALT+H] help" )"
 
   if ! selected="$( zfs list -t snapshot -H -o name "${benv}" |
       HELP_SECTION=SNAPSHOT ${FUZZYSEL} --prompt "Snapshot > " \
-        --tac --expect=alt-x,alt-c,alt-d \
+        --tac --expect=alt-x,alt-c,alt-d,alt-e \
         --preview="/libexec/zfsbootmenu-preview ${BASE} ${benv} ${BOOTFS}" \
         --preview-window="up:${PREVIEW_HEIGHT}" \
         --header="${header}" )"; then
@@ -1431,6 +1442,22 @@ populate_be_list() {
     fi
   done
   return $ret
+}
+
+# arg1: ZFS filesystem
+# prints: nothing
+# returns: nothing
+
+zfs_chroot() {
+  local fs
+  fs="${1}"
+  [ -n "${fs}" ] || return
+
+  tput clear
+  tput cnorm
+
+  zdebug "chroot environment: ${fs}"
+  /bin/bash -c "zfs-chroot ${fs}"
 }
 
 

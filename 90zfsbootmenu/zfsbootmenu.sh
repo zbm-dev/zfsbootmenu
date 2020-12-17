@@ -187,6 +187,11 @@ while true; do
           BE_SELECTED=1
           continue
         ;;
+          "alt-e")
+          zfs_chroot "${selected_snap}"
+          BE_SELECTED=1
+          continue
+        ;;
         # Check available space early in the process
         "enter")
           avail_space_exact="$( zfs list -p -H -o available "${parent_ds}" )"
@@ -281,11 +286,7 @@ while true; do
       fi
       ;;
     "alt-c")
-      tput clear
-      tput cnorm
-      zdebug "chroot environment: ${selected_be}"
-      echo "Entering chroot for ${selected_be}"
-      /bin/bash -c "zfs-chroot ${selected_be}"
+      zfs_chroot "${selected_be}"
     ;;
   esac
 done
