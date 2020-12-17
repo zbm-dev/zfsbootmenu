@@ -16,21 +16,7 @@ else
   warn "ZFSBootMenu: Pools may not import correctly."
 fi
 
-# Force import pools only when explicitly told to do so
-if getargbool 0 force_import ; then
-  # shellcheck disable=SC2034
-  force_import="yes"
-  info "ZFSBootMenu: Enabling force import of ZFS pools"
-fi
-
-# Set a menu timeout, to allow immediate booting
-menu_timeout=$( getarg timeout=)
-if [ -n "${menu_timeout}" ]; then
-  info "ZFSBootMenu: Setting menu timeout from command line: ${menu_timeout}"
-else
-  menu_timeout=10
-fi
-
+# Use the last defined console= to control menu output
 control_term=$( getarg console=)
 if [ -n "${control_term}" ]; then
   info "ZFSBootMenu: Setting controlling terminal to: ${control_term}"
@@ -38,6 +24,35 @@ if [ -n "${control_term}" ]; then
 else
   control_term="/dev/tty1"
   info "ZFSBootMenu: Defaulting controlling terminal to: ${control_term}"
+fi
+
+# Use loglevel to determine logging to /dev/kmsg
+loglevel=$( getarg loglevel=)
+if [ -n "${loglevel}" ]; then
+  info "ZFSBootMenu: setting log level from command line: ${loglevel}"
+else
+  loglevel=3
+fi
+
+# Force import pools only when explicitly told to do so
+if getargbool 0 zbm.force_import -d force_import ; then
+  # shellcheck disable=SC2034
+  force_import="yes"
+  info "ZFSBootMenu: Enabling force import of ZFS pools"
+fi
+
+# zbm.timeout= overrides timeout=
+menu_timeout=$( getarg zbm.timeout -d timeout )
+if [ -n "${menu_timeout}" ]; then
+  info "ZFSBootMenu: Setting menu timeout from command line: ${menu_timeout}"
+elif getargbool 0 zbm.show ; then
+  menu_timeout=-1;
+  info "ZFSBootMenu: forcing display of menu"
+elif getargbool 0 zbm.skip ; then
+  menu_timeout=0;
+  info "ZFSBootMenu: skipping display of menu"
+else
+  menu_timeout=10
 fi
 
 # Allow setting of console size; there are no defaults here
@@ -51,13 +66,6 @@ zbm_columns=$( getarg zbm.columns=)
 if getargbool 0 zbm.tmux ; then
   zbm_tmux="yes"
   info "ZFSBootMenu: Enabling tmux integrations"
-fi
-
-loglevel=$( getarg loglevel=)
-if [ -n "${loglevel}" ]; then
-  info "ZFSBootMenu: setting log level from command line: ${loglevel}"
-else
-  loglevel=3
 fi
 
 wait_for_zfs=0
