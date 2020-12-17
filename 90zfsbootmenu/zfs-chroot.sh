@@ -17,19 +17,17 @@ if mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
   mount -t proc proc "${mountpoint}/proc"
   mount -t sysfs sys "${mountpoint}/sys"
   mount -B /dev "${mountpoint}/dev"
-  mount -B /tmp "${mountpoint}/var/tmp"
+  mount -B /tmp "${mountpoint}/tmp"
   mount -t devpts pts "${mountpoint}/dev/pts"
-
-  tput clear
-  tput cnorm
 
   pool="${selected%%/*}"
 
   if is_writable "${pool}"; then
-    echo "${selected} is mounted read/write"
+    echo -n "${selected} is mounted read/write"
   else
-    echo "${selected} is mounted read-only"
+    echo -n "${selected} is mounted read-only"
   fi
+  echo -e ", /tmp is shared and read/write\n"
 
   if [ -f "${mountpoint}/bin/bash" ]; then
     _SHELL="/bin/bash"
