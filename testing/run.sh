@@ -158,6 +158,19 @@ elif [ ! -f "${INITRD}" ] ; then
   exit 1
 fi
 
+SSH_PORT=2222
+while true; do
+  PID="$( lsof -Pi :${SSH_PORT} -sTCP:LISTEN -t )"
+  if [ -n "${PID}" ] ; then
+    SSH_PORT=$((SSH_PORT+1))
+    continue
+  else
+    echo "Using SSH port ${SSH_PORT}"
+    sleep 5
+    break
+  fi
+done
+
 # shellcheck disable=SC2086
 "${BIN}" \
 	-kernel "${KERNEL}" \
@@ -171,7 +184,7 @@ fi
 	-device virtio-rng-pci,rng=rng0 \
 	"${DISPLAY_ARGS[@]}" \
 	-serial mon:stdio \
-	-netdev user,id=n1,hostfwd=tcp::2222-:22 -device virtio-net-pci,netdev=n1 \
+	-netdev user,id=n1,hostfwd=tcp::${SSH_PORT}-:22 -device virtio-net-pci,netdev=n1 \
 	-append "${APPEND}" || exit 1
 
 if ((SERIAL)); then
