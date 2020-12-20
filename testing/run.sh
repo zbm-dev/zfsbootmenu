@@ -49,14 +49,14 @@ case "$(uname -m)" in
     BIN="qemu-system-ppc64"
     KERNEL="${TESTDIR}/vmlinux-bootmenu"
     MACHINE="pseries,accel=kvm,kvm-type=HV,cap-hpt-max-page-size=4096"
-    APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest"
+    APPEND="loglevel=7 zbm.timeout=5 root=zfsbootmenu:POOL=ztest"
     SERDEV="hvc0"
   ;;
   x86_64)
     BIN="qemu-system-x86_64"
     KERNEL="${TESTDIR}/vmlinuz-bootmenu"
     MACHINE="type=q35,accel=kvm"
-    APPEND="loglevel=7 timeout=5 root=zfsbootmenu:POOL=ztest"
+    APPEND="loglevel=7 zbm.timeout=5 root=zfsbootmenu:POOL=ztest"
     SERDEV="ttyS0"
   ;;
 esac
