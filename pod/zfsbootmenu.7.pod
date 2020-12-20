@@ -12,42 +12,50 @@ These options are set on the kernel command line when booting the initramfs or U
 
 =over 4
 
+=item B<root=zfsbootmenu:POOL=E<lt>poolE<gt>>
+
+By default, ZFSBootMenu will look for the I<bootfs> property on the first pool it imports to select the default boot environment. If you have multiple pools, substitute the name of your preferred pool for B<E<lt>poolE<gt>> in the argument B<root=zfsbootmenu:POOL=E<lt>poolE<gt>>.
+
 =item B<spl_hostid=E<lt>hostidE<gt>>
 
 When creating an initramfs or UEFI bundle, the I<hostid> from the system is copied into the target. If this image will be used on another system with a different I<hostid>, it can be overridden with this option.
 
 Replace B<E<lt>hostidE<gt>> with an eight-digit hexadecimal number.
 
-=item B<force_import=1>
+=item B<zbm.force_import=1>
 
 Set this option to attempt to force pool imports. When set, this invokes I<zpool import -f> in place of the regular I<zpool import> command, which will attempt to import a pool that's potentially in use on another system. Use this option with caution!
 
-Omit this option or explicitly specify B<force_import=0> to disable forced imports.
+Omit this option or explicitly specify B<zbm.force_import=0> to disable forced imports.
 
-=item B<timeout>
+=item B<force_import=1>
+
+Deprecated; use B<zbm.force_import>.
+
+=item B<zbm.timeout>
 
 This option accepts numeric values that control whether and when the
 boot-environment menu should be displayed.
 
 =over 2
 
-=item B<timeout=0>
+=item B<zbm.timeout=0> | B<zbm.skip>
 
 When possible, bypass the menu and immediately boot a configured I<bootfs> pool property.
 
-=item B<timeout=-1>
+=item B<zbm.timeout=-1> | B<zbm.show>
 
 Rather than present a countdown timer for automatic selection, immediately display the boot-environment menu.
 
-=item B<timeout=E<lt>positive integerE<gt>>
+=item B<zbm.timeout=E<lt>positive integerE<gt>>
 
 Display a countdown timer for the specified number of seconds before booting the configured I<bootfs> boot environment.
 
 =back
 
-=item B<root=zfsbootmenu:POOL=E<lt>poolE<gt>>
+=item B<timeout>
 
-By default, ZFSBootMenu will look for the I<bootfs> property on the first pool it imports to select the default boot environment. If you have multiple pools, substitute the name of your preferred pool for B<E<lt>poolE<gt>> in the argument B<root=zfsbootmenu:POOL=E<lt>poolE<gt>>.
+Deprecated; use B<zbm.timeout>.
 
 =item B<zbm.tmux>
 
