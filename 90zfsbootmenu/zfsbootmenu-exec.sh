@@ -30,7 +30,6 @@ fi
 echo "Loading ZFSBootMenu ..."
 
 export BASE="/zfsbootmenu"
-mkdir -p "${BASE}"
 
 modprobe zfs 2>/dev/null
 udevadm settle
