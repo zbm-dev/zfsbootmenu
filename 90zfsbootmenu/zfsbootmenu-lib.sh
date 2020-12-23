@@ -100,17 +100,25 @@ mount_zfs() {
   return ${ret}
 }
 
-# arg1: value to substitute for empty lines (default: "enter")
+# arg1: value to substitute for empty first line (default: "enter")
 # prints: concatenated lines of stdin, joined by commas
 
 # shellcheck disable=SC2120
 csv_cat() {
-  local CSV empty
+  local CSV empty line lineno
   empty=${1:-enter}
 
+  lineno=0
   while read -r line; do
-    if [ -z "$line" ]; then
-      line="${empty}"
+    if [ "$lineno" -eq 0 ]; then
+      lineno=1
+      if [ -z "$line" ]; then
+        line="${empty}"
+      else
+        line="${line/ctrl-alt-/mod-}"
+        line="${line/ctrl-/mod-}"
+        line="${line/alt-/mod-}"
+      fi
     fi
     CSV+=("${line}")
   done
@@ -176,7 +184,7 @@ header_wrap() {
 # returns: 0 on successful selection, 1 if Esc was pressed, 130 if BE list is missing
 
 draw_be() {
-  local env selected header
+  local env selected header expects
 
   env="${1}"
 
@@ -184,12 +192,14 @@ draw_be() {
 
   [ -f "${env}" ] || return 130
 
-  header="$( header_wrap "[ENTER] boot" "[ESC] refresh view" "" \
-    "[ALT+E] edit kcl" "[ALT+K] kernels" "[ALT+D] set bootfs" "[ALT+S] snapshots" "" \
-    "[ALT+C] chroot" "[ALT+R] recovery shell" "[ALT+P] pool status" "[ALT+H] help" )"
+  header="$( header_wrap "[ENTER] boot" "[ESC] refresh view" "[CTRL+H] help" "" \
+    "[CTRL+E] edit kcl" "[CTRL+K] kernels" "[CTRL+D] set bootfs" "[CTRL+S] snapshots" "" \
+    "[CTRL+C] chroot" "[CTRL+R] recovery shell" "[CTRL+P] pool status" )"
+
+  expects="--expect=alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-e"
 
   if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
-      --expect=alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-e \
+      ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
       --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}" \
       --preview="/libexec/zfsbootmenu-preview ${BASE} {} ${BOOTFS}" < "${env}" )"; then
     return 1
@@ -208,7 +218,7 @@ draw_be() {
 # returns: 130 on error, 0 otherwise
 
 draw_kernel() {
-  local benv selected header _kernels
+  local benv selected header expects _kernels
 
   benv="${1}"
   _kernels="${BASE}/${benv}/kernels"
@@ -218,13 +228,15 @@ draw_kernel() {
   test -f "${_kernels}" || return 130
 
   header="$( header_wrap \
-    "[ENTER] boot" "[ESC] back" "" "[ALT+D] set default" "[ALT+H] help" )"
+    "[ENTER] boot" "[ESC] back" "" "[CTRL+D] set default" "[CTRL+H] help" )"
 
-  if ! selected="$( HELP_SECTION=KERNEL ${FUZZYSEL} --prompt "${benv} > " \
-      --tac --expect=alt-d --with-nth=2 --header="${header}" \
-      --preview-window="up:${PREVIEW_HEIGHT}" \
-      --preview="/libexec/zfsbootmenu-preview \
-      ${BASE} ${benv} ${BOOTFS}" < "${_kernels}" )"; then
+  expects="--expect=alt-d"
+
+  if ! selected="$( HELP_SECTION=KERNEL ${FUZZYSEL} \
+     --prompt "${benv} > " --tac --with-nth=2 --header="${header}" \
+      ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
+      --preview="/libexec/zfsbootmenu-preview ${BASE} ${benv} ${BOOTFS}"  \
+      --preview-window="up:${PREVIEW_HEIGHT}" < "${_kernels}" )"; then
     return 1
   fi
 
@@ -241,23 +253,25 @@ draw_kernel() {
 # returns: 130 on error, 0 otherwise
 
 draw_snapshots() {
-  local benv selected header
+  local benv selected header expects
 
   benv="${1}"
 
   zdebug "using boot environment: ${benv}"
 
   header="$( header_wrap \
-    "[ENTER] duplicate" "[ESC] back" "" \
-    "[ALT+D] show diff" "[ALT+E] chroot" "" \
-    "[ALT+X] clone and promote" "[ALT+C] clone only" "[ALT+H] help" )"
+    "[ENTER] duplicate" "[ESC] back" "[CTRL+H] help" "" \
+    "[CTRL+D] show diff" "[CTRL+E] chroot" "" \
+    "[CTRL+X] clone and promote" "[CTRL+C] clone only" )"
+
+  expects="--expect=alt-x,alt-c,alt-d,alt-e"
 
   if ! selected="$( zfs list -t snapshot -H -o name "${benv}" |
-      HELP_SECTION=SNAPSHOT ${FUZZYSEL} --prompt "Snapshot > " \
-        --tac --expect=alt-x,alt-c,alt-d,alt-e \
+      HELP_SECTION=SNAPSHOT ${FUZZYSEL} \
+        --prompt "Snapshot > " --header="${header}" --tac \
+        ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
         --preview="/libexec/zfsbootmenu-preview ${BASE} ${benv} ${BOOTFS}" \
-        --preview-window="up:${PREVIEW_HEIGHT}" \
-        --header="${header}" )"; then
+        --preview-window="up:${PREVIEW_HEIGHT}" )"; then
     return 1
   fi
 
@@ -322,11 +336,12 @@ draw_pool_status() {
   # Wrap to half width to avoid the preview window
   hdr_width="$(( ( $( tput cols ) / 2 ) - 4 ))"
   header="$( wrap_width="$hdr_width" header_wrap \
-    "[ESC] back" "" "[ALT+R] rewind checkpoint" "" "[ALT+H] help" )"
+    "[ESC] back" "" "[CTRL+R] rewind checkpoint" "" "[CTRL+H] help" )"
 
   if ! selected="$( zpool list -H -o name |
-      HELP_SECTION=POOL ${FUZZYSEL} --prompt "Pool > " --tac \
-      --expect=alt-r --preview="zpool status -v {}" --header="${header}" )"; then
+      HELP_SECTION=POOL ${FUZZYSEL} \
+      --prompt "Pool > " --tac --expect=alt-r,ctrl-r,ctrl-alt-r \
+      --preview="zpool status -v {}" --header="${header}" )"; then
     return 1
   fi
 
