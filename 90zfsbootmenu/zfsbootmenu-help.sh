@@ -40,6 +40,14 @@ colorize() {
   echo -e -n '\033[0m'
 }
 
+mod_header() {
+  local key="$1"
+  local subject="$2"
+
+  [ -n "${subject}" ] && echo -e "$( colorize lightblue "${subject}" )"
+  [ -n "${key}" ] && echo -e -n "$( colorize green "[CTRL+${key}]" ) or $( colorize green "[ALT+${key}]" )"
+}
+
 help_pager() {
   WANTED="${1}"
 
@@ -67,30 +75,46 @@ help_pager() {
 # shellcheck disable=SC2034
 read -r -d '' MAIN <<EOF
 $( colorize magenta "$( center "Main Menu")" )
-$( colorize green "[ENTER]" ) $( colorize lightblue "boot" )
+$( colorize lightblue "boot" )
+$( colorize green "[ENTER]" )
+
 Boot the selected boot environment, with the listed kernel and kernel command line visible at the top of the screen.
 
-$( colorize green "[MOD+K]" ) $( colorize lightblue "kernels" )
+
+$( mod_header K "kernels" )
+
 Access a list of kernels available in the boot environment.
 
-$( colorize green "[MOD+S]" ) $( colorize lightblue "snapshots" )
+
+$( mod_header S "snapshots" )
+
 Access a list of snapshots of the selected boot environment. New boot environments can be created here.
 
-$( colorize green "[MOD+D]" ) $( colorize lightblue "set bootfs" )
+
+$( mod_header D "set bootfs" )
+
 Set the selected boot environment as the default for the pool.
 
 The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
 
-$( colorize green "[MOD+E]" ) $( colorize lightblue "edit kcl" )
+
+$( mod_header E "edit kcl" )
+
 Temporarily edit the kernel command line that will be used to boot the chosen kernel in the selected boot environment. This change does not persist across reboots.
 
-$( colorize green "[MOD+P]" ) $( colorize lightblue "pool status" )
+
+$( mod_header P "pool status" )
+
 View the health and status of each imported pool.
 
-$( colorize green "[MOD+R]" ) $( colorize lightblue "recovery shell" )
+
+$( mod_header R "recovery shell" )
+
 Execute a Bash shell with minimal tooling, enabling system maintenance.
 
-$( colorize green "[MOD+C]" ) $( colorize lightblue "chroot" )
+
+$( mod_header C "chroot" )
+
 Enter a chroot of the selected boot environment. The boot environment is mounted $( colorize red "read/write") if the zpool is imported $( colorize red "read/write" ).
 
 EOF
@@ -99,7 +123,9 @@ SECTIONS+=("MAIN Main Menu")
 # shellcheck disable=SC2034
 read -r -d '' SNAPSHOT <<EOF
 $( colorize magenta "$( center "Snapshot Management")" )
-$( colorize green "[ENTER]" ) $( colorize lightblue "duplicate" )
+$( colorize lightblue "duplicate" )
+$( colorize green "[ENTER]" )
+
 Creation method: $( colorize red "zfs send | zfs recv" )
 
 This creates a boot environment that does not depend on any other snapshots, allowing it to be destroyed at will. The new boot environment will immediately consume space on the pool equal to the $( colorize lightgray "REFER" ) value of the snapshot.
@@ -110,21 +136,27 @@ The operation will fail gracefully if the pool can not be set $( colorize red "r
 
 If $( colorize red "mbuffer" ) is available, it is used to provide feedback.
 
-$( colorize green "[MOD+X]" ) $( colorize lightblue "clone and promote" )
+
+$( mod_header X "clone and promote" )
+
 Creation method: $( colorize red "zfs clone" ) , $( colorize red "zfs promote" )
 
 This creates a boot environment that is not dependent on the origin snapshot, allowing you to destroy the file system that the clone was created from. A cloned and promoted boot environment is commonly used when you've done an upgrade but want to preserve historical snapshots.
 
 The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
 
-$( colorize green "[MOD+C]" ) $( colorize lightblue "clone" )
+
+$( mod_header C "clone" )
+
 Creation method: $( colorize red "zfs clone" )
 
 This creates a boot environment from a snapshot with out modifying snapshot inheritence. A cloned boot environment is commonly used if you need to boot a previous system state for a short time and then discard the environment.
 
 The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
 
-$( colorize green "[MOD+D]" ) $( colorize lightblue "diff" )
+
+$( mod_header D "diff" )
+
 Compare the differences between the selected snapshot and the current state of the boot environment.
 
 The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
@@ -134,10 +166,14 @@ SECTIONS+=("SNAPSHOT Snapshot Management")
 # shellcheck disable=SC2034
 read -r -d '' KERNEL <<EOF
 $( colorize magenta "$( center "Kernel Management")" )
-$( colorize green "[ENTER]" ) $( colorize lightblue "boot" )
+$( colorize lightblue "boot" )
+$( colorize green "[ENTER]" )
+
 Immediately boot the chosen kernel in the selected boot environment, with the kernel command line shown at the top of the screen.
 
-$( colorize green "[MOD+D]" ) $( colorize lightblue "set default" )
+
+$( mod_header D "set default" )
+
 Set the selected kernel as the default for the boot environment.
 
 The ZFS property $( colorize green "org.zfsbootmenu:kernel" ) is used to store the default kernel for the boot environment.
@@ -173,7 +209,8 @@ SECTIONS+=("DIFF Diff Viewer")
 # shellcheck disable=SC2034
 read -r -d '' POOL <<EOF
 $( colorize magenta "$( center "ZPOOL Health")" )
-$( colorize green "[MOD+R]" ) $( colorize lightblue "rewind checkpoint" )
+$( mod_header R "rewind checkpoint" )
+
 If a pool checkpoint is available, the selected pool is exported and then imported with the $( colorize red "--rewind-to-checkpoint" ) flag set.
 
 The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
