@@ -57,24 +57,30 @@ fi
 
 trap '' SIGINT
 
+# shellcheck disable=SC2016
+fuzzy_default_options=( "--ansi" "--no-clear"
+  "--layout=reverse-list" "--inline-info" "--tac" "--color=16"
+  "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
+  "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
+  "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"' )
 if command -v fzf >/dev/null 2>&1; then
-  export FUZZYSEL=fzf
-  #shellcheck disable=SC2016
-  export FZF_DEFAULT_OPTS='--ansi --no-clear --layout=reverse-list --cycle --inline-info --tac --color=16 --bind "alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
-  export PREVIEW_HEIGHT=2
   zdebug "using fzf for pager"
+  export FUZZYSEL=fzf
+  export PREVIEW_HEIGHT=2
+  export FZF_DEFAULT_OPTS="--cycle ${fuzzy_default_options[*]}"
 elif command -v sk >/dev/null 2>&1; then
-  export FUZZYSEL=sk
-  #shellcheck disable=SC2016
-  export SKIM_DEFAULT_OPTIONS='--ansi --no-clear --layout=reverse-list --inline-info --tac --color=16 --bind "alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
-  export PREVIEW_HEIGHT=3
   zdebug "using sk for pager"
-fi
-
-# The menu will not work if a fuzzy menu isn't available
-if [ -z "${FUZZYSEL}" ]; then
-  emergency_shell "no fuzzy menu available"
-  exit
+  export FUZZYSEL=sk
+  export PREVIEW_HEIGHT=3
+  export SKIM_DEFAULT_OPTIONS="${fuzzy_default_options[*]}"
+else
+  # The menu needs a fuzzy menu
+  color=red delay=10 timed_prompt \
+    "No fuzzy menu (fzf or sk) is available"
+    "Dropping to an emergency shell"
+  tput clear
+  tput cnorm
+  exit 1
 fi
 
 # Clear screen before a possible password prompt
@@ -124,7 +130,7 @@ while true; do
       # Should never be reached, but just in case...
       exit
       ;;
-    "alt-k")
+    "mod-k")
       selection="$( draw_kernel "${selected_be}" )" || continue
 
       # shellcheck disable=SC2162
@@ -139,14 +145,14 @@ while true; do
           fi
           exit
           ;;
-        "alt-d")
+        "mod-d")
           # shellcheck disable=SC2034
           IFS=' ' read -r fs kpath initrd <<< "${selected_kernel}"
           set_default_kernel "${fs}" "${kpath}"
           ;;
       esac
       ;;
-    "alt-p")
+    "mod-p")
       selection="$( draw_pool_status )" || continue
 
       # shellcheck disable=SC2162
@@ -157,16 +163,16 @@ while true; do
         "enter")
           continue
           ;;
-        "alt-r")
+        "mod-r")
           rewind_checkpoint "${selected_pool}"
           ;;
       esac
       ;;
-    "alt-d")
+    "mod-d")
       set_default_env "${selected_be}"
       echo "${BOOTFS}" > "${BASE}/bootfs"
       ;;
-    "alt-s")
+    "mod-s")
       selection="$( draw_snapshots "${selected_be}" )" || continue
 
       # shellcheck disable=SC2162
@@ -181,13 +187,13 @@ while true; do
       tput cnorm
 
       case "${subkey}" in
-        "alt-d")
+        "mod-d")
           draw_diff "${selected_snap}"
           # Return to snapshot submenu, don't redraw main menu
           BE_SELECTED=1
           continue
         ;;
-          "alt-e")
+          "mod-e")
           zfs_chroot "${selected_snap}"
           BE_SELECTED=1
           continue
@@ -242,20 +248,20 @@ while true; do
         "enter")
           duplicate_snapshot "${selected_snap}" "${clone_target}"
           ;;
-        "alt-x")
+        "mod-x")
           clone_snapshot "${selected_snap}" "${clone_target}"
           ;;
-        "alt-c")
+        "mod-c")
           clone_snapshot "${selected_snap}" "${clone_target}" "nopromote"
           ;;
       esac
       ;;
-    "alt-r")
+    "mod-r")
       tput cnorm
       tput clear
       break
       ;;
-    "alt-w")
+    "mod-w")
       pool="${selected_be%%/*}"
 
       # This will make all keys in the pool unavailable, but populate_be_list
@@ -266,7 +272,7 @@ while true; do
         set_rw_pool "${pool}"
       fi
       ;;
-    "alt-e")
+    "mod-e")
       tput clear
       tput cnorm
 
@@ -285,7 +291,7 @@ while true; do
         echo "${cmdline}" > "${BASE}/cmdline"
       fi
       ;;
-    "alt-c")
+    "mod-c")
       zfs_chroot "${selected_be}"
     ;;
   esac
