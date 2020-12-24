@@ -163,13 +163,17 @@ while true; do
   PID="$( lsof -Pi :${SSH_PORT} -sTCP:LISTEN -t )"
   if [ -n "${PID}" ] ; then
     SSH_PORT=$((SSH_PORT+1))
+    NONSTANDARD=1
     continue
   else
-    echo "Using SSH port ${SSH_PORT}"
-    sleep 5
     break
   fi
 done
+
+if [ -n "${NONSTANDARD}" ]; then
+  echo "Using SSH port ${SSH_PORT}"
+  sleep 5
+fi
 
 # shellcheck disable=SC2086
 "${BIN}" \
