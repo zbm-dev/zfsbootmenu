@@ -193,7 +193,7 @@ while true; do
           BE_SELECTED=1
           continue
         ;;
-          "mod-e")
+        "mod-i")
           zfs_chroot "${selected_snap}"
           BE_SELECTED=1
           continue
@@ -291,7 +291,7 @@ while true; do
         echo "${cmdline}" > "${BASE}/cmdline"
       fi
       ;;
-    "mod-c")
+    "mod-i")
       zfs_chroot "${selected_be}"
     ;;
   esac

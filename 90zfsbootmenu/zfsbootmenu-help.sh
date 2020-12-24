@@ -113,9 +113,21 @@ $( mod_header R "recovery shell" )
 Execute a Bash shell with minimal tooling, enabling system maintenance.
 
 
-$( mod_header C "chroot" )
+$( mod_header I "interactive chroot" )
 
 Enter a chroot of the selected boot environment. The boot environment is mounted $( colorize red "read/write") if the zpool is imported $( colorize red "read/write" ).
+
+
+$( mod_header W "import read/write" )
+
+If possible, the pool behind the selected boot environment is exported and then re-imported in $( colorize red "read/write") mode.
+
+This is not possible if any of the following conditions are met:
+
+ $( colorize red "*") The version of ZFS in ZFSBootMenu has detected unsupported pool features, due to an upgraded pool.
+ $( colorize red "*") The system has an active $( colorize red "resume") image, indicating that the pool is currently in use.
+
+Upon successful re-import in $( colorize red "read/write") mode, each of the boot environments on this pool will be highlighted in $( colorize red "red") at the top of the screen.
 
 EOF
 SECTIONS+=("MAIN Main Menu")
@@ -160,6 +172,12 @@ $( mod_header D "diff" )
 Compare the differences between the selected snapshot and the current state of the boot environment.
 
 The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
+
+
+$( mod_header I "interactive chroot" )
+
+Enter a chroot of the selected boot environment snapshot. The snapshot is always mounted read-only.
+
 EOF
 SECTIONS+=("SNAPSHOT Snapshot Management")
 
