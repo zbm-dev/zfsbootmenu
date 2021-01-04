@@ -6,9 +6,7 @@
 ##
 
 # shellcheck disable=SC1091
-test -f /lib/zfsbootmenu-lib.sh && source /lib/zfsbootmenu-lib.sh
-# shellcheck disable=SC1091
-test -f zfsbootmenu-lib.sh && source zfsbootmenu-lib.sh
+[ -r /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
 
 if [ -z "${BASE}" ]; then
   export BASE="/zfsbootmenu"

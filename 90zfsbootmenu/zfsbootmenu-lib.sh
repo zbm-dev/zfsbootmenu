@@ -60,7 +60,7 @@ mount_zfs() {
   fi
 
   mnt="${BASE}/${fs}/mnt"
-  test -d "${mnt}" || mkdir -p "${mnt}"
+  mkdir -p "${mnt}"
 
   # @ always denotes a snapshot
   if [[ "${fs}" =~ @ ]]; then
@@ -190,7 +190,7 @@ draw_be() {
 
   zdebug "using environment file: ${env}"
 
-  [ -f "${env}" ] || return 130
+  [ -r "${env}" ] || return 130
 
   header="$( header_wrap "[ENTER] boot" "[ESC] refresh view" "[CTRL+H] help" "" \
     "[CTRL+E] edit kcl" "[CTRL+K] kernels" "[CTRL+D] set bootfs" "[CTRL+S] snapshots" "" \
@@ -225,7 +225,7 @@ draw_kernel() {
 
   zdebug "using kernels file: ${_kernels}"
 
-  test -f "${_kernels}" || return 130
+  [ -r "${_kernels}" ] || return 130
 
   header="$( header_wrap \
     "[ENTER] boot" "[ESC] back" "" "[CTRL+D] set default" "[CTRL+H] help" )"
@@ -320,7 +320,7 @@ draw_diff() {
       --preview-window="up:${PREVIEW_HEIGHT}" \
       --bind 'esc:execute-silent( kill $( cat /tmp/diff.pid ) )+abort'
 
-  test -f /tmp/diff.pid  && rm /tmp/diff.pid
+  rm -f /tmp/diff.pid
   umount "${mnt}"
 
   return
@@ -724,7 +724,7 @@ find_root_prefix() {
       # OS type is in ID and ID_LIKE variables; /etc supersedes /usr/lib
       unset ID ID_LIKE
       for osrel in ${zfsbe_mnt}/{usr/lib,etc}/os-release; do
-        if [ -f "${osrel}" ]; then
+        if [ -r "${osrel}" ]; then
           # shellcheck disable=SC1090
           . "${osrel}" >/dev/null 2>&1
         fi
@@ -813,7 +813,7 @@ load_be_cmdline() {
 
   # Use BE-specific cmdline if found, fall back to generic default
   zfsbe_args="quiet loglevel=4"
-  if [ -f "${BASE}/${zfsbe_fs}/cmdline" ]; then
+  if [ -r "${BASE}/${zfsbe_fs}/cmdline" ]; then
     zdebug "using ${BASE}/${zfsbe_fs}/cmdline as commandline for ${zfsbe_fs}"
     zfsbe_args="$(head -1 "${BASE}/${zfsbe_fs}/cmdline" | tr -d '\n')"
   fi
@@ -1304,7 +1304,7 @@ cache_key() {
   fi
 
   ret=1
-  if [ -f "${mnt}/${keyfile}" ]; then
+  if [ -e "${mnt}/${keyfile}" ]; then
     keydir="${keyfile%/*}"
     if [ "x${keydir}" != "x${keyfile}" ] && [ -n "${keydir}" ]; then
       mkdir -p "${keycache}/${keydir}"
@@ -1364,7 +1364,7 @@ load_key() {
   key="${keylocation#file://}"
   key="${key#/}"
 
-  if [ -f "/${key}" ]; then
+  if [ -e "/${key}" ]; then
     # Prefer the actual path to the key file
     keypath="/${key}"
   elif keysource="$( be_keysource "${fs}" )" && [ "${NO_CACHE}" -eq 0 ]; then
@@ -1378,14 +1378,14 @@ load_key() {
     fi
 
     # If the cached key exists, prefer it
-    if [ -f "${BASE}/.keys/${keysource}/${key}" ]; then
+    if [ -e "${BASE}/.keys/${keysource}/${key}" ]; then
       keypath="${BASE}/.keys/${keysource}/${key}"
       zdebug "cached key path for $fs is ${keypath}"
     fi
   fi
 
   # Load a key from a file, if possible and necessary
-  if [ -f "${keypath}" ] && be_is_locked "${fs}" >/dev/null 2>&1; then
+  if [ -e "${keypath}" ] && be_is_locked "${fs}" >/dev/null 2>&1; then
     if zfs load-key -L "file://${keypath}" "${encroot}"; then
       zdebug "unlocked ${encroot} from key at ${keypath}"
       return 0

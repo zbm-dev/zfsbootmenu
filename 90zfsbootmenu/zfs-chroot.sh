@@ -2,9 +2,7 @@
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
 # shellcheck disable=SC1091
-test -f /lib/zfsbootmenu-lib.sh && source /lib/zfsbootmenu-lib.sh
-# shellcheck disable=SC1091
-test -f zfsbootmenu-lib.sh && source zfsbootmenu-lib.sh
+[ -r /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
 
 selected="${1}"
 
@@ -29,7 +27,7 @@ if mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
   fi
   echo -e ", /tmp is shared and read/write\n"
 
-  if [ -f "${mountpoint}/bin/bash" ]; then
+  if [ -x "${mountpoint}/bin/bash" ]; then
     _SHELL="/bin/bash"
   else
     _SHELL="/bin/sh"

@@ -12,7 +12,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # shellcheck disable=SC1091
-test -f /lib/zfsbootmenu-lib.sh && source /lib/zfsbootmenu-lib.sh
+[ -r /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
 
 while IFS= read -r line
 do
