@@ -223,7 +223,7 @@ if ( nonempty $config{Kernel}{CommandLine} and !nonempty $runConf{cmdline} ) {
 }
 
 if ( nonempty $runConf{version} ) {
-  $runConf{version} =~ s/%current\b/%current/i;
+  $runConf{version} =~ s/%current\b/%{current}/i;
   $runConf{version} =~ s/%\{current\}/$VERSION/i;
 } else {
   $runConf{version} = $VERSION;
@@ -253,14 +253,16 @@ if ( nonempty $runConf{kernel} ) {
   # Try to determine a kernel file when one was not provided
   if ( nonempty $runConf{kernel_version} ) {
     $runConf{kernel} = versionedKernel $runConf{kernel_version};
+    unless ( nonempty $runConf{kernel} ) {
+      print "Unable to find file for kernel version $runConf{kernel_version}\n";
+      exit 1;
+    }
   } else {
     $runConf{kernel} = latestKernel;
-  }
-
-  # Make sure a kernel was found
-  unless ( nonempty $runConf{kernel} ) {
-    print "Unable to choose a kernel file, cannot continue\n";
-    exit 1;
+    unless ( nonempty $runConf{kernel} ) {
+      print "Unable to find latest kernel; specify version or path manually\n";
+      exit 1;
+    }
   }
 }
 
@@ -521,9 +523,9 @@ sub versionedKernel {
   return;
 }
 
-# Finds the latest kernel in /boot
+# Finds the latest kernel in /boot, based on form <prefix>-<version>
 sub latestKernel {
-  my @prefixes = ( "vmlinux*", "vmlinuz*", "linux*", "kernel*" );
+  my @prefixes = ( "vmlinux*-*", "vmlinuz*-*", "linux*-*", "kernel*-*" );
   for my $prefix (@prefixes) {
     my $glob    = join( '/', ( $runConf{bootdir}, $prefix ) );
     my @kernels = glob($glob);
@@ -574,7 +576,7 @@ sub createInitramfs {
 
   push( @cmd, ( $output_file, $kver ) );
 
-  my $command = join(' ', @cmd);
+  my $command = join( ' ', @cmd );
   Log("Executing: $command");
 
   my @output = execute(@cmd);
