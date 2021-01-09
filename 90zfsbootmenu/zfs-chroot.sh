@@ -20,12 +20,14 @@ if mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
 
   pool="${selected%%/*}"
 
-  if is_writable "${pool}"; then
-    echo -n "${selected} is mounted read/write"
+  # Snapshots and read-only pools always produce read-only mounts
+  if [[ "${selected}" =~ @ ]] || ! is_writable "${pool}"; then
+    writemode="read-only"
   else
-    echo -n "${selected} is mounted read-only"
+    writemode="read/write"
   fi
-  echo -e ", /tmp is shared and read/write\n"
+
+  echo -e "${selected} is mounted ${writemode}, /tmp is shared and read/write\n"
 
   if [ -x "${mountpoint}/bin/bash" ]; then
     _SHELL="/bin/bash"
