@@ -261,8 +261,8 @@ draw_snapshots() {
 
   header="$( header_wrap \
     "[ENTER] duplicate" "[ESC] back" "[CTRL+H] help" "" \
-    "[CTRL+D] show diff" "[CTRL+I] interactive chroot" "" \
-    "[CTRL+X] clone and promote" "[CTRL+C] clone only" )"
+    "[CTRL+X] clone and promote" "[CTRL+C] clone only" "" \
+    "[CTRL+I] interactive chroot" "[CTRL+D] show diff" )"
 
   expects="--expect=alt-x,alt-c,alt-d,alt-i"
 
