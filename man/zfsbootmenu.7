@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "zfsbootmenu 7"
-.TH zfsbootmenu 7 "2020-12-10" "1.8.0" "ZFSBootMenu"
+.TH zfsbootmenu 7 "2020-12-21" "1.8.1" "ZFSBootMenu"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -146,36 +146,42 @@ ZFSBootMenu behavior is controlled through \s-1ZFS\s0 filesystem properties and 
 .SH "Command-Line Parameters"
 .IX Header "Command-Line Parameters"
 These options are set on the kernel command line when booting the initramfs or \s-1UEFI\s0 bundle. Default options were chosen to allow general systems to boot without setting any values.
+.IP "\fBroot=zfsbootmenu:POOL=<pool>\fR" 4
+.IX Item "root=zfsbootmenu:POOL=<pool>"
+By default, ZFSBootMenu will look for the \fIbootfs\fR property on the first pool it imports to select the default boot environment. If you have multiple pools, substitute the name of your preferred pool for \fB<pool>\fR in the argument \fBroot=zfsbootmenu:POOL=<pool>\fR.
 .IP "\fBspl_hostid=<hostid>\fR" 4
 .IX Item "spl_hostid=<hostid>"
 When creating an initramfs or \s-1UEFI\s0 bundle, the \fIhostid\fR from the system is copied into the target. If this image will be used on another system with a different \fIhostid\fR, it can be overridden with this option.
 .Sp
 Replace \fB<hostid>\fR with an eight-digit hexadecimal number.
-.IP "\fBforce_import=1\fR" 4
-.IX Item "force_import=1"
+.IP "\fBzbm.force_import=1\fR" 4
+.IX Item "zbm.force_import=1"
 Set this option to attempt to force pool imports. When set, this invokes \fIzpool import \-f\fR in place of the regular \fIzpool import\fR command, which will attempt to import a pool that's potentially in use on another system. Use this option with caution!
 .Sp
-Omit this option or explicitly specify \fBforce_import=0\fR to disable forced imports.
-.IP "\fBtimeout\fR" 4
-.IX Item "timeout"
+Omit this option or explicitly specify \fBzbm.force_import=0\fR to disable forced imports.
+.IP "\fBforce_import=1\fR" 4
+.IX Item "force_import=1"
+Deprecated; use \fBzbm.force_import\fR.
+.IP "\fBzbm.timeout\fR" 4
+.IX Item "zbm.timeout"
 This option accepts numeric values that control whether and when the
 boot-environment menu should be displayed.
 .RS 4
-.IP "\fBtimeout=0\fR" 2
-.IX Item "timeout=0"
+.IP "\fBzbm.timeout=0\fR | \fBzbm.skip\fR" 2
+.IX Item "zbm.timeout=0 | zbm.skip"
 When possible, bypass the menu and immediately boot a configured \fIbootfs\fR pool property.
-.IP "\fBtimeout=\-1\fR" 2
-.IX Item "timeout=-1"
+.IP "\fBzbm.timeout=\-1\fR | \fBzbm.show\fR" 2
+.IX Item "zbm.timeout=-1 | zbm.show"
 Rather than present a countdown timer for automatic selection, immediately display the boot-environment menu.
-.IP "\fBtimeout=<positive integer>\fR" 2
-.IX Item "timeout=<positive integer>"
+.IP "\fBzbm.timeout=<positive integer>\fR" 2
+.IX Item "zbm.timeout=<positive integer>"
 Display a countdown timer for the specified number of seconds before booting the configured \fIbootfs\fR boot environment.
 .RE
 .RS 4
 .RE
-.IP "\fBroot=zfsbootmenu:POOL=<pool>\fR" 4
-.IX Item "root=zfsbootmenu:POOL=<pool>"
-By default, ZFSBootMenu will look for the \fIbootfs\fR property on the first pool it imports to select the default boot environment. If you have multiple pools, substitute the name of your preferred pool for \fB<pool>\fR in the argument \fBroot=zfsbootmenu:POOL=<pool>\fR.
+.IP "\fBtimeout\fR" 4
+.IX Item "timeout"
+Deprecated; use \fBzbm.timeout\fR.
 .IP "\fBzbm.tmux\fR" 4
 .IX Item "zbm.tmux"
 Indicate that ZFSBootMenu should be run under \fBtmux\fR in the initramfs. With this enabled, debug-level logging for the ZFSBootMenu scripts can be easily viewed. The tooling must also be installed with an additional dracut configuration option listed below.

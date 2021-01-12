@@ -1,3 +1,28 @@
+# ZFSBootMenu v1.8.1 (2021-01-12)
+
+Happy New Year! ZFSBootMenu 1.8.1 provides a few minor enhancements and bug fixes.
+
+## Fixes
+* Properly handle encryption keys as raw devices rather than normal files. (#127)
+* Improve detection of latest kernels when `/boot` contains some unversioned kernel files. (#128)
+* Accept `Ctrl` and `Ctrl-Alt` as hotkey modifiers in addition to `Alt` to fix issues with some non-US keymaps. (#124)
+* Everywhere a chroot hotkey is offered, use the same hotkey.
+
+## New features
+* Add hard wraps to the hotkey menus to improve clarity; ignored for small screens.
+* In the snapshot list, add an option to jump into a read-only chroot for that snapshot.
+* The `force_import` and `timeout` kernel command-line options are now expected to be `zbm.force_import` and `zbm.timeout`; the old forms are deprecated but will continue to work for the forseeable future.
+* New `zbm.show` and `zbm.skip` command-line options force the menu to appear or be skipped if `zbm.timeout` is not also set.
+
+## Significant commits in this release
+* ab95346 - Expect names of the form <prefix>-<version> when finding latest kernel (Andrew J. Hesford)
+* 798fce8 - Normalize tests for paths. (Andrew J. Hesford)
+* d02865e - Change chroot keys, add help text (#126) (Zach Dykstra)
+* 83c58b2 - Support Ctrl and Ctrl-Alt in addition to Alt as keybind modifiers (Andrew J. Hesford)
+* 70c3d70 - Namespace our KCL args, organize parsing (#120) (Zach Dykstra)
+* c1d6ce5 - Support chroot'ing into a snapshot (Zach Dykstra)
+* 7a63beb - Support for hard wrap points in header_wrap (Andrew J. Hesford)
+
 # ZFSBootMenu v1.8.0 (2020-12-15)
 
 ZFSBootMenu 1.8.0 offers a significant list of new features, fixes and general improvements.
@@ -434,3 +459,4 @@ Booting from a snapshot has been fixed - the snapshot is now correctly unmounted
 Initial release!
 
 The dracut module has been built into an initramfs for both x86_64 and ppc64le (POWER8+) - with Linux 5.3.7. A sample grub.cfg is provided, demonstrating how to enter the boot menu. Update your pool name, and set spl_hostid based on the output of 'hostid' on your machine.
+
