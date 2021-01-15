@@ -557,8 +557,9 @@ sub latestKernel {
 # a. Identifying the first version-looking string in the file, or
 # b. Identifying a version-like part in the name of the file
 #
-# If one of these exists and not the other, that value is used;
-# if both exist, they must agree or nothing is returned
+# If one of these exists and not the other, that value is used; if both exist,
+# the name-derived value is used if that version string can be matched
+# somewhere in the file contents, otherwise the version is undefined.
 sub kernelVersion {
   my $kernel = shift;
 
@@ -570,45 +571,61 @@ sub kernelVersion {
     return;
   }
 
-  # Read strings in the kernel to recover a version, if possible
-  my @output = execute(qq(strings $kernel));
-  my $status = pop(@output);
-  if ( $status eq 0 ) {
-    for (@output) {
-      if (/[0-9]+\.[0-9]+\.[0-9]+/) {
-        my @toks = split /\s+/;
-        chomp( $filever = $toks[0] );
-        $filever =~ s/^\s+|\s+$//g;
-        last;
-      }
-    }
-  }
-
   # Read version from the file name, if possible
   basename($kernel) =~ m/-([0-9]+\.[0-9]+\.[0-9]+.*)/;
   if ( defined $1 ) {
     $namever = $1;
   }
 
+  # Read strings in the kernel to recover a version, if possible
+  my @output = execute(qq(strings $kernel));
+  my $status = pop(@output);
+  if ( $status eq 0 ) {
+    for (@output) {
+
+      # Versions are any three dot-separated numbers followed by non space
+      next unless (/([0-9]+\.[0-9]+\.[0-9]+\S+)/);
+
+      my $ver = $1;
+
+      # First version match is always the file version
+      $filever = $ver unless ( nonempty $filever );
+
+      # When there is no version from the file name, we have a match
+      last unless ( nonempty $namever );
+
+      # A version that equals the file version supersedes the first match
+      if ( $namever eq $ver ) {
+        $filever = $ver;
+        last;
+      }
+    }
+  }
+
   # If only one is defined, that's the version
-  unless ( defined $filever ) {
+  unless ( nonempty $filever ) {
     Log("No version found in kernel strings, using $namever from path $kernel");
     return $namever;
   }
 
-  unless ( defined $namever ) {
+  unless ( nonempty $namever ) {
     Log("No version found in path $kernel, using $filever from kernel strings");
     return $filever;
   }
 
-  # If both are defined, they must agree
-  if ( $namever eq $filever ) {
-    Log("Found version $filever in both path $kernel and kernel strings");
-    return $filever;
+  # Warn if the two alternatives do not agree
+  if ( $namever ne $filever ) {
+    my $warning = <<"EOF";
+WARNING: ignoring inconsistent versions in kernel $kernel:
+  Path suggests version $namever.
+  Kernel strings suggest version $filever.
+  To use this kernel, explicitly specify the path and version.
+EOF
+    print $warning;
+    return;
   }
 
-  Log("Ignoring inconsistent versions $namever from path $kernel and $filever in kernel strings");
-  return;
+  return $namever;
 }
 
 # Returns the path to an initramfs, or dies with an error
