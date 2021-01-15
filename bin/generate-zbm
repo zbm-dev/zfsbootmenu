@@ -176,13 +176,11 @@ $runConf{umount_on_exit} = 0;
 if ( nonempty $config{Global}{BootMountPoint} ) {
   my $mounted = 0;
 
-  my $cmd    = "mountpoint $config{Global}{BootMountPoint}";
-  my @output = execute($cmd);
+  my @output = execute(qq(mountpoint $config{Global}{BootMountPoint}));
   my $status = pop(@output);
   unless ( $status eq 0 ) {
     print "Mounting $config{Global}{BootMountPoint}\n";
-    $cmd = "mount $config{Global}{BootMountPoint}";
-    my @output = execute($cmd);
+    my @output = execute(qq(mount $config{Global}{BootMountPoint}));
     my $status = pop(@output);
     if ( $status eq 0 ) {
       $runConf{umount_on_exit} = 1;
@@ -268,20 +266,25 @@ if ( nonempty $runConf{kernel} ) {
 
 # Try to determine kernel_prefix or kernel_version if necessary
 unless ( nonempty $runConf{kernel_prefix} and nonempty $runConf{kernel_version} ) {
-  basename( $runConf{kernel} ) =~ m/([^-\s]+)(-(\S+))?/;
+
+  # Kernel version comes from either file name or internal strings
+  unless ( nonempty $runConf{kernel_version} ) {
+    $runConf{kernel_version} = kernelVersion( $runConf{kernel} );
+    unless ( nonempty $runConf{kernel_version} ) {
+      printf "Unable to determine kernel version from %s\n", $runConf{kernel};
+      exit 1;
+    }
+  }
+
   unless ( nonempty $runConf{kernel_prefix} ) {
-    unless ( defined $1 ) {
+
+    # Prefix is basename of file, less any "-<version>" suffix
+    $runConf{kernel_prefix} = basename( $runConf{kernel} );
+    $runConf{kernel_prefix} =~ s/-\Q$runConf{kernel_version}\E$//;
+    unless ( nonempty $runConf{kernel_prefix} ) {
       printf "Unable to determine kernel prefix from %s\n", $runConf{kernel};
       exit 1;
     }
-    $runConf{kernel_prefix} = $1;
-  }
-  unless ( nonempty $runConf{kernel_version} ) {
-    unless ( defined $3 ) {
-      printf "Unable to detrmine kernel version from %s\n", $runConf{kernel};
-      exit 1;
-    }
-    $runConf{kernel_version} = $3;
   }
 }
 
@@ -523,19 +526,88 @@ sub versionedKernel {
   return;
 }
 
-# Finds the latest kernel in /boot, based on form <prefix>-<version>
+# Finds the latest kernel in /boot, if possible
 sub latestKernel {
-  my @prefixes = ( "vmlinux*-*", "vmlinuz*-*", "linux*-*", "kernel*-*" );
+  my @prefixes = ( "vmlinuz*", "vmlinux*", "linux*", "kernel*" );
+
   for my $prefix (@prefixes) {
-    my $glob    = join( '/', ( $runConf{bootdir}, $prefix ) );
-    my @kernels = glob($glob);
-    next if !@kernels;
-    for ( sort { versioncmp( $b, $a ) } @kernels ) {
+    my $glob = join( '/', ( $runConf{bootdir}, $prefix ) );
+    my %kernels;
+
+    for my $kernel ( glob($glob) ) {
+      my $version = kernelVersion($kernel);
+      next unless defined($version);
+      Log("Identified version $version for kernel $kernel");
+      $kernels{$version} = $kernel;
+    }
+
+    next unless ( keys %kernels );
+
+    for ( sort { versioncmp( $b, $a ) } keys %kernels ) {
       Log("Latest kernel: $_");
-      return $_;
+      return $kernels{$_};
     }
   }
 
+  return;
+}
+
+# Attempts to determine a version for the given kernel, by
+#
+# a. Identifying the first version-looking string in the file, or
+# b. Identifying a version-like part in the name of the file
+#
+# If one of these exists and not the other, that value is used;
+# if both exist, they must agree or nothing is returned
+sub kernelVersion {
+  my $kernel = shift;
+
+  my ( $filever, $namever );
+
+  # Consider an unreadable file to have no version
+  unless ( -r $kernel ) {
+    Log("Unable to read path $kernel, assuming no version");
+    return;
+  }
+
+  # Read strings in the kernel to recover a version, if possible
+  my @output = execute(qq(strings $kernel));
+  my $status = pop(@output);
+  if ( $status eq 0 ) {
+    for (@output) {
+      if (/[0-9]+\.[0-9]+\.[0-9]+/) {
+        my @toks = split /\s+/;
+        chomp( $filever = $toks[0] );
+        $filever =~ s/^\s+|\s+$//g;
+        last;
+      }
+    }
+  }
+
+  # Read version from the file name, if possible
+  basename($kernel) =~ m/-([0-9]+\.[0-9]+\.[0-9]+.*)/;
+  if ( defined $1 ) {
+    $namever = $1;
+  }
+
+  # If only one is defined, that's the version
+  unless ( defined $filever ) {
+    Log("No version found in kernel strings, using $namever from path $kernel");
+    return $namever;
+  }
+
+  unless ( defined $namever ) {
+    Log("No version found in path $kernel, using $filever from kernel strings");
+    return $filever;
+  }
+
+  # If both are defined, they must agree
+  if ( $namever eq $filever ) {
+    Log("Found version $filever in both path $kernel and kernel strings");
+    return $filever;
+  }
+
+  Log("Ignoring inconsistent versions $namever from path $kernel and $filever in kernel strings");
   return;
 }
 
@@ -635,8 +707,7 @@ sub cleanupMount {
 
   if ( $runConf{umount_on_exit} ) {
     print "Unmounting $config{Global}{BootMountPoint}\n";
-    my $cmd = "umount $config{Global}{BootMountPoint}";
-    execute($cmd);
+    execute(qq(umount $config{Global}{BootMountPoint}));
   }
 
   if ( defined $signal ) {
