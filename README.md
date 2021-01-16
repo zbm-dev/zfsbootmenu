@@ -162,8 +162,10 @@ The [zfsbootmenu(7)](pod/zfsbootmenu.7.pod#zfs-properties) manual page describes
    * [kexec-tools](https://github.com/horms/kexec-tools)
    * [mbuffer](http://www.maier-komor.de/mbuffer.html)
  * For running `bin/generate-zbm`:
+   * [perl Sort::Versions](https://metacpan.org/pod/Sort::Versions)
    * [perl Config::IniFiles](https://metacpan.org/pod/Config::IniFiles)
    * [perl YAML::PP](https://metacpan.org/pod/YAML::PP)
+   * [perl boolean](https://metacpan.org/pod/boolean)
 
 If you want to create a unified EFI executable (which bundles the kernel, initramfs and command line), you will also need:
 
