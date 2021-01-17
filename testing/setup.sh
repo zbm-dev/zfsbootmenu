@@ -123,14 +123,15 @@ fi
 # Setup a local config file
 if ((YAML)) ; then
   echo "Configuring local.yaml"
-  cp ../etc/zfsbootmenu/config.yaml "${TESTDIR}/local.yaml"
-  yq-go w -i "${TESTDIR}/local.yaml" Components.ImageDir "${TESTDIR}"
-  yq-go w -i "${TESTDIR}/local.yaml" Components.Versions false
-  yq-go w -i "${TESTDIR}/local.yaml" Global.ManageImages true
-  yq-go w -i "${TESTDIR}/local.yaml" Global.DracutConfDir "${TESTDIR}/dracut.conf.d"
-  yq-go w -i "${TESTDIR}/local.yaml" Global.DracutFlags[+] -- "--local"
-  yq-go d -i "${TESTDIR}/local.yaml" Global.BootMountPoint
-  yq-go r -P -C "${TESTDIR}/local.yaml"
+  yamlconf="${TESTDIR}/local.yaml"
+  cp ../etc/zfsbootmenu/config.yaml "${yamlconf}"
+  yq-go eval ".Components.ImageDir = \"${TESTDIR}\"" -i "${yamlconf}"
+  yq-go eval ".Components.Versions = false" -i "${yamlconf}"
+  yq-go eval ".Global.ManageImages = true" -i "${yamlconf}"
+  yq-go eval ".Global.DracutConfDir = \"${TESTDIR}/dracut.conf.d\"" -i "${yamlconf}"
+  yq-go eval ".Global.DracutFlags = [ \"--local\" ]" -i "${yamlconf}"
+  yq-go eval "del(.Global.BootMountPoint)" -i "${yamlconf}"
+  yq-go eval -P -C "${yamlconf}"
 fi
 
 # Create an image
