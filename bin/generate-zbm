@@ -648,13 +648,11 @@ sub createInitramfs {
 
   # If $kernfile is provided, make a unified EFI image with the named kernel
   if ( defined $kernfile ) {
-    my $efi_stub = $config{EFI}{Stub} || "/usr/lib/gummiboot/linuxx64.efi.stub";
-
-    unless ( -e $efi_stub ) {
-      die "Missing EFI stub: $efi_stub";
+    if ( nonempty $config{EFI}{Stub} ) {
+      push( @cmd, ( qq(--uefi-stub), $config{EFI}{Stub} ) );
     }
 
-    push( @cmd, ( qw(--uefi --uefi-stub), $efi_stub, qq(--kernel-image), $kernfile ) );
+    push( @cmd, ( qw(--uefi --kernel-image), $kernfile ) );
 
     if ( nonempty $runConf{cmdline} ) {
       push( @cmd, qq(--kernel-cmdline=\"$runConf{cmdline}\") );
