@@ -740,6 +740,10 @@ find_root_prefix() {
             echo "zfs="
             break
             ;;
+          gentoo)
+            echo "root=ZFS="
+            break
+            ;;
           *)
             ;;
         esac
