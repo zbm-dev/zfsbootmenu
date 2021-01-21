@@ -46,9 +46,9 @@ install() {
   local _rule _exec _ret
 
   local udev_rules=(
-    "/usr/lib/udev/rules.d/90-zfs.rules"
-    "/usr/lib/udev/rules.d/69-vdev.rules"
-    "/usr/lib/udev/rules.d/60-zvol.rules"
+    "90-zfs.rules"
+    "69-vdev.rules"
+    "60-zvol.rules"
   )
 
   for _rule in "${udev_rules[@]}"; do
@@ -59,8 +59,6 @@ install() {
   done
 
   local essential_execs=(
-    "/usr/lib/udev/vdev_id"
-    "/usr/lib/udev/zvol_id"
     "zfs"
     "zpool"
     "hostid"
