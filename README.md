@@ -193,6 +193,10 @@ If (and only if) `generate-zbm` is run without a `--config` option (*i.e.*, it a
 
 Whenever `generate-zbm` attempts to migrate configuraton files, it will exit with a zero exit code on successful conversion and a nonzero exit code if problems were encountered during the conversion. No boot images will be produced in the same invocation as a migration attempt.
 
+## Nvidia proprietary driver support
+
+Nouveau will be compiled into the ZFSBootMenu initramfs and so will the proprietary Nvidia kernel driver if installed. This will be problematic on systems that use the proprietary Nvidia driver and lead to driver execution failure. To fix this peroblem, go into `/etc/zfsbootmenu/dracut.conf.d` and create `nvidia.conf`. In that file, enter the line `omit_drivers+=" nouveau nvidia "` to omit any Nvidia drivers from the ZFSBootMenu initramfs. Then execute `generate-zbm` as root and reboot. Nvidia drivers after boot should then function as they would normally.
+
 # Native encryption
 
 ZFSBootMenu can import pools or filesystems with native encryption enabled. If your boot environments are not encrypted but, for example, `/home` is, you will not receive a decryption prompt during boot. To ensure that you can decrypt your pool to load the kernel and initramfs, you'll need to you have the filesystem parameters configured correctly.
