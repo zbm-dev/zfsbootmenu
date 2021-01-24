@@ -193,6 +193,24 @@ If (and only if) `generate-zbm` is run without a `--config` option (*i.e.*, it a
 
 Whenever `generate-zbm` attempts to migrate configuraton files, it will exit with a zero exit code on successful conversion and a nonzero exit code if problems were encountered during the conversion. No boot images will be produced in the same invocation as a migration attempt.
 
+## Dealing with driver conflicts
+
+For some combination of hardware and kernel modules, the ZFSBootMenu kernel may leave hardware in an unexpected state and prevent the boot environment from properly initializing and attaching drivers. The simplest way to avoid this issue is to disable the affected kernel modules in ZFSBootMenu, leaving all hardware initialization to the final kernel. For example, if Nvidia graphics hardware does not function as expected, a dracut configuration file can be added to `/etc/zfsbootmenu/dracut.conf.d` to exclude the `nouveau` and `nvidia` drivers from ZFSBootMenu. Adding the line
+
+```
+omit_drivers+=" nouveau nvidia "
+```
+
+to a file called, *e.g.*, `/etc/zfsbootmenu/dracut.conf.d/nvidia.conf` should restore expected functionality to your boot environment after recreating your ZFSBootMenu image with `generate-zbm`.
+
+In other cases, it is not possible to exclude drivers without depriving ZFSBootMenu of critical hardware support. For example, some XHCI USB controllers may not be properly initialized after a `kexec`, leaving a boot environment without USB devices like a keyboard. However, excluding XHCI drivers from ZFSBootMenu would make the same keyboard inoperable in the boot menu, making it impossible to interact with the menus. ZFSBootMenu provides "teardown hooks" that can sometimes be used to address these situations. Teardown hooks are invoked immediately before a target kernel is booted via `kexec` and provide an opportunity to run last-minute commands to prepare the system for the boot. Scripts may be registered as teardown hooks by adding text of the form
+
+```
+zfsbootmenu_teardown+=" <path to script> "
+```
+
+where `<path to script>` points to an **executable** script or program. A sample [XHCI teardown script](contrib/xhci-teardown.sh) demonstrates the use of teardown hooks to unbind the XHCI driver from the USB controllers in the ZFSBootMenu kernel before launching the selected boot environment, allowing the next kernel to properly initialize the controller.
+
 # Native encryption
 
 ZFSBootMenu can import pools or filesystems with native encryption enabled. If your boot environments are not encrypted but, for example, `/home` is, you will not receive a decryption prompt during boot. To ensure that you can decrypt your pool to load the kernel and initramfs, you'll need to you have the filesystem parameters configured correctly.
