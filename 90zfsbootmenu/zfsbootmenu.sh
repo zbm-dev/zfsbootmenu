@@ -222,7 +222,7 @@ while true; do
 
         [ -n "${new_be}" ] || break
 
-        valid_name=$( echo "${new_be}" | tr -c -d 'a-zA-Z0-9-_.,' )
+        valid_name=$( echo "${new_be}" | tr -c -d 'a-zA-Z0-9-_.:' )
         # If the entered name is invalid, set the prompt to the valid form of the name
         if [[ "${new_be}" != "${valid_name}" ]]; then
           echo "${new_be} is invalid, ${valid_name} can be used"
