@@ -61,6 +61,15 @@ zbm_lines=$( getarg zbm.lines=)
 # shellcheck disable=SC2034
 zbm_columns=$( getarg zbm.columns=)
 
+# Allow sorting based on a key. Accept any value, default to name.
+zbm_sort=$( getarg zbm.sort_key=)
+if [ -n "${zbm_sort}" ]; then
+  info  "ZFSBootMenu: Setting sort key to ${zbm_sort}"
+else
+  zbm_sort="name"
+  info "ZFSBootMenu: defaulting sort key to ${zbm_sort}"
+fi
+
 # Turn on tmux integrations
 # shellcheck disable=SC2034
 if getargbool 0 zbm.tmux ; then

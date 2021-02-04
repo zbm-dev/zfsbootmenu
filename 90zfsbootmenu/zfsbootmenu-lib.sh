@@ -196,7 +196,7 @@ draw_be() {
     "[CTRL+E] edit kcl" "[CTRL+K] kernels" "[CTRL+D] set bootfs" "[CTRL+S] snapshots" "" \
     "[CTRL+I] interactive chroot" "[CTRL+R] recovery shell" "[CTRL+P] pool status" )"
 
-  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-i"
+  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-i,alt-l"
 
   if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
@@ -264,9 +264,10 @@ draw_snapshots() {
     "[CTRL+X] clone and promote" "[CTRL+C] clone only" "" \
     "[CTRL+I] interactive chroot" "[CTRL+D] show diff" )"
 
-  expects="--expect=alt-x,alt-c,alt-d,alt-i"
+  expects="--expect=alt-x,alt-c,alt-d,alt-i,alt-l"
 
-  if ! selected="$( zfs list -t snapshot -H -o name "${benv}" |
+  # shellcheck disable=SC2154
+  if ! selected="$( zfs list -t snapshot -H -o name "${benv}" -S "${zbm_sort}" |
       HELP_SECTION=SNAPSHOT ${FUZZYSEL} \
         --prompt "Snapshot > " --header="${header}" --tac \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
@@ -1427,6 +1428,7 @@ populate_be_list() {
   : > "${be_list}"
 
   # Find valid BEs
+  # shellcheck disable=SC2154
   while IFS=$'\t' read -r fs mnt active; do
     if [ "x${mnt}" = "x/" ]; then
       # When mountpoint=/, BE is a candidate unless org.zfsbootmenu:active=off
@@ -1444,7 +1446,7 @@ populate_be_list() {
     fi
 
     candidates+=( "${fs}" )
-  done <<< "$(zfs list -H -o name,mountpoint,org.zfsbootmenu:active | sort -r)"
+  done <<< "$(zfs list -H -o name,mountpoint,org.zfsbootmenu:active -S "${zbm_sort}")"
 
   # put bootfs on the end, so it is shown first with --tac
   [ -n "${BOOTFS}" ] && candidates+=( "${BOOTFS}" )
@@ -1494,4 +1496,22 @@ emergency_shell() {
   echo -n "Launching emergency shell: "
   echo -e "${message}\n"
   /bin/bash
+}
+
+# prints: nothing
+# returns: nothing
+
+toggle_sort() {
+  case "${zbm_sort}" in
+    "name")
+      zbm_sort="creation"
+    ;;
+    "creation")
+      zbm_sort="name"
+    ;;
+    *)
+      zbm_sort="name"
+    ;;
+  esac
+  zdebug "Setting zbm_sort to ${zbm_sort}"
 }
