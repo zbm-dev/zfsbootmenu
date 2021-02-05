@@ -104,7 +104,17 @@ mount_zfs() {
 # returns: nothing
 
 get_sort_key() {
-  echo -n "${zbm_sort%%;*}"
+  local sort_key
+  sort_key="${zbm_sort%%;*}"
+  
+  # Validate the sort key, otherwise use 'name'
+  if ! zfs list -s "${sort_key}" >/dev/null 2>&1 ; then
+    zdebug "${sort_key} invalid, using 'name'"
+    echo -n "name"
+  else
+    zdebug "${sort_key} valid, using"
+    echo -n "${sort_key}"
+  fi
 }
 
 # arg1: value to substitute for empty first line (default: "enter")
