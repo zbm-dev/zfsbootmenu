@@ -278,7 +278,6 @@ draw_snapshots() {
 
   expects="--expect=alt-x,alt-c,alt-d,alt-i,alt-o"
 
-  # shellcheck disable=SC2154
   if ! selected="$( zfs list -t snapshot -H -o name "${benv}" -S "${sort_key}" |
       HELP_SECTION=SNAPSHOT ${FUZZYSEL} \
         --prompt "Snapshot > " --header="${header}" --tac \
@@ -1442,7 +1441,6 @@ populate_be_list() {
   : > "${be_list}"
 
   # Find valid BEs
-  # shellcheck disable=SC2154
   while IFS=$'\t' read -r fs mnt active; do
     if [ "x${mnt}" = "x/" ]; then
       # When mountpoint=/, BE is a candidate unless org.zfsbootmenu:active=off
