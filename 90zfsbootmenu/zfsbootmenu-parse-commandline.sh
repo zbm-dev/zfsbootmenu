@@ -62,12 +62,20 @@ zbm_lines=$( getarg zbm.lines=)
 zbm_columns=$( getarg zbm.columns=)
 
 # Allow sorting based on a key. Accept any value, default to name.
-zbm_sort=$( getarg zbm.sort_key=)
-if [ -n "${zbm_sort}" ]; then
-  info  "ZFSBootMenu: Setting sort key to ${zbm_sort}"
+zbm_sort=
+sort_key=$( getarg zbm.sort_key=)
+if [ -n "${sort_key}" ]; then
+  zbm_sort="${sort_key}"
+  info "ZFSBootMenu: Setting sort key to ${zbm_sort}"
+
+  for key in "name" "creation"; do
+    if [ "${key}" != "${sort_key}" ]; then
+      zbm_sort="${zbm_sort};${key}"
+    fi
+  done
 else
-  zbm_sort="name"
-  info "ZFSBootMenu: defaulting sort key to ${zbm_sort}"
+  zbm_sort="name;creation"
+  info "ZFSBootMenu: Defaulting sort key order to ${zbm_sort}"
 fi
 
 # Turn on tmux integrations

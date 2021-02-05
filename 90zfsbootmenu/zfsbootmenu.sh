@@ -196,8 +196,8 @@ while true; do
           BE_SELECTED=1
           continue
         ;;
-        "mod-l")
-          toggle_sort
+        "mod-o")
+          change_sort
           BE_SELECTED=1
           continue
         ;;
@@ -297,8 +297,8 @@ while true; do
     "mod-i")
       zfs_chroot "${selected_be}"
     ;;
-    "mod-l")
-      toggle_sort
+    "mod-o")
+      change_sort
     ;;
   esac
 done
