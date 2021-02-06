@@ -32,6 +32,26 @@ Omit this option or explicitly specify B<zbm.force_import=0> to disable forced i
 
 Deprecated; use B<zbm.force_import>.
 
+=item B<zbm.sort_key>
+
+This option accepts a ZFS property name by which the boot environment and snapshot lists will be sorted.
+
+=over 2
+
+=item B<zbm.sort_key=name>
+
+Sort the lists by I<name>. This is the default sorting method.
+
+=item B<zbm.sort_key=creation>
+
+Sort the lists by I<creation> date.
+
+=item B<zbm.sort_key=used>
+
+Sort the lists by size I<used>.
+
+=back
+
 =item B<zbm.timeout>
 
 This option accepts numeric values that control whether and when the
