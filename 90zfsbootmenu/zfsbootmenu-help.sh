@@ -129,6 +129,17 @@ This is not possible if any of the following conditions are met:
 
 Upon successful re-import in $( colorize red "read/write") mode, each of the boot environments on this pool will be highlighted in $( colorize red "red") at the top of the screen.
 
+
+$( mod_header O "sort order" )
+
+Cycle the sorting key through the following list:
+
+     $( colorize orange "name") Use the filesystem or snapshot name
+ $( colorize orange "creation") Use the filesystem or snapshot creation time
+     $( colorize orange "used") Use the filesystem or snapshot size
+
+The default sort key is $( colorize orange "name") . 
+
 EOF
 SECTIONS+=("MAIN Main Menu")
 
@@ -177,6 +188,17 @@ The operation will fail gracefully if the pool can not be set $( colorize red "r
 $( mod_header I "interactive chroot" )
 
 Enter a chroot of the selected boot environment snapshot. The snapshot is always mounted read-only.
+
+
+$( mod_header O "sort order" )
+
+Cycle the sorting key through the following list:
+
+     $( colorize orange "name") Use the filesystem or snapshot name
+ $( colorize orange "creation") Use the filesystem or snapshot creation time
+     $( colorize orange "used") Use the filesystem or snapshot size
+
+The default sort key is $( colorize orange "name") . 
 
 EOF
 SECTIONS+=("SNAPSHOT Snapshot Management")
