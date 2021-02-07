@@ -44,6 +44,37 @@ zerror() {
   zlog 3 "$@"
 }
 
+# arg1: color name
+# arg2...argN: text to color
+# prints: text with color escape codes
+# returns: nothing
+
+colorize() {
+  color="${1}"
+  shift
+  case "${color}" in
+    black)        echo -e -n '\033[0;30m' ;;
+    red)          echo -e -n '\033[0;31m' ;;
+    green)        echo -e -n '\033[0;32m' ;;
+    orange)       echo -e -n '\033[0;33m' ;;
+    blue)         echo -e -n '\033[0;34m' ;;
+    magenta)      echo -e -n '\033[0;35m' ;;
+    cyan)         echo -e -n '\033[0;36m' ;;
+    lightgray)    echo -e -n '\033[0;37m' ;;
+    darkgray)     echo -e -n '\033[1;30m' ;;
+    lightred)     echo -e -n '\033[1;31m' ;;
+    lightgreen)   echo -e -n '\033[1;32m' ;;
+    yellow)       echo -e -n '\033[1;33m' ;;
+    lightblue)    echo -e -n '\033[1;34m' ;;
+    lightmagenta) echo -e -n '\033[1;35m' ;;
+    lightcyan)    echo -e -n '\033[1;36m' ;;
+    white)        echo -e -n '\033[1;37m' ;;
+    *)            echo -e -n '\033[0m' ;;
+  esac
+  echo -e -n "$@"
+  echo -e -n '\033[0m'
+}
+
 # arg1: ZFS filesystem name
 # prints: mountpoint
 # returns: 0 on success
@@ -211,7 +242,7 @@ draw_be() {
   if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
       --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}" \
-      --preview="/libexec/zfsbootmenu-preview ${BASE} {} ${BOOTFS}" < "${env}" )"; then
+      --preview="/libexec/zfsbootmenu-preview {} ${BOOTFS}" < "${env}" )"; then
     return 1
   fi
 
@@ -245,7 +276,7 @@ draw_kernel() {
   if ! selected="$( HELP_SECTION=KERNEL ${FUZZYSEL} \
      --prompt "${benv} > " --tac --with-nth=2 --header="${header}" \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
-      --preview="/libexec/zfsbootmenu-preview ${BASE} ${benv} ${BOOTFS}"  \
+      --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS}"  \
       --preview-window="up:${PREVIEW_HEIGHT}" < "${_kernels}" )"; then
     return 1
   fi
@@ -282,7 +313,7 @@ draw_snapshots() {
       HELP_SECTION=SNAPSHOT ${FUZZYSEL} \
         --prompt "Snapshot > " --header="${header}" --tac \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
-        --preview="/libexec/zfsbootmenu-preview ${BASE} ${benv} ${BOOTFS}" \
+        --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS}" \
         --preview-window="up:${PREVIEW_HEIGHT}" )"; then
     return 1
   fi
@@ -328,7 +359,7 @@ draw_diff() {
   ( zfs diff -F -H "${snapshot}" "${diff_target}" & echo $! >&3 ) 3>/tmp/diff.pid | \
     sed "s,${mnt},," | \
     HELP_SECTION=DIFF ${FUZZYSEL} --prompt "${snapshot} > " \
-      --preview="/libexec/zfsbootmenu-preview ${BASE} ${diff_target} ${BOOTFS}" \
+      --preview="/libexec/zfsbootmenu-preview ${diff_target} ${BOOTFS}" \
       --preview-window="up:${PREVIEW_HEIGHT}" \
       --bind 'esc:execute-silent( kill $( cat /tmp/diff.pid ) )+abort'
 

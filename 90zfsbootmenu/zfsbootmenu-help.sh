@@ -1,6 +1,9 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
+# shellcheck disable=SC1091
+[ -r /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
+
 # zfsbootmenu-help invokes itself, so the value of $WIDTH depends
 # on if $0 is launching fzf/sk (-L) or is being launched inside
 # fzf/sk (-s).
@@ -12,32 +15,6 @@ PREVIEW_SIZE="$(( WIDTH - 26 ))"
 
 center() {
   printf "%*s" $(( (${#1} + WIDTH ) / 2)) "${1}"
-}
-
-colorize() {
-  color="${1}"
-  shift
-  case "${color}" in
-    black) echo -e -n '\033[0;30m' ;;
-    red) echo -e -n '\033[0;31m' ;;
-    green) echo -e -n '\033[0;32m' ;;
-    orange) echo -e -n '\033[0;33m' ;;
-    blue) echo -e -n '\033[0;34m' ;;
-    magenta) echo -e -n '\033[0;35m' ;;
-    cyan) echo -e -n '\033[0;36m' ;;
-    lightgray) echo -e -n '\033[0;37m' ;;
-    darkgray) echo -e -n '\033[1;30m' ;;
-    lightred) echo -e -n '\033[1;31m' ;;
-    lightgreen) echo -e -n '\033[1;32m' ;;
-    yellow) echo -e -n '\033[1;33m' ;;
-    lightblue) echo -e -n '\033[1;34m' ;;
-    lightmagenta) echo -e -n '\033[1;35m' ;;
-    lightcyan) echo -e -n '\033[1;36m' ;;
-    white) echo -e -n '\033[1;37m' ;;
-    *) echo -e -n '\033[0m' ;;
-  esac
-  echo -e -n "$@"
-  echo -e -n '\033[0m'
 }
 
 mod_header() {
