@@ -76,16 +76,25 @@ colorize() {
   echo -e -n '\033[0m'
 }
 
-# arg1: screen width
-# arg2: text to center
+# arg1: text to center
 # prints: left-padded text
 # returns: nothing
 
-center_string() {
-  local width
-  width="${1}"
+# Accepted environment variables:
+# WIDTH: pre-calculated screen width
 
-  printf "%*s" $(( (${#2} + width ) / 2)) "${2}"
+center_string() {
+  local _WIDTH
+  if [ -z "${WIDTH}" ]; then
+    if [ -z "${FZF_PREVIEW_COLUMNS}" ]; then
+      _WIDTH="$( tput cols )"
+    else
+      _WIDTH="${FZF_PREVIEW_COLUMNS}"
+    fi
+  else
+    _WIDTH="${WIDTH}"
+  fi
+  printf "%*s" $(( (${#1} + _WIDTH ) / 2)) "${1}"
 }
 
 # arg1: ZFS filesystem name
@@ -923,6 +932,12 @@ load_be_cmdline() {
 # arg1: pool name
 # prints: nothing
 # returns: 0 on success, 1 on failure
+
+# Accepted environment variables
+# force_import=1: enable force importing of a pool
+# read_write=1: import read-write, defaults to read-only
+# rewind_to_checkpoint=1: enable --rewind-to-checkpoint
+# all_pools=1: import all pools instead of a single specific pool
 
 import_pool() {
   local pool import_args

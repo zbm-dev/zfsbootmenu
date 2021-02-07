@@ -47,7 +47,7 @@ help_pager() {
 
 # shellcheck disable=SC2034
 read -r -d '' MAIN <<EOF
-$( colorize magenta "$( center_string "${WIDTH}" "Main Menu")" )
+$( colorize magenta "$( center_string "Main Menu")" )
 $( colorize lightblue "boot" )
 $( colorize green "[ENTER]" )
 
@@ -118,7 +118,7 @@ SECTIONS+=("MAIN Main Menu")
 
 # shellcheck disable=SC2034
 read -r -d '' SNAPSHOT <<EOF
-$( colorize magenta "$( center_string "${WIDTH}" "Snapshot Management")" )
+$( colorize magenta "$( center_string "Snapshot Management")" )
 $( colorize lightblue "duplicate" )
 $( colorize green "[ENTER]" )
 
@@ -178,7 +178,7 @@ SECTIONS+=("SNAPSHOT Snapshot Management")
 
 # shellcheck disable=SC2034
 read -r -d '' KERNEL <<EOF
-$( colorize magenta "$( center_string "${WIDTH}" "Kernel Management")" )
+$( colorize magenta "$( center_string "Kernel Management")" )
 $( colorize lightblue "boot" )
 $( colorize green "[ENTER]" )
 
@@ -198,7 +198,7 @@ SECTIONS+=("KERNEL Kernel Management")
 
 # shellcheck disable=SC2034
 read -r -d '' DIFF <<EOF
-$( colorize magenta "$( center_string "${WIDTH}" "Diff Viewer")" )
+$( colorize magenta "$( center_string "Diff Viewer")" )
 $( colorize lightblue "Column 1 descriptions" )
  $( colorize orange "-") The path has been removed
  $( colorize orange "+") The path has been created
@@ -221,7 +221,7 @@ SECTIONS+=("DIFF Diff Viewer")
 
 # shellcheck disable=SC2034
 read -r -d '' POOL <<EOF
-$( colorize magenta "$( center_string "${WIDTH}" "ZPOOL Health")" )
+$( colorize magenta "$( center_string "ZPOOL Health")" )
 $( mod_header R "rewind checkpoint" )
 
 If a pool checkpoint is available, the selected pool is exported and then imported with the $( colorize red "--rewind-to-checkpoint" ) flag set.
