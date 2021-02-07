@@ -50,6 +50,7 @@ zerror() {
 # returns: nothing
 
 colorize() {
+  local color
   color="${1}"
   shift
   case "${color}" in
@@ -73,6 +74,18 @@ colorize() {
   esac
   echo -e -n "$@"
   echo -e -n '\033[0m'
+}
+
+# arg1: screen width
+# arg2: text to center
+# prints: left-padded text
+# returns: nothing
+
+center_string() {
+  local width
+  width="${1}"
+
+  printf "%*s" $(( (${#2} + width ) / 2)) "${2}"
 }
 
 # arg1: ZFS filesystem name

@@ -16,8 +16,7 @@ fi
 
 # shellcheck disable=SC2034
 IFS=' ' read -r _fs selected_kernel _initramfs <<<"$( select_kernel "${ENV}")"
-selected_kernel="${selected_kernel%/*}"
-selected_arguments="$( load_be_cmdline "${ENV}" )"
+selected_kernel="${selected_kernel##*/}"
 
 pool="${ENV%%/*}"
 if is_writable "${pool}" ; then
@@ -34,11 +33,10 @@ else
   _DEFAULT=""
 fi
 
-selected_env_str="${ENV} (${_DEFAULT}${_readonly}) - ${selected_kernel}"
+selected_env_str="$( center_string "${WIDTH}" "${ENV} (${_DEFAULT}${_readonly}) - ${selected_kernel}" )"
 
-# Left pad the strings to center them based on the preview width
-selected_env_str="$( printf "%*s\n" $(( (${#selected_env_str} + WIDTH ) / 2)) "${selected_env_str}" )"
-selected_arguments="$( printf "%*s\n" $(( (${#selected_arguments} + WIDTH ) / 2)) "${selected_arguments}" )"
+selected_arguments="$( load_be_cmdline "${ENV}" )"
+selected_arguments="$( center_string "${WIDTH}" "$( load_be_cmdline "${ENV}" )" )"
 
 # colorize doesn't automatically add a newline
 colorize "${_COLOR}" "${selected_env_str}\n"
