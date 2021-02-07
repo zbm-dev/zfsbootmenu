@@ -107,7 +107,7 @@ get_sort_key() {
   local sort_key
   sort_key="${zbm_sort%%;*}"
   zdebug "Using sorting key ${sort_key}"
-  echo -n "${sort_key}"
+  echo -n "${sort_key:-name}"
 }
 
 # arg1: value to substitute for empty first line (default: "enter")
