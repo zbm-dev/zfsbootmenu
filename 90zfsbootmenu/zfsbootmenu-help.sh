@@ -1,6 +1,9 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
+# shellcheck disable=SC1091
+[ -r /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
+
 # zfsbootmenu-help invokes itself, so the value of $WIDTH depends
 # on if $0 is launching fzf/sk (-L) or is being launched inside
 # fzf/sk (-s).
@@ -9,36 +12,6 @@ PREVIEW_SIZE="$(( WIDTH - 26 ))"
 [ ${PREVIEW_SIZE} -lt 10 ] && PREVIEW_SIZE=10
 
 [ -z "${FUZZYSEL}" ] && FUZZYSEL="fzf"
-
-center() {
-  printf "%*s" $(( (${#1} + WIDTH ) / 2)) "${1}"
-}
-
-colorize() {
-  color="${1}"
-  shift
-  case "${color}" in
-    black) echo -e -n '\033[0;30m' ;;
-    red) echo -e -n '\033[0;31m' ;;
-    green) echo -e -n '\033[0;32m' ;;
-    orange) echo -e -n '\033[0;33m' ;;
-    blue) echo -e -n '\033[0;34m' ;;
-    magenta) echo -e -n '\033[0;35m' ;;
-    cyan) echo -e -n '\033[0;36m' ;;
-    lightgray) echo -e -n '\033[0;37m' ;;
-    darkgray) echo -e -n '\033[1;30m' ;;
-    lightred) echo -e -n '\033[1;31m' ;;
-    lightgreen) echo -e -n '\033[1;32m' ;;
-    yellow) echo -e -n '\033[1;33m' ;;
-    lightblue) echo -e -n '\033[1;34m' ;;
-    lightmagenta) echo -e -n '\033[1;35m' ;;
-    lightcyan) echo -e -n '\033[1;36m' ;;
-    white) echo -e -n '\033[1;37m' ;;
-    *) echo -e -n '\033[0m' ;;
-  esac
-  echo -e -n "$@"
-  echo -e -n '\033[0m'
-}
 
 mod_header() {
   local key="$1"
@@ -74,7 +47,7 @@ help_pager() {
 
 # shellcheck disable=SC2034
 read -r -d '' MAIN <<EOF
-$( colorize magenta "$( center "Main Menu")" )
+$( colorize magenta "$( center_string "Main Menu")" )
 $( colorize lightblue "boot" )
 $( colorize green "[ENTER]" )
 
@@ -145,7 +118,7 @@ SECTIONS+=("MAIN Main Menu")
 
 # shellcheck disable=SC2034
 read -r -d '' SNAPSHOT <<EOF
-$( colorize magenta "$( center "Snapshot Management")" )
+$( colorize magenta "$( center_string "Snapshot Management")" )
 $( colorize lightblue "duplicate" )
 $( colorize green "[ENTER]" )
 
@@ -205,7 +178,7 @@ SECTIONS+=("SNAPSHOT Snapshot Management")
 
 # shellcheck disable=SC2034
 read -r -d '' KERNEL <<EOF
-$( colorize magenta "$( center "Kernel Management")" )
+$( colorize magenta "$( center_string "Kernel Management")" )
 $( colorize lightblue "boot" )
 $( colorize green "[ENTER]" )
 
@@ -225,7 +198,7 @@ SECTIONS+=("KERNEL Kernel Management")
 
 # shellcheck disable=SC2034
 read -r -d '' DIFF <<EOF
-$( colorize magenta "$( center "Diff Viewer")" )
+$( colorize magenta "$( center_string "Diff Viewer")" )
 $( colorize lightblue "Column 1 descriptions" )
  $( colorize orange "-") The path has been removed
  $( colorize orange "+") The path has been created
@@ -248,7 +221,7 @@ SECTIONS+=("DIFF Diff Viewer")
 
 # shellcheck disable=SC2034
 read -r -d '' POOL <<EOF
-$( colorize magenta "$( center "ZPOOL Health")" )
+$( colorize magenta "$( center_string "ZPOOL Health")" )
 $( mod_header R "rewind checkpoint" )
 
 If a pool checkpoint is available, the selected pool is exported and then imported with the $( colorize red "--rewind-to-checkpoint" ) flag set.
