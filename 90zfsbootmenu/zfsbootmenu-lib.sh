@@ -100,6 +100,16 @@ mount_zfs() {
   return ${ret}
 }
 
+# prints: first sort key
+# returns: nothing
+
+get_sort_key() {
+  local sort_key
+  sort_key="${zbm_sort%%;*}"
+  zdebug "Using sorting key ${sort_key}"
+  echo -n "${sort_key:-name}"
+}
+
 # arg1: value to substitute for empty first line (default: "enter")
 # prints: concatenated lines of stdin, joined by commas
 
@@ -196,7 +206,7 @@ draw_be() {
     "[CTRL+E] edit kcl" "[CTRL+K] kernels" "[CTRL+D] set bootfs" "[CTRL+S] snapshots" "" \
     "[CTRL+I] interactive chroot" "[CTRL+R] recovery shell" "[CTRL+P] pool status" )"
 
-  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-i"
+  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-i,alt-o"
 
   if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
@@ -253,20 +263,22 @@ draw_kernel() {
 # returns: 130 on error, 0 otherwise
 
 draw_snapshots() {
-  local benv selected header expects
+  local benv selected header expects sort_key
 
   benv="${1}"
 
   zdebug "using boot environment: ${benv}"
+
+  sort_key="$( get_sort_key )"
 
   header="$( header_wrap \
     "[ENTER] duplicate" "[ESC] back" "[CTRL+H] help" "" \
     "[CTRL+X] clone and promote" "[CTRL+C] clone only" "" \
     "[CTRL+I] interactive chroot" "[CTRL+D] show diff" )"
 
-  expects="--expect=alt-x,alt-c,alt-d,alt-i"
+  expects="--expect=alt-x,alt-c,alt-d,alt-i,alt-o"
 
-  if ! selected="$( zfs list -t snapshot -H -o name "${benv}" |
+  if ! selected="$( zfs list -t snapshot -H -o name "${benv}" -S "${sort_key}" |
       HELP_SECTION=SNAPSHOT ${FUZZYSEL} \
         --prompt "Snapshot > " --header="${header}" --tac \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
@@ -1418,10 +1430,12 @@ load_key() {
 # returns: 0 iff at least one valid BE was found
 
 populate_be_list() {
-  local be_list fs mnt active candidates ret
+  local be_list fs mnt active candidates ret sort_key
 
   be_list="${1}"
   [ -n "${be_list}" ] || return 1
+
+  sort_key="$( get_sort_key )"
 
   # Truncate the list to avoid stale entries
   : > "${be_list}"
@@ -1444,7 +1458,7 @@ populate_be_list() {
     fi
 
     candidates+=( "${fs}" )
-  done <<< "$(zfs list -H -o name,mountpoint,org.zfsbootmenu:active | sort -r)"
+  done <<< "$(zfs list -H -o name,mountpoint,org.zfsbootmenu:active -S "${sort_key}")"
 
   # put bootfs on the end, so it is shown first with --tac
   [ -n "${BOOTFS}" ] && candidates+=( "${BOOTFS}" )
@@ -1494,4 +1508,16 @@ emergency_shell() {
   echo -n "Launching emergency shell: "
   echo -e "${message}\n"
   /bin/bash
+}
+
+# prints: nothing
+# returns: nothing
+
+change_sort() {
+  local zsa zrem
+
+  zsa="${zbm_sort%%;*}"
+  zrem="${zbm_sort#*;}"
+  zbm_sort="${zrem};${zsa}"
+  zdebug "Setting zbm_sort to ${zbm_sort}"
 }

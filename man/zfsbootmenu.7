@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "zfsbootmenu 7"
-.TH zfsbootmenu 7 "2020-12-21" "1.8.1" "ZFSBootMenu"
+.TH zfsbootmenu 7 "2021-02-06" "1.8.1" "ZFSBootMenu"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -162,6 +162,22 @@ Omit this option or explicitly specify \fBzbm.force_import=0\fR to disable force
 .IP "\fBforce_import=1\fR" 4
 .IX Item "force_import=1"
 Deprecated; use \fBzbm.force_import\fR.
+.IP "\fBzbm.sort_key\fR" 4
+.IX Item "zbm.sort_key"
+This option accepts a \s-1ZFS\s0 property name by which the boot environment and snapshot lists should be sorted.
+.RS 4
+.IP "\fBzbm.sort_key=name\fR" 2
+.IX Item "zbm.sort_key=name"
+Sort the lists by \fIname\fR. This is the default sorting method.
+.IP "\fBzbm.sort_key=creation\fR" 2
+.IX Item "zbm.sort_key=creation"
+Sort the lists by \fIcreation\fR date.
+.IP "\fBzbm.sort_key=used\fR" 2
+.IX Item "zbm.sort_key=used"
+Sort the lists by size \fIused\fR.
+.RE
+.RS 4
+.RE
 .IP "\fBzbm.timeout\fR" 4
 .IX Item "zbm.timeout"
 This option accepts numeric values that control whether and when the

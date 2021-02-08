@@ -6,6 +6,7 @@ export force_import
 export menu_timeout
 export loglevel
 export root
+export zbm_sort
 
 # store current kernel log level
 read -r PRINTK < /proc/sys/kernel/printk

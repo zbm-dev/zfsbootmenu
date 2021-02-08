@@ -61,6 +61,38 @@ zbm_lines=$( getarg zbm.lines=)
 # shellcheck disable=SC2034
 zbm_columns=$( getarg zbm.columns=)
 
+# Allow sorting based on a key
+zbm_sort=
+sort_key=$( getarg zbm.sort_key=)
+if [ -n "${sort_key}" ] ; then
+  valid_keys=( "name" "creation" "used" )
+  for key in "${valid_keys[@]}"; do
+    if [ "${key}" == "${sort_key}" ]; then
+      zbm_sort="${key}"
+    fi
+  done
+
+  # If zbm_sort is empty (invalid user provided key)
+  # Default the starting sort key to 'name'
+  if [ -z "${zbm_sort}" ] ; then
+    sort_key="name"
+    zbm_sort="name"
+  fi
+
+  # Append any other sort keys to the selected one
+  for key in "${valid_keys[@]}"; do
+    if [ "${key}" != "${sort_key}" ]; then
+      zbm_sort="${zbm_sort};${key}"
+    fi
+  done
+
+  info "ZFSBootMenu: Setting sort key order to ${zbm_sort}"
+else
+  zbm_sort="name;creation;used"
+  info "ZFSBootMenu: Defaulting sort key order to ${zbm_sort}"
+fi
+
+
 # Turn on tmux integrations
 # shellcheck disable=SC2034
 if getargbool 0 zbm.tmux ; then

@@ -196,6 +196,11 @@ while true; do
           BE_SELECTED=1
           continue
         ;;
+        "mod-o")
+          change_sort
+          BE_SELECTED=1
+          continue
+        ;;
         # Check available space early in the process
         "enter")
           avail_space_exact="$( zfs list -p -H -o available "${parent_ds}" )"
@@ -291,6 +296,9 @@ while true; do
       ;;
     "mod-i")
       zfs_chroot "${selected_be}"
+    ;;
+    "mod-o")
+      change_sort
     ;;
   esac
 done
