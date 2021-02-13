@@ -7,23 +7,23 @@
 # Let the command line override our host id.
 spl_hostid=$(getarg spl_hostid=)
 if [ -n "${spl_hostid}" ] ; then
-  info "ZFSBootMenu: Using hostid from command line: ${spl_hostid}"
+  info "ZFSBootMenu: using hostid from command line: ${spl_hostid}"
   echo -ne "\\x${spl_hostid:6:2}\\x${spl_hostid:4:2}\\x${spl_hostid:2:2}\\x${spl_hostid:0:2}" >/etc/hostid
 elif [ -f "/etc/hostid" ] ; then
-  info "ZFSBootMenu: Using hostid from /etc/hostid: $(hostid)"
+  info "ZFSBootMenu: using hostid from /etc/hostid: $(hostid)"
 else
-  warn "ZFSBootMenu: No hostid found on kernel command line or /etc/hostid."
-  warn "ZFSBootMenu: Pools may not import correctly."
+  warn "ZFSBootMenu: no hostid found on kernel command line or /etc/hostid"
+  warn "ZFSBootMenu: pools may not import correctly"
 fi
 
 # Use the last defined console= to control menu output
 control_term=$( getarg console=)
 if [ -n "${control_term}" ]; then
-  info "ZFSBootMenu: Setting controlling terminal to: ${control_term}"
+  info "ZFSBootMenu: setting controlling terminal to: ${control_term}"
   control_term="/dev/${control_term}"
 else
   control_term="/dev/tty1"
-  info "ZFSBootMenu: Defaulting controlling terminal to: ${control_term}"
+  info "ZFSBootMenu: defaulting controlling terminal to: ${control_term}"
 fi
 
 # Use loglevel to determine logging to /dev/kmsg
@@ -38,13 +38,13 @@ fi
 if getargbool 0 zbm.force_import -d force_import ; then
   # shellcheck disable=SC2034
   force_import="yes"
-  info "ZFSBootMenu: Enabling force import of ZFS pools"
+  info "ZFSBootMenu: enabling force import of ZFS pools"
 fi
 
 # zbm.timeout= overrides timeout=
 menu_timeout=$( getarg zbm.timeout -d timeout )
 if [ -n "${menu_timeout}" ]; then
-  info "ZFSBootMenu: Setting menu timeout from command line: ${menu_timeout}"
+  info "ZFSBootMenu: setting menu timeout from command line: ${menu_timeout}"
 elif getargbool 0 zbm.show ; then
   menu_timeout=-1;
   info "ZFSBootMenu: forcing display of menu"
@@ -86,10 +86,10 @@ if [ -n "${sort_key}" ] ; then
     fi
   done
 
-  info "ZFSBootMenu: Setting sort key order to ${zbm_sort}"
+  info "ZFSBootMenu: setting sort key order to ${zbm_sort}"
 else
   zbm_sort="name;creation;used"
-  info "ZFSBootMenu: Defaulting sort key order to ${zbm_sort}"
+  info "ZFSBootMenu: defaulting sort key order to ${zbm_sort}"
 fi
 
 
@@ -97,7 +97,7 @@ fi
 # shellcheck disable=SC2034
 if getargbool 0 zbm.tmux ; then
   zbm_tmux="yes"
-  info "ZFSBootMenu: Enabling tmux integrations"
+  info "ZFSBootMenu: enabling tmux integrations"
 fi
 
 wait_for_zfs=0
@@ -109,7 +109,7 @@ case "${root}" in
     rootok=1
     wait_for_zfs=1
 
-    info "ZFSBootMenu: Enabling menu after udev settles"
+    info "ZFSBootMenu: enabling menu after udev settles"
     ;;
   zfsbootmenu:POOL=*)
     # Prefer a specific pool for bootfs value, root=zfsbootmenu:POOL=zroot
@@ -118,7 +118,7 @@ case "${root}" in
     rootok=1
     wait_for_zfs=1
 
-    info "ZFSBootMenu: Preferring ${root} for bootfs"
+    info "ZFSBootMenu: preferring ${root} for bootfs"
     ;;
 esac
 
