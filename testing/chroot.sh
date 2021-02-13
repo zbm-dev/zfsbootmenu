@@ -9,7 +9,7 @@ xbps-reconfigure -f glibc-locales
 
 # Install a kernel and ZFS
 xbps-install -S
-xbps-install -y linux5.9 linux5.9-headers zfs
+xbps-install -y linux5.10 linux5.10-headers zfs
 
 # Setup ZFS in Dracut
 cat << EOF > /etc/dracut.conf.d/zol.conf
@@ -24,7 +24,7 @@ for keyfile in /etc/zfs/*.key; do
   echo "install_items+=\" ${keyfile} \"" >> /etc/dracut.conf.d/zol.conf
 done
 
-xbps-reconfigure -f linux5.9
+xbps-reconfigure -f linux5.10
 
 # Set kernel commandline
 case "$(uname -m)" in
