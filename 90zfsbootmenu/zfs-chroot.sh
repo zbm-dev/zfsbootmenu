@@ -27,18 +27,29 @@ if mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
     writemode="$( colorize red "read/write")"
   fi
 
-  echo -e "$( colorize orange "${selected}") is mounted ${writemode}, /tmp is shared and read/write\n"
-
-  if [ -x "${mountpoint}/bin/bash" ]; then
+  _SHELL=
+  if [ -x "${mountpoint}/bin/bash" ] \
+    && chroot "${mountpoint}" /bin/bash -c "exit 0" >/dev/null 2>&1 ; then
     _SHELL="/bin/bash"
-  else
+  elif [ -x "${mountpoint}/bin/sh" ] \
+    && chroot "${mountpoint}" /bin/sh -c "exit 0" >/dev/null 2>&1 ; then
     _SHELL="/bin/sh"
+  else
+    zerror "unable to test execute a shell in ${selected}"
+    color=red timed_prompt "Unable to find a working shell in ${selected}"
   fi
 
-  # regardless of shell, set PS1
-  env "PS1=${selected} > " chroot "${mountpoint}" "${_SHELL}"
+  if [ -n "${_SHELL}" ]; then
+    echo -e "$( colorize orange "${selected}") is mounted ${writemode}, /tmp is shared and read/write\n"
+
+    # regardless of shell, set PS1
+    if ! env "PS1=$( colorize orange "${selected}") > " chroot "${mountpoint}" "${_SHELL}" ; then
+      zerror "unable to execute ${selected}:${_SHELL}"
+      color=red timed_prompt "Unable to chroot in to ${selected}"
+    fi
+  fi
 
   if ! umount -R "${mountpoint}"; then
-    zdebug "unable to unmount ${mountpoint}"
+    zerror "unable to unmount ${mountpoint}"
   fi
 fi

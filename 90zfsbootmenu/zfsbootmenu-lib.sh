@@ -423,7 +423,7 @@ draw_pool_status() {
 # returns: 1 on error, otherwise does not return
 
 kexec_kernel() {
-  local selected fs kernel initramfs tdhook
+  local selected fs kernel initramfs tdhook output
 
   selected="${1}"
 
@@ -454,11 +454,19 @@ kexec_kernel() {
     zdebug "restored kernel log level to ${PRINTK}"
   fi
 
-  kexec -l "${mnt}${kernel}" \
+  if ! output="$( kexec -l "${mnt}${kernel}" \
     --initrd="${mnt}${initramfs}" \
-    --command-line="${root_prefix}${fs} ${cli_args}"
-
-  zdebug "kexec arguments: $_"
+    --command-line="${root_prefix}${fs} ${cli_args}" 2>&1 )"
+  then
+    zerror "unable to load ${mnt}${kernel} and ${mnt}${initramfs} into memory"
+    zerror "${output}"
+    umount "${mnt}"
+    return 1
+  else
+    zdebug "loaded ${mnt}${kernel} and ${mnt}${initramfs} into memory"
+    zdebug "kernel command line: '${root_prefix}${fs} ${cli_args}'"
+    zdebug "${output}"
+  fi
 
   umount "${mnt}"
 
@@ -478,8 +486,10 @@ kexec_kernel() {
     unset tdhook
   fi
 
-  kexec -e -i
-
+  if ! output="$( kexec -e -i 2>&1 )"; then
+    zdebug "${output}"
+    return 1
+  fi
 }
 
 # arg1: snapshot name
@@ -719,6 +729,7 @@ find_be_kernels() {
   # If no default kernel is found, there are no kernels; leave the BE
   # directory in the same state it would be in had no /boot existed
   if [ -z "${def_kernel}" ]; then
+    umount "${mnt}"
     zdebug "no default kernel found for ${fs}"
     rm -f "${kernel_records}" "${def_kernel_file}"
     return 1
