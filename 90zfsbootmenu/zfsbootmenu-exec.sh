@@ -31,6 +31,7 @@ fi
 echo "Loading ZFSBootMenu ..."
 
 export BASE="/zfsbootmenu"
+mkdir -p "${BASE}"
 
 modprobe zfs 2>/dev/null
 udevadm settle
@@ -44,7 +45,7 @@ udevadm settle
 #shellcheck disable=SC2154
 if [ -n "${zbm_tmux}" ] && [ -x /bin/tmux ]; then
   tmux new-session -n ZFSBootMenu -d /libexec/zfsbootmenu-countdown
-  tmux new-window -n logs /bin/zlogtail -f -n
+  tmux new-window -n logs /bin/zlogtail -f -n -l 7
   tmux new-window -n shell /bin/bash
   exec tmux attach-session \; select-window -t ZFSBootMenu
 else

@@ -22,7 +22,6 @@ zlog() {
   _func="${FUNCNAME[2]}"
 
   WIDTH="$( tput cols )"
-
   echo -e "<${1}>ZBM:\033[0;33m${_script}[$$]\033[0;31m:${_func}()\033[0m: ${2}" | fold -s -w "${WIDTH}" > /dev/kmsg
 }
 
