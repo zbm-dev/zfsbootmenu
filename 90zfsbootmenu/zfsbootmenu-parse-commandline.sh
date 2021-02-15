@@ -29,6 +29,8 @@ fi
 # Use loglevel to determine logging to /dev/kmsg
 loglevel=$( getarg loglevel=)
 if [ -n "${loglevel}" ]; then
+  # minimum log level of 3, so we never lose error messages
+  [ "${loglevel}" -ge 3 ] || loglevel=3
   info "ZFSBootMenu: setting log level from command line: ${loglevel}"
 else
   loglevel=3

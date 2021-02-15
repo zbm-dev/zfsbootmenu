@@ -60,7 +60,10 @@ fuzzy_default_options=( "--ansi" "--no-clear"
   "--layout=reverse-list" "--inline-info" "--tac" "--color=16"
   "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
   "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
-  "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"' )
+  "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
+  "--bind" '"alt-l:execute[ /bin/zlogtail -l err ]"'
+  "--bind" '"ctrl-l:execute[ /bin/zlogtail -l err ]"'
+  "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l err ]"' )
 if command -v fzf >/dev/null 2>&1; then
   zdebug "using fzf for pager"
   export FUZZYSEL=fzf

@@ -21,7 +21,9 @@ zlog() {
   _script="$( basename $0 )"
   _func="${FUNCNAME[2]}"
 
-  echo -e "<${1}>ZBM:\033[0;33m${_script}[$$]\033[0;31m:${_func}()\033[0m: ${2}" > /dev/kmsg
+  WIDTH="$( tput cols )"
+
+  echo -e "<${1}>ZBM:\033[0;33m${_script}[$$]\033[0;31m:${_func}()\033[0m: ${2}" | fold -s -w "${WIDTH}" > /dev/kmsg
 }
 
 # arg1: log line
@@ -447,13 +449,6 @@ kexec_kernel() {
   cli_args="$( load_be_cmdline "${fs}" )"
   root_prefix="$( find_root_prefix "${fs}" "${mnt}" )"
 
-  # restore kernel log level just before we kexec
-  # shellcheck disable=SC2154
-  if [ -n "${PRINTK}" ] ; then
-    echo "${PRINTK}" > /proc/sys/kernel/printk
-    zdebug "restored kernel log level to ${PRINTK}"
-  fi
-
   if ! output="$( kexec -l "${mnt}${kernel}" \
     --initrd="${mnt}${initramfs}" \
     --command-line="${root_prefix}${fs} ${cli_args}" 2>&1 )"
@@ -486,8 +481,16 @@ kexec_kernel() {
     unset tdhook
   fi
 
+  # restore kernel log level just before we kexec
+  # shellcheck disable=SC2154
+  if [ -n "${PRINTK}" ] ; then
+    echo "${PRINTK}" > /proc/sys/kernel/printk
+    zdebug "restored kernel log level to ${PRINTK}"
+  fi
+
   if ! output="$( kexec -e -i 2>&1 )"; then
     zdebug "${output}"
+    echo 0 > /proc/sys/kernel/printk
     return 1
   fi
 }
