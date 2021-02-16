@@ -257,7 +257,7 @@ draw_be() {
 
   [ -r "${env}" ] || return 130
 
-  header="$( header_wrap "[ENTER] boot" "[ESC] refresh view" "[CTRL+H] help" "" \
+  header="$( header_wrap "[ENTER] boot" "[ESC] refresh view" "[CTRL+H] help" "[CTRL-L] error log" "" \
     "[CTRL+E] edit kcl" "[CTRL+K] kernels" "[CTRL+D] set bootfs" "[CTRL+S] snapshots" "" \
     "[CTRL+I] interactive chroot" "[CTRL+R] recovery shell" "[CTRL+P] pool status" )"
 
@@ -293,7 +293,7 @@ draw_kernel() {
   [ -r "${_kernels}" ] || return 130
 
   header="$( header_wrap \
-    "[ENTER] boot" "[ESC] back" "" "[CTRL+D] set default" "[CTRL+H] help" )"
+    "[ENTER] boot" "[ESC] back" "" "[CTRL+D] set default" "[CTRL+H] help" "[CTRL-L] error log" )"
 
   expects="--expect=alt-d"
 
@@ -327,7 +327,7 @@ draw_snapshots() {
   sort_key="$( get_sort_key )"
 
   header="$( header_wrap \
-    "[ENTER] duplicate" "[ESC] back" "[CTRL+H] help" "" \
+    "[ENTER] duplicate" "[ESC] back" "[CTRL+H] help" "[CTRL-L] error log" "" \
     "[CTRL+X] clone and promote" "[CTRL+C] clone only" "" \
     "[CTRL+I] interactive chroot" "[CTRL+D] show diff" )"
 
@@ -380,14 +380,14 @@ draw_diff() {
   fi
 
   # shellcheck disable=SC2016
-  ( zfs diff -F -H "${snapshot}" "${diff_target}" & echo $! >&3 ) 3>/tmp/diff.pid | \
+  ( zfs diff -F -H "${snapshot}" "${diff_target}" & echo $! >&3 ) 3>"${BASE}/diff.pid" | \
     sed "s,${mnt},," | \
     HELP_SECTION=DIFF ${FUZZYSEL} --prompt "${snapshot} > " \
       --preview="/libexec/zfsbootmenu-preview ${diff_target} ${BOOTFS}" \
       --preview-window="up:${PREVIEW_HEIGHT}" \
-      --bind 'esc:execute-silent( kill $( cat /tmp/diff.pid ) )+abort'
+      --bind 'esc:execute-silent[ kill $( cat ${BASE}/diff.pid ) ]+abort'
 
-  rm -f /tmp/diff.pid
+  rm -f "${BASE}/diff.pid"
   umount "${mnt}"
 
   return
@@ -403,7 +403,7 @@ draw_pool_status() {
   # Wrap to half width to avoid the preview window
   hdr_width="$(( ( $( tput cols ) / 2 ) - 4 ))"
   header="$( wrap_width="$hdr_width" header_wrap \
-    "[ESC] back" "" "[CTRL+R] rewind checkpoint" "" "[CTRL+H] help" )"
+    "[ESC] back" "" "[CTRL+R] rewind checkpoint" "" "[CTRL+H] help" "[CTRL-L] error log" )"
 
   if ! selected="$( zpool list -H -o name |
       HELP_SECTION=POOL ${FUZZYSEL} \
