@@ -109,6 +109,12 @@ mount_zfs() {
   local fs rwo mnt ret pool is_snapshot
 
   fs="${1}"
+
+  if [ -z "${fs}" ]; then
+    zerror "fs is undefined"
+    return 1
+  fi
+
   if be_is_locked "${fs}" >/dev/null; then
     zdebug "${fs} is locked, returning"
     return 1
@@ -252,10 +258,17 @@ draw_be() {
   local env selected header expects
 
   env="${1}"
+  if [ -z "${env}" ]; then
+    zerror "environment file is undefined"
+    return 130
+  fi
+
+  if [ ! -r "${env}" ] ; then
+    zerror "environment file ${env} is missing"
+    return 130
+  fi
 
   zdebug "using environment file: ${env}"
-
-  [ -r "${env}" ] || return 130
 
   header="$( header_wrap "[ENTER] boot" "[ESC] refresh view" "[CTRL+H] help" "[CTRL-L] error log" "" \
     "[CTRL+E] edit kcl" "[CTRL+K] kernels" "[CTRL+D] set bootfs" "[CTRL+S] snapshots" "" \
@@ -286,11 +299,18 @@ draw_kernel() {
   local benv selected header expects _kernels
 
   benv="${1}"
+  if [ -z "${benv}" ]; then
+    zerror "benv is undefined"
+    return 130
+  fi
+
   _kernels="${BASE}/${benv}/kernels"
+  if [ ! -r "${_kernels}" ] ; then
+    zerror "kernel file ${_kernels} missing"
+    return 130
+  fi
 
   zdebug "using kernels file: ${_kernels}"
-
-  [ -r "${_kernels}" ] || return 130
 
   header="$( header_wrap \
     "[ENTER] boot" "[ESC] back" "" "[CTRL+D] set default" "[CTRL+H] help" "[CTRL-L] error log" )"
@@ -321,7 +341,10 @@ draw_snapshots() {
   local benv selected header expects sort_key
 
   benv="${1}"
-
+  if [ -z "${benv}" ]; then
+    zerror "benv is undefined"
+    return 130
+  fi
   zdebug "using boot environment: ${benv}"
 
   sort_key="$( get_sort_key )"
@@ -359,9 +382,13 @@ draw_diff() {
   local snapshot pool diff_target mnt
 
   snapshot="${1}"
-  pool="${snapshot%%/*}"
-
+  if [ -z "${snapshot}" ]; then
+    zerror "snapshot is undefined"
+    return 130
+  fi
   zdebug "snapshot: ${snapshot}"
+
+  pool="${snapshot%%/*}"
   zdebug "pool: ${pool}"
 
   if ! set_rw_pool "${pool}"; then
@@ -428,6 +455,10 @@ kexec_kernel() {
   local selected fs kernel initramfs tdhook output
 
   selected="${1}"
+  if [ -z "${selected}" ]; then
+    zerror "fs, kernel, initramfs undefined"
+    return 130
+  fi
 
   # zfs filesystem
   # kernel
@@ -489,7 +520,8 @@ kexec_kernel() {
   fi
 
   if ! output="$( kexec -e -i 2>&1 )"; then
-    zdebug "${output}"
+    zerror "kexec -e -i failed!"
+    zerror "${output}"
     echo 0 > /proc/sys/kernel/printk
     return 1
   fi
@@ -504,16 +536,24 @@ duplicate_snapshot() {
   local selected target target_parent pool recv_args
 
   selected="${1}"
-  target="${2}"
-
-  [ -n "$selected" ] || return 1
-  [ -n "$target" ] || return 1
-
+  if [ -z "$selected" ]; then
+    zerror "selected is undefined"
+    return 1
+  fi
   zdebug "selected: ${selected}"
+
+  target="${2}"
+  if [ -z "$target" ]; then
+    zerror "target is undefined"
+    return 1
+  fi
   zdebug "target: ${target}"
 
   pool="${selected%%/*}"
-  set_rw_pool "${pool}" || return 1
+  if ! set_rw_pool "${pool}" ; then
+    zerror "unable to set pool ${pool} read/write"
+    return 1
+  fi
 
   # Make sure both the source and the parent of the target are unlocked
   # NOTE: load_key should work as expected without stripping snapshot from name
@@ -548,21 +588,32 @@ duplicate_snapshot() {
 clone_snapshot() {
   local selected target pool opts parent
 
-  selected="${1}"
-  target="${2}"
   promote="${3}"
 
-  [ -n "$selected" ] || return 1
-  [ -n "$target" ] || return 1
-
+  selected="${1}"
+  if [ -z "$selected" ]; then
+    zerror "selected is undefined"
+    return 1
+  fi
   zdebug "selected: ${selected}"
+
+  target="${2}"
+  if [ -z "$target" ]; then
+    zerror "target is undefined"
+    return 1
+  fi
   zdebug "target: ${target}"
+
+  promote="${3}"
   zdebug "promote: ${promote}"
 
   pool="${selected%%/*}"
-  parent="${selected%%@*}"
+  if ! set_rw_pool "${pool}" ; then
+    zerror "unable to set pool ${pool} read/write"
+    return 1
+  fi
 
-  set_rw_pool "${pool}" || return 1
+  parent="${selected%%@*}"
   load_key "${parent}"
 
   while read -r PROPERTY VALUE
@@ -608,11 +659,17 @@ set_default_kernel() {
   local fs kernel
 
   fs="$1"
-  [ -n "${fs}" ] || return 1
+  if [ -z "${fs}" ]; then
+    zerror "fs is undefined"
+    return 1
+  fi
   zdebug "fs set to ${fs}"
 
   pool="${fs%%/*}"
-  [ -n "${pool}" ] || return 1
+  if [ -z "${pool}" ]; then
+    zerror "pool is undefined"
+    return 1
+  fi
   zdebug "pool set to ${pool}"
 
   # Strip /boot/ to list only the file
@@ -641,18 +698,27 @@ set_default_env() {
   local environment pool
 
   environment="${1}"
-  [ -n "${environment}" ] || return 1
+  if [ -z "${environment}" ] ; then
+    zerror "environment is undefined"
+    return 1
+  fi
   zdebug "environment set to: ${environment}"
 
   pool="${environment%%/*}"
   zdebug "pool set to: ${pool}"
+  if ! set_rw_pool "${pool}" ; then
+    zerror "unable to set pool ${pool} read/write"
+    return 1
+  fi
 
-  set_rw_pool "${pool}" || return 1
   CLEAR_SCREEN=1 load_key "${pool}"
 
   if zpool set bootfs="${environment}" "${pool}" >/dev/null 2>&1 ; then
     BOOTFS="${environment}"
     zdebug "BOOTFS set to ${BOOTFS}"
+  else
+    zerror "unable to set bootfs=${environment} on ${pool}"
+    return 1
   fi
 }
 
@@ -662,11 +728,15 @@ set_default_env() {
 
 find_be_kernels() {
   local fs mnt
-  fs="${1}"
-
-
   local kernel kernel_base labels version kernel_records
   local defaults def_kernel def_kernel_file
+
+  fs="${1}"
+  if [ -z "${fs}" ]; then
+    zerror "fs is undefined"
+    return 1
+  fi
+  zdebug "fs set to ${fs}"
 
   # Try to mount, just skip the list otherwise
   if ! mnt="$( mount_zfs "${fs}" )"; then
@@ -753,10 +823,14 @@ find_be_kernels() {
 # returns: nothing
 
 select_kernel() {
-  local zfsbe
-  zfsbe="${1}"
+  local zfsbe specific_kernel kexec_args spec_kexec_args
 
-  local specific_kernel kexec_args spec_kexec_args
+  zfsbe="${1}"
+  if [ -z "${zfsbe}" ]; then
+    zerror "zfsbe is undefined"
+    return 1
+  fi
+  zdebug "zfsbe set to ${zfsbe}"
 
   # By default, select the last kernel entry
   kexec_args="$( tail -1 "${BASE}/${zfsbe}/kernels" )"
@@ -776,6 +850,7 @@ select_kernel() {
     done <<<"$( tac "${BASE}/${zfsbe}/kernels" )"
   fi
 
+  zdebug "using kexec args: ${spec_kexec_args}"
   echo "${kexec_args}"
 }
 
@@ -785,8 +860,20 @@ select_kernel() {
 
 find_root_prefix() {
   local zfsbe_mnt zfsbe_fs prefix
+
   zfsbe_fs="${1}"
+  if [ -z "${zfsbe_fs}" ]; then
+    zerror "zfsbe_fs is undefined"
+    return 1
+  fi
+  zdebug "zfsbe_fs set to ${zfsbe_fs}"
+
   zfsbe_mnt="${2}"
+  if [ -z "${zfsbe_mnt}" ]; then
+    zerror "zfsbe_mnt is undefined"
+    return 1
+  fi
+  zdebug "zfsbe_mnt set to ${zfsbe_mnt}"
 
   # Grab the root prefix from a property if possible
   if prefix="$( zfs get -H -o value org.zfsbootmenu:rootprefix "${zfsbe_fs}" )"; then
@@ -848,8 +935,20 @@ find_root_prefix() {
 
 preload_be_cmdline() {
   local zfsbe_mnt zfsbe_fs zfsbe_args args_file
+
   zfsbe_fs="${1}"
+  if [ -z "${zfsbe_fs}" ]; then
+    zerror "zfsbe_fs is undefined"
+    return 1
+  fi
+  zdebug "zfsbe_fs set to ${zfsbe_fs}"
+
   zfsbe_mnt="${2}"
+  if [ -z "${zfsbe_mnt}" ]; then
+    zerror "zfsbe_mnt is undefined"
+    return 1
+  fi
+  zdebug "zfsbe_mnt set to ${zfsbe_mnt}"
 
   args_file="${BASE}/${zfsbe_fs}/cmdline"
 
@@ -885,7 +984,13 @@ preload_be_cmdline() {
 
 load_be_cmdline() {
   local zfsbe_fs zfsbe_args
+
   zfsbe_fs="${1}"
+  if [ -z "${zfsbe_fs}" ]; then
+    zerror "zfsbe_fs is undefined"
+    return 1
+  fi
+  zdebug "zfsbe_fs set to ${zfsbe_fs}"
 
   # If a user-entered cmdline is found, it is not modified
   if [ -r "${BASE}/cmdline" ]; then
@@ -957,6 +1062,9 @@ import_pool() {
   local pool import_args
 
   pool="${1}"
+  if [ -n "${pool}" ]; then
+    zdebug "pool set to ${pool}"
+  fi
 
   # Import /never/ mounts filesystems
   import_args=( "-N" )
@@ -1004,9 +1112,13 @@ import_pool() {
 
 export_pool() {
   local pool
-  pool="${1}"
 
-  zdebug "pool: ${pool}"
+  pool="${1}"
+  if [ -z "${pool}" ]; then
+    zerror "pool is undefined"
+    return 1
+  fi
+  zdebug "pool set to ${pool}"
 
   # shellcheck disable=SC2034
   status="$( zpool export "${pool}" )"
@@ -1024,6 +1136,11 @@ export_pool() {
 rewind_checkpoint() {
   local pool checkpoint
   pool="${1}"
+  if [ -z "${pool}" ]; then
+    zerror "pool is undefined"
+    return 1
+  fi
+  zdebug "pool set to ${pool}"
 
   while read -r line; do
     case "$line" in
@@ -1131,7 +1248,11 @@ resume_prompt() {
   local pool decision
 
   pool="${1}"
-  [ -n "${pool}" ] || return 1
+  if [ -z "${pool}" ]; then
+    zerror "pool is undefined"
+    return 1
+  fi
+  zdebug "pool set to ${pool}"
 
   # Try to avoid importing writable when a resume device is found
   if has_resume_device; then
@@ -1193,7 +1314,11 @@ is_writable() {
   local pool roflag
 
   pool="${1}"
-  [ -n "${pool}" ] || return 1
+  if [ -z "${pool}" ]; then
+    zerror "pool is undefined"
+    return 1
+  fi
+  zdebug "pool set to ${pool}"
 
   # Pool is not writable if the property can't be read
   roflag="$( zpool get -H -o value readonly "${pool}" 2>/dev/null )" || return 1
@@ -1215,10 +1340,11 @@ set_rw_pool() {
   local pool ret
 
   pool="${1}"
-
-  zdebug "pool: ${pool}"
-
-  [ -n "${pool}" ] || return 1
+  if [ -z "${pool}" ]; then
+    zerror "pool is undefined"
+    return 1
+  fi
+  zdebug "pool set to ${pool}"
 
   # If force_export is set, skip evaluating if the pool is already read-write
   # shellcheck disable=SC2154
@@ -1252,7 +1378,14 @@ set_rw_pool() {
 
 be_has_encroot() {
   local fs pool encroot
+
   fs="${1}"
+  if [ -z "${fs}" ]; then
+    zerror "fs is undefined"
+    return 1
+  fi
+  zdebug "fs set to ${fs}"
+
   pool="${fs%%/*}"
 
   if [ "$( zpool list -H -o feature@encryption "${pool}" )" != "active" ]; then
@@ -1279,7 +1412,13 @@ be_has_encroot() {
 
 be_is_locked() {
   local fs keystatus encroot
+
   fs="${1}"
+  if [ -z "${fs}" ]; then
+    zerror "fs is undefined"
+    return 1
+  fi
+  zdebug "fs set to ${fs}"
 
   if encroot="$( be_has_encroot "${fs}" )"; then
     zdebug "${encroot} discovered as encryption root for ${fs}"
@@ -1305,7 +1444,13 @@ be_is_locked() {
 
 be_keysource() {
   local fs keysrc
+
   fs="${1}"
+  if [ -z "${fs}" ]; then
+    zerror "fs is undefined"
+    return 1
+  fi
+  zdebug "fs set to ${fs}"
 
   if ! keysrc="$( zfs get -H -o value org.zfsbootmenu:keysource "${fs}" )"; then
     zwarn "failed to read org.zfsbootmenu:keysource on ${fs}"
@@ -1335,8 +1480,20 @@ be_keysource() {
 
 cache_key() {
   local fs keylocation keyfile keydir keysrc keycache mutex mnt ret
+
   fs="${1}"
+  if [ -z "${fs}" ]; then
+    zerror "fs is undefined"
+    return 1
+  fi
+  zdebug "fs set to ${fs}"
+
   keylocation="${2}"
+  if [ -z "${keylocation}" ]; then
+    zerror "keylocation is undefined"
+    return 1
+  fi
+  zdebug "keylocation set to ${keylocation}"
 
   # Strip scheme if it exists
   keyfile="${keylocation#file://}"
@@ -1421,7 +1578,13 @@ cache_key() {
 
 load_key() {
   local fs encroot key keypath keyformat keylocation keysource
+
   fs="${1}"
+  if [ -z "${fs}" ]; then
+    zerror "fs is undefined"
+    return 1
+  fi
+  zdebug "fs set to ${fs}"
 
   # Nothing to do if filesystem is not locked
   if ! encroot="$( be_is_locked "${fs}" )" || [ -z "$encroot" ]; then
@@ -1506,7 +1669,11 @@ populate_be_list() {
   local be_list fs mnt active candidates ret sort_key
 
   be_list="${1}"
-  [ -n "${be_list}" ] || return 1
+  if [ -z "${be_list}" ]; then
+    zerror "be_list is undefined"
+    return 1
+  fi
+  zdebug "be_list set to ${be_list}"
 
   sort_key="$( get_sort_key )"
 
@@ -1556,8 +1723,13 @@ populate_be_list() {
 
 zfs_chroot() {
   local fs
+
   fs="${1}"
-  [ -n "${fs}" ] || return
+  if [ -z "${fs}" ]; then
+    zerror "fs is undefined"
+    return 1
+  fi
+  zdebug "fs set to ${fs}"
 
   tput clear
   tput cnorm
