@@ -1019,7 +1019,7 @@ export_pool() {
 # returns: 0 on success, 1 on failure
 
 rewind_checkpoint() {
-  local pool checkpoint
+  local pool checkpoint decision
   pool="${1}"
 
   while read -r line; do
@@ -1031,12 +1031,32 @@ rewind_checkpoint() {
   done <<<"$( zpool status "${pool}" )"
 
   [ -z "${checkpoint}" ] && return 1
+  tput clear
+  tput cnorm
+  tput cup 0 0
 
-  selected="$( echo -e "Rewind\nDo not rewind" | ${FUZZYSEL} \
-    --header="Rewind checkpoint on ${pool} ?"
-  )"
+  cat <<-EOF
+	WARNING!!!
 
-  [ "x${selected}" = "xRewind" ] || return 1
+	Rewinding a checkpoint for the ZFS pool
+
+		$( colorize "red" "${pool}" )
+
+	can not be undone!
+
+	If you choose to proceed, the pool will revert
+	to the state recorded when the checkpoint was taken.
+
+	Type $( colorize "red" "REWIND" ) to proceed with the checkpoint rewind.
+
+	Type any other text, or just press enter, to abort.
+
+	Proceed $( colorize "red" "[No]" ) ?
+	EOF
+
+  decision="$( /libexec/zfsbootmenu-input )"
+
+  [ "x${decision}" = "xREWIND" ] || return 1
 
   rewind_to_checkpoint=yes force_export=yes set_rw_pool "${pool}"
   return $?
@@ -1144,7 +1164,7 @@ resume_prompt() {
 
 	The action you are requesting requires the ZFS pool
 
-	    ${pool}
+	    $( colorize "red" "${pool}" )
 
 	be imported read-write. Importing read-write and then resuming
 	from an active suspend partition may DESTROY YOUR POOL.
@@ -1154,18 +1174,17 @@ resume_prompt() {
 	"noresume" argument to prevent your system from attempting to
 	restore from the active suspend partition.
 
-	Type NORESUME to proceed with the import, allowing ZFSBootMenu
+	Type $( colorize "green" "NORESUME" ) to proceed with the import, allowing ZFSBootMenu
 	to add a "noresume" argument to your kernel command line.
 
-	Type DANGEROUS to proceed with the import without allowing
+	Type $( colorize "red" "DANGEROUS" ) to proceed with the import without allowing
 	ZFSBootMenu to modify your kernel command line. Make sure to
 	add the "noresume" argument yourself if necesary.
 
 	Type any other text, or just press enter, to abort.
 
-	Proceed [No] ?
+	Proceed $( colorize "red" "[No]" ) ?
 	EOF
-
 
     decision="$( /libexec/zfsbootmenu-input )"
 
