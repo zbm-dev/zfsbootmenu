@@ -8,7 +8,7 @@ trap 'rm -f ${PID_FILE}' EXIT
 LOG_LEVEL="${loglevel:-7}"
 FOLLOW=""
 ALLOW_EXIT=1
-while getopts "fnl:" opt; do
+while getopts "cfnl:" opt; do
   case "${opt}" in
     l)
       LOG_LEVEL="${OPTARG}"
@@ -18,6 +18,9 @@ while getopts "fnl:" opt; do
       ;;
     f)
       FOLLOW="-w"
+      ;;
+    c)
+      [ -f "${BASE}/have_errors" ] && rm "${BASE}/have_errors"
       ;;
     *)
       ;;

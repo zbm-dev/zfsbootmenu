@@ -36,7 +36,6 @@ if mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
     _SHELL="/bin/sh"
   else
     zerror "unable to test execute a shell in ${selected}"
-    color=red timed_prompt "Unable to find a working shell in ${selected}"
   fi
 
   if [ -n "${_SHELL}" ]; then
@@ -45,7 +44,6 @@ if mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
     # regardless of shell, set PS1
     if ! env "PS1=$( colorize orange "${selected}") > " chroot "${mountpoint}" "${_SHELL}" ; then
       zerror "unable to execute ${selected}:${_SHELL}"
-      color=red timed_prompt "Unable to chroot in to ${selected}"
     fi
   fi
 

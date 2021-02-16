@@ -42,6 +42,7 @@ zwarn() {
 }
 
 zerror() {
+  : > "${BASE}/have_errors"
   zlog 3 "$@"
 }
 
