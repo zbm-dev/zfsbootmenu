@@ -5,7 +5,7 @@ export PID_FILE
 trap 'rm -f ${PID_FILE}' EXIT
 
 #shellcheck disable=SC2154
-LOG_LEVEL="${loglevel:-7}"
+LOG_LEVEL="0,1,2,3,4,5,6,7"
 FACILITY="kern,user"
 FOLLOW=""
 ALLOW_EXIT=1
