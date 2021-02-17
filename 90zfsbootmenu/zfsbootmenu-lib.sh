@@ -850,7 +850,7 @@ select_kernel() {
     done <<<"$( tac "${BASE}/${zfsbe}/kernels" )"
   fi
 
-  zdebug "using kexec args: ${spec_kexec_args}"
+  zdebug "using kexec args: ${kexec_args}"
   echo "${kexec_args}"
 }
 
