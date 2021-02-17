@@ -6,9 +6,10 @@ trap 'rm -f ${PID_FILE}' EXIT
 
 #shellcheck disable=SC2154
 LOG_LEVEL="${loglevel:-7}"
+FACILITY="kern,user"
 FOLLOW=""
 ALLOW_EXIT=1
-while getopts "cfnl:" opt; do
+while getopts "cfnl:F:" opt; do
   case "${opt}" in
     l)
       LOG_LEVEL="${OPTARG}"
@@ -21,6 +22,9 @@ while getopts "cfnl:" opt; do
       ;;
     c)
       [ -f "${BASE}/have_errors" ] && rm "${BASE}/have_errors"
+      ;;
+    F)
+      FACILITY="${OPTARG}"
       ;;
     *)
       ;;
@@ -52,6 +56,6 @@ elif command -v sk >/dev/null 2>&1; then
 fi
 
  # shellcheck disable=SC2086
-( dmesg -T --time-format reltime --noescape -l ${LOG_LEVEL} ${FOLLOW} & echo $! >&3 ) \
+( dmesg -T --time-format reltime --noescape -f ${FACILITY} -l ${LOG_LEVEL} ${FOLLOW} & echo $! >&3 ) \
   3>"${PID_FILE}" \
   | ${FUZZYSEL}
