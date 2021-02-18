@@ -516,17 +516,9 @@ kexec_kernel() {
     unset tdhook
   fi
 
-  # restore kernel log level just before we kexec
-  # shellcheck disable=SC2154
-  if [ -n "${PRINTK}" ] ; then
-    echo "${PRINTK}" > /proc/sys/kernel/printk
-    zdebug "restored kernel log level to ${PRINTK}"
-  fi
-
   if ! output="$( kexec -e -i 2>&1 )"; then
     zerror "kexec -e -i failed!"
     zerror "${output}"
-    echo 0 > /proc/sys/kernel/printk
     color=red delay=10 timed_prompt "kexec run of ${kernel} failed!"
     return 1
   fi

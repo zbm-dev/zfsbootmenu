@@ -8,12 +8,7 @@ export loglevel
 export root
 export zbm_sort
 
-# store current kernel log level
-read -r PRINTK < /proc/sys/kernel/printk
-PRINTK=${PRINTK:0:1}
-export PRINTK
-
-# Set it to 0
+# Disable all kernel messages to the console
 echo 0 > /proc/sys/kernel/printk
 
 # set the console size, if indicated
