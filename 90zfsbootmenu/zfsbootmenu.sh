@@ -284,7 +284,7 @@ while true; do
       tput cnorm
 
       echo ""
-      /libexec/zfsbootmenu-preview "${BASE}" "${selected_be}" "${BOOTFS}"
+      /libexec/zfsbootmenu-preview "${selected_be}" "${BOOTFS}"
 
       BE_ARGS="$( load_be_cmdline "${selected_be}" )"
       while IFS= read -r line; do
