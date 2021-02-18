@@ -60,7 +60,10 @@ fuzzy_default_options=( "--ansi" "--no-clear"
   "--layout=reverse-list" "--inline-info" "--tac" "--color=16"
   "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
   "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
-  "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"' )
+  "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
+  "--bind" '"alt-l:execute[ /bin/zlogtail -l err -F user -c ]+refresh-preview"'
+  "--bind" '"ctrl-l:execute[ /bin/zlogtail -l err -F user -c ]+refresh-preview"'
+  "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l err -F user -c ]+refresh-preview"' )
 if command -v fzf >/dev/null 2>&1; then
   zdebug "using fzf for pager"
   export FUZZYSEL=fzf
@@ -209,6 +212,7 @@ while true; do
           if [ "${leftover_space}" -le 0 ]; then
             avail_space="$( zfs list -H -o available "${parent_ds}" )"
             be_size="$( zfs list -H -o refer "${selected_snap}" )"
+            zerror "Insufficient space for duplication, ${parent_ds}' has ${avail_space} free but needs ${be_size}"
             color=red delay=10 timed_prompt "Insufficient space for duplication" \
               "'${parent_ds}' has ${avail_space} free but needs ${be_size}"
             continue
@@ -280,7 +284,7 @@ while true; do
       tput cnorm
 
       echo ""
-      /libexec/zfsbootmenu-preview "${BASE}" "${selected_be}" "${BOOTFS}"
+      /libexec/zfsbootmenu-preview "${selected_be}" "${BOOTFS}"
 
       BE_ARGS="$( load_be_cmdline "${selected_be}" )"
       while IFS= read -r line; do

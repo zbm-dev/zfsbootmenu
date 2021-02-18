@@ -26,11 +26,16 @@ else
   _DEFAULT=""
 fi
 
-selected_env_str="$( center_string "${ENV} (${_DEFAULT}${_readonly}) - ${selected_kernel}" )"
-
 selected_arguments="$( load_be_cmdline "${ENV}" )"
 selected_arguments="$( center_string "$( load_be_cmdline "${ENV}" )" )"
 
+selected_env_str="$( center_string "${ENV} (${_DEFAULT}${_readonly}) - ${selected_kernel}" )"
+
 # colorize doesn't automatically add a newline
+if [ -f "${BASE}/have_errors" ]; then
+  selected_env_str="${selected_env_str:3}"
+  colorize "red" "[!]"
+fi
+
 colorize "${_COLOR}" "${selected_env_str}\n"
 echo "${selected_arguments}"
