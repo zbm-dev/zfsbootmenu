@@ -212,6 +212,7 @@ while true; do
           if [ "${leftover_space}" -le 0 ]; then
             avail_space="$( zfs list -H -o available "${parent_ds}" )"
             be_size="$( zfs list -H -o refer "${selected_snap}" )"
+            zerror "Insufficient space for duplication, ${parent_ds}' has ${avail_space} free but needs ${be_size}"
             color=red delay=10 timed_prompt "Insufficient space for duplication" \
               "'${parent_ds}' has ${avail_space} free but needs ${be_size}"
             continue

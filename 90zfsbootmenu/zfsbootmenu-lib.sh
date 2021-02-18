@@ -487,6 +487,10 @@ kexec_kernel() {
     zerror "unable to load ${mnt}${kernel} and ${mnt}${initramfs} into memory"
     zerror "${output}"
     umount "${mnt}"
+    color=red delay=10 timed_prompt "Unable to load kernel or initramfs into memory" \
+      "${mnt}${kernel}" \
+      "${mnt}${initramfs}"
+
     return 1
   else
     zdebug "loaded ${mnt}${kernel} and ${mnt}${initramfs} into memory"
@@ -523,6 +527,7 @@ kexec_kernel() {
     zerror "kexec -e -i failed!"
     zerror "${output}"
     echo 0 > /proc/sys/kernel/printk
+    color=red delay=10 timed_prompt "kexec run of ${kernel} failed!"
     return 1
   fi
 }
