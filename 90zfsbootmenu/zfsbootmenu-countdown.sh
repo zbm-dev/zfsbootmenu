@@ -60,7 +60,7 @@ fi
 unsupported=0
 while IFS=$'\t' read -r _pool _property; do
   if [[ "${_property}" =~ "unsupported@" ]]; then
-    zdebug "unsupported property: ${_property}"
+    zerror "unsupported property: ${_property}"
     if ! grep -q "${_pool}" "${BASE}/degraded" >/dev/null 2>&1 ; then
       echo "${_pool}" >> "${BASE}/degraded"
     fi
@@ -69,6 +69,7 @@ while IFS=$'\t' read -r _pool _property; do
 done <<<"$( zpool get all -H -o name,property )"
 
 if [ "${unsupported}" -ne 0 ]; then
+  zerror "Unsupported features detected, Upgrade ZFS modules in ZFSBootMenu with generate-zbm"
   color=red timed_prompt "Unsupported features detected" "Upgrade ZFS modules in ZFSBootMenu with generate-zbm"
 fi
 
