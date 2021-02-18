@@ -634,7 +634,8 @@ sub createInitramfs {
 
   my $output_file = join( '/', $imagedir, "zfsbootmenu.img" );
 
-  my @cmd = ( qw(dracut -q -f --confdir), $runConf{confd} );
+  my @cmd = ( qw(dracut -f --confdir), $runConf{confd} );
+  push(@cmd, qw(-q)) unless $runConf{debug};
 
   if ( defined $config{Global}{DracutFlags} ) {
     if ( ref $config{Global}{DracutFlags} eq REFARRAY ) {
