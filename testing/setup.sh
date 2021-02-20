@@ -7,6 +7,7 @@ IMAGE=0
 CONFD=0
 DRACUT=0
 SIZE="2G"
+DISTRO="void"
 
 usage() {
   cat <<EOF
@@ -17,10 +18,11 @@ Usage: $0 [options]
   -d  Create a local dracut tree for local mode
   -i  Create a test VM image
   -a  Perform all setup options
-  -m  When making an image, use musl instead of glibc
   -D  Specify a test directory to use
   -s  Specify size of VM image
   -e  Enable native ZFS encryption
+  -o  Specify another distribution
+      [ void, void-musl, arch, debian ]
 EOF
 }
 
@@ -29,7 +31,7 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "eycgdaimD:s:" opt; do
+while getopts "heycgdaiD:s:o:" opt; do
   case "${opt}" in
     e)
       ENCRYPT=1
@@ -56,16 +58,16 @@ while getopts "eycgdaimD:s:" opt; do
       DRACUT=1
       GENZBM=1
       ;;
-    m)
-      MUSL=1
-      ;;
     D)
       TESTDIR="${OPTARG}"
       ;;
     s)
       SIZE="${OPTARG}"
       ;;
-    \?)
+    o)
+      DISTRO="${OPTARG}"
+      ;;
+    *)
       usage
       exit
   esac
@@ -73,10 +75,7 @@ done
 
 # Assign a default dest directory if one was not provided
 if [ -z "${TESTDIR}" ]; then
-  TESTDIR="./test.$(uname -m)"
-  if ((MUSL)); then
-    TESTDIR="${TESTDIR}-musl"
-  fi
+  TESTDIR="./test.${DISTRO}"
 fi
 
 TESTDIR="$(realpath "${TESTDIR}")" || exit 1
@@ -135,6 +134,16 @@ if ((YAML)) ; then
 fi
 
 # Create an image
-if ((IMAGE)) ; then
-  sudo env ENCRYPT="${ENCRYPT}" MUSL="${MUSL}" ./image.sh "${TESTDIR}" "${SIZE}"
+if ((IMAGE)); then
+  IMAGE_SCRIPT="./helpers/image-${DISTRO}.sh"
+  if [ ! -x "${IMAGE_SCRIPT}" ]; then
+    IMAGE_SCRIPT="./helpers/image.sh"
+  fi
+
+  sudo env \
+    ENCRYPT="${ENCRYPT}" \
+    DISTRO="${DISTRO}" \
+    TESTDIR="${TESTDIR}" \
+    SIZE="${SIZE}" \
+    "${IMAGE_SCRIPT}"
 fi

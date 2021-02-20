@@ -39,8 +39,13 @@ if [ -n "${TESTDIR}" ]; then
   fi
 else
   # If a test directory was not specified, try a default
-  TESTDIR="./test.$(uname -m)"
-  [ -d "${TESTDIR}" ] || TESTDIR="."
+  TESTDIR="."
+  for TESTBED in void void-musl arch debian; do
+    if [ -d "./test.${TESTBED}" ]; then
+      TESTDIR="./test.${TESTBED}"
+      break
+    fi
+  done
 fi
 
 # Support x86_64 and ppc64(le)
@@ -49,14 +54,14 @@ case "$(uname -m)" in
     BIN="qemu-system-ppc64"
     KERNEL="${TESTDIR}/vmlinux-bootmenu"
     MACHINE="pseries,accel=kvm,kvm-type=HV,cap-hpt-max-page-size=4096"
-    APPEND="loglevel=7 zbm.timeout=5 root=zfsbootmenu:POOL=ztest"
+    APPEND="loglevel=7 zbm.show"
     SERDEV="hvc0"
   ;;
   x86_64)
     BIN="qemu-system-x86_64"
     KERNEL="${TESTDIR}/vmlinuz-bootmenu"
     MACHINE="type=q35,accel=kvm"
-    APPEND="loglevel=7 zbm.timeout=5 root=zfsbootmenu:POOL=ztest"
+    APPEND="loglevel=7 zbm.show"
     SERDEV="ttyS0"
   ;;
 esac
