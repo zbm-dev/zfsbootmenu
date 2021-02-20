@@ -7,6 +7,7 @@ IMAGE=0
 CONFD=0
 DRACUT=0
 SIZE="2G"
+DISTRO="void"
 
 usage() {
   cat <<EOF
@@ -21,6 +22,8 @@ Usage: $0 [options]
   -D  Specify a test directory to use
   -s  Specify size of VM image
   -e  Enable native ZFS encryption
+  -o  Specify another distribution
+      [ void, arch, ubuntu, debian ]
 EOF
 }
 
@@ -29,7 +32,7 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "eycgdaimD:s:" opt; do
+while getopts "eycgdaimD:s:o:" opt; do
   case "${opt}" in
     e)
       ENCRYPT=1
@@ -64,6 +67,9 @@ while getopts "eycgdaimD:s:" opt; do
       ;;
     s)
       SIZE="${OPTARG}"
+      ;;
+    o)
+      DISTRO="${OPTARG}"
       ;;
     \?)
       usage
@@ -135,6 +141,17 @@ if ((YAML)) ; then
 fi
 
 # Create an image
-if ((IMAGE)) ; then
-  sudo env ENCRYPT="${ENCRYPT}" MUSL="${MUSL}" ./image.sh "${TESTDIR}" "${SIZE}"
+if ((IMAGE)); then
+  IMAGE_SCRIPT="./helpers/image-${DISTRO}.sh"
+  if [ ! -x "${IMAGE_SCRIPT}" ]; then
+    IMAGE_SCRIPT="./helpers/image.sh"
+  fi
+
+  sudo env \
+    ENCRYPT="${ENCRYPT}" \
+    MUSL="${MUSL}" \
+    DISTRO="${DISTRO}" \
+    TESTDIR="${TESTDIR}" \
+    SIZE="${SIZE}" \
+    "${IMAGE_SCRIPT}"
 fi

@@ -65,4 +65,4 @@ zfs snapshot -r ztest@minor-changes
 rm /root/IN_THE_MATRIX
 
 # delete ourself
-rm /root/chroot.sh
+rm "$0"
