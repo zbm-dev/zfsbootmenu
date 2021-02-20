@@ -45,6 +45,7 @@ if [ -n "${ENCRYPT}" ]; then
     exit 1
   fi
 
+  export ENCRYPT_KEYFILE
   ENCRYPT_OPTS+=( "-O" "keylocation=file://${ENCRYPT_KEYFILE}" )
 fi
 
