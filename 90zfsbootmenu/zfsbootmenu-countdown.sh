@@ -34,6 +34,8 @@ while true; do
   if [ "${import_success}" -ne 1 ]; then
     if match_hostid ; then
       import_success=1
+    else
+      emergency_shell "unable to successfully import a pool"
     fi
   else
     zdebug "$(
