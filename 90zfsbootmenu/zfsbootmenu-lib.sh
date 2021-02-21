@@ -135,7 +135,7 @@ match_hostid() {
 
   for pool in "${importable[@]}"; do
     zdebug "Trying to import: ${pool}"
-		hostid="$( zpool import "${pool}" 2>&1 | grep -o "hostid=[A-Za-z0-9]")"
+		hostid="$( zpool import "${pool}" 2>&1 | grep -E -o "hostid=[A-Za-z0-9]{1,8}")"
     hostid="${hostid##*=}"
     zdebug "Discovered old hostid: ${hostid}"
 
