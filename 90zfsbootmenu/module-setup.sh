@@ -83,6 +83,7 @@ install() {
     "env"
     "chmod"
     "vi"
+    "lsmod"
   )
 
   for _exec in "${essential_execs[@]}"; do

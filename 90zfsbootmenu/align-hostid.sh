@@ -1,7 +1,7 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
-# shellcheck source=./zfsbootmenu-lib.sh 
+# shellcheck source=./zfsbootmenu-lib.sh
 [ -r /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
 
 usage() {
@@ -33,31 +33,32 @@ while getopts "h:b:" opt; do
   esac
 done
 
-
-echo "Setting SPL hostid to: ${HOSTID}"
-echo "Setting hostid in ${BE}"
-
-echo -ne "\\x${HOSTID:6:2}\\x${HOSTID:4:2}\\x${HOSTID:2:2}\\x${HOSTID:0:2}" > "/etc/hostid"
-
 if [ -n "${BE}" ]; then
   pool="${BE%%/*}"
   echo "Exporting pool: ${pool}"
+  set_rw_pool "${pool}"
   export_pool "${pool}"
 else
   while read -r pool ; do
     echo "Exporting pool: ${pool}"
+    set_rw_pool "${pool}"
     export_pool "${pool}"
   done <<<"$( zpool list -H -o name )"
 fi
 
 echo "Unloading ZFS and SPL kernel modules"
 rmmod zfs
-rmmod icp 
-rmmod zzstd 
-rmmod zcommon 
-rmmod znvpair 
+rmmod icp
+rmmod zzstd
+rmmod zcommon
+rmmod znvpair
 rmmod zavl
 rmmod spl
+
+echo "Setting SPL hostid to: ${HOSTID}"
+echo "Setting hostid in ${BE}"
+
+echo -ne "\\x${HOSTID:6:2}\\x${HOSTID:4:2}\\x${HOSTID:2:2}\\x${HOSTID:0:2}" > "/etc/hostid"
 
 modprobe zfs
 
@@ -65,7 +66,10 @@ read_write=1 all_pools=yes import_pool
 populate_be_list "${BASE}/env" || rm -f "${BASE}/env"
 
 if [ -n "${BE}" ]; then
-  MNT="$( mount_zfs "${BE}" )"
+  MNT="$( allow_rw=1 mount_zfs "${BE}" )"
   echo -ne "\\x${HOSTID:6:2}\\x${HOSTID:4:2}\\x${HOSTID:2:2}\\x${HOSTID:0:2}" > "${MNT}/etc/hostid"
   umount "${MNT}"
+  BE_ARGS="$( load_be_cmdline "${BE}" )"
+  echo "${BE_ARGS} spl_hostid=${HOSTID}" > "${BASE}/cmdline"
 fi
+
