@@ -28,7 +28,7 @@ rewrite_cmdline() {
         break
         ;;
       spl_hostid*)
-			  old_hostid="${token}"
+        old_hostid="${token}"
         rewritten+=( "spl_hostid=${HOSTID}" )
         zdebug "setting spl_hostid to ${HOSTID}"
         ;;
@@ -41,7 +41,7 @@ rewrite_cmdline() {
 
   if [ -n "${old_hostid}" ] ; then
     zdebug "returning: ${rewritten[*]}"
-	  echo "${rewritten[*]}"
+    echo "${rewritten[*]}"
     return 0
   else
     return 1
@@ -103,20 +103,22 @@ echo "Setting SPL hostid in ${BE}"
 MNT="$( allow_rw=1 mount_zfs "${BE}" )"
 echo -ne "\\x${HOSTID:6:2}\\x${HOSTID:4:2}\\x${HOSTID:2:2}\\x${HOSTID:0:2}" > "${MNT}/etc/hostid"
 
-BE_ARGS="$( load_be_cmdline "${BE}" )"
-echo "${BE_ARGS} spl_hostid=${HOSTID}" > "${BASE}/cmdline"
-
 org_cmdline="$( zfs get -H -o value org.zfsbootmenu:commandline "${BE}" )"
 
+# rewrite BE commandline property
 if new_cmdline="$( rewrite_cmdline "${org_cmdline}" )" ; then
-	echo "Rewriting org.zfsbootmenu:commandline to: "
+  echo "Rewriting org.zfsbootmenu:commandline to:"
   echo -e "> $( colorize red "${new_cmdline}")\n"
-	zfs set org.zfsbootmenu:commandline="${new_cmdline}" "${BE}"
-fi
+  zfs set org.zfsbootmenu:commandline="${new_cmdline}" "${BE}"
+else
+  # Set a temporary cmdline for the next boot
+  BE_ARGS="$( load_be_cmdline "${BE}" )"
+  if override_cmdline="$( rewrite_cmdline "${BE_ARGS}" )" ; then
+    echo "Writing a temporary new cmdline:"
+    echo -e "> $( colorize red "${override_cmdline}")\n"
+    echo "${override_cmdline}" > "${BASE}/cmdline"
 
-if [ -f "${MNT}/etc/zfsbootmenu/config.yaml" ] && grep -q "spl_hostid=" ; then
-	echo "Found ${old_hostid} in /etc/zfsbootmenu/config.yaml, updating"
-  # TODO: do this via sed?
+  fi
 fi
 
 # restore for easy test cycling right now
