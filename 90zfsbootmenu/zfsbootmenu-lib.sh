@@ -108,6 +108,15 @@ center_string() {
 match_hostid() {
   local importable pool state hostid
   importable=()
+
+
+  # If root is defined and not zfsbootmenu, prefer that pool for masked import
+  # shellcheck disable=SC2154
+  if [ -n "${root}" ] && [ "${root}" != "zfsbootmenu" ]; then
+    pool="${root%%/*}"
+    importable+=( "${pool}" )
+  fi
+
   while read -r line; do
     case "$line" in
       pool*)
