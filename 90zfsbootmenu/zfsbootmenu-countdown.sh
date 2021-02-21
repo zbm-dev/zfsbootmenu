@@ -28,6 +28,7 @@ while true; do
 
     if [ "${_health}" != "ONLINE" ]; then
       echo "${_pool}" >> "${BASE}/degraded"
+      zerror "prohibiting read/write operations on ${_pool}"
     fi
   done <<<"$( zpool list -H -o name,health )"
 
@@ -38,6 +39,8 @@ while true; do
       zdebug "match_hostid returned: ${masked}"
       zerror "imported ${pool} with assumed hostid ${hostid}"
       zerror "Set spl_hostid=${hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
+      zerror "prohibiting read/write operations on ${pool}"
+      echo "${pool}" >> "${BASE}/degraded"
       import_success=1
     else
       emergency_shell "unable to successfully import a pool"
