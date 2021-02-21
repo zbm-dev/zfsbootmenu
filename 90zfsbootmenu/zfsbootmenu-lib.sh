@@ -105,6 +105,49 @@ center_string() {
   printf "%*s" $(( (${#1} + _WIDTH ) / 2)) "${1}"
 }
 
+match_hostid() {
+  local importable pool state hostid
+  importable=()
+  while read -r line; do
+    case "$line" in
+      pool*)
+        pool="${line#pool: }"
+      ;;
+      state*)
+        state="${line#state: }"
+        if [ "${state}" == "ONLINE" ]; then
+          importable+=("${pool}")
+        fi
+        ;;
+    esac
+  done <<<"$( zpool import )"
+
+  zdebug "Importable pools: ${importable[*]}"
+
+  for pool in "${importable[@]}"; do
+    zdebug "Trying to import: ${pool}"
+		hostid="$( zpool import "${pool}" 2>&1 | grep -o "hostid=[A-Za-z0-9]")"
+    hostid="${hostid##*=}"
+    zdebug "Discovered old hostid: ${hostid}"
+
+    if [ "${hostid}" == "0" ]; then
+      hostid="00000000"
+    fi
+
+    zdebug "Setting hostid to: ${hostid}"
+
+    echo -ne "\\x${hostid:6:2}\\x${hostid:4:2}\\x${hostid:2:2}\\x${hostid:0:2}" > "/etc/hostid"
+    zdebug "hostid returns: $( hostid )"
+
+    if read_write='' import_pool "${pool}"; then
+      zdebug "Successfully imported ${pool}"
+      return 0
+    fi
+  done
+
+  # no pools could be imported, we failed to match a hostid
+  return 1
+}
 # arg1: ZFS filesystem name
 # prints: mountpoint
 # returns: 0 on success

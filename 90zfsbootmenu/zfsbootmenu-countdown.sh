@@ -23,14 +23,18 @@ while true; do
   while IFS=$'\t' read -r _pool _health; do
     [ -n "${_pool}" ] || continue
 
+    zdebug "Discovered pool: ${_pool}"
     import_success=1
+
     if [ "${_health}" != "ONLINE" ]; then
       echo "${_pool}" >> "${BASE}/degraded"
     fi
   done <<<"$( zpool list -H -o name,health )"
 
   if [ "${import_success}" -ne 1 ]; then
-    emergency_shell "unable to successfully import a pool"
+    if match_hostid ; then
+      import_success=1
+    fi
   else
     zdebug "$(
       echo "zpool list" ; \
