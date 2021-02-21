@@ -69,31 +69,15 @@ if [ -z "${BE}" ]; then
 fi
 
 pool="${BE%%/*}"
-echo "Exporting pool: ${pool}"
-set_rw_pool "${pool}"
-export_pool "${pool}"
-
-echo "Unloading ZFS and SPL kernel modules"
-modules=(
-  "zfs"
-  "icp"
-  "zzstd"
-  "zcommon"
-  "znvpair"
-  "zavl"
-  "spl"
-)
-
-echo -n "Unloading ... "
-for module in "${modules[@]}"; do
-  echo -n " ${module}"
-  rmmod "${module}"
-done
+if set_rw_pool "${pool}" ; then
+  echo "Exporting pool: ${pool}"
+  export_pool "${pool}"
+else
+  echo "Unable to export pool ${pool}"
+fi
 
 echo -e "\nSetting SPL hostid to: ${HOSTID}"
 echo -ne "\\x${HOSTID:6:2}\\x${HOSTID:4:2}\\x${HOSTID:2:2}\\x${HOSTID:0:2}" > "/etc/hostid"
-
-modprobe zfs
 
 read_write=1 all_pools=yes import_pool
 populate_be_list "${BASE}/env" || rm -f "${BASE}/env"
