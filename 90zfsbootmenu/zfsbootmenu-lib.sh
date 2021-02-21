@@ -105,6 +105,41 @@ center_string() {
   printf "%*s" $(( (${#1} + _WIDTH ) / 2)) "${1}"
 }
 
+rewrite_cmdline() {
+  local rewritten org_cmdline old_hostid
+  org_cmdline="${1}"
+  HOSTID="${2}"
+
+  zdebug "setting ${HOSTID} on KCL"
+
+  rewritten=()
+
+  for token in ${org_cmdline// / } ; do
+    case "${token}" in
+      "-")
+        break
+        ;;
+      spl_hostid*)
+        old_hostid="${token}"
+        rewritten+=( "spl_hostid=${HOSTID}" )
+        zdebug "setting spl_hostid to ${HOSTID}"
+        ;;
+      *)
+        rewritten+=( "${token}" )
+        zdebug "adding token: ${token}"
+        ;;
+    esac
+  done
+
+  if [ -z "${old_hostid}" ]; then
+    rewritten+=( "spl_hostid=${HOSTID}" )
+  fi
+
+  zdebug "returning: ${rewritten[*]}"
+  echo "${rewritten[*]}"
+  return 0
+}
+
 match_hostid() {
   local importable pool state hostid
   importable=()

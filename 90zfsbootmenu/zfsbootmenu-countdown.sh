@@ -101,7 +101,16 @@ done <<<"$( zpool list -H -o bootfs ${boot_pool} )"
 if [ -n "${BOOTFS}" ]; then
   export BOOTFS
   echo "${BOOTFS}" > "${BASE}/bootfs"
+  if [ -n "${hostid}" ]; then
+    BE_ARGS="$( load_be_cmdline "${BOOTFS}" )"
+    zdebug "Loaded kernel commandline: ${BE_ARGS}"
+    if override_cmdline="$( rewrite_cmdline "${BE_ARGS}" "${hostid}" )" ; then
+      echo "${override_cmdline}" > "${BASE}/cmdline"
+      zerror "Overriding commandline: ${override_cmdline}"
+    fi
+  fi
 fi
+
 
 : > "${BASE}/initialized"
 
@@ -122,6 +131,8 @@ if [ -n "${BOOTFS}" ]; then
     fi
   fi
 fi
+
+[ -f "${BASE}/cmdline" ] && rm "${BASE}/cmdline"
 
 while true; do
   if [ -x /bin/zfsbootmenu ]; then
