@@ -150,6 +150,7 @@ match_hostid() {
 
     if read_write='' import_pool "${pool}"; then
       zdebug "Successfully imported ${pool}"
+      echo "${pool};${hostid}"
       return 0
     fi
   done

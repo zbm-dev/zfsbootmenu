@@ -32,7 +32,12 @@ while true; do
   done <<<"$( zpool list -H -o name,health )"
 
   if [ "${import_success}" -ne 1 ]; then
-    if match_hostid ; then
+    if masked="$( match_hostid )"; then
+      pool="${masked%%;*}"
+      hostid="${masked##*;}"
+      zdebug "match_hostid returned: ${masked}"
+      zerror "imported ${pool} with assumed hostid ${hostid}"
+      zerror "Set spl_hostid=${hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
       import_success=1
     else
       emergency_shell "unable to successfully import a pool"
