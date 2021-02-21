@@ -1,7 +1,7 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
-# shellcheck source=./zfsbootmenu-lib.sh
+# shellcheck disable=SC1091
 [ -r /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
 
 HOSTID="00000000"
