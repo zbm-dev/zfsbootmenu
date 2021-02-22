@@ -138,10 +138,16 @@ match_hostid() {
   zdebug "importable pools: ${importable[*]}"
 
   for pool in "${importable[@]}"; do
-    zdebug "Trying to import: ${pool}"
-		hostid="$( zpool import "${pool}" 2>&1 | grep -E -o "hostid=[A-Za-z0-9]{1,8}")"
-    hostid="${hostid##*=}"
-    zdebug "discovered old hostid: ${hostid}"
+    zdebug "trying to import: ${pool}"
+    hostid="$( zpool import "${pool}" 2>&1 | grep -E -o "hostid=[A-Za-z0-9]{1,8}")"
+
+    if [ -n "${hostid}" ]; then
+      hostid="${hostid##*=}"
+      zdebug "discovered pool owner hostid: ${hostid}"
+    else
+      zdebug "unable to scrape hostid for ${pool}, skipping"
+      continue
+    fi
 
     if [ "${hostid}" == "0" ]; then
       hostid="00000000"
@@ -149,7 +155,6 @@ match_hostid() {
 
     zdebug "setting hostid to: ${hostid}"
     echo -ne "\\x${hostid:6:2}\\x${hostid:4:2}\\x${hostid:2:2}\\x${hostid:0:2}" > "/etc/hostid"
-    zdebug "hostid returns: $( hostid )"
 
     if read_write='' import_pool "${pool}"; then
       zdebug "successfully imported ${pool}"

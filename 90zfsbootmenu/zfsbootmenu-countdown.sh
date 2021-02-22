@@ -22,8 +22,6 @@ import_success=0
 while true; do
   while IFS=$'\t' read -r _pool _health; do
     [ -n "${_pool}" ] || continue
-
-    zdebug "Discovered pool: ${_pool}"
     import_success=1
 
     if [ "${_health}" != "ONLINE" ]; then
@@ -112,7 +110,6 @@ if [ -n "${BOOTFS}" ]; then
   export BOOTFS
   echo "${BOOTFS}" > "${BASE}/bootfs"
 fi
-
 
 : > "${BASE}/initialized"
 
