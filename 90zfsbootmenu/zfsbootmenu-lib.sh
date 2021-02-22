@@ -1049,46 +1049,46 @@ preload_be_cmdline() {
 # returns: 0 on success
 
 suppress_kcl_arg() {
-	arg=$1
-	shift
+  arg=$1
+  shift
 
-	if [ -z "${arg}" ]; then
-		echo "$*"
-		return 0
-	fi
+  if [ -z "${arg}" ]; then
+    echo "$*"
+    return 0
+  fi
 
-	awk <<< "$*" '
-		BEGIN {
-			quot = 0;
-			supp = 0;
-			ORS = " ";
-		}
+  awk <<< "$*" '
+    BEGIN {
+      quot = 0;
+      supp = 0;
+      ORS = " ";
+    }
 
-		{
-			for (i=1; i <= NF; i++) {
-				if ( quot == 0 ) {
-					# If unquoted, determine if output should be suppressed
-					if ( $(i) ~ /^'"${arg}"'=/ ) {
-						# Suppress unwanted argument
-						supp = 1;
-					} else {
-						# Nothing else is suppressed
-						supp = 0;
-					}
-				}
+    {
+      for (i=1; i <= NF; i++) {
+        if ( quot == 0 ) {
+          # If unquoted, determine if output should be suppressed
+          if ( $(i) ~ /^'"${arg}"'=/ ) {
+            # Suppress unwanted argument
+             supp = 1;
+          } else {
+            # Nothing else is suppressed
+            supp = 0;
+          }
+        }
 
-				# If output is not suppressed, print the field
-				if ( supp == 0 && length($(i)) > 0 ) {
-					print $(i);
-				}
+        # If output is not suppressed, print the field
+        if ( supp == 0 && length($(i)) > 0 ) {
+          print $(i);
+        }
 
-				# If an odd number of quotes are in this field, toggle quoting
-				if ( gsub(/"/, "\"", $(i)) % 2 == 1 ) {
-					quot = (quot + 1) % 2;
-				}
-			}
-		}
-		'
+        # If an odd number of quotes are in this field, toggle quoting
+        if ( gsub(/"/, "\"", $(i)) % 2 == 1 ) {
+          quot = (quot + 1) % 2;
+        }
+      }
+    }
+  '  
 }
 
 # arg1: ZFS filesystem
