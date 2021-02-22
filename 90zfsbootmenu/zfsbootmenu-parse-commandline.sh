@@ -10,10 +10,13 @@ if [ -n "${spl_hostid}" ] ; then
   info "ZFSBootMenu: using hostid from command line: ${spl_hostid}"
   echo -ne "\\x${spl_hostid:6:2}\\x${spl_hostid:4:2}\\x${spl_hostid:2:2}\\x${spl_hostid:0:2}" >/etc/hostid
 elif [ -f "/etc/hostid" ] ; then
-  info "ZFSBootMenu: using hostid from /etc/hostid: $(hostid)"
+  spl_hostid="$(hostid)"
+  info "ZFSBootMenu: using hostid from /etc/hostid: ${spl_hostid}"
 else
   warn "ZFSBootMenu: no hostid found on kernel command line or /etc/hostid"
-  warn "ZFSBootMenu: pools may not import correctly"
+  warn "ZFSBootMenu: defaulting hostid to 00000000"
+  echo -ne "\\x00\\x00\\x00\\x00" >/etc/hostid
+  spl_hostid="00000000"
 fi
 
 # Use the last defined console= to control menu output
