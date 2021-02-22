@@ -1122,14 +1122,14 @@ load_be_cmdline() {
   if [ -e "${BASE}/noresume" ]; then
     zdebug "${BASE}/noresume set, processing ${zfsbe_args}"
     # Must replace resume= arguments and append a noresume
-		zfsbe_args="$( suppress_kcl_arg resume "${zfsbe_args}" ) noresume"
-	fi
+    zfsbe_args="$( suppress_kcl_arg resume "${zfsbe_args}" ) noresume"
+  fi
 
   # shellcheck disable=SC2154
   if [ "${zbm_set_hostid}" -eq 1 ]; then
-		zdebug "rewriting spl_hostid, processing ${zfsbe_args}"
-		zfsbe_args="spl_hostid=${spl_hostid} $( suppress_kcl_arg spl_hostid "${zfsbe_args}" )"
-	fi
+    zdebug "rewriting spl_hostid, processing ${zfsbe_args}"
+    zfsbe_args="spl_hostid=${spl_hostid} $( suppress_kcl_arg spl_hostid "${zfsbe_args}" )"
+  fi
 
   zdebug "processed commandline: ${zfsbe_args}"
   echo "${zfsbe_args}"
