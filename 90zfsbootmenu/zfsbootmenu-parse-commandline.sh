@@ -45,6 +45,9 @@ if [ -n "${import_policy}" ]; then
     force)
       info "ZFSBootMenu: setting import_policy to force"
       ;;
+    legacy)
+      info "ZFSBootMenu: setting import_policy to legacy"
+      ;;
     *)
       info "ZFSBootMenu: unknown import policy ${import_policy}, defaulting to hostid"
       import_policy="hostid"

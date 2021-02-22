@@ -43,8 +43,8 @@ while true; do
       zerror "imported ${pool} with assumed hostid ${spl_hostid}"
       zerror "set spl_hostid=${spl_hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
 
-      #echo "${pool}" >> "${BASE}/degraded"
-      #zerror "prohibiting read/write operations on ${pool}"
+      # Make a second attempt at importing all pools read-only
+      read_write='' all_pools=yes import_pool
 
       # potentially useful later?
       : > "${BASE}/masked_hostid"
