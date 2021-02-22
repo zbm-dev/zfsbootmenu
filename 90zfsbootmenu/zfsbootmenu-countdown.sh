@@ -32,15 +32,25 @@ while true; do
     fi
   done <<<"$( zpool list -H -o name,health )"
 
-  if [ "${import_success}" -ne 1 ]; then
+  # shellcheck disable=SC2154
+  if [ "${import_success}" -ne 1 ] && [ "${import_policy}" == "hostid" ] ; then
     if masked="$( match_hostid )"; then
-      pool="${masked%%;*}"
-      hostid="${masked##*;}"
       zdebug "match_hostid returned: ${masked}"
-      zerror "imported ${pool} with assumed hostid ${hostid}"
-      zerror "Set spl_hostid=${hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
-      zerror "prohibiting read/write operations on ${pool}"
+
+      pool="${masked%%;*}"
+      spl_hostid="${masked##*;}"
+
+      export spl_hostid
+
+      zerror "imported ${pool} with assumed hostid ${spl_hostid}"
+      zerror "set spl_hostid=${spl_hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
+
       echo "${pool}" >> "${BASE}/degraded"
+      zerror "prohibiting read/write operations on ${pool}"
+
+      # potentially useful later?
+      : > "${BASE}/masked_hostid"
+
       import_success=1
     else
       emergency_shell "unable to successfully import a pool"
@@ -101,14 +111,6 @@ done <<<"$( zpool list -H -o bootfs ${boot_pool} )"
 if [ -n "${BOOTFS}" ]; then
   export BOOTFS
   echo "${BOOTFS}" > "${BASE}/bootfs"
-  if [ -n "${hostid}" ]; then
-    BE_ARGS="$( load_be_cmdline "${BOOTFS}" )"
-    zdebug "Loaded kernel commandline: ${BE_ARGS}"
-    if override_cmdline="$( rewrite_cmdline "${BE_ARGS}" "${hostid}" )" ; then
-      echo "${override_cmdline}" > "${BASE}/cmdline"
-      zerror "Overriding commandline: ${override_cmdline}"
-    fi
-  fi
 fi
 
 
@@ -131,8 +133,6 @@ if [ -n "${BOOTFS}" ]; then
     fi
   fi
 fi
-
-[ -f "${BASE}/cmdline" ] && rm "${BASE}/cmdline"
 
 while true; do
   if [ -x /bin/zfsbootmenu ]; then

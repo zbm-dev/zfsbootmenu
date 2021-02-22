@@ -105,41 +105,6 @@ center_string() {
   printf "%*s" $(( (${#1} + _WIDTH ) / 2)) "${1}"
 }
 
-rewrite_cmdline() {
-  local rewritten org_cmdline old_hostid
-  org_cmdline="${1}"
-  HOSTID="${2}"
-
-  zdebug "setting ${HOSTID} on KCL"
-
-  rewritten=()
-
-  for token in ${org_cmdline// / } ; do
-    case "${token}" in
-      "-")
-        break
-        ;;
-      spl_hostid*)
-        old_hostid="${token}"
-        rewritten+=( "spl_hostid=${HOSTID}" )
-        zdebug "setting spl_hostid to ${HOSTID}"
-        ;;
-      *)
-        rewritten+=( "${token}" )
-        zdebug "adding token: ${token}"
-        ;;
-    esac
-  done
-
-  if [ -z "${old_hostid}" ]; then
-    rewritten+=( "spl_hostid=${HOSTID}" )
-  fi
-
-  zdebug "returning: ${rewritten[*]}"
-  echo "${rewritten[*]}"
-  return 0
-}
-
 match_hostid() {
   local importable pool state hostid
   importable=()
@@ -166,25 +131,24 @@ match_hostid() {
     esac
   done <<<"$( zpool import )"
 
-  zdebug "Importable pools: ${importable[*]}"
+  zdebug "importable pools: ${importable[*]}"
 
   for pool in "${importable[@]}"; do
     zdebug "Trying to import: ${pool}"
 		hostid="$( zpool import "${pool}" 2>&1 | grep -E -o "hostid=[A-Za-z0-9]{1,8}")"
     hostid="${hostid##*=}"
-    zdebug "Discovered old hostid: ${hostid}"
+    zdebug "discovered old hostid: ${hostid}"
 
     if [ "${hostid}" == "0" ]; then
       hostid="00000000"
     fi
 
-    zdebug "Setting hostid to: ${hostid}"
-
+    zdebug "setting hostid to: ${hostid}"
     echo -ne "\\x${hostid:6:2}\\x${hostid:4:2}\\x${hostid:2:2}\\x${hostid:0:2}" > "/etc/hostid"
     zdebug "hostid returns: $( hostid )"
 
     if read_write='' import_pool "${pool}"; then
-      zdebug "Successfully imported ${pool}"
+      zdebug "successfully imported ${pool}"
       echo "${pool};${hostid}"
       return 0
     fi
@@ -1069,12 +1033,60 @@ preload_be_cmdline() {
   fi
 }
 
+# arg1: key(and associated value) to suppress from KCL
+# arg2..argN: kernel command line
+# prints: supressed kernel command line
+# returns: 0 on success
+
+suppress_kcl_arg() {
+	arg=$1
+	shift
+
+	if [ -z "${arg}" ]; then
+		echo "$*"
+		return 0
+	fi
+
+	awk <<< "$*" '
+		BEGIN {
+			quot = 0;
+			supp = 0;
+			ORS = " ";
+		}
+
+		{
+			for (i=1; i <= NF; i++) {
+				if ( quot == 0 ) {
+					# If unquoted, determine if output should be suppressed
+					if ( $(i) ~ /^'"${arg}"'=/ ) {
+						# Suppress unwanted argument
+						supp = 1;
+					} else {
+						# Nothing else is suppressed
+						supp = 0;
+					}
+				}
+
+				# If output is not suppressed, print the field
+				if ( supp == 0 && length($(i)) > 0 ) {
+					print $(i);
+				}
+
+				# If an odd number of quotes are in this field, toggle quoting
+				if ( gsub(/"/, "\"", $(i)) % 2 == 1 ) {
+					quot = (quot + 1) % 2;
+				}
+			}
+		}
+		'
+}
+
 # arg1: ZFS filesystem
 # prints: kernel command line arguments
 # returns: nothing
 
 load_be_cmdline() {
-  local zfsbe_fs zfsbe_args
+  local zfsbe_fs zfsbe_args hostid
 
   zfsbe_fs="${1}"
   if [ -z "${zfsbe_fs}" ]; then
@@ -1100,40 +1112,14 @@ load_be_cmdline() {
   if [ -e "${BASE}/noresume" ]; then
     zdebug "${BASE}/noresume set, processing ${zfsbe_args}"
     # Must replace resume= arguments and append a noresume
-    zfsbe_args="$( awk <<< "${zfsbe_args}" '
-      BEGIN {
-        quot = 0;
-        supp = 0;
-        ORS = " ";
-      }
+		zfsbe_args="$( suppress_kcl_arg resume "${zfsbe_args}" ) noresume"
+	fi
 
-      {
-        for (i=1; i <= NF; i++) {
-          if ( quot == 0 ) {
-            # If unquoted, determine if output should be suppressed
-            if ( $(i) ~ /^resume=/ ) {
-              # Argument starts with "resume=", suppress
-              supp = 1;
-            } else {
-              # Nothing else is suppressed
-              supp = 0;
-            }
-          }
-
-          # If output is not suppressed, print the field
-          if ( supp == 0 && length($(i)) > 0 ) {
-            print $(i);
-          }
-
-          # If an odd number of quotes are in this field, toggle quoting
-          if ( gsub(/"/, "\"", $(i)) % 2 == 1 ) {
-            quot = (quot + 1) % 2;
-          }
-        }
-        printf "noresume";
-      }
-    ' )"
-  fi
+  # shellcheck disable=SC2154
+  if [ "${zbm_set_hostid}" -eq 1 ]; then
+		zdebug "rewriting spl_hostid, processing ${zfsbe_args}"
+		zfsbe_args="spl_hostid=${spl_hostid} $( suppress_kcl_arg spl_hostid "${zfsbe_args}" )"
+	fi
 
   zdebug "processed commandline: ${zfsbe_args}"
   echo "${zfsbe_args}"
@@ -1144,7 +1130,7 @@ load_be_cmdline() {
 # returns: 0 on success, 1 on failure
 
 # Accepted environment variables
-# force_import=1: enable force importing of a pool
+# import_policy=force: enable force importing of a pool
 # read_write=1: import read-write, defaults to read-only
 # rewind_to_checkpoint=1: enable --rewind-to-checkpoint
 # all_pools=1: import all pools instead of a single specific pool
@@ -1161,9 +1147,9 @@ import_pool() {
   import_args=( "-N" )
 
   # shellcheck disable=SC2154
-  if [ -n "${force_import}" ]; then
+  if [ "${import_policy}" == "force" ]; then
     import_args+=( "-f" )
-    zdebug "force_import set: ${force_import}"
+    zdebug "import_policy set: ${import_policy}"
   fi
 
   # shellcheck disable=SC2154
@@ -1862,7 +1848,7 @@ emergency_shell() {
 
   echo -n "Launching emergency shell: "
   echo -e "${message}\n"
-  /bin/bash --rcfile <( test -f /lib/zfsbootmenu-lib.sh && echo "source /lib/zfsbootmenu-lib.sh" ) 
+  /bin/bash --rcfile <( test -f /lib/zfsbootmenu-lib.sh && echo "source /lib/zfsbootmenu-lib.sh" )
 }
 
 # prints: nothing

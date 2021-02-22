@@ -36,11 +36,26 @@ else
   loglevel=3
 fi
 
-# Force import pools only when explicitly told to do so
-if getargbool 0 zbm.force_import -d force_import ; then
-  # shellcheck disable=SC2034
-  force_import="yes"
-  info "ZFSBootMenu: enabling force import of ZFS pools"
+import_policy=$( getarg zbm.import_policy )
+if [ -n "${import_policy}" ]; then
+  case "${import_policy}" in
+    hostid)
+      info "ZFSBootMenu: setting import_policy to hostid matching, read-only"
+      ;;
+    force)
+      info "ZFSBootMenu: setting import_policy to force"
+      ;;
+    *)
+      info "ZFSBootMenu: unknown import policy ${import_policy}, defaulting to hostid"
+      import_policy="hostid"
+      ;;
+  esac
+elif getargbool 0 zbm.force_import -d force_import ; then
+  import_policy="force"
+  info "ZFSBootMenu: setting import_policy to force"
+else
+  info "ZFSBootMenu: defaulting import_policy to hostid matching, read-only"
+  import_policy="hostid"
 fi
 
 # zbm.timeout= overrides timeout=
@@ -98,9 +113,20 @@ fi
 # Turn on tmux integrations
 # shellcheck disable=SC2034
 if getargbool 0 zbm.tmux ; then
-  zbm_tmux="yes"
+  zbm_tmux=1
   info "ZFSBootMenu: enabling tmux integrations"
 fi
+
+# Do not automatically set spl_hostid on the BE KCL
+# shellcheck disable=SC2034
+if getargbool 0 zbm.set_hostid ; then
+  zbm_set_hostid=0
+  info "ZFSBootMenu: disabling automatic replacement of spl_hostid"
+else
+  zbm_set_hostid=1
+  info "ZFSBootMenu: defaulting automatic replacement of spl_hostid to on"
+fi
+
 
 wait_for_zfs=0
 case "${root}" in
