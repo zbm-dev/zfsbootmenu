@@ -125,11 +125,12 @@ match_hostid() {
     case "$line" in
       pool*)
         pool="${line#pool: }"
-      ;;
+        ;;
       state*)
         state="${line#state: }"
-        if [ "${state}" == "ONLINE" ]; then
+        if [ "${state}" == "ONLINE" ] && [ -n "${pool}" ]; then
           importable+=("${pool}")
+          pool=""
         fi
         ;;
     esac
@@ -139,7 +140,7 @@ match_hostid() {
 
   for pool in "${importable[@]}"; do
     zdebug "trying to import: ${pool}"
-    hostid="$( zpool import "${pool}" 2>&1 | grep -E -o "hostid=[A-Za-z0-9]{1,8}")"
+    hostid="$( zpool import -o readonly=on -N "${pool}" 2>&1 | grep -E -o "hostid=[A-Za-z0-9]{1,8}")"
 
     if [ -n "${hostid}" ]; then
       hostid="${hostid##*=}"
