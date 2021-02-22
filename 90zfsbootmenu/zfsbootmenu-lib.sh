@@ -105,10 +105,14 @@ center_string() {
   printf "%*s" $(( (${#1} + _WIDTH ) / 2)) "${1}"
 }
 
+
+# args: no arguments
+# prints: <imported pool>;<hostid>
+# returns: 0 on successful pool import, 1 on failure
+
 match_hostid() {
   local importable pool state hostid
   importable=()
-
 
   # If root is defined and not zfsbootmenu, prefer that pool for masked import
   # shellcheck disable=SC2154
@@ -157,6 +161,7 @@ match_hostid() {
   # no pools could be imported, we failed to match a hostid
   return 1
 }
+
 # arg1: ZFS filesystem name
 # prints: mountpoint
 # returns: 0 on success

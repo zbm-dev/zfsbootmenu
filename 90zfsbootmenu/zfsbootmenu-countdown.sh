@@ -45,8 +45,8 @@ while true; do
       zerror "imported ${pool} with assumed hostid ${spl_hostid}"
       zerror "set spl_hostid=${spl_hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
 
-      echo "${pool}" >> "${BASE}/degraded"
-      zerror "prohibiting read/write operations on ${pool}"
+      #echo "${pool}" >> "${BASE}/degraded"
+      #zerror "prohibiting read/write operations on ${pool}"
 
       # potentially useful later?
       : > "${BASE}/masked_hostid"
