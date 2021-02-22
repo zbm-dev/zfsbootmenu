@@ -22,7 +22,13 @@ zlog() {
   _func="${FUNCNAME[2]}"
 
   WIDTH="$( tput cols )"
-  echo -e "<${1}>ZBM:\033[0;33m${_script}[$$]\033[0;31m:${_func}()\033[0m: ${2}" | fold -s -w "${WIDTH}" > /dev/kmsg
+  
+  # Only add script/function tracing to debug messages
+  if [ "${1}" -eq 7 ]; then
+    echo -e "<${1}>ZBM:\033[0;33m${_script}[$$]\033[0;31m:${_func}()\033[0m: ${2}" | fold -s -w "${WIDTH}" > /dev/kmsg
+  else
+    echo -e "<${1}>ZFSBootMenu: ${2}" | fold -s -w "${WIDTH}" > /dev/kmsg
+  fi
 }
 
 # arg1: log line
