@@ -13,13 +13,12 @@ fi
 
 mkdir -p "${BASE}"
 
-# Attempt to import all pools read-only
-read_write='' all_pools=yes import_pool
-
-# Make sure at least one pool can be imported; if not,
-# drop to an emergency shell to allow the user to attempt recovery
-import_success=0
 while true; do
+  # Attempt to import all pools read-only
+  read_write='' all_pools=yes import_pool
+
+  # Make sure at least one was imported
+  import_success=0
   while IFS=$'\t' read -r _pool _health; do
     [ -n "${_pool}" ] || continue
     import_success=1
@@ -30,30 +29,8 @@ while true; do
     fi
   done <<<"$( zpool list -H -o name,health )"
 
-  # shellcheck disable=SC2154
-  if [ "${import_success}" -ne 1 ] && [ "${import_policy}" == "hostid" ] ; then
-    if masked="$( match_hostid )"; then
-      zdebug "match_hostid returned: ${masked}"
-
-      pool="${masked%%;*}"
-      spl_hostid="${masked##*;}"
-
-      export spl_hostid
-
-      zerror "imported ${pool} with assumed hostid ${spl_hostid}"
-      zerror "set spl_hostid=${spl_hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
-
-      # Make a second attempt at importing all pools read-only
-      read_write='' all_pools=yes import_pool
-
-      # potentially useful later?
-      : > "${BASE}/masked_hostid"
-
-      import_success=1
-    else
-      emergency_shell "unable to successfully import a pool"
-    fi
-  else
+  if [ "${import_success}" -eq 1 ]; then
+    # With at least one imported pool, just move on
     zdebug "$(
       echo "zpool list" ; \
       zpool list
@@ -64,6 +41,28 @@ while true; do
     )"
     break
   fi
+
+  # shellcheck disable=SC2154
+  if [ "${import_policy}" == "hostid" ] && masked="$( match_hostid )"; then
+    zdebug "match_hostid returned: ${masked}"
+
+    pool="${masked%%;*}"
+    spl_hostid="${masked##*;}"
+
+    export spl_hostid
+
+    zerror "imported ${pool} with assumed hostid ${spl_hostid}"
+    zerror "set spl_hostid=${spl_hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
+
+    # potentially useful later?
+    : > "${BASE}/masked_hostid"
+
+    # Retry the import cycle with the masked hostid
+    continue
+  fi
+
+  # Allow the user to attempt recovery
+  emergency_shell "unable to successfully import a pool"
 done
 
 # Prefer a specific pool when checking for a bootfs value
