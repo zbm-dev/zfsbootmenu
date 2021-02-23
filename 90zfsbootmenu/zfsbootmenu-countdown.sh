@@ -43,21 +43,21 @@ while true; do
   fi
 
   # shellcheck disable=SC2154
-  if [ "${import_policy}" == "hostid" ] && masked="$( match_hostid )"; then
-    zdebug "match_hostid returned: ${masked}"
+  if [ "${import_policy}" == "hostid" ] && poolmatch="$( match_hostid )"; then
+    zdebug "match_hostid returned: ${poolmatch}"
 
-    pool="${masked%%;*}"
-    spl_hostid="${masked##*;}"
+    pool="${poolmatch%%;*}"
+    spl_hostid="${poolmatch##*;}"
 
     export spl_hostid
 
     zerror "imported ${pool} with assumed hostid ${spl_hostid}"
     zerror "set spl_hostid=${spl_hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
 
-    # potentially useful later?
-    : > "${BASE}/masked_hostid"
+    # Store the hostid to use for for KCL overrides
+    echo -n "$spl_hostid" > "${BASE}/spl_hostid"
 
-    # Retry the import cycle with the masked hostid
+    # Retry the import cycle with the matched hostid
     continue
   fi
 

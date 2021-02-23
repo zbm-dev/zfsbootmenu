@@ -1128,10 +1128,17 @@ load_be_cmdline() {
 
   # shellcheck disable=SC2154
   if [ "${zbm_set_hostid}" -eq 1 ]; then
-    zdebug "removing spl_hostid in: ${zfsbe_args}"
-    zfsbe_args="$( suppress_kcl_arg spl_hostid "${zfsbe_args}" )"
-    zdebug "rewriting spl.spl_hostid in ${zfsbe_args}"
-    zfsbe_args="spl.spl_hostid=0x${spl_hostid} $( suppress_kcl_arg spl.spl_hostid "${zfsbe_args}" )"
+    # Try to assume a matched hostid if none is defined
+    if [ -z "${spl_hostid}" ] && [ -r "${BASE}/spl_hostid" ]; then
+      read -r spl_hostid < "${BASE}/spl_hostid"
+    fi
+
+    # Only override hostid arguments if one can be provided
+    if [ -n "${spl_hostid}" ]; then
+      zdebug "overriding spl_hostid and spl.spl_hostid in: ${zfsbe_args}"
+      zfsbe_args="$( suppress_kcl_arg spl_hostid "${zfsbe_args}" )"
+      zfsbe_args="$( suppress_kcl_arg spl.spl_hostid "${zfsbe_args}" ) spl.spl_hostid=0x${spl_hostid}"
+    fi
   fi
 
   zdebug "processed commandline: ${zfsbe_args}"
