@@ -60,7 +60,7 @@ elif getargbool 0 zbm.force_import -d force_import ; then
   import_policy="force"
   info "ZFSBootMenu: setting import_policy to force"
 else
-  info "ZFSBootMenu: defaulting import_policy to hostid matching"
+  info "ZFSBootMenu: defaulting import_policy to legacy"
   import_policy="legacy"
 fi
 
