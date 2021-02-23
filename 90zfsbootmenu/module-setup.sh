@@ -82,6 +82,7 @@ install() {
     "ps"
     "env"
     "chmod"
+    "od"
   )
 
   for _exec in "${essential_execs[@]}"; do

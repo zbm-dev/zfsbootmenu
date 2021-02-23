@@ -105,6 +105,38 @@ center_string() {
   printf "%*s" $(( (${#1} + _WIDTH ) / 2)) "${1}"
 }
 
+# args: no arguments
+# prints: hostid used by the SPL kmod, as decimal or hex
+# returns: 0 on successful read, 1 on failure
+
+get_spl_hostid() {
+  if [ -r /sys/module/spl/parameters/spl_hostid ]; then
+    read -r spl_hostid < /sys/module/spl/parameters/spl_hostid
+    if [ "${spl_hostid}" -ne 0 ]; then
+      echo -n "${spl_hostid}"
+      return 0
+    fi
+  fi
+
+  if [ -r /etc/hostid ] && command -v od >/dev/null 2>&1; then
+    spl_hostid="$( od -tx4 -N4 -An /etc/hostid 2>/dev/null | tr -d '[:space:]')"
+    if [ -n "${spl_hostid}" ]; then
+      echo -n "0x${spl_hostid}"
+      return 0
+    fi
+  fi
+
+  if [ -r "${BASE}/spl_hostid" ]; then
+    read -r spl_hostid < "${BASE}/spl_hostid"
+    if [ -n "${spl_hostid}" ]; then
+      echo -n "0x${spl_hostid}"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
 
 # args: no arguments
 # prints: <imported pool>;<hostid>
@@ -1127,18 +1159,10 @@ load_be_cmdline() {
   fi
 
   # shellcheck disable=SC2154
-  if [ "${zbm_set_hostid}" -eq 1 ]; then
-    # Try to assume a matched hostid if none is defined
-    if [ -z "${spl_hostid}" ] && [ -r "${BASE}/spl_hostid" ]; then
-      read -r spl_hostid < "${BASE}/spl_hostid"
-    fi
-
-    # Only override hostid arguments if one can be provided
-    if [ -n "${spl_hostid}" ]; then
-      zdebug "overriding spl_hostid and spl.spl_hostid in: ${zfsbe_args}"
-      zfsbe_args="$( suppress_kcl_arg spl_hostid "${zfsbe_args}" )"
-      zfsbe_args="$( suppress_kcl_arg spl.spl_hostid "${zfsbe_args}" ) spl.spl_hostid=0x${spl_hostid}"
-    fi
+  if [ "${zbm_set_hostid}" -eq 1 ] && spl_hostid="$( get_spl_hostid )"; then
+    zdebug "overriding spl_hostid and spl.spl_hostid in: ${zfsbe_args}"
+    zfsbe_args="$( suppress_kcl_arg spl_hostid "${zfsbe_args}" )"
+    zfsbe_args="$( suppress_kcl_arg spl.spl_hostid "${zfsbe_args}" ) spl.spl_hostid=${spl_hostid}"
   fi
 
   zdebug "processed commandline: ${zfsbe_args}"
