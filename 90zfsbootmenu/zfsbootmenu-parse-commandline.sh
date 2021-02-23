@@ -43,7 +43,7 @@ import_policy=$( getarg zbm.import_policy )
 if [ -n "${import_policy}" ]; then
   case "${import_policy}" in
     hostid)
-      info "ZFSBootMenu: setting import_policy to hostid matching, read-only"
+      info "ZFSBootMenu: setting import_policy to hostid matching"
       ;;
     force)
       info "ZFSBootMenu: setting import_policy to force"
@@ -52,16 +52,16 @@ if [ -n "${import_policy}" ]; then
       info "ZFSBootMenu: setting import_policy to legacy"
       ;;
     *)
-      info "ZFSBootMenu: unknown import policy ${import_policy}, defaulting to hostid"
-      import_policy="hostid"
+      info "ZFSBootMenu: unknown import policy ${import_policy}, defaulting to legacy"
+      import_policy="legacy"
       ;;
   esac
 elif getargbool 0 zbm.force_import -d force_import ; then
   import_policy="force"
   info "ZFSBootMenu: setting import_policy to force"
 else
-  info "ZFSBootMenu: defaulting import_policy to hostid matching, read-only"
-  import_policy="hostid"
+  info "ZFSBootMenu: defaulting import_policy to hostid matching"
+  import_policy="legacy"
 fi
 
 # zbm.timeout= overrides timeout=
