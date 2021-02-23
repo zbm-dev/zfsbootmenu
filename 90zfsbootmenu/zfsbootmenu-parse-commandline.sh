@@ -7,16 +7,12 @@
 # Let the command line override our host id.
 spl_hostid=$(getarg spl_hostid=)
 if [ -n "${spl_hostid}" ] ; then
-  info "ZFSBootMenu: using hostid from command line: ${spl_hostid}"
+  info "ZFSBootMenu: writing /etc/hostid from command line: ${spl_hostid}"
   echo -ne "\\x${spl_hostid:6:2}\\x${spl_hostid:4:2}\\x${spl_hostid:2:2}\\x${spl_hostid:0:2}" >/etc/hostid
-elif [ -f "/etc/hostid" ] ; then
-  spl_hostid="$(hostid)"
-  info "ZFSBootMenu: using hostid from /etc/hostid: ${spl_hostid}"
-else
+elif [ ! -e /etc/hostid ]; then
   warn "ZFSBootMenu: no hostid found on kernel command line or /etc/hostid"
   warn "ZFSBootMenu: defaulting hostid to 00000000"
   echo -ne "\\x00\\x00\\x00\\x00" >/etc/hostid
-  spl_hostid="00000000"
 fi
 
 # Use the last defined console= to control menu output

@@ -22,7 +22,7 @@ zlog() {
   _func="${FUNCNAME[2]}"
 
   WIDTH="$( tput cols )"
-  
+
   # Only add script/function tracing to debug messages
   if [ "${1}" -eq 7 ]; then
     echo -e "<${1}>ZBM:\033[0;33m${_script}[$$]\033[0;31m:${_func}()\033[0m: ${2}" | fold -s -w "${WIDTH}" > /dev/kmsg
@@ -110,25 +110,32 @@ center_string() {
 # returns: 0 on successful read, 1 on failure
 
 get_spl_hostid() {
+  # Prefer the module parameter if it exists and is nonzero
   if [ -r /sys/module/spl/parameters/spl_hostid ]; then
     read -r spl_hostid < /sys/module/spl/parameters/spl_hostid
     if [ "${spl_hostid}" -ne 0 ]; then
-      echo -n "${spl_hostid}"
+      # Value is decimal, convert to hex for consistency
+      zdebug "hostid from spl.spl_hostid: ${spl_hostid}"
+      printf "0x%08x" "${spl_hostid}"
       return 0
     fi
   fi
 
+  # Otherwise look to /etc/hostid, if possible
   if [ -r /etc/hostid ] && command -v od >/dev/null 2>&1; then
-    spl_hostid="$( od -tx4 -N4 -An /etc/hostid 2>/dev/null | tr -d '[:space:]')"
+    spl_hostid="$( od -tx4 -N4 -An /etc/hostid 2>/dev/null | tr -d '[:space:]' )"
     if [ -n "${spl_hostid}" ]; then
+      zdebug "hostid from /etc/hostid: ${spl_hostid}"
       echo -n "0x${spl_hostid}"
       return 0
     fi
   fi
 
+  # Finally, fall back to ${BASE}/spl_hostid if a host match was performed
   if [ -r "${BASE}/spl_hostid" ]; then
     read -r spl_hostid < "${BASE}/spl_hostid"
     if [ -n "${spl_hostid}" ]; then
+      zdebug "hostid from ${BASE}/spl_hostid: ${spl_hostid}"
       echo -n "0x${spl_hostid}"
       return 0
     fi
@@ -186,7 +193,7 @@ match_hostid() {
       hostid="00000000"
     fi
 
-    zdebug "setting hostid to: ${hostid}"
+    zdebug "attempting to set hostid to: ${hostid}"
     echo -ne "\\x${hostid:6:2}\\x${hostid:4:2}\\x${hostid:2:2}\\x${hostid:0:2}" > "/etc/hostid"
 
     if read_write='' import_pool "${pool}"; then
@@ -1121,7 +1128,7 @@ suppress_kcl_arg() {
         }
       }
     }
-  '  
+  '
 }
 
 # arg1: ZFS filesystem
@@ -1219,11 +1226,18 @@ import_pool() {
   fi
 
   zdebug "zpool import arguments: ${import_args[*]} ${pool}"
+
   # shellcheck disable=SC2086
-  status="$( zpool import "${import_args[@]}" ${pool} >/dev/null 2>&1 )"
+  zpool import "${import_args[@]}" ${pool} >/dev/null 2>&1
   ret=$?
 
-  zdebug "import process return: ${ret}"
+  if [ "$ret" -eq 0 ]; then
+    zdebug "successful pool import"
+  else
+    spl_hostid="$( get_spl_hostid )"
+    zdebug "import process failed with code ${ret}, apparent hostid ${spl_hostid:-unknown}"
+  fi
+
   return ${ret}
 }
 
