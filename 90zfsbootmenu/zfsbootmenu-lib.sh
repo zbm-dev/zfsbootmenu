@@ -105,6 +105,41 @@ center_string() {
   printf "%*s" $(( (${#1} + _WIDTH ) / 2)) "${1}"
 }
 
+# arg1: hostid, as hex number without leading "0x"
+# prints: nothing
+# returns: 0 on successful write, 1 on error
+
+write_hostid() {
+  local hostid ival ret
+
+  # Normalize the hostid
+  if ! hostid="$( printf "%08x" "0x${1:-0}" 2>/dev/null )"; then
+    zerror "invalid hostid $1"
+    return 1
+  fi
+
+  # Determine endianness, if possible
+  if command -v od >/dev/null 2>&1; then
+    ival="$( echo -n I | od -to2 -N2 -An | tr -d '[:space:]' )"
+  fi
+
+  if [ "x${ival}" = "x111000" ]; then
+    # Write in big-endian format
+    zdebug "writing hostid ${hostid} to /etc/hostid (big-endian)"
+    echo -ne "\\x${hostid:0:2}\\x${hostid:2:2}\\x${hostid:4:2}\\x${hostid:6:2}" > "/etc/hostid"
+    ret=$?
+  else
+    if [ "x${ival}" != "x000111" ]; then
+      zerror "unable to determine platform endianness; assuming little-endian"
+    fi
+    zdebug "writing hostid ${hostid} to /etc/hostid (little-endian)"
+    echo -ne "\\x${hostid:6:2}\\x${hostid:4:2}\\x${hostid:2:2}\\x${hostid:0:2}" > "/etc/hostid"
+    ret=$?
+  fi
+
+  return ${ret}
+}
+
 # args: no arguments
 # prints: hostid used by the SPL kmod, as decimal or hex
 # returns: 0 on successful read, 1 on failure
@@ -189,12 +224,10 @@ match_hostid() {
       continue
     fi
 
-    if [ "${hostid}" == "0" ]; then
-      hostid="00000000"
+    if ! write_hostid "${hostid}"; then
+      zdebug "failed to set hostid ${hostid}, skipping import of pool ${pool}"
+      continue
     fi
-
-    zdebug "attempting to set hostid to: ${hostid}"
-    echo -ne "\\x${hostid:6:2}\\x${hostid:4:2}\\x${hostid:2:2}\\x${hostid:0:2}" > "/etc/hostid"
 
     if read_write='' import_pool "${pool}"; then
       zdebug "successfully imported ${pool}"
