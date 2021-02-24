@@ -13,6 +13,16 @@ fi
 
 mkdir -p "${BASE}"
 
+# Write out a default or overridden hostid
+if [ -n "${spl_hostid}" ] ; then
+  zinfo "ZFSBootMenu: writing /etc/hostid from command line: ${spl_hostid}"
+  write_hostid "${spl_hostid}"
+elif [ ! -e /etc/hostid ]; then
+  zinfo "ZFSBootMenu: no hostid found on kernel command line or /etc/hostid"
+  zinfo "ZFSBootMenu: defaulting hostid to 00000000"
+  write_hostid 0
+fi
+
 while true; do
   # Attempt to import all pools read-only
   read_write='' all_pools=yes import_pool

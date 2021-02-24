@@ -1,6 +1,7 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
+export spl_hostid
 export import_policy
 export menu_timeout
 export loglevel
