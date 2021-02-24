@@ -23,46 +23,62 @@ elif [ ! -e /etc/hostid ]; then
   write_hostid 0
 fi
 
+# Prefer a specific pool when checking for a bootfs value
+# shellcheck disable=SC2154
+if [ "${root}" = "zfsbootmenu" ]; then
+  boot_pool=
+else
+  boot_pool="${root}"
+fi
+
+first_pass=0
+
 while true; do
-  # Attempt to import all pools read-only
-  read_write='' all_pools=yes import_pool
 
-  # Make sure at least one was imported
-  import_success=0
-  while IFS=$'\t' read -r _pool _health; do
-    [ -n "${_pool}" ] || continue
-    import_success=1
+  # Make every attempt to import the specified boot pool
+  if [ -n "${boot_pool}" ] && [ "${first_pass}" -eq 0 ] ; then
+    zdebug "first pass, attempting to import ${boot_pool}"
 
-    if [ "${_health}" != "ONLINE" ]; then
-      echo "${_pool}" >> "${BASE}/degraded"
-      zerror "prohibiting read/write operations on ${_pool}"
+    # try to import the preferred pool with the initial hostid
+    # shellcheck disable=SC2154
+    if read_write='' import_pool "${boot_pool}" ; then
+      zdebug "imported preferred boot pool ${boot_pool}"
+
+    # try to import the preferred pool by matching it's hostid
+    elif [ "${import_policy}" == "hostid" ] && poolmatch="$( match_hostid "${boot_pool}" )"; then
+      zdebug "match_hostid returned: ${poolmatch}"
+
+      pool="${poolmatch%%;*}"
+      spl_hostid="${poolmatch##*;}"
+
+      zdebug "first pass, match_hostid imported ${pool}"
+      export spl_hostid
+
+      # Store the hostid to use for for KCL overrides
+      echo -n "$spl_hostid" > "${BASE}/spl_hostid"
     fi
-  done <<<"$( zpool list -H -o name,health )"
-
-  if [ "${import_success}" -eq 1 ]; then
-    # With at least one imported pool, just move on
-    zdebug "$(
-      echo "zpool list" ; \
-      zpool list
-    )"
-    zdebug "$(
-      echo "zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource" ;\
-      zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource
-    )"
-    break
   fi
 
-  # shellcheck disable=SC2154
-  if [ "${import_policy}" == "hostid" ] && poolmatch="$( match_hostid )"; then
+  # We've made every attempt to import boot_pool, don't explicitly try again
+  first_pass=1
+
+  # if at least one pool has been imported, no longer modify /etc/hostid
+  if check_for_pools ; then
+    # Attempt to import all other pools read-only
+    zdebug "attempting to import all other pools"
+    read_write='' all_pools=yes import_pool
+    break
+
+  # boot_pool couldn't be imported, so now try to find any hostid and import pools
+  elif [ "${import_policy}" == "hostid" ] && poolmatch="$( match_hostid )"; then
     zdebug "match_hostid returned: ${poolmatch}"
 
     pool="${poolmatch%%;*}"
     spl_hostid="${poolmatch##*;}"
 
-    export spl_hostid
+    zdebug "tried to match hostid from any pool and import, imported ${pool}"
 
-    zerror "imported ${pool} with assumed hostid ${spl_hostid}"
-    zerror "set spl_hostid=${spl_hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
+    export spl_hostid
 
     # Store the hostid to use for for KCL overrides
     echo -n "$spl_hostid" > "${BASE}/spl_hostid"
@@ -75,14 +91,25 @@ while true; do
   emergency_shell "unable to successfully import a pool"
 done
 
-# Prefer a specific pool when checking for a bootfs value
-# shellcheck disable=SC2154
-if [ "${root}" = "zfsbootmenu" ]; then
-  boot_pool=
-else
-  boot_pool="${root}"
-fi
+# restrict read-write access to any unhealthy pools
+while IFS=$'\t' read -r _pool _health; do
+  if [ "${_health}" != "ONLINE" ]; then
+    echo "${_pool}" >> "${BASE}/degraded"
+    zerror "prohibiting read/write operations on ${_pool}"
+  fi
+done <<<"$( zpool list -H -o name,health )"
 
+zdebug "$(
+  echo "zpool list" ; \
+  zpool list
+)"
+
+zdebug "$(
+  echo "zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource" ;\
+  zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource
+)"
+
+# this should probably go away, we've tried every way to get boot_pool imported
 # Make sure the preferred pool was imported
 if [ -n "${boot_pool}" ] && ! zpool list -H -o name "${boot_pool}" >/dev/null 2>&1; then
   emergency_shell "\nCannot import requested pool '${boot_pool}'\nType 'exit' to try booting anyway"

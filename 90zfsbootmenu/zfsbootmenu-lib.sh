@@ -173,35 +173,35 @@ get_spl_hostid() {
 }
 
 
-# args: no arguments
+# arg1: optional specific pool to inspect
 # prints: <imported pool>;<hostid>
 # returns: 0 on successful pool import, 1 on failure
 
 match_hostid() {
-  local importable pool state hostid
+  local importable pool state hostid single
   importable=()
 
-  # If root is defined and not zfsbootmenu, prefer that pool for masked import
-  # shellcheck disable=SC2154
-  if [ -n "${root}" ] && [ "${root}" != "zfsbootmenu" ]; then
-    pool="${root%%/*}"
-    importable+=( "${pool}" )
-  fi
+  single="${1}"
 
-  while read -r line; do
-    case "$line" in
-      pool*)
-        pool="${line#pool: }"
-        ;;
-      state*)
-        state="${line#state: }"
-        if [ "${state}" == "ONLINE" ] && [ -n "${pool}" ]; then
-          importable+=("${pool}")
-          pool=""
-        fi
-        ;;
-    esac
-  done <<<"$( zpool import )"
+  if [ -n "${single}" ]; then
+    importable+=( "${single}" )
+  else
+    while read -r line; do
+      case "$line" in
+        pool*)
+          pool="${line#pool: }"
+          ;;
+        state*)
+          state="${line#state: }"
+          # shellcheck disable=SC2154
+          if [ "${state}" == "ONLINE" ] && [ -n "${pool}" ] && [ "${pool}" != "${root}" ]; then
+            importable+=("${pool}")
+            pool=""
+          fi
+          ;;
+      esac
+    done <<<"$( zpool import )"
+  fi
 
   zdebug "importable pools: ${importable[*]}"
 
@@ -224,12 +224,29 @@ match_hostid() {
 
     if read_write='' import_pool "${pool}"; then
       zdebug "successfully imported ${pool}"
+
+      zerror "imported ${pool} with assumed hostid ${hostid}"
+      zerror "set spl_hostid=${hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
+
       echo "${pool};${hostid}"
       return 0
     fi
   done
 
   # no pools could be imported, we failed to match a hostid
+  return 1
+}
+
+# args: none
+# prints: nothing
+# returns: 0 if at least one pool is available
+
+check_for_pools() {
+  while read -r _pool ; do
+    zdebug "found pool: ${_pool}"
+    return 0
+  done <<<"$( zpool list -H -o name )"
+
   return 1
 }
 
