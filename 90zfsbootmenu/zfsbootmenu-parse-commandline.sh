@@ -4,7 +4,17 @@
 # shellcheck disable=SC1091
 . /lib/dracut-lib.sh
 
+if [ -r "/etc/byte-order" ]; then
+  read -r endian < "/etc/byte-order"
+fi
+
+if [ -z "${endian}" ]; then
+  warn "unable to determine platform endianness; assuming little-endian"
+  endian="le"
+fi
+
 # Let the command line override our host id.
+# shellcheck disable=SC2034
 spl_hostid=$(getarg spl_hostid=)
 
 # Use the last defined console= to control menu output
@@ -35,7 +45,13 @@ import_policy=$( getarg zbm.import_policy )
 if [ -n "${import_policy}" ]; then
   case "${import_policy}" in
     hostid)
-      info "ZFSBootMenu: setting import_policy to hostid matching"
+      if [ "${endian}" = "be" ]; then
+        info "ZFSBootMenu: invalid option for big endian systems"
+        info "ZFSBootMenu: setting import_policy to strict"
+        import_policy="strict"
+      else
+        info "ZFSBootMenu: setting import_policy to hostid matching"
+      fi
       ;;
     force)
       info "ZFSBootMenu: setting import_policy to force"
@@ -115,16 +131,17 @@ if getargbool 0 zbm.tmux ; then
   info "ZFSBootMenu: enabling tmux integrations"
 fi
 
-# Do not automatically set spl_hostid on the BE KCL
 # shellcheck disable=SC2034
-if getargbool 0 zbm.set_hostid ; then
+if [ "${endian}" = "be" ]; then
+  zbm_set_hostid=0
+  info "ZFSBootMenu: big endian detected, disabling automatic replacement of spl_hostid"
+elif getargbool 0 zbm.set_hostid ; then
   zbm_set_hostid=0
   info "ZFSBootMenu: disabling automatic replacement of spl_hostid"
 else
   zbm_set_hostid=1
   info "ZFSBootMenu: defaulting automatic replacement of spl_hostid to on"
 fi
-
 
 wait_for_zfs=0
 case "${root}" in

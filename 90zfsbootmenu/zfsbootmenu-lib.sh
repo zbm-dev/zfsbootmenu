@@ -110,7 +110,7 @@ center_string() {
 # returns: 0 on successful write, 1 on error
 
 write_hostid() {
-  local hostid ival ret
+  local hostid ret
 
   # Normalize the hostid
   if ! hostid="$( printf "%08x" "0x${1:-0}" 2>/dev/null )"; then
@@ -118,20 +118,13 @@ write_hostid() {
     return 1
   fi
 
-  # Determine endianness, if possible
-  if command -v od >/dev/null 2>&1; then
-    ival="$( echo -n I | od -to2 -N2 -An | tr -d '[:space:]' )"
-  fi
-
-  if [ "x${ival}" = "x111000" ]; then
+  # shellcheck disable=SC2154
+  if [ "${endian}" = "be" ]; then
     # Write in big-endian format
     zdebug "writing hostid ${hostid} to /etc/hostid (big-endian)"
     echo -ne "\\x${hostid:0:2}\\x${hostid:2:2}\\x${hostid:4:2}\\x${hostid:6:2}" > "/etc/hostid"
     ret=$?
   else
-    if [ "x${ival}" != "x000111" ]; then
-      zerror "unable to determine platform endianness; assuming little-endian"
-    fi
     zdebug "writing hostid ${hostid} to /etc/hostid (little-endian)"
     echo -ne "\\x${hostid:6:2}\\x${hostid:4:2}\\x${hostid:2:2}\\x${hostid:0:2}" > "/etc/hostid"
     ret=$?
