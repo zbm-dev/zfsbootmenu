@@ -243,8 +243,7 @@ match_hostid() {
 
 check_for_pools() {
   while read -r _pool ; do
-    zdebug "found pool: ${_pool}"
-    return 0
+    [ -n "${_pool}" ] && return 0
   done <<<"$( zpool list -H -o name )"
 
   return 1
@@ -1232,6 +1231,8 @@ import_pool() {
   local pool import_args
 
   pool="${1}"
+
+  #shellcheck disable=SC2154
   if [ -n "${pool}" ]; then
     zdebug "pool set to ${pool}"
   elif [ -n "${rewind_to_checkpoint}" ]; then

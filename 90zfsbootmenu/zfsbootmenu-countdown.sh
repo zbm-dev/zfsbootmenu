@@ -51,6 +51,7 @@ while true; do
 
   read_write='' import_pool "${try_pool}"
 
+  # shellcheck disable=SC2154
   if check_for_pools; then
     if [ -n "${try_pool}" ]; then
       # If a single pool was requested and imported, try again for the others
