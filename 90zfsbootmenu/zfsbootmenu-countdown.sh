@@ -85,6 +85,11 @@ while true; do
 
     # Retry the import cycle with the matched hostid
     continue
+  else
+    zdebug "attempting to import any pool"
+    if read_write='' all_pools=yes import_pool ; then
+      continue
+    fi
   fi
 
   # Allow the user to attempt recovery
