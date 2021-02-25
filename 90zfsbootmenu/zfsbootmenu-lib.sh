@@ -134,10 +134,12 @@ write_hostid() {
 }
 
 # args: no arguments
-# prints: hostid used by the SPL kmod, as decimal or hex
+# prints: hostid used by the SPL kmod, as hex with 0x prefix
 # returns: 0 on successful read, 1 on failure
 
 get_spl_hostid() {
+  local spl_hostid
+
   # Prefer the module parameter if it exists and is nonzero
   if [ -r /sys/module/spl/parameters/spl_hostid ]; then
     read -r spl_hostid < /sys/module/spl/parameters/spl_hostid
@@ -1211,7 +1213,19 @@ load_be_cmdline() {
   if [ "${zbm_set_hostid}" -eq 1 ] && spl_hostid="$( get_spl_hostid )"; then
     zdebug "overriding spl_hostid and spl.spl_hostid in: ${zfsbe_args}"
     zfsbe_args="$( suppress_kcl_arg spl_hostid "${zfsbe_args}" )"
-    zfsbe_args="$( suppress_kcl_arg spl.spl_hostid "${zfsbe_args}" ) spl.spl_hostid=${spl_hostid}"
+    zfsbe_args="$( suppress_kcl_arg spl.spl_hostid "${zfsbe_args}" )"
+
+    if [ "x${spl_hostid}" = "x0x00000000" ]; then
+      # spl.spl_hostid=0 is a no-op; imports fall back to /etc/hostid.
+      # Dracut writes spl_hostid to /etc/hostid. to yield expected results.
+      # Others (initramfs-tools, mkinitcpio) ignore this, but there isn't much
+      # else that can be done with those systems.
+      zfsbe_args+=" spl_hostid=00000000"
+    else
+      # Using spl.spl_hostid will set a module parameter which takes precedence
+      # over any /etc/hostid and should produce expected behavior in all systems
+      zfsbe_args+=" spl.spl_hostid=${spl_hostid}"
+    fi
   fi
 
   zdebug "processed commandline: ${zfsbe_args}"
