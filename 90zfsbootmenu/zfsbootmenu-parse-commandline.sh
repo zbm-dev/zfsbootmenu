@@ -143,6 +143,12 @@ else
   info "ZFSBootMenu: defaulting automatic replacement of spl_hostid to on"
 fi
 
+# rewrite root=
+prefer=$( getarg zbm.prefer )
+if [ -n "${prefer}" ]; then
+  root="zfsbootmenu:POOL=${prefer}"
+fi
+
 wait_for_zfs=0
 case "${root}" in
   ""|zfsbootmenu|zfsbootmenu:)
