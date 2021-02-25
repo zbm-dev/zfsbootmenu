@@ -14,13 +14,11 @@ These options are set on the kernel command line when booting the initramfs or U
 
 =item B<spl_hostid=E<lt>hostidE<gt>>
 
-When creating an initramfs or UEFI bundle, the I<hostid> from the system is copied into the target. If this image will be used on another system with a different I<hostid>, it can be overridden with this option.
-
-Replace B<E<lt>hostidE<gt>> with an eight-digit hexadecimal number.
+When creating an initramfs or UEFI bundle, the I<hostid> from the system is copied into the target. If this image will be used on another system with a different hostid, replace B<E<lt>hostidE<gt>> with the desired hostid, as an eight-digit hexadecimal number, to override the value contained within the image.
 
 =item B<zbm.prefer=E<lt>poolE<gt>>
 
-By default, ZFSBootMenu will look for the I<bootfs> property on the first pool it imports to select the default boot environment. If you have multiple pools, substitute the name of your preferred pool.
+By default, ZFSBootMenu will look for the I<bootfs> property on the first imported pool (sorted alphabetically) to select the default boot environment. If you have multiple pools, replace B<E<lt>poolE<gt>> with the name of your preferred pool to override the default.
 
 =item B<zbm.import_policy>
 
@@ -28,17 +26,17 @@ This option controls how the pool import process should take place.
 
 =over 2
 
+=item B<zbm.import_policy=hostid>
+
+Set this option to allow run-time reconfiguration of the SPL hostid. If a pool is preferred via B<zbm.prefer> and the pool can not be imported with a preconfigured hostid, the system will attempt to adopt the hostid of the system that last imported the pool. If a preferred pool is not set and no pools can be imported using a preconfigured hostid, the system will adopt the hostid of the first otherwise-importable pool. After adopting a detected hostid, ZFSBootMenu will subsequently attempt to import as many pools as possible. This option is forbidden on big-endian systems, but is the default on little-endian systems.
+
 =item B<zbm.import_policy=strict>
 
-Set this option to only import pools that match the SPL hostid configured in ZFSBootMenu. If none can be imported, an emergency shell will be invoked.
+Set this option to only import pools that match the SPL hostid configured in ZFSBootMenu. If none can be imported, an emergency shell will be invoked. The I<strict> policy is consistent with the behavior of earlier versions of ZFSBootMenu.
 
 =item B<zbm.import_policy=force>
 
 Set this option to attempt to force pool imports. When set, this invokes I<zpool import -f> in place of the regular I<zpool import> command, which will attempt to import a pool that's potentially in use on another system. Use this option with caution!
-
-=item B<zbm.import_policy=hostid>
-
-Set this option to allow run-time reconfiguration of the SPL hostid. If a pool is preferred via B<zbm.prefer>, and the pool can not be imported, the I<hostid> used to last import the pool is discovered and set on the system. If a preferred pool is not set, attempt to discover the hostid of all available pools and import them.
 
 =back
 
@@ -64,8 +62,7 @@ Sort the lists by size I<used>.
 
 =item B<zbm.timeout>
 
-This option accepts numeric values that control whether and when the
-boot-environment menu should be displayed.
+This option accepts numeric values that control whether and when the boot-environment menu should be displayed.
 
 =over 2
 
