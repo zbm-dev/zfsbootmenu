@@ -31,65 +31,46 @@ else
   boot_pool="${root}"
 fi
 
-first_pass=0
+# Do a dedicated pass for the preferred pool if one was provided
+if [ -n "${boot_pool}" ]; then
+  first_pass=0
+else
+  first_pass=1
+fi
 
 while true; do
-
-  # Make every attempt to import the specified boot pool
-  if [ -n "${boot_pool}" ] && [ "${first_pass}" -eq 0 ] ; then
-    zdebug "first pass, attempting to import ${boot_pool}"
-
-    # try to import the preferred pool with the initial hostid
-    # shellcheck disable=SC2154
-    if read_write='' import_pool "${boot_pool}" ; then
-      zdebug "imported preferred boot pool ${boot_pool}"
-
-    # try to import the preferred pool by matching it's hostid
-    elif [ "${import_policy}" == "hostid" ] && poolmatch="$( match_hostid "${boot_pool}" )"; then
-      zdebug "match_hostid returned: ${poolmatch}"
-
-      pool="${poolmatch%%;*}"
-      spl_hostid="${poolmatch##*;}"
-
-      zdebug "first pass, match_hostid imported ${pool}"
-      export spl_hostid
-
-      # Store the hostid to use for for KCL overrides
-      echo -n "$spl_hostid" > "${BASE}/spl_hostid"
-    fi
+  if [ "${first_pass}" -eq 0 ]; then
+    # Try the preferred pool, exactly once
+    zdebug "attempting to import preferred pool ${boot_pool}"
+    try_pool="${boot_pool}"
+  else
+    try_pool=""
   fi
 
-  # We've made every attempt to import boot_pool, don't explicitly try again
   first_pass=1
 
-  # if at least one pool has been imported, no longer modify /etc/hostid
-  if check_for_pools ; then
-    # Attempt to import all other pools read-only
-    zdebug "attempting to import all other pools"
-    read_write='' all_pools=yes import_pool
-    break
+  read_write='' import_pool "${try_pool}"
 
-  # boot_pool couldn't be imported, so now try to find any hostid and import pools
-  elif [ "${import_policy}" == "hostid" ] && poolmatch="$( match_hostid )"; then
+  if check_for_pools; then
+    if [ -n "${try_pool}" ]; then
+      # If a single pool was requested and imported, try again for the others
+      continue
+    else
+      # Otherwise, all possible pools were imported, nothing more to try
+      break
+    fi
+  elif [ "${import_policy}" == "hostid" ] && poolmatch="$( match_hostid "${try_pool}" )"; then
     zdebug "match_hostid returned: ${poolmatch}"
 
-    pool="${poolmatch%%;*}"
     spl_hostid="${poolmatch##*;}"
-
-    zdebug "tried to match hostid from any pool and import, imported ${pool}"
 
     export spl_hostid
 
     # Store the hostid to use for for KCL overrides
     echo -n "$spl_hostid" > "${BASE}/spl_hostid"
 
-    # Retry the import cycle with the matched hostid
+    # Retry the cycle with a matched hostid
     continue
-  else
-    zdebug "attempting to import any pool"
-    if read_write='' all_pools=yes import_pool ; then
-      continue
-    fi
   fi
 
   # Allow the user to attempt recovery
@@ -113,12 +94,6 @@ zdebug "$(
   echo "zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource" ;\
   zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource
 )"
-
-# this should probably go away, we've tried every way to get boot_pool imported
-# Make sure the preferred pool was imported
-if [ -n "${boot_pool}" ] && ! zpool list -H -o name "${boot_pool}" >/dev/null 2>&1; then
-  emergency_shell "\nCannot import requested pool '${boot_pool}'\nType 'exit' to try booting anyway"
-fi
 
 unsupported=0
 while IFS=$'\t' read -r _pool _property; do

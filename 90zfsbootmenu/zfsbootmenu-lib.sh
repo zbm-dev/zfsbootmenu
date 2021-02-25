@@ -1219,7 +1219,7 @@ load_be_cmdline() {
   echo "${zfsbe_args}"
 }
 
-# arg1: pool name
+# arg1: pool name, empty to import all
 # prints: nothing
 # returns: 0 on success, 1 on failure
 
@@ -1227,7 +1227,6 @@ load_be_cmdline() {
 # import_policy=force: enable force importing of a pool
 # read_write=1: import read-write, defaults to read-only
 # rewind_to_checkpoint=1: enable --rewind-to-checkpoint
-# all_pools=1: import all pools instead of a single specific pool
 
 import_pool() {
   local pool import_args
@@ -1235,6 +1234,12 @@ import_pool() {
   pool="${1}"
   if [ -n "${pool}" ]; then
     zdebug "pool set to ${pool}"
+  elif [ -n "${rewind_to_checkpoint}" ]; then
+    zerror "rewind only works on a specific pool"
+    return 1
+  else
+    zdebug "attempting to import all pools"
+    pool="-a"
   fi
 
   # Import /never/ mounts filesystems
@@ -1261,17 +1266,9 @@ import_pool() {
     zdebug "rewind_to_checkpoint set: ${rewind_to_checkpoint}"
   fi
 
-  # shellcheck disable=SC2154
-  if [ -n "${all_pools}" ]; then
-    import_args+=( "-a" )
-    pool=''
-    zdebug "all_pools set: ${all_pools}"
-  fi
-
   zdebug "zpool import arguments: ${import_args[*]} ${pool}"
 
-  # shellcheck disable=SC2086
-  zpool import "${import_args[@]}" ${pool} >/dev/null 2>&1
+  zpool import "${import_args[@]}" "${pool}" >/dev/null 2>&1
   ret=$?
 
   if [ "$ret" -eq 0 ]; then
