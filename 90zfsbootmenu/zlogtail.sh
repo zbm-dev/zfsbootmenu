@@ -22,6 +22,7 @@ while getopts "cfnl:F:" opt; do
       ;;
     c)
       [ -f "${BASE}/have_errors" ] && rm "${BASE}/have_errors"
+      [ -f "${BASE}/have_warnings" ] && rm "${BASE}/have_warnings"
       ;;
     F)
       FACILITY="${OPTARG}"

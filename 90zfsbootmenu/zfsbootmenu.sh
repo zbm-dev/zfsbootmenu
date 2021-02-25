@@ -61,9 +61,9 @@ fuzzy_default_options=( "--ansi" "--no-clear"
   "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
   "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
   "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
-  "--bind" '"alt-l:execute[ /bin/zlogtail -l err -F user -c ]+refresh-preview"'
-  "--bind" '"ctrl-l:execute[ /bin/zlogtail -l err -F user -c ]+refresh-preview"'
-  "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l err -F user -c ]+refresh-preview"' )
+  "--bind" '"alt-l:execute[ /bin/zlogtail -l warn -F user,daemon -c ]+refresh-preview"'
+  "--bind" '"ctrl-l:execute[ /bin/zlogtail -l warn -F user,daemon -c ]+refresh-preview"'
+  "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l warn -F user,daemon -c ]+refresh-preview"' )
 if command -v fzf >/dev/null 2>&1; then
   zdebug "using fzf for pager"
   export FUZZYSEL=fzf

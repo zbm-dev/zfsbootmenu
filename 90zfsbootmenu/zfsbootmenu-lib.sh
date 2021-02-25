@@ -44,6 +44,7 @@ zinfo() {
 }
 
 zwarn() {
+  : > "${BASE}/have_warnings"
   zlog 4 "$@"
 }
 
@@ -227,8 +228,8 @@ match_hostid() {
     if read_write='' import_pool "${pool}"; then
       zdebug "successfully imported ${pool}"
 
-      zerror "imported ${pool} with assumed hostid ${hostid}"
-      zerror "set spl_hostid=${hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
+      zwarn "imported ${pool} with assumed hostid ${hostid}"
+      zwarn "set spl_hostid=${hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
 
       echo "${pool};${hostid}"
       return 0

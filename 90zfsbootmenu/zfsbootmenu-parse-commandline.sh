@@ -28,13 +28,14 @@ else
 fi
 
 # Use loglevel to determine logging to /dev/kmsg
+min_logging=4
 loglevel=$( getarg loglevel=)
 if [ -n "${loglevel}" ]; then
-  # minimum log level of 3, so we never lose error messages
-  [ "${loglevel}" -ge 3 ] || loglevel=3
+  # minimum log level of 4, so we never lose error or warning messages
+  [ "${loglevel}" -ge ${min_logging} ] || loglevel=${min_logging}
   info "ZFSBootMenu: setting log level from command line: ${loglevel}"
 else
-  loglevel=3
+  loglevel=${min_logging}
 fi
 
 # hostid - discover the hostid used to import a pool on failure, assume it
