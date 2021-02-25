@@ -423,7 +423,7 @@ draw_be() {
 
   zdebug "using environment file: ${env}"
 
-  header="$( header_wrap "[ENTER] boot" "[ESC] refresh view" "[CTRL+H] help" "[CTRL+L] error log" "" \
+  header="$( header_wrap "[ENTER] boot" "[ESC] refresh view" "[CTRL+H] help" "[CTRL+L] view logs" "" \
     "[CTRL+E] edit kcl" "[CTRL+K] kernels" "[CTRL+D] set bootfs" "[CTRL+S] snapshots" "" \
     "[CTRL+I] interactive chroot" "[CTRL+R] recovery shell" "[CTRL+P] pool status" )"
 
@@ -466,7 +466,7 @@ draw_kernel() {
   zdebug "using kernels file: ${_kernels}"
 
   header="$( header_wrap \
-    "[ENTER] boot" "[ESC] back" "" "[CTRL+D] set default" "[CTRL+H] help" "[CTRL+L] error log" )"
+    "[ENTER] boot" "[ESC] back" "" "[CTRL+D] set default" "[CTRL+H] help" "[CTRL+L] view logs" )"
 
   expects="--expect=alt-d"
 
@@ -503,7 +503,7 @@ draw_snapshots() {
   sort_key="$( get_sort_key )"
 
   header="$( header_wrap \
-    "[ENTER] duplicate" "[ESC] back" "[CTRL+H] help" "[CTRL+L] error log" "" \
+    "[ENTER] duplicate" "[ESC] back" "[CTRL+H] help" "[CTRL+L] view logs" "" \
     "[CTRL+X] clone and promote" "[CTRL+C] clone only" "" \
     "[CTRL+I] interactive chroot" "[CTRL+D] show diff" )"
 
@@ -583,7 +583,7 @@ draw_pool_status() {
   # Wrap to half width to avoid the preview window
   hdr_width="$(( ( $( tput cols ) / 2 ) - 4 ))"
   header="$( wrap_width="$hdr_width" header_wrap \
-    "[ESC] back" "" "[CTRL+R] rewind checkpoint" "" "[CTRL+H] help" "[CTRL+L] error log" )"
+    "[ESC] back" "" "[CTRL+R] rewind checkpoint" "" "[CTRL+H] help" "[CTRL+L] view logs" )"
 
   if ! selected="$( zpool list -H -o name |
       HELP_SECTION=POOL ${FUZZYSEL} \
