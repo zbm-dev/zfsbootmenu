@@ -42,7 +42,9 @@ Set this option to attempt to force pool imports. When set, this invokes I<zpool
 
 =item B<zbm.set_hostid>
 
-On little-endian systems, setting this option will cause ZFSBootMenu to set the I<spl.spl_hostid> command-line parameter for the selected boot environment to the hostid used to import its pool. The SPL kernel module will use this value as the hostid of the booted environment regardless of the contents of I</etc/hostid>. As a special case, if the hostid to be set is zero, ZFSBootMenu will instead set I<spl_hostid=00000000>, which should be used by dracut-based initramfs images to write an all-zero I</etc/hostid> in the initramfs prior to importing the boot pool. This option has no effect on big-endian systems.
+On little-endian systems, setting this option will cause ZFSBootMenu to set the I<spl.spl_hostid> command-line parameter for the selected boot environment to the hostid used to import its pool. The SPL kernel module will use this value as the hostid of the booted environment regardless of the contents of I</etc/hostid>. As a special case, if the hostid to be set is zero, ZFSBootMenu will instead set I<spl_hostid=00000000>, which should be used by dracut-based initramfs images to write an all-zero I</etc/hostid> in the initramfs prior to importing the boot pool.
+
+This option has no effect on big-endian systems.
 
 =item B<zbm.sort_key>
 
