@@ -4,17 +4,18 @@
 # shellcheck disable=SC1091
 . /lib/dracut-lib.sh
 
-# Let the command line override our host id.
-spl_hostid=$(getarg spl_hostid=)
-if [ -n "${spl_hostid}" ] ; then
-  info "ZFSBootMenu: using hostid from command line: ${spl_hostid}"
-  echo -ne "\\x${spl_hostid:6:2}\\x${spl_hostid:4:2}\\x${spl_hostid:2:2}\\x${spl_hostid:0:2}" >/etc/hostid
-elif [ -f "/etc/hostid" ] ; then
-  info "ZFSBootMenu: using hostid from /etc/hostid: $(hostid)"
-else
-  warn "ZFSBootMenu: no hostid found on kernel command line or /etc/hostid"
-  warn "ZFSBootMenu: pools may not import correctly"
+if [ -r "/etc/byte-order" ]; then
+  read -r endian < "/etc/byte-order"
 fi
+
+if [ -z "${endian}" ]; then
+  warn "unable to determine platform endianness; assuming little-endian"
+  endian="le"
+fi
+
+# Let the command line override our host id.
+# shellcheck disable=SC2034
+spl_hostid=$(getarg spl_hostid=)
 
 # Use the last defined console= to control menu output
 control_term=$( getarg console=)
@@ -27,20 +28,49 @@ else
 fi
 
 # Use loglevel to determine logging to /dev/kmsg
+min_logging=4
 loglevel=$( getarg loglevel=)
 if [ -n "${loglevel}" ]; then
-  # minimum log level of 3, so we never lose error messages
-  [ "${loglevel}" -ge 3 ] || loglevel=3
+  # minimum log level of 4, so we never lose error or warning messages
+  [ "${loglevel}" -ge ${min_logging} ] || loglevel=${min_logging}
   info "ZFSBootMenu: setting log level from command line: ${loglevel}"
 else
-  loglevel=3
+  loglevel=${min_logging}
 fi
 
-# Force import pools only when explicitly told to do so
-if getargbool 0 zbm.force_import -d force_import ; then
-  # shellcheck disable=SC2034
-  force_import="yes"
-  info "ZFSBootMenu: enabling force import of ZFS pools"
+# hostid - discover the hostid used to import a pool on failure, assume it
+# force  - append -f to zpool import
+# strict - legacy behavior, drop to an emergency shell on failure
+
+import_policy=$( getarg zbm.import_policy )
+if [ -n "${import_policy}" ]; then
+  case "${import_policy}" in
+    hostid)
+      if [ "${endian}" = "be" ]; then
+        info "ZFSBootMenu: invalid option for big endian systems"
+        info "ZFSBootMenu: setting import_policy to strict"
+        import_policy="strict"
+      else
+        info "ZFSBootMenu: setting import_policy to hostid matching"
+      fi
+      ;;
+    force)
+      info "ZFSBootMenu: setting import_policy to force"
+      ;;
+    strict)
+      info "ZFSBootMenu: setting import_policy to strict"
+      ;;
+    *)
+      info "ZFSBootMenu: unknown import policy ${import_policy}, defaulting to strict"
+      import_policy="strict"
+      ;;
+  esac
+elif getargbool 0 zbm.force_import -d force_import ; then
+  import_policy="force"
+  info "ZFSBootMenu: setting import_policy to force"
+else
+  info "ZFSBootMenu: defaulting import_policy to strict"
+  import_policy="strict"
 fi
 
 # zbm.timeout= overrides timeout=
@@ -98,8 +128,26 @@ fi
 # Turn on tmux integrations
 # shellcheck disable=SC2034
 if getargbool 0 zbm.tmux ; then
-  zbm_tmux="yes"
+  zbm_tmux=1
   info "ZFSBootMenu: enabling tmux integrations"
+fi
+
+# shellcheck disable=SC2034
+if [ "${endian}" = "be" ]; then
+  zbm_set_hostid=0
+  info "ZFSBootMenu: big endian detected, disabling automatic replacement of spl_hostid"
+elif getargbool 0 zbm.set_hostid ; then
+  zbm_set_hostid=0
+  info "ZFSBootMenu: disabling automatic replacement of spl_hostid"
+else
+  zbm_set_hostid=1
+  info "ZFSBootMenu: defaulting automatic replacement of spl_hostid to on"
+fi
+
+# rewrite root=
+prefer=$( getarg zbm.prefer )
+if [ -n "${prefer}" ]; then
+  root="zfsbootmenu:POOL=${prefer}"
 fi
 
 wait_for_zfs=0

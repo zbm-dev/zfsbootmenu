@@ -82,6 +82,7 @@ install() {
     "ps"
     "env"
     "chmod"
+    "od"
   )
 
   for _exec in "${essential_execs[@]}"; do
@@ -202,6 +203,20 @@ install() {
     type mark_hostonly >/dev/null 2>&1 && mark_hostonly /etc/zfs/vdev_id.conf
   fi
 
+  # Determine platform endianness, defaulting to le
+  ival="$( echo -n 3 | od -tx2 -N2 -An | tr -d '[:space:]' )"
+  if [ "x${ival}" = "x3300" ]; then
+    endian="be"
+  else
+    if [ "x${ival}" != "x0033" ]; then
+      warn "unable to determine platform endianness; assuming little-endian"
+    fi
+    endian="le"
+  fi
+
+  # shellcheck disable=SC2154
+  echo -n "${endian}" > "${initdir}/etc/byte-order"
+
   # Try to synchronize hostid between host and ZFSBootMenu
   #
   # DEPRECATION NOTICE: on musl systems, zfs < 2.0 produced a bad hostid in
@@ -222,7 +237,11 @@ install() {
     if [ -z "${NEWZFS}" ]; then
       # In zfs < 2.0, zgenhostid does not provide necessary behavior
       # shellcheck disable=SC2154
-      echo -ne "\\x${HOSTID:6:2}\\x${HOSTID:4:2}\\x${HOSTID:2:2}\\x${HOSTID:0:2}" > "${initdir}/etc/hostid"
+      if [ "${endian}" = "be" ] ; then
+        echo -ne "\\x${HOSTID:0:2}\\x${HOSTID:2:2}\\x${HOSTID:4:2}\\x${HOSTID:6:2}" > "${initdir}/etc/hostid"
+      else
+        echo -ne "\\x${HOSTID:6:2}\\x${HOSTID:4:2}\\x${HOSTID:2:2}\\x${HOSTID:0:2}" > "${initdir}/etc/hostid"
+      fi
     elif [ "${HOSTID}" != "00000000" ]; then
       # In zfs >= 2.0, zgenhostid writes the output, but only with nonzero hostid
       # shellcheck disable=SC2154

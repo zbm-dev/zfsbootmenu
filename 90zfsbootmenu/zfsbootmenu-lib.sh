@@ -22,7 +22,7 @@ zlog() {
   _func="${FUNCNAME[2]}"
 
   WIDTH="$( tput cols )"
-  
+
   # Only add script/function tracing to debug messages
   if [ "${1}" -eq 7 ]; then
     echo -e "<${1}>ZBM:\033[0;33m${_script}[$$]\033[0;31m:${_func}()\033[0m: ${2}" | fold -s -w "${WIDTH}" > /dev/kmsg
@@ -44,6 +44,7 @@ zinfo() {
 }
 
 zwarn() {
+  : > "${BASE}/have_warnings"
   zlog 4 "$@"
 }
 
@@ -103,6 +104,152 @@ center_string() {
     _WIDTH="${WIDTH}"
   fi
   printf "%*s" $(( (${#1} + _WIDTH ) / 2)) "${1}"
+}
+
+# arg1: hostid, as hex number without leading "0x"
+# prints: nothing
+# returns: 0 on successful write, 1 on error
+
+write_hostid() {
+  local hostid ret
+
+  # Normalize the hostid
+  if ! hostid="$( printf "%08x" "0x${1:-0}" 2>/dev/null )"; then
+    zerror "invalid hostid $1"
+    return 1
+  fi
+
+  # shellcheck disable=SC2154
+  if [ "${endian}" = "be" ]; then
+    # Write in big-endian format
+    zdebug "writing hostid ${hostid} to /etc/hostid (big-endian)"
+    echo -ne "\\x${hostid:0:2}\\x${hostid:2:2}\\x${hostid:4:2}\\x${hostid:6:2}" > "/etc/hostid"
+    ret=$?
+  else
+    zdebug "writing hostid ${hostid} to /etc/hostid (little-endian)"
+    echo -ne "\\x${hostid:6:2}\\x${hostid:4:2}\\x${hostid:2:2}\\x${hostid:0:2}" > "/etc/hostid"
+    ret=$?
+  fi
+
+  return ${ret}
+}
+
+# args: no arguments
+# prints: hostid used by the SPL kmod, as hex with 0x prefix
+# returns: 0 on successful read, 1 on failure
+
+get_spl_hostid() {
+  local spl_hostid
+
+  # Prefer the module parameter if it exists and is nonzero
+  if [ -r /sys/module/spl/parameters/spl_hostid ]; then
+    read -r spl_hostid < /sys/module/spl/parameters/spl_hostid
+    if [ "${spl_hostid}" -ne 0 ]; then
+      # Value is decimal, convert to hex for consistency
+      zdebug "hostid from spl.spl_hostid: ${spl_hostid}"
+      printf "0x%08x" "${spl_hostid}"
+      return 0
+    fi
+  fi
+
+  # Otherwise look to /etc/hostid, if possible
+  if [ -r /etc/hostid ] && command -v od >/dev/null 2>&1; then
+    spl_hostid="$( od -tx4 -N4 -An /etc/hostid 2>/dev/null | tr -d '[:space:]' )"
+    if [ -n "${spl_hostid}" ]; then
+      zdebug "hostid from /etc/hostid: ${spl_hostid}"
+      echo -n "0x${spl_hostid}"
+      return 0
+    fi
+  fi
+
+  # Finally, fall back to ${BASE}/spl_hostid if a host match was performed
+  if [ -r "${BASE}/spl_hostid" ]; then
+    read -r spl_hostid < "${BASE}/spl_hostid"
+    if [ -n "${spl_hostid}" ]; then
+      zdebug "hostid from ${BASE}/spl_hostid: ${spl_hostid}"
+      echo -n "0x${spl_hostid}"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+
+# arg1: optional specific pool to inspect
+# prints: <imported pool>;<hostid>
+# returns: 0 on successful pool import, 1 on failure
+
+match_hostid() {
+  local importable pool state hostid single
+  importable=()
+
+  single="${1}"
+
+  if [ -n "${single}" ]; then
+    importable+=( "${single}" )
+  else
+    while read -r line; do
+      case "$line" in
+        pool*)
+          pool="${line#pool: }"
+          ;;
+        state*)
+          state="${line#state: }"
+          # shellcheck disable=SC2154
+          if [ "${state}" == "ONLINE" ] && [ -n "${pool}" ] && [ "${pool}" != "${root}" ]; then
+            importable+=("${pool}")
+            pool=""
+          fi
+          ;;
+      esac
+    done <<<"$( zpool import )"
+  fi
+
+  zdebug "importable pools: ${importable[*]}"
+
+  for pool in "${importable[@]}"; do
+    zdebug "trying to import: ${pool}"
+    hostid="$( zpool import -o readonly=on -N "${pool}" 2>&1 | grep -E -o "hostid=[A-Za-z0-9]{1,8}")"
+
+    if [ -n "${hostid}" ]; then
+      hostid="${hostid##*=}"
+      zdebug "discovered pool owner hostid: ${hostid}"
+    else
+      zdebug "unable to scrape hostid for ${pool}, skipping"
+      continue
+    fi
+
+    if ! write_hostid "${hostid}"; then
+      zdebug "failed to set hostid ${hostid}, skipping import of pool ${pool}"
+      continue
+    fi
+
+    if read_write='' import_pool "${pool}"; then
+      zdebug "successfully imported ${pool}"
+
+      zwarn "imported ${pool} with assumed hostid ${hostid}"
+      zwarn "set spl_hostid=${hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
+
+      echo "${pool};${hostid}"
+      return 0
+    fi
+  done
+
+  # no pools could be imported, we failed to match a hostid
+  return 1
+}
+
+# args: none
+# prints: nothing
+# returns: 0 if at least one pool is available
+
+check_for_pools() {
+  while read -r _pool ; do
+    [ -n "${_pool}" ] && return 0
+  done <<<"$( zpool list -H -o name )"
+
+  return 1
 }
 
 # arg1: ZFS filesystem name
@@ -276,7 +423,7 @@ draw_be() {
 
   zdebug "using environment file: ${env}"
 
-  header="$( header_wrap "[ENTER] boot" "[ESC] refresh view" "[CTRL+H] help" "[CTRL+L] error log" "" \
+  header="$( header_wrap "[ENTER] boot" "[ESC] refresh view" "[CTRL+H] help" "[CTRL+L] view logs" "" \
     "[CTRL+E] edit kcl" "[CTRL+K] kernels" "[CTRL+D] set bootfs" "[CTRL+S] snapshots" "" \
     "[CTRL+I] interactive chroot" "[CTRL+R] recovery shell" "[CTRL+P] pool status" )"
 
@@ -319,7 +466,7 @@ draw_kernel() {
   zdebug "using kernels file: ${_kernels}"
 
   header="$( header_wrap \
-    "[ENTER] boot" "[ESC] back" "" "[CTRL+D] set default" "[CTRL+H] help" "[CTRL+L] error log" )"
+    "[ENTER] boot" "[ESC] back" "" "[CTRL+D] set default" "[CTRL+H] help" "[CTRL+L] view logs" )"
 
   expects="--expect=alt-d"
 
@@ -356,7 +503,7 @@ draw_snapshots() {
   sort_key="$( get_sort_key )"
 
   header="$( header_wrap \
-    "[ENTER] duplicate" "[ESC] back" "[CTRL+H] help" "[CTRL+L] error log" "" \
+    "[ENTER] duplicate" "[ESC] back" "[CTRL+H] help" "[CTRL+L] view logs" "" \
     "[CTRL+X] clone and promote" "[CTRL+C] clone only" "" \
     "[CTRL+I] interactive chroot" "[CTRL+D] show diff" )"
 
@@ -436,7 +583,7 @@ draw_pool_status() {
   # Wrap to half width to avoid the preview window
   hdr_width="$(( ( $( tput cols ) / 2 ) - 4 ))"
   header="$( wrap_width="$hdr_width" header_wrap \
-    "[ESC] back" "" "[CTRL+R] rewind checkpoint" "" "[CTRL+H] help" "[CTRL+L] error log" )"
+    "[ESC] back" "" "[CTRL+R] rewind checkpoint" "" "[CTRL+H] help" "[CTRL+L] view logs" )"
 
   if ! selected="$( zpool list -H -o name |
       HELP_SECTION=POOL ${FUZZYSEL} \
@@ -981,6 +1128,54 @@ preload_be_cmdline() {
   fi
 }
 
+# arg1: key(and associated value) to suppress from KCL
+# arg2..argN: kernel command line
+# prints: supressed kernel command line
+# returns: 0 on success
+
+suppress_kcl_arg() {
+  arg=$1
+  shift
+
+  if [ -z "${arg}" ]; then
+    echo "$*"
+    return 0
+  fi
+
+  awk <<< "$*" '
+    BEGIN {
+      quot = 0;
+      supp = 0;
+      ORS = " ";
+    }
+
+    {
+      for (i=1; i <= NF; i++) {
+        if ( quot == 0 ) {
+          # If unquoted, determine if output should be suppressed
+          if ( $(i) ~ /^'"${arg}"'=/ ) {
+            # Suppress unwanted argument
+             supp = 1;
+          } else {
+            # Nothing else is suppressed
+            supp = 0;
+          }
+        }
+
+        # If output is not suppressed, print the field
+        if ( supp == 0 && length($(i)) > 0 ) {
+          print $(i);
+        }
+
+        # If an odd number of quotes are in this field, toggle quoting
+        if ( gsub(/"/, "\"", $(i)) % 2 == 1 ) {
+          quot = (quot + 1) % 2;
+        }
+      }
+    }
+  '
+}
+
 # arg1: ZFS filesystem
 # prints: kernel command line arguments
 # returns: nothing
@@ -1012,70 +1207,64 @@ load_be_cmdline() {
   if [ -e "${BASE}/noresume" ]; then
     zdebug "${BASE}/noresume set, processing ${zfsbe_args}"
     # Must replace resume= arguments and append a noresume
-    zfsbe_args="$( awk <<< "${zfsbe_args}" '
-      BEGIN {
-        quot = 0;
-        supp = 0;
-        ORS = " ";
-      }
+    zfsbe_args="$( suppress_kcl_arg resume "${zfsbe_args}" ) noresume"
+  fi
 
-      {
-        for (i=1; i <= NF; i++) {
-          if ( quot == 0 ) {
-            # If unquoted, determine if output should be suppressed
-            if ( $(i) ~ /^resume=/ ) {
-              # Argument starts with "resume=", suppress
-              supp = 1;
-            } else {
-              # Nothing else is suppressed
-              supp = 0;
-            }
-          }
+  # shellcheck disable=SC2154
+  if [ "${zbm_set_hostid}" -eq 1 ] && spl_hostid="$( get_spl_hostid )"; then
+    zdebug "overriding spl_hostid and spl.spl_hostid in: ${zfsbe_args}"
+    zfsbe_args="$( suppress_kcl_arg spl_hostid "${zfsbe_args}" )"
+    zfsbe_args="$( suppress_kcl_arg spl.spl_hostid "${zfsbe_args}" )"
 
-          # If output is not suppressed, print the field
-          if ( supp == 0 && length($(i)) > 0 ) {
-            print $(i);
-          }
-
-          # If an odd number of quotes are in this field, toggle quoting
-          if ( gsub(/"/, "\"", $(i)) % 2 == 1 ) {
-            quot = (quot + 1) % 2;
-          }
-        }
-        printf "noresume";
-      }
-    ' )"
+    if [ "x${spl_hostid}" = "x0x00000000" ]; then
+      # spl.spl_hostid=0 is a no-op; imports fall back to /etc/hostid.
+      # Dracut writes spl_hostid to /etc/hostid. to yield expected results.
+      # Others (initramfs-tools, mkinitcpio) ignore this, but there isn't much
+      # else that can be done with those systems.
+      zfsbe_args+=" spl_hostid=00000000"
+    else
+      # Using spl.spl_hostid will set a module parameter which takes precedence
+      # over any /etc/hostid and should produce expected behavior in all systems
+      zfsbe_args+=" spl.spl_hostid=${spl_hostid}"
+    fi
   fi
 
   zdebug "processed commandline: ${zfsbe_args}"
   echo "${zfsbe_args}"
 }
 
-# arg1: pool name
+# arg1: pool name, empty to import all
 # prints: nothing
 # returns: 0 on success, 1 on failure
 
 # Accepted environment variables
-# force_import=1: enable force importing of a pool
+# import_policy=force: enable force importing of a pool
 # read_write=1: import read-write, defaults to read-only
 # rewind_to_checkpoint=1: enable --rewind-to-checkpoint
-# all_pools=1: import all pools instead of a single specific pool
 
 import_pool() {
   local pool import_args
 
   pool="${1}"
+
+  #shellcheck disable=SC2154
   if [ -n "${pool}" ]; then
     zdebug "pool set to ${pool}"
+  elif [ -n "${rewind_to_checkpoint}" ]; then
+    zerror "rewind only works on a specific pool"
+    return 1
+  else
+    zdebug "attempting to import all pools"
+    pool="-a"
   fi
 
   # Import /never/ mounts filesystems
   import_args=( "-N" )
 
   # shellcheck disable=SC2154
-  if [ -n "${force_import}" ]; then
+  if [ "${import_policy}" == "force" ]; then
     import_args+=( "-f" )
-    zdebug "force_import set: ${force_import}"
+    zdebug "import_policy set: ${import_policy}"
   fi
 
   # shellcheck disable=SC2154
@@ -1093,19 +1282,18 @@ import_pool() {
     zdebug "rewind_to_checkpoint set: ${rewind_to_checkpoint}"
   fi
 
-  # shellcheck disable=SC2154
-  if [ -n "${all_pools}" ]; then
-    import_args+=( "-a" )
-    pool=''
-    zdebug "all_pools set: ${all_pools}"
-  fi
-
   zdebug "zpool import arguments: ${import_args[*]} ${pool}"
-  # shellcheck disable=SC2086
-  status="$( zpool import "${import_args[@]}" ${pool} >/dev/null 2>&1 )"
+
+  zpool import "${import_args[@]}" "${pool}" >/dev/null 2>&1
   ret=$?
 
-  zdebug "import process return: ${ret}"
+  if [ "$ret" -eq 0 ]; then
+    zdebug "successful pool import"
+  else
+    spl_hostid="$( get_spl_hostid )"
+    zdebug "import process failed with code ${ret}, apparent hostid ${spl_hostid:-unknown}"
+  fi
+
   return ${ret}
 }
 
@@ -1774,7 +1962,7 @@ emergency_shell() {
 
   echo -n "Launching emergency shell: "
   echo -e "${message}\n"
-  /bin/bash --rcfile <( test -f /lib/zfsbootmenu-lib.sh && echo "source /lib/zfsbootmenu-lib.sh" ) 
+  /bin/bash --rcfile <( test -f /lib/zfsbootmenu-lib.sh && echo "source /lib/zfsbootmenu-lib.sh" )
 }
 
 # prints: nothing

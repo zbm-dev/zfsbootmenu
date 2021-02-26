@@ -12,25 +12,39 @@ These options are set on the kernel command line when booting the initramfs or U
 
 =over 4
 
-=item B<root=zfsbootmenu:POOL=E<lt>poolE<gt>>
-
-By default, ZFSBootMenu will look for the I<bootfs> property on the first pool it imports to select the default boot environment. If you have multiple pools, substitute the name of your preferred pool for B<E<lt>poolE<gt>> in the argument B<root=zfsbootmenu:POOL=E<lt>poolE<gt>>.
-
 =item B<spl_hostid=E<lt>hostidE<gt>>
 
-When creating an initramfs or UEFI bundle, the I<hostid> from the system is copied into the target. If this image will be used on another system with a different I<hostid>, it can be overridden with this option.
+When creating an initramfs or UEFI bundle, the I</etc/hostid> from the system is copied into the target. If this image will be used on another system with a different hostid, replace B<E<lt>hostidE<gt>> with the desired hostid, as an eight-digit hexadecimal number, to override the value contained within the image.
 
-Replace B<E<lt>hostidE<gt>> with an eight-digit hexadecimal number.
+=item B<zbm.prefer=E<lt>poolE<gt>>
 
-=item B<zbm.force_import=1>
+By default, ZFSBootMenu will look for the I<bootfs> property on the first imported pool (sorted alphabetically) to select the default boot environment. If you have multiple pools, replace B<E<lt>poolE<gt>> with the name of your preferred pool to override the default.
+
+=item B<zbm.import_policy>
+
+This option controls how the pool import process should take place.
+
+=over 2
+
+=item B<zbm.import_policy=hostid>
+
+Set this option to allow run-time reconfiguration of the SPL hostid. If a pool is preferred via B<zbm.prefer> and the pool can not be imported with a preconfigured hostid, the system will attempt to adopt the hostid of the system that last imported the pool. If a preferred pool is not set and no pools can be imported using a preconfigured hostid, the system will adopt the hostid of the first otherwise-importable pool. After adopting a detected hostid, ZFSBootMenu will subsequently attempt to import as many pools as possible. This option is forbidden on big-endian systems.
+
+=item B<zbm.import_policy=strict>
+
+Set this option to only import pools that match the SPL hostid configured in ZFSBootMenu. If none can be imported, an emergency shell will be invoked. The I<strict> policy is consistent with the behavior of earlier versions of ZFSBootMenu and is the default import policy.
+
+=item B<zbm.import_policy=force>
 
 Set this option to attempt to force pool imports. When set, this invokes I<zpool import -f> in place of the regular I<zpool import> command, which will attempt to import a pool that's potentially in use on another system. Use this option with caution!
 
-Omit this option or explicitly specify B<zbm.force_import=0> to disable forced imports.
+=back
 
-=item B<force_import=1>
+=item B<zbm.set_hostid>
 
-Deprecated; use B<zbm.force_import>.
+On little-endian systems, setting this option will cause ZFSBootMenu to set the I<spl.spl_hostid> command-line parameter for the selected boot environment to the hostid used to import its pool. The SPL kernel module will use this value as the hostid of the booted environment regardless of the contents of I</etc/hostid>. As a special case, if the hostid to be set is zero, ZFSBootMenu will instead set I<spl_hostid=00000000>, which should be used by dracut-based initramfs images to write an all-zero I</etc/hostid> in the initramfs prior to importing the boot pool.
+
+This option has no effect on big-endian systems.
 
 =item B<zbm.sort_key>
 
@@ -54,8 +68,7 @@ Sort the lists by size I<used>.
 
 =item B<zbm.timeout>
 
-This option accepts numeric values that control whether and when the
-boot-environment menu should be displayed.
+This option accepts numeric values that control whether and when the boot-environment menu should be displayed.
 
 =over 2
 
@@ -73,13 +86,25 @@ Display a countdown timer for the specified number of seconds before booting the
 
 =back
 
+=item B<zbm.tmux>
+
+Indicate that ZFSBootMenu should be run under B<tmux> in the initramfs. With this enabled, debug-level logging for the ZFSBootMenu scripts can be easily viewed. The tooling must also be installed with an additional dracut configuration option listed below.
+
 =item B<timeout>
 
 Deprecated; use B<zbm.timeout>.
 
-=item B<zbm.tmux>
+=item B<root=zfsbootmenu:POOL=E<lt>poolE<gt>>
 
-Indicate that ZFSBootMenu should be run under B<tmux> in the initramfs. With this enabled, debug-level logging for the ZFSBootMenu scripts can be easily viewed. The tooling must also be installed with an additional dracut configuration option listed below.
+Deprecated; use B<zbm.prefer>.
+
+=item B<force_import=1>
+
+Deprecated; use B<zbm.import_policy=force>.
+
+=item B<zbm.force_import=1>
+
+Deprecated; use B<zbm.import_policy=force>.
 
 =back
 

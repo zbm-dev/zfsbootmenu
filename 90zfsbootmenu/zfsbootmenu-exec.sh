@@ -1,12 +1,14 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
+export endian
 export spl_hostid
-export force_import
+export import_policy
 export menu_timeout
 export loglevel
 export root
 export zbm_sort
+export zbm_set_hostid
 
 # Disable all kernel messages to the console
 echo 0 > /proc/sys/kernel/printk

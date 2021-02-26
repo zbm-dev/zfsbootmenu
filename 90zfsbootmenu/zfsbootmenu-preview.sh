@@ -35,6 +35,9 @@ selected_env_str="$( center_string "${ENV} (${_DEFAULT}${_readonly}) - ${selecte
 if [ -f "${BASE}/have_errors" ]; then
   selected_env_str="${selected_env_str:3}"
   colorize "red" "[!]"
+elif [ -f "${BASE}/have_warnings" ]; then
+  selected_env_str="${selected_env_str:3}"
+  colorize "yellow" "[!]"
 fi
 
 colorize "${_COLOR}" "${selected_env_str}\n"
