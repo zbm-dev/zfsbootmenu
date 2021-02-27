@@ -113,6 +113,11 @@ Cycle the sorting key through the following list:
 
 The default sort key is $( colorize orange "name") . 
 
+
+$( mod_header L "view logs" )
+
+View logs, as indicated by $( colorize yellow "[!]" ) (warning) and $( colorize red "[!]" ) (error) in the upper left corner.
+
 EOF
 SECTIONS+=("MAIN Main Menu")
 
@@ -173,6 +178,11 @@ Cycle the sorting key through the following list:
 
 The default sort key is $( colorize orange "name") . 
 
+
+$( mod_header L "view logs" )
+
+View logs, as indicated by $( colorize yellow "[!]" ) (warning) and $( colorize red "[!]" ) (error) in the upper left corner.
+
 EOF
 SECTIONS+=("SNAPSHOT Snapshot Management")
 
@@ -192,6 +202,11 @@ Set the selected kernel as the default for the boot environment.
 The ZFS property $( colorize green "org.zfsbootmenu:kernel" ) is used to store the default kernel for the boot environment.
 
 The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
+
+
+$( mod_header L "view logs" )
+
+View logs, as indicated by $( colorize yellow "[!]" ) (warning) and $( colorize red "[!]" ) (error) in the upper left corner.
 
 EOF
 SECTIONS+=("KERNEL Kernel Management")
@@ -227,6 +242,12 @@ $( mod_header R "rewind checkpoint" )
 If a pool checkpoint is available, the selected pool is exported and then imported with the $( colorize red "--rewind-to-checkpoint" ) flag set.
 
 The operation will fail gracefully if the pool can not be set $( colorize red "read/write" ).
+
+
+$( mod_header L "view logs" )
+
+View logs, as indicated by $( colorize yellow "[!]" ) (warning) and $( colorize red "[!]" ) (error) in the upper left corner.
+
 EOF
 SECTIONS+=("POOL ZPOOL Health")
 
