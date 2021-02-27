@@ -1181,7 +1181,7 @@ suppress_kcl_arg() {
 # returns: nothing
 
 load_be_cmdline() {
-  local zfsbe_fs zfsbe_args
+  local zfsbe_fs zfsbe_args spl_hostid
 
   zfsbe_fs="${1}"
   if [ -z "${zfsbe_fs}" ]; then
