@@ -1177,7 +1177,7 @@ preload_be_cmdline() {
 
 # arg1: key(and associated value) to suppress from KCL
 # arg2..argN: kernel command line
-# prints: supressed kernel command line
+# prints: supressed kernel command line with a trailing space
 # returns: 0 on success
 
 suppress_kcl_arg() {
@@ -1252,14 +1252,14 @@ load_be_cmdline() {
   fi
 
   if [ -e "${BASE}/noresume" ]; then
-    zdebug "${BASE}/noresume set, processing ${zfsbe_args}"
+    zdebug "${BASE}/noresume set, processing: '${zfsbe_args}'"
     # Must replace resume= arguments and append a noresume
-    zfsbe_args="$( suppress_kcl_arg resume "${zfsbe_args}" ) noresume"
+    zfsbe_args="$( suppress_kcl_arg resume "${zfsbe_args}" )noresume"
   fi
 
   # shellcheck disable=SC2154
   if [ "${zbm_set_hostid}" -eq 1 ] && spl_hostid="$( get_spl_hostid )"; then
-    zdebug "overriding spl_hostid and spl.spl_hostid in: ${zfsbe_args}"
+    zdebug "overriding spl_hostid and spl.spl_hostid in: '${zfsbe_args}'"
     zfsbe_args="$( suppress_kcl_arg spl_hostid "${zfsbe_args}" )"
     zfsbe_args="$( suppress_kcl_arg spl.spl_hostid "${zfsbe_args}" )"
 
@@ -1268,15 +1268,15 @@ load_be_cmdline() {
       # Dracut writes spl_hostid to /etc/hostid. to yield expected results.
       # Others (initramfs-tools, mkinitcpio) ignore this, but there isn't much
       # else that can be done with those systems.
-      zfsbe_args+=" spl_hostid=00000000"
+      zfsbe_args+="spl_hostid=00000000"
     else
       # Using spl.spl_hostid will set a module parameter which takes precedence
       # over any /etc/hostid and should produce expected behavior in all systems
-      zfsbe_args+=" spl.spl_hostid=${spl_hostid}"
+      zfsbe_args+="spl.spl_hostid=${spl_hostid}"
     fi
   fi
 
-  zdebug "processed commandline: ${zfsbe_args}"
+  zdebug "processed commandline: '${zfsbe_args}'"
   echo "${zfsbe_args}"
 }
 
