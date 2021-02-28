@@ -354,12 +354,43 @@ csv_cat() {
 # returns: nothing
 
 header_wrap() {
-  local hardbreak tokens tok footer nlines
+  local hardbreak tokens tok footer nlines allow_breaks maxcols curcols
 
   # Pick a wrap width if none was specified
-  [ -n "$wrap_width" ] || wrap_width="$(( $( tput cols ) - 4 ))"
+  if [ -z "${wrap_width}" ]; then
+    wrap_width="$(( $( tput cols 2>/dev/null ) - 4 ))"
+    [ "${wrap_width}" -gt 0 ] || wrap_width=80
+  fi
 
+  # Pick a uniform field width
+  if [ -z "${field_width}" ]; then
+    field_width=0
+    for tok in "$@"; do
+      [ "${#tok}" -gt "${field_width}" ] && field_width="${#tok}"
+    done
+  fi
+
+  # Determine maximum number of columns
+  maxcols=0
+  curcols=0
+  for tok in "$@"; do
+    if [ -z "${tok}" ]; then
+      if [ "${curcols}" -gt "${maxcols}" ]; then
+        maxcols="${curcols}"
+      fi
+      curcols=0
+    else
+      (( curcols=curcols+1 ))
+    fi
+  done
+
+  # Honor hard breaks only if terminal is sufficiently tall and wide
   nlines="$( tput lines 2>/dev/null )" || nlines=0
+  if [ "${nlines}" -ge 24 ] && [ "${wrap_width}" -ge "$(( maxcols * field_width ))" ]; then
+    allow_breaks=1
+  else
+    allow_breaks=0
+  fi
 
   # Processing is done line-by-line
   while [ $# -gt 0 ]; do
@@ -368,12 +399,21 @@ header_wrap() {
 
     # Process up to the first empty string, which is a hard break
     while [ $# -gt 0 ]; do
-      tok="${1// /_}"
+      # Pad fields if a uniform field width was assigned
+      if [ "${field_width}" -gt 0 ] && [ -n "$1" ]; then
+        tok="$( printf "%-${field_width}s" "$1" )"
+        tok="${tok// /_}"
+      else
+        tok="${1// /_}"
+      fi
+
       shift
 
       if [ -n "${tok}" ]; then
+        # If breaks are disallowed, also suppress all-empty tokens
+        [ "${allow_breaks}" -eq 1 ] || [ -n "${tok//_/}" ] || continue;
         tokens+=( "${tok}" )
-      elif [ "$nlines" -ge 24 ]; then
+      elif [ "${allow_breaks}" -eq 1 ]; then
         # Hard wrap on empty tokens only with sufficient space
         hardbreak=1
         break
@@ -384,6 +424,7 @@ header_wrap() {
     if [ "${#tokens[@]}" -gt 0 ]; then
       # Only try to wrap if the width is long enough
       if [ "${wrap_width}" -gt 0 ]; then
+        [ "$(( field_width + 4 ))" -ge "${wrap_width}" ] && footer="${footer//_/ }"
         footer="$( echo -n -e "${tokens[@]}" | fold -s -w "${wrap_width}" )"
       else
         footer="$( echo -n -e "${tokens[@]}" )"
@@ -423,9 +464,11 @@ draw_be() {
 
   zdebug "using environment file: ${env}"
 
-  header="$( header_wrap "[ENTER] boot" "[ESC] refresh view" "[CTRL+H] help" "[CTRL+L] view logs" "" \
-    "[CTRL+E] edit kcl" "[CTRL+K] kernels" "[CTRL+D] set bootfs" "[CTRL+S] snapshots" "" \
-    "[CTRL+I] interactive chroot" "[CTRL+R] recovery shell" "[CTRL+P] pool status" )"
+  header="$( header_wrap \
+    "[RETURN] boot" "[ESCAPE] refresh view" "[CTRL+P] pool status" "" \
+    "[CTRL+D] set bootfs" "[CTRL+S] snapshots" "[CTRL+K] kernels" "" \
+    "[CTRL+E] edit kcl" "[CTRL+I] interactive chroot" "[CTRL+R] recovery shell" "" \
+    "[CTRL+L] view logs" " " "[CTRL+H] help" )"
 
   expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-i,alt-o"
 
@@ -465,8 +508,8 @@ draw_kernel() {
 
   zdebug "using kernels file: ${_kernels}"
 
-  header="$( header_wrap \
-    "[ENTER] boot" "[ESC] back" "" "[CTRL+D] set default" "[CTRL+H] help" "[CTRL+L] view logs" )"
+  header="$( header_wrap "[RETURN] boot" "[ESCAPE] back" "[CTRL+D] set default" "" \
+      "[CTRL+L] view logs" " " "[CTRL+H] help" )"
 
   expects="--expect=alt-d"
 
@@ -502,10 +545,10 @@ draw_snapshots() {
 
   sort_key="$( get_sort_key )"
 
-  header="$( header_wrap \
-    "[ENTER] duplicate" "[ESC] back" "[CTRL+H] help" "[CTRL+L] view logs" "" \
+  header="$( header_wrap "[RETURN] duplicate" "[ESCAPE] back" "" \
     "[CTRL+X] clone and promote" "[CTRL+C] clone only" "" \
-    "[CTRL+I] interactive chroot" "[CTRL+D] show diff" )"
+    "[CTRL+I] interactive chroot" "[CTRL+D] show diff" "" \
+    "[CTRL+L] view logs" "[CTRL+H] help" )"
 
   expects="--expect=alt-x,alt-c,alt-d,alt-i,alt-o"
 
@@ -578,16 +621,20 @@ draw_diff() {
 # returns: 130 on error, 0 otherwise
 
 draw_pool_status() {
-  local selected header hdr_width
+  local selected header psize
 
-  # Wrap to half width to avoid the preview window
-  hdr_width="$(( ( $( tput cols ) / 2 ) - 4 ))"
-  header="$( wrap_width="$hdr_width" header_wrap \
-    "[ESC] back" "" "[CTRL+R] rewind checkpoint" "" "[CTRL+H] help" "[CTRL+L] view logs" )"
+  # size the preview window to leave enough room for headers on the left
+  psize="$(( $( tput cols ) - 34 ))"
+  [ "${psize}" -le 0 ] && psize=10
+
+  # Override uniform field width to force once item per line
+  header="$( field_width=0 header_wrap "[ESCAPE] back" "" \
+    "[CTRL+R] rewind checkpoint" "" "[CTRL+L] view logs" "" "[CTRL+H] help" )"
 
   if ! selected="$( zpool list -H -o name |
       HELP_SECTION=POOL ${FUZZYSEL} \
       --prompt "Pool > " --tac --expect=alt-r,ctrl-r,ctrl-alt-r \
+      --preview-window="right:${psize}:sharp" \
       --preview="zpool status -v {}" --header="${header}" )"; then
     return 1
   fi
@@ -1397,7 +1444,7 @@ timed_prompt() {
 
   [ $# -gt 0 ] || return
   [ -n "${delay}" ] || delay="30"
-  [ -n "${prompt}" ] || prompt="Press [ENTER] or wait %0.2d seconds to continue"
+  [ -n "${prompt}" ] || prompt="Press [RETURN] or wait %0.2d seconds to continue"
 
   [ "${delay}" -eq 0 ] && return
 
@@ -1418,11 +1465,13 @@ timed_prompt() {
   tput clear
 
   x=$(( (HEIGHT - 0) / 2))
+  [ "${x}" -lt 0 ] && x=0
 
   [ -n "${cnum}" ] && tput setaf "${cnum}"
   while [ $# -gt 0 ]; do
     local line=${1}
     y=$(( (WIDTH - ${#line}) / 2 ))
+    [ "${y}" -lt 0 ] && y=0
     tput cup $x $y
     echo -n -e "${line}"
     x=$(( x + 1 ))
@@ -1434,6 +1483,7 @@ timed_prompt() {
     # shellcheck disable=SC2059
     mes="$( printf "${prompt}" "${i}" )"
     y=$(( (WIDTH - ${#mes}) / 2 ))
+    [ "${y}" -lt 0 ] && y=0
     tput cup $x $y
     echo -ne "${mes}"
 
