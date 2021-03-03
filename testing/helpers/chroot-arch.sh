@@ -31,4 +31,7 @@ if [ -r "${ENCRYPT_KEYFILE}" ]; then
 fi
 
 sed -e "/HOOKS=/s/fsck/zfs/" -e "/FILES=/s@)@${ZFILES})@" -i /etc/mkinitcpio.conf
+
+# Arch doesn't play nicely with the pre-existing cache
+rm -f /etc/zfs/zpool.cache
 mkinitcpio -p linux
