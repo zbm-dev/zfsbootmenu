@@ -6,6 +6,13 @@ if [ -z "${CHROOT_MNT}" ] || [ ! -d "${CHROOT_MNT}" ]; then
   exit 1
 fi
 
+if echo "$0" | grep -q "musl"; then
+  MUSL="yes"
+  CHROOT_VOID="chroot-void-musl.sh"
+else
+  CHROOT_VOID="chroot-void.sh"
+fi
+
 XBPS_ARCH="$(uname -m)"
 
 case "${XBPS_ARCH}" in
@@ -42,8 +49,8 @@ fi
 
 # /etc/runit/core-services/03-console-setup.sh depends on loadkeys from kbd
 # /etc/runit/core-services/05-misc.sh depends on ip from iproute2
-xbps-install -y -M -r "${CHROOT_MNT}" --repository="${URL}" \
-  base-minimal dracut ncurses-base kbd iproute2 dhclient openssh
+xbps-install -y -M -r "${CHROOT_MNT}" -C "${CHROOT_MNT}/etc/xbps.d" \
+  --repository="${URL}" base-minimal dracut ncurses-base kbd iproute2 dhclient openssh
 
 cp /etc/hostid "${CHROOT_MNT}/etc/"
 cp /etc/resolv.conf "${CHROOT_MNT}/etc/"
@@ -59,5 +66,5 @@ mount -t devpts pts "${CHROOT_MNT}/dev/pts"
 
 zfs snapshot -r ztest@pre-chroot
 
-cp "helpers/chroot-void.sh" "${CHROOT_MNT}/root"
-chroot "${CHROOT_MNT}" /root/chroot-void.sh
+cp "helpers/${CHROOT_VOID}" "${CHROOT_MNT}/root"
+chroot "${CHROOT_MNT}" "/root/${CHROOT_VOID}"

@@ -1,11 +1,17 @@
 #!/bin/sh
+# vim: softtabstop=2 shiftwidth=2 expandtab
+
+if echo "$0" | grep -q "musl"; then
+  MUSL="yes"
+fi
 
 # Configure a default locale
 cat << EOF >> /etc/default/libc-locales
 en_US.UTF-8 UTF-8
 en_US ISO-8859-1
 EOF
-xbps-reconfigure -f glibc-locales
+
+[ -z "${MUSL}" ] && xbps-reconfigure -f glibc-locales
 
 # Install a kernel and ZFS
 xbps-install -S
