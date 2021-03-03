@@ -39,8 +39,13 @@ if [ -n "${TESTDIR}" ]; then
   fi
 else
   # If a test directory was not specified, try a default
-  TESTDIR="./test.$(uname -m)"
-  [ -d "${TESTDIR}" ] || TESTDIR="."
+  TESTDIR="."
+  for TESTBED in void void-musl arch debian; do
+    if [ -d "./test.${TESTBED}" ]; then
+      TESTDIR="./test.${TESTBED}"
+      break
+    fi
+  done
 fi
 
 # Support x86_64 and ppc64(le)
