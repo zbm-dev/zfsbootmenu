@@ -17,8 +17,6 @@ cat << EOF >> /etc/hosts
 ::1 localhost
 EOF
 
-zfs set org.zfsbootmenu:commandline="rw quiet console=tty1 console=ttyS0" ztest/ROOT
-
 # Set root password
 echo 'root:zfsbootmenu' | chpasswd -c SHA256
 

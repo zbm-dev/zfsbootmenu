@@ -42,7 +42,7 @@ case "$(uname -m)" in
     ;;
 esac
 
-zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) ro quiet ${consoles}" ztest/ROOT
+zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) rw loglevel=4 ${consoles}" ztest/ROOT
 
 # Configure the system to create a recursive snapshot every boot
 cat << \EOF > /etc/rc.local

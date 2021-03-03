@@ -36,3 +36,5 @@ systemctl enable zfs.target
 systemctl enable zfs-import-cache
 systemctl enable zfs-mount
 systemctl enable zfs-import.target
+
+echo 'root:zfsbootmenu' | chpasswd -c SHA256

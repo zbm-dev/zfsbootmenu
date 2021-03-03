@@ -70,7 +70,7 @@ zfs create -o mountpoint=/ -o canmount=noauto "ztest/ROOT/${DISTRO}"
 
 zfs snapshot -r ztest@barebe
 
-zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) rw quiet" ztest/ROOT
+zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) rw loglevel=4 console=tty1 console=ttyS0" ztest/ROOT
 zpool set bootfs="ztest/ROOT/${DISTRO}" ztest
 
 zpool export ztest
