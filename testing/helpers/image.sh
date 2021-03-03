@@ -33,6 +33,18 @@ if [ -z "${TESTDIR}" ] || [ ! -d "${TESTDIR}" ]; then
   exit 1
 fi
 
+INSTALL_SCRIPT="./helpers/install-${DISTRO}.sh"
+if [ ! -x "${INSTALL_SCRIPT}" ]; then
+  echo "ERROR: install script '${INSTALL_SCRIPT}' missing or not executable"
+  exit 1
+fi
+
+CHROOT_SCRIPT="./helpers/chroot-${DISTRO}.sh"
+if [ ! -x "${CHROOT_SCRIPT}" ]; then
+  echo "ERROR: chroot script '${CHROOT_SCRIPT}' missing or not executable"
+  exit 1
+fi
+
 export ZBM_POOL=""
 export LOOP_DEV=""
 
@@ -126,24 +138,12 @@ fi
 
 zfs mount "${ZBM_POOL}/ROOT/${DISTRO}" || exit 1
 
-INSTALL_SCRIPT="./helpers/install-${DISTRO}.sh"
-if [ ! -x "${INSTALL_SCRIPT}" ]; then
-  echo "ERROR: install script '${INSTALL_SCRIPT}' missing or not executable"
-  exit 1
-fi
-
 if ! "${INSTALL_SCRIPT}"; then
   echo "ERROR: install script '${INSTALL_SCRIPT}' failed"
   exit 1
 fi
 
 zfs snapshot -r "${ZBM_POOL}@pre-chroot"
-
-CHROOT_SCRIPT="./helpers/chroot-${DISTRO}.sh"
-if [ ! -x "${CHROOT_SCRIPT}" ]; then
-  echo "ERROR: chroot script '${CHROOT_SCRIPT}' missing or not executable"
-  exit 1
-fi
 
 # Make sure the chroot script exists
 mkdir -p "${CHROOT_MNT}/root"
