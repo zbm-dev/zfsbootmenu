@@ -32,12 +32,3 @@ fi
 
 sed -e "/HOOKS=/s/fsck/zfs/" -e "/FILES=/s@)@${ZFILES})@" -i /etc/mkinitcpio.conf
 mkinitcpio -p linux
-
-zfs snapshot -r ztest@full-setup
-
-touch /root/IN_THE_MATRIX
-zfs snapshot -r ztest@minor-changes
-rm /root/IN_THE_MATRIX
-
-# delete ourself
-rm "$0"

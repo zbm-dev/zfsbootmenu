@@ -58,13 +58,3 @@ cp /etc/rc.conf "${CHROOT_MNT}/etc/"
 
 mkdir -p "${CHROOT_MNT}/etc/xbps.d"
 echo "repository=${URL}" > "${CHROOT_MNT}/etc/xbps.d/00-repository-main.conf"
-
-mount -t proc proc "${CHROOT_MNT}/proc"
-mount -t sysfs sys "${CHROOT_MNT}/sys"
-mount -B /dev "${CHROOT_MNT}/dev"
-mount -t devpts pts "${CHROOT_MNT}/dev/pts"
-
-zfs snapshot -r ztest@pre-chroot
-
-cp "helpers/${CHROOT_VOID}" "${CHROOT_MNT}/root"
-chroot "${CHROOT_MNT}" "/root/${CHROOT_VOID}"

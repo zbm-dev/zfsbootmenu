@@ -84,14 +84,3 @@ cat >> "${CHROOT_MNT}/etc/pacman.conf" << EOF
 [archzfs]
 Include = /etc/pacman.d/zfsmirrors
 EOF
-
-mount -t proc proc "${CHROOT_MNT}/proc"
-mount -t sysfs sys "${CHROOT_MNT}/sys"
-mount -B /dev "${CHROOT_MNT}/dev"
-mount -t devpts pts "${CHROOT_MNT}/dev/pts"
-
-zfs snapshot -r ztest@pre-chroot
-
-mkdir -p "${CHROOT_MNT}/root"
-cp "helpers/chroot-arch.sh" "${CHROOT_MNT}/root/"
-chroot "${CHROOT_MNT}" "/root/chroot-arch.sh"

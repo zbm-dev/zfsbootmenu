@@ -26,8 +26,6 @@ export DEBCONF_NONINTERACTIVE_SEEN=true
 apt-get install --yes locales
 dpkg-reconfigure -a -f noninteractive
 
-zpool set cachefile=/etc/zfs/zpool.cache ztest
-
 # Make sure the kernel is installed and configured before ZFS
 apt-get install --yes linux-headers-amd64 linux-image-amd64 console-setup
 apt-get install --yes zfs-dkms zfsutils-linux zfs-initramfs

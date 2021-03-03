@@ -42,11 +42,16 @@ case "$(uname -m)" in
     ;;
 esac
 
-zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) rw loglevel=4 ${consoles}" ztest/ROOT
+if [ -n "${ZBM_POOL}" ]; then
+  cmdline="spl_hostid=$( hostid ) rw loglevel=4 ${consoles}"
+  zfs set org.zfsbootmenu:commandline="${cmdline}" "${ZBM_POOL}/ROOT"
+fi
 
 # Configure the system to create a recursive snapshot every boot
-cat << \EOF > /etc/rc.local
-zfs snapshot -r ztest@$(date +%m%d%Y-%H%M)
+cat << 'EOF' > /etc/rc.local
+for _pool in "$( zpool list -o name -H 2>/dev/null )"; do
+  zfs snapshot -r "${_pool}@$(date +%m%d%Y-%H%M)"
+done
 EOF
 
 # Set root password
@@ -63,12 +68,3 @@ chsh -s /bin/bash
 
 # enable root login over ssh with a password
 sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
-
-zfs snapshot -r ztest@full-setup
-
-touch /root/IN_THE_MATRIX
-zfs snapshot -r ztest@minor-changes
-rm /root/IN_THE_MATRIX
-
-# delete ourself
-rm "$0"
