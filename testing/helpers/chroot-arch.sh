@@ -20,15 +20,30 @@ EOF
 # Set root password
 echo 'root:zfsbootmenu' | chpasswd -c SHA256
 
+# Enable networking in the system
+mkdir -p /etc/systemd/network
+cat << EOF >> /etc/systemd/network/20-wired.network
+[Match]
+Name=en*
+[Network]
+DHCP=yes
+EOF
+
+rm -f /etc/resolv.conf
+systemctl enable systemd-networkd.service
+systemctl enable systemd-resolved.service
+
 # enable root login over ssh with a password
 if [ -f /etc/ssh/sshd_config ]; then
   sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 fi
 
+systemctl enable sshd.service
+
 ZFILES="/etc/hostid"
-if [ -r "${ENCRYPT_KEYFILE}" ]; then
-  ZFILES+=" ${ENCRYPT_KEYFILE}"
-fi
+for keyfile in /etc/zfs/*.key; do
+  [ -e "${keyfile}" ] && ZFILES+=" ${keyfile}"
+done
 
 sed -e "/HOOKS=/s/fsck/zfs/" -e "/FILES=/s@)@${ZFILES})@" -i /etc/mkinitcpio.conf
 

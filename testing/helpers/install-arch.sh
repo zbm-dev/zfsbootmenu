@@ -68,7 +68,7 @@ pacman-key --config "${PACROOT}/pacman.conf" -r "${ARCHZFS_KEY}"
 pacman-key --config "${PACROOT}/pacman.conf" --lsign-key "${ARCHZFS_KEY}"
 
 yes | "${PACROOT}/arch-install-scripts/pacstrap" \
-  -C "${PACROOT}/pacman.conf" "${CHROOT_MNT}" base linux-firmware archzfs-linux
+  -C "${PACROOT}/pacman.conf" "${CHROOT_MNT}" base archzfs-linux openssh
 
 if [ -r "${ENCRYPT_KEYFILE}" ]; then
   mkdir -p "${CHROOT_MNT}/etc/zfs"
