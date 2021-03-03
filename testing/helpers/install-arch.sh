@@ -11,6 +11,7 @@ if ! PACROOT="$( mktemp -d )"; then
   exit 1
 fi
 
+# shellcheck disable=SC2064
 trap "rm -rf '${PACROOT}'" EXIT
 
 ( 

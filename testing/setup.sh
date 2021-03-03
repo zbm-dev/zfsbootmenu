@@ -22,7 +22,7 @@ Usage: $0 [options]
   -s  Specify size of VM image
   -e  Enable native ZFS encryption
   -o  Specify another distribution
-      [ void, void-musl, arch ]
+      [ void, void-musl, arch, debian ]
 EOF
 }
 
@@ -31,7 +31,7 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "heycgdaimD:s:o:" opt; do
+while getopts "heycgdaiD:s:o:" opt; do
   case "${opt}" in
     e)
       ENCRYPT=1
@@ -67,7 +67,7 @@ while getopts "heycgdaimD:s:o:" opt; do
     o)
       DISTRO="${OPTARG}"
       ;;
-    h)
+    *)
       usage
       exit
   esac

@@ -42,7 +42,7 @@ systemctl enable sshd.service
 
 ZFILES="/etc/hostid"
 for keyfile in /etc/zfs/*.key; do
-  [ -e "${keyfile}" ] && ZFILES+=" ${keyfile}"
+  [ -e "${keyfile}" ] && ZFILES="${ZFILES} ${keyfile}"
 done
 
 sed -e "/HOOKS=/s/fsck/zfs/" -e "/FILES=/s@)@${ZFILES})@" -i /etc/mkinitcpio.conf

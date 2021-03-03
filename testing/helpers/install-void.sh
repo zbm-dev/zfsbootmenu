@@ -8,9 +8,6 @@ fi
 
 if echo "$0" | grep -q "musl"; then
   MUSL="yes"
-  CHROOT_VOID="chroot-void-musl.sh"
-else
-  CHROOT_VOID="chroot-void.sh"
 fi
 
 XBPS_ARCH="$(uname -m)"

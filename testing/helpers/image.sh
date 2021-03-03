@@ -87,21 +87,19 @@ for ((idx = 1; idx < 100; idx++)); do
   fi
 done
 
-zpool create -f -m none \
-  -O compression=lz4 \
-  -O acltype=posixacl \
-  -O xattr=sa \
-  -O relatime=on \
-  -o autotrim=on \
-  -o cachefile=none \
-  "${ENCRYPT_OPTS[@]}" \
-  "${zpool_name}" "${LOOP_DEV}"
-
-if [ $? -ne 0 ]; then
+if zpool create -f -m none \
+      -O compression=lz4 \
+      -O acltype=posixacl \
+      -O xattr=sa \
+      -O relatime=on \
+      -o autotrim=on \
+      -o cachefile=none \
+      "${ENCRYPT_OPTS[@]}" \
+      "${zpool_name}" "${LOOP_DEV}"; then
+  export ZBM_POOL="${zpool_name}"
+else
   echo "ERROR: unable to create pool ${zpool_name}"
   exit 1
-else
-  export ZBM_POOL="${zpool_name}"
 fi
 
 if [ -n "${ENCRYPT}" ]; then
