@@ -24,9 +24,9 @@ cleanup() {
   exit
 }
 
-#TESTDIR="${1?Usage: $0 <testdir> <size> <distro>}"
-#SIZE="${2?Usage: $0 <testdir> <size> <distro>}"
-#DISTRO="${3?Usage: $0 <testdir> <size> <distro>}"
+TESTDIR="${1?Usage: $0 <testdir> <size> <distro>}"
+SIZE="${2?Usage: $0 <testdir> <size> <distro>}"
+DISTRO="${3?Usage: $0 <testdir> <size> <distro>}"
 
 if [ -z "${TESTDIR}" ] || [ ! -d "${TESTDIR}" ]; then
   echo "ERROR: test directory must be specified and must exist"
@@ -69,6 +69,7 @@ kpartx -u "${LOOP_DEV}"
 
 echo 'label: gpt' | sfdisk "${LOOP_DEV}"
 
+ENCRYPT_OPTS=()
 if [ -n "${ENCRYPT}" ]; then
   ENCRYPT_OPTS=( "-O" "encryption=aes-256-gcm" "-O" "keyformat=passphrase" )
 
@@ -89,6 +90,15 @@ if [ -n "${ENCRYPT}" ]; then
   ENCRYPT_OPTS+=( "-O" "keylocation=file://${ENCRYPT_KEYFILE}" )
 fi
 
+LEGACY_OPTS=()
+if [ -n "${LEGACY_POOL}" ]; then
+  legacy_features=( zstd_compress bookmark_written livelist log_spacemap )
+  legacy_features+=( redacted_datasets redaction_bookmarks device_rebuild )
+  for feature in "${legacy_features[@]}"; do
+    LEGACY_OPTS+=( "-o" "feature@${feature}=disabled" )
+  done
+fi
+
 # Try 100 unique pool names
 zpool_name=ztest
 for ((idx = 1; idx < 100; idx++)); do
@@ -106,6 +116,7 @@ if zpool create -f -m none \
       -O relatime=on \
       -o autotrim=on \
       -o cachefile=none \
+      "${LEGACY_OPTS[@]}" \
       "${ENCRYPT_OPTS[@]}" \
       "${zpool_name}" "${LOOP_DEV}"; then
   export ZBM_POOL="${zpool_name}"

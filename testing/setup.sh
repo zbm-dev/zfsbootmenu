@@ -21,8 +21,9 @@ Usage: $0 [options]
   -D  Specify a test directory to use
   -s  Specify size of VM image
   -e  Enable native ZFS encryption
+  -l  Disable features for legacy (zfs<2.0.0) support
   -o  Specify another distribution
-      [ void, void-musl, arch, debian ]
+      [ void, void-musl, arch, debian, ubuntu ]
 EOF
 }
 
@@ -31,7 +32,7 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "heycgdaiD:s:o:" opt; do
+while getopts "heycgdaiD:s:o:l" opt; do
   case "${opt}" in
     e)
       ENCRYPT=1
@@ -66,6 +67,9 @@ while getopts "heycgdaiD:s:o:" opt; do
       ;;
     o)
       DISTRO="${OPTARG}"
+      ;;
+    l)
+      LEGACY_POOL=1
       ;;
     *)
       usage
@@ -142,8 +146,6 @@ if ((IMAGE)); then
 
   sudo env \
     ENCRYPT="${ENCRYPT}" \
-    DISTRO="${DISTRO}" \
-    TESTDIR="${TESTDIR}" \
-    SIZE="${SIZE}" \
-    "${IMAGE_SCRIPT}"
+    LEGACY_POOL="${LEGACY_POOL}" \
+    "${IMAGE_SCRIPT}" "${TESTDIR}" "${SIZE}" "${DISTRO}"
 fi
