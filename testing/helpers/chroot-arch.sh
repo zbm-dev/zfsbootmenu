@@ -20,26 +20,6 @@ EOF
 # Set root password
 echo 'root:zfsbootmenu' | chpasswd -c SHA256
 
-# Enable networking in the system
-mkdir -p /etc/systemd/network
-cat << EOF >> /etc/systemd/network/20-wired.network
-[Match]
-Name=en*
-[Network]
-DHCP=yes
-EOF
-
-rm -f /etc/resolv.conf
-systemctl enable systemd-networkd.service
-systemctl enable systemd-resolved.service
-
-# enable root login over ssh with a password
-if [ -f /etc/ssh/sshd_config ]; then
-  sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
-fi
-
-systemctl enable sshd.service
-
 ZFILES="/etc/hostid"
 for keyfile in /etc/zfs/*.key; do
   [ -e "${keyfile}" ] && ZFILES="${ZFILES} ${keyfile}"
@@ -50,3 +30,15 @@ sed -e "/HOOKS=/s/fsck/zfs/" -e "/FILES=/s@)@${ZFILES})@" -i /etc/mkinitcpio.con
 # Arch doesn't play nicely with the pre-existing cache
 rm -f /etc/zfs/zpool.cache
 mkinitcpio -p linux
+
+if [ -x /root/zbm-populate.sh ]; then
+  # Arch installs cpanm in the vendor_perl subdirectory
+  PATH="${PATH}:/usr/bin/site_perl:/usr/bin/vendor_perl" /root/zbm-populate.sh
+  rm /root/zbm-populate.sh
+fi
+
+# Configure networking and ssh, clean up installation script
+if [ -x /root/network-systemd.sh ]; then
+  /root/network-systemd.sh
+  rm /root/network-systemd.sh
+fi

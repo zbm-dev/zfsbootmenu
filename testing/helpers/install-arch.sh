@@ -68,8 +68,14 @@ ARCHZFS_KEY=DDF7DB817396A49B2A2723F7403BD972F75D9D76
 pacman-key --config "${PACROOT}/pacman.conf" -r "${ARCHZFS_KEY}"
 pacman-key --config "${PACROOT}/pacman.conf" --lsign-key "${ARCHZFS_KEY}"
 
-yes | "${PACROOT}/arch-install-scripts/pacstrap" \
-  -C "${PACROOT}/pacman.conf" "${CHROOT_MNT}" base archzfs-linux openssh
+pacstrap() {
+  yes | "${PACROOT}/arch-install-scripts/pacstrap" \
+    -C "${PACROOT}/pacman.conf" "${CHROOT_MNT}" "$@"
+}
+
+# This is done in two stages to avoid dracut satisfying initramfs
+pacstrap base archzfs-linux
+pacstrap openssh vi git dracut fzf kexec-tools cpanminus gcc make
 
 if [ -r "${ENCRYPT_KEYFILE}" ]; then
   mkdir -p "${CHROOT_MNT}/etc/zfs"
@@ -85,3 +91,15 @@ cat >> "${CHROOT_MNT}/etc/pacman.conf" << EOF
 [archzfs]
 Include = /etc/pacman.d/zfsmirrors
 EOF
+
+# Add network configuration script
+if [ -x ./helpers/network-systemd.sh ]; then
+  mkdir -p "${CHROOT_MNT}/root"
+  cp ./helpers/network-systemd.sh "${CHROOT_MNT}/root/"
+fi
+
+# Add ZFSBootMenu population script
+if [ -x ./helpers/zbm-populate.sh ]; then
+  mkdir -p "${CHROOT_MNT}/root"
+  cp ./helpers/zbm-populate.sh "${CHROOT_MNT}/root/"
+fi
