@@ -43,7 +43,7 @@ if mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
 
     # regardless of shell, set PS1
     if ! env "PS1=$( colorize orange "${selected}") > " chroot "${mountpoint}" "${_SHELL}" ; then
-      zerror "unable to execute ${selected}:${_SHELL}"
+      zdebug "chroot ${selected}:${_SHELL} returned code $?"
     fi
   fi
 
