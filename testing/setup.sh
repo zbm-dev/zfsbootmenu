@@ -147,5 +147,6 @@ if ((IMAGE)); then
   sudo env \
     ENCRYPT="${ENCRYPT}" \
     LEGACY_POOL="${LEGACY_POOL}" \
+    PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" \
     "${IMAGE_SCRIPT}" "${TESTDIR}" "${SIZE}" "${DISTRO}"
 fi

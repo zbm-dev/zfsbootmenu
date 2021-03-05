@@ -18,7 +18,7 @@ export DEBIAN_FRONTEND=noninteractive
 export DEBCONF_NONINTERACTIVE_SEEN=true
 
 apt-get install --yes locales
-dpkg-reconfigure -a -f noninteractive
+dpkg-reconfigure -f noninteractive
 
 # Make sure the kernel is installed and configured before ZFS
 apt-get install --yes linux-headers-generic linux-image-generic console-setup
