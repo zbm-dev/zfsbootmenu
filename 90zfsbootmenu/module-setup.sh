@@ -215,9 +215,6 @@ install() {
     endian="le"
   fi
 
-  # shellcheck disable=SC2154
-  echo -n "${endian}" > "${initdir}/etc/byte-order"
-
   # Try to synchronize hostid between host and ZFSBootMenu
   #
   # DEPRECATION NOTICE: on musl systems, zfs < 2.0 produced a bad hostid in
@@ -254,4 +251,29 @@ install() {
   if [ -e "${initdir}/etc/hostid" ] && type mark_hostonly >/dev/null 2>&1; then
     mark_hostonly /etc/hostid
   fi
+
+  # Check if dmesg supports --noescape
+  if dmesg --noescape -V >/dev/null 2>&1 ; then
+    has_escape=1
+  else
+    has_escape=
+  fi
+
+  # Check if fzf supports the refresh-preview flag
+  # Added in fzf 0.22.0
+  if command -v fzf >/dev/null 2>&1 && \
+    echo "abc" | fzf -f "abc" --bind "alt-l:refresh-preview" --exit-0 >/dev/null 2>&1 
+  then
+    has_refresh=1
+  else
+    has_refresh=
+  fi
+
+  # Collect all of our build-time feature flags
+  # shellcheck disable=SC2154
+  cat << EOF > "${initdir}/etc/zfsbootmenu.conf"
+export BYTE_ORDER=${endian}
+export HAS_NOESCAPE=${has_escape}
+export HAS_REFRESH=${has_refresh}
+EOF
 }

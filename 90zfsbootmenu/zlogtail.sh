@@ -7,7 +7,6 @@ trap 'rm -f ${PID_FILE}' EXIT
 #shellcheck disable=SC2154
 LOG_LEVEL="0,1,2,3,4,5,6,7"
 FACILITY="kern,user,daemon"
-FOLLOW=""
 ALLOW_EXIT=1
 while getopts "cfnl:F:" opt; do
   case "${opt}" in
@@ -32,20 +31,20 @@ while getopts "cfnl:F:" opt; do
   esac
 done
 
-fuzzy_default_options+=("--no-sort")
-fuzzy_default_options+=("--ansi")
-fuzzy_default_options+=("--tac")
+[ -n "${HAS_NOESCAPE}" ] && NOESCAPE="--noescape"
 
-fuzzy_default_options+=("--bind")
-fuzzy_default_options+=('"ctrl-q:ignore,ctrl-c:ignore,ctrl-g:ignore,enter:ignore"')
+fuzzy_default_options+=(
+ "--no-sort"
+ "--ansi"
+ "--tac"
+ "--bind" '"ctrl-q:ignore,ctrl-c:ignore,ctrl-g:ignore,enter:ignore"'
+)
 
 if ((ALLOW_EXIT)) ; then
-  fuzzy_default_options+=("--bind")
   # shellcheck disable=SC2016
-  fuzzy_default_options+=('"esc:execute-silent[ kill $( cat ${PID_FILE} ) ]+abort"')
+  fuzzy_default_options+=("--bind" '"esc:execute-silent[ kill $( cat ${PID_FILE} ) ]+abort"')
 else
-  fuzzy_default_options+=("--bind")
-  fuzzy_default_options+=('"esc:ignore"')
+  fuzzy_default_options+=("--bind" '"esc:ignore"')
 fi
 
 if command -v fzf >/dev/null 2>&1; then
@@ -56,7 +55,7 @@ elif command -v sk >/dev/null 2>&1; then
   export SKIM_DEFAULT_OPTIONS="${fuzzy_default_options[*]}"
 fi
 
- # shellcheck disable=SC2086
-( dmesg -T --time-format reltime --noescape -f ${FACILITY} -l ${LOG_LEVEL} ${FOLLOW} & echo $! >&3 ) \
+# shellcheck disable=SC2086
+( dmesg -T --time-format reltime ${NOESCAPE} -f ${FACILITY} -l ${LOG_LEVEL} ${FOLLOW} & echo $! >&3 ) \
   3>"${PID_FILE}" \
   | ${FUZZYSEL}
