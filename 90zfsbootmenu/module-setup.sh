@@ -94,7 +94,11 @@ install() {
   done
 
   # sk can be used as a substitute for fzf
-  if ! dracut_install fzf && ! dracut_install sk; then
+  if dracut_install fzf; then
+    FUZZY_FIND="fzf"
+  elif dracut_install sk; then
+    FUZZY_FIND="sk"
+  else
     dfatal "failed to install fzf or sk"
     exit 1
   fi
@@ -259,10 +263,10 @@ install() {
     has_escape=
   fi
 
-  # Check if fzf supports the refresh-preview flag
+  # Check if fuzzy finder supports the refresh-preview flag
   # Added in fzf 0.22.0
-  if command -v fzf >/dev/null 2>&1 && \
-    echo "abc" | fzf -f "abc" --bind "alt-l:refresh-preview" --exit-0 >/dev/null 2>&1 
+  if command -v "${FUZZY_FIND}" >/dev/null 2>&1 && \
+    echo "abc" | "${FUZZY_FIND}" -f "abc" --bind "alt-l:refresh-preview" --exit-0 >/dev/null 2>&1
   then
     has_refresh=1
   else
