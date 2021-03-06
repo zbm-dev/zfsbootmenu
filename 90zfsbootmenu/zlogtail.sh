@@ -49,7 +49,7 @@ fi
 
 if command -v fzf >/dev/null 2>&1; then
   FUZZYSEL=fzf
-  export FZF_DEFAULT_OPTS="--no-mouse --no-info ${fuzzy_default_options[*]}"
+  export FZF_DEFAULT_OPTS="--no-mouse --inline-info ${fuzzy_default_options[*]}"
 elif command -v sk >/dev/null 2>&1; then
   FUZZYSEL=sk
   export SKIM_DEFAULT_OPTIONS="${fuzzy_default_options[*]}"

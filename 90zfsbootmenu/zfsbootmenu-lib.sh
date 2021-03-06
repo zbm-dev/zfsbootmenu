@@ -636,7 +636,7 @@ draw_pool_status() {
   if ! selected="$( zpool list -H -o name |
       HELP_SECTION=POOL ${FUZZYSEL} \
       --prompt "Pool > " --tac --expect=alt-r,ctrl-r,ctrl-alt-r \
-      --preview-window="right:${psize}:sharp" \
+      --preview-window="right:${psize}" \
       --preview="zpool status -v {}" --header="${header}" )"; then
     return 1
   fi

@@ -39,7 +39,7 @@ help_pager() {
     --with-nth=2.. \
     --bind pgup:preview-up,pgdn:preview-down \
     --preview="$0 -s {1}" \
-    --preview-window="right:${PREVIEW_SIZE}:sharp:wrap" \
+    --preview-window="right:${PREVIEW_SIZE}:wrap" \
     --header="$( colorize green "[ESC]" ) $( colorize lightblue "back" )" \
     --tac \
     --color='border:6'
