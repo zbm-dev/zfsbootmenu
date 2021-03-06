@@ -94,7 +94,11 @@ install() {
   done
 
   # sk can be used as a substitute for fzf
-  if ! dracut_install fzf && ! dracut_install sk; then
+  if dracut_install fzf; then
+    FUZZY_FIND="fzf"
+  elif dracut_install sk; then
+    FUZZY_FIND="sk"
+  else
     dfatal "failed to install fzf or sk"
     exit 1
   fi
@@ -215,9 +219,6 @@ install() {
     endian="le"
   fi
 
-  # shellcheck disable=SC2154
-  echo -n "${endian}" > "${initdir}/etc/byte-order"
-
   # Try to synchronize hostid between host and ZFSBootMenu
   #
   # DEPRECATION NOTICE: on musl systems, zfs < 2.0 produced a bad hostid in
@@ -254,4 +255,29 @@ install() {
   if [ -e "${initdir}/etc/hostid" ] && type mark_hostonly >/dev/null 2>&1; then
     mark_hostonly /etc/hostid
   fi
+
+  # Check if dmesg supports --noescape
+  if dmesg --noescape -V >/dev/null 2>&1 ; then
+    has_escape=1
+  else
+    has_escape=
+  fi
+
+  # Check if fuzzy finder supports the refresh-preview flag
+  # Added in fzf 0.22.0
+  if command -v "${FUZZY_FIND}" >/dev/null 2>&1 && \
+    echo "abc" | "${FUZZY_FIND}" -f "abc" --bind "alt-l:refresh-preview" --exit-0 >/dev/null 2>&1
+  then
+    has_refresh=1
+  else
+    has_refresh=
+  fi
+
+  # Collect all of our build-time feature flags
+  # shellcheck disable=SC2154
+  cat << EOF > "${initdir}/etc/zfsbootmenu.conf"
+export BYTE_ORDER=${endian}
+export HAS_NOESCAPE=${has_escape}
+export HAS_REFRESH=${has_refresh}
+EOF
 }

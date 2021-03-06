@@ -4,13 +4,13 @@
 # shellcheck disable=SC1091
 . /lib/dracut-lib.sh
 
-if [ -r "/etc/byte-order" ]; then
-  read -r endian < "/etc/byte-order"
-fi
+# Source options detected at build time
+# shellcheck disable=SC1091
+[ -r /etc/zfsbootmenu.conf ] && source /etc/zfsbootmenu.conf
 
-if [ -z "${endian}" ]; then
+if [ -z "${BYTE_ORDER}" ]; then
   warn "unable to determine platform endianness; assuming little-endian"
-  endian="le"
+  BYTE_ORDER="le"
 fi
 
 # Let the command line override our host id.
@@ -46,7 +46,7 @@ import_policy=$( getarg zbm.import_policy )
 if [ -n "${import_policy}" ]; then
   case "${import_policy}" in
     hostid)
-      if [ "${endian}" = "be" ]; then
+      if [ "${BYTE_ORDER}" = "be" ]; then
         info "ZFSBootMenu: invalid option for big endian systems"
         info "ZFSBootMenu: setting import_policy to strict"
         import_policy="strict"
@@ -133,7 +133,7 @@ if getargbool 0 zbm.tmux ; then
 fi
 
 # shellcheck disable=SC2034
-if [ "${endian}" = "be" ]; then
+if [ "${BYTE_ORDER}" = "be" ]; then
   zbm_set_hostid=0
   info "ZFSBootMenu: big endian detected, disabling automatic replacement of spl_hostid"
 elif getargbool 0 zbm.set_hostid ; then

@@ -24,8 +24,10 @@ zlog() {
   WIDTH="$( tput cols )"
 
   # Only add script/function tracing to debug messages
-  if [ "${1}" -eq 7 ]; then
+  if [ "${1}" -eq 7 ] && [ -n "${HAS_NOESCAPE}" ] ; then
     echo -e "<${1}>ZBM:\033[0;33m${_script}[$$]\033[0;31m:${_func}()\033[0m: ${2}" | fold -s -w "${WIDTH}" > /dev/kmsg
+  elif [ "${1}" -eq 7 ]; then
+    echo -e "<${1}>ZBM:${_script}[$$]:${_func}(): ${2}" | fold -s -w "${WIDTH}" > /dev/kmsg
   else
     echo -e "<${1}>ZFSBootMenu: ${2}" | fold -s -w "${WIDTH}" > /dev/kmsg
   fi
@@ -634,7 +636,7 @@ draw_pool_status() {
   if ! selected="$( zpool list -H -o name |
       HELP_SECTION=POOL ${FUZZYSEL} \
       --prompt "Pool > " --tac --expect=alt-r,ctrl-r,ctrl-alt-r \
-      --preview-window="right:${psize}:sharp" \
+      --preview-window="right:${psize}" \
       --preview="zpool status -v {}" --header="${header}" )"; then
     return 1
   fi
