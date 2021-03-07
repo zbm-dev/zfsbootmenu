@@ -56,31 +56,26 @@ export CHROOT_MNT
 trap cleanup EXIT INT TERM
 
 ZBMIMG="${TESTDIR}/${zpool_name}-pool.img"
-qemu-img create "${ZBMIMG}" "${SIZE}"
-chown "$( stat -c %U . ):$( stat -c %G . )" "${ZBMIMG}"
 
-if ! LOOP_DEV="$( losetup -f --show "${ZBMIMG}" )"; then
-  echo "ERORR: unable to attach loopback device"
+if [ -z "${EXISTING_POOL}" ]; then
+  qemu-img create "${ZBMIMG}" "${SIZE}"
+  chown "$( stat -c %U . ):$( stat -c %G . )" "${ZBMIMG}"
+elif [ ! -e "${ZBMIMG}" ]; then
+  echo "ERROR: cannot use non-existent image ${ZBMIMG} as existing pool"
   exit 1
-else
-  export LOOP_DEV
 fi
 
-kpartx -u "${LOOP_DEV}"
-
-echo 'label: gpt' | sfdisk "${LOOP_DEV}"
-
-ENCRYPT_OPTS=()
 if [ -n "${ENCRYPT}" ]; then
-  ENCRYPT_OPTS=( "-O" "encryption=aes-256-gcm" "-O" "keyformat=passphrase" )
+  if [ -z "${EXISTING_POOL}" ]; then
+    # Must make a key file if a new encrypted pool is created
+    echo "zfsbootmenu" > "${TESTDIR}/${zpool_name}.key"
+    if [ ! -r "${TESTDIR}/${zpool_name}.key" ]; then
+      echo "ERROR: unable to read encryption keyfile"
+      exit 1
+    fi
 
-  echo "zfsbootmenu" > "${TESTDIR}/${zpool_name}.key"
-  if [ ! -r "${TESTDIR}/${zpool_name}.key" ]; then
-    echo "ERROR: unable to read encryption keyfile"
-    exit 1
+    chown "$( stat -c %U . ):$( stat -c %G . )" "${TESTDIR}/${zpool_name}.key"
   fi
-
-  chown "$( stat -c %U . ):$( stat -c %G . )" "${TESTDIR}/${zpool_name}.key"
 
   if ! ENCRYPT_KEYFILE="$( realpath -e "${TESTDIR}/${zpool_name}.key" )"; then
     echo "ERROR: unable to find real path to encryption keyfile"
@@ -88,64 +83,96 @@ if [ -n "${ENCRYPT}" ]; then
   fi
 
   export ENCRYPT_KEYFILE
-  ENCRYPT_OPTS+=( "-O" "keylocation=file://${ENCRYPT_KEYFILE}" )
 fi
 
-LEGACY_OPTS=()
-if [ -n "${LEGACY_POOL}" ]; then
-  legacy_features=( zstd_compress bookmark_written livelist log_spacemap )
-  legacy_features+=( redacted_datasets redaction_bookmarks device_rebuild )
-  for feature in "${legacy_features[@]}"; do
-    LEGACY_OPTS+=( "-o" "feature@${feature}=disabled" )
-  done
-fi
-
-if zpool create -f -m none \
-      -O compression=lz4 \
-      -O acltype=posixacl \
-      -O xattr=sa \
-      -O relatime=on \
-      -o autotrim=on \
-      -o cachefile=none \
-      "${LEGACY_OPTS[@]}" \
-      "${ENCRYPT_OPTS[@]}" \
-      "${zpool_name}" "${LOOP_DEV}"; then
-  export ZBM_POOL="${zpool_name}"
+if ! LOOP_DEV="$( losetup -f --show "${ZBMIMG}" )"; then
+  echo "ERROR: unable to attach loopback device"
+  exit 1
 else
-  echo "ERROR: unable to create pool ${zpool_name}"
+  export LOOP_DEV
+fi
+
+if [ -z "${EXISTING_POOL}" ]; then
+  kpartx -u "${LOOP_DEV}"
+
+  echo 'label: gpt' | sfdisk "${LOOP_DEV}"
+
+  ENCRYPT_OPTS=()
+  if [ -r "${ENCRYPT_KEYFILE}" ]; then
+    ENCRYPT_OPTS=( "-O" "encryption=aes-256-gcm" "-O" "keyformat=passphrase" )
+    ENCRYPT_OPTS+=( "-O" "keylocation=file://${ENCRYPT_KEYFILE}" )
+  fi
+
+  LEGACY_OPTS=()
+  if [ -n "${LEGACY_POOL}" ]; then
+    legacy_features=( zstd_compress bookmark_written livelist log_spacemap )
+    legacy_features+=( redacted_datasets redaction_bookmarks device_rebuild )
+    for feature in "${legacy_features[@]}"; do
+      LEGACY_OPTS+=( "-o" "feature@${feature}=disabled" )
+    done
+  fi
+
+  if zpool create -f -m none \
+        -O compression=lz4 \
+        -O acltype=posixacl \
+        -O xattr=sa \
+        -O relatime=on \
+        -o autotrim=on \
+        -o cachefile=none \
+        "${LEGACY_OPTS[@]}" \
+        "${ENCRYPT_OPTS[@]}" \
+        "${zpool_name}" "${LOOP_DEV}"; then
+    export ZBM_POOL="${zpool_name}"
+  else
+    echo "ERROR: unable to create pool ${zpool_name}"
+    exit 1
+  fi
+
+  if [ -r "${ENCRYPT_KEYFILE}" ]; then
+    zfs set "keylocation=file:///etc/zfs/${ZBM_POOL}.key" "${ZBM_POOL}"
+  fi
+
+  zfs snapshot -r "${ZBM_POOL}@barepool"
+  zfs create -o mountpoint=none "${ZBM_POOL}/ROOT"
+
+  zpool export "${ZBM_POOL}"
+  export ZBM_POOL=""
+fi
+
+if ! zpool import -o cachefile=none -R "${CHROOT_MNT}" "${zpool_name}"; then
+  echo "ERROR: unable to import ZFS pool ${zpool_name}"
+  exit 1
+else
+  export ZBM_POOL="${zpool_name}"
+fi
+
+ZBM_ROOT="${ZBM_POOL}/ROOT/${DISTRO}"
+if zfs list -o name -H "${ZBM_ROOT}" >/dev/null 2>&1; then
+  echo "ERROR: ZFS filesystem ${ZBM_ROOT} already exists"
   exit 1
 fi
 
-if [ -n "${ENCRYPT}" ]; then
-  zfs set "keylocation=file:///etc/zfs/${ZBM_POOL}.key" "${ZBM_POOL}"
-fi
+zfs create -o mountpoint=/ -o canmount=noauto "${ZBM_ROOT}"
+zfs snapshot -r "${ZBM_ROOT}@barebe"
 
-zfs snapshot -r "${ZBM_POOL}@barepool"
-
-zfs create -o mountpoint=none "${ZBM_POOL}/ROOT"
-zfs create -o mountpoint=/ -o canmount=noauto "${ZBM_POOL}/ROOT/${DISTRO}"
-
-zfs snapshot -r "${ZBM_POOL}@barebe"
-
-zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) rw loglevel=4 console=tty1 console=ttyS0" "${ZBM_POOL}/ROOT"
-zpool set bootfs="${ZBM_POOL}/ROOT/${DISTRO}" "${ZBM_POOL}"
-
-zpool export "${ZBM_POOL}"
-
-zpool import -o cachefile=none -R "${CHROOT_MNT}" "${ZBM_POOL}" || exit 1
+zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) rw loglevel=4 console=tty1 console=ttyS0" "${ZBM_ROOT}"
+zpool set bootfs="${ZBM_ROOT}" "${ZBM_POOL}"
 
 if [ -r "${ENCRYPT_KEYFILE}" ]; then
   zfs load-key -L "file://${ENCRYPT_KEYFILE}" "${ZBM_POOL}"
 fi
 
-zfs mount "${ZBM_POOL}/ROOT/${DISTRO}" || exit 1
+if ! zfs mount "${ZBM_ROOT}"; then
+  echo "ERROR: unable to mount ${ZBM_ROOT}"
+  exit 1
+fi
 
 if ! "${INSTALL_SCRIPT}"; then
   echo "ERROR: install script '${INSTALL_SCRIPT}' failed"
   exit 1
 fi
 
-zfs snapshot -r "${ZBM_POOL}@pre-chroot"
+zfs snapshot -r "${ZBM_ROOT}@pre-chroot"
 
 # Make sure the chroot script exists
 mkdir -p "${CHROOT_MNT}/root"
@@ -168,10 +195,10 @@ if ! chroot "${CHROOT_MNT}" "/root/${CHROOT_SCRIPT##*/}"; then
   exit 1
 fi
 
-zfs snapshot -r "${ZBM_POOL}@full-setup"
+zfs snapshot -r "${ZBM_ROOT}@full-setup"
 
 touch "${CHROOT_MNT}/root/IN_THE_MATRIX"
-zfs snapshot -r "${ZBM_POOL}@minor-changes"
+zfs snapshot -r "${ZBM_ROOT}@minor-changes"
 
 rm "${CHROOT_MNT}/root/IN_THE_MATRIX"
 rm "${CHROOT_MNT}/root/${CHROOT_SCRIPT##*/}"
