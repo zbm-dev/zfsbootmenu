@@ -8,7 +8,7 @@ CONFD=0
 DRACUT=0
 SIZE="5G"
 DISTRO="void"
-POOL_NAME="ztest"
+POOL_PREFIX="ztest"
 
 # Dictionary for random pool names, provided by words-en
 dictfile="/usr/share/dict/words"
@@ -33,10 +33,14 @@ Usage: $0 [options]
 EOF
 }
 
-randomName() {
+random_dict_value() {
   sed -n "$(shuf -i 1-"$( wc -l "${1}" | cut -d ' ' -f 1)" -n 1)"p "${1}" \
     | sed s/\'s// \
     | tr '[:upper:]' '[:lower:]'
+}
+
+random_name() {
+  echo "$( random_dict_value "${dictfile}" )$( random_dict_value "${dictfile}" | sed -e 's/\b./\u\0/' )"
 }
 
 if [ $# -eq 0 ]; then
@@ -84,7 +88,7 @@ while getopts "heycgdaiD:s:o:lp:r" opt; do
       LEGACY_POOL=1
       ;;
     p)
-      POOL_NAME="${OPTARG}"
+      POOL_PREFIX="${OPTARG}"
       ;;
     r)
       if [ -r "${dictfile}" ]; then
@@ -156,18 +160,27 @@ if ((YAML)) ; then
   yq-go eval -P -C "${yamlconf}"
 fi
 
+# seed our initial pool name attempt
 if ((RANDOM_NAME)); then
-  POOL_NAME="$( randomName "${dictfile}" )$( randomName "${dictfile}" | sed -e 's/\b./\u\0/' )"
+  POOL_NAME="$( random_name )"
 else
+  POOL_NAME="${POOL_PREFIX}"
   idx=0
-  while true; do
-    idx=$(( idx + 1 ))
-    if [ ! -r "${TESTDIR}/${POOL_NAME}-pool.img" ]; then
-      break
-    fi
-    POOL_NAME="$( printf "ztest-%02d" "${idx}" )"
-  done
 fi
+
+while true; do
+  if [ ! -r "${TESTDIR}/${POOL_NAME}-pool.img" ]; then
+    break
+  fi
+
+  # Generate a new random name / bump the index
+  if ((RANDOM_NAME)); then
+    POOL_NAME="$( random_name )"
+  else
+    idx=$(( idx + 1 ))
+    POOL_NAME="$( printf "${POOL_PREFIX}-%02d" "${idx}" )"
+  fi
+done
 
 echo "Generated pool name: ${POOL_NAME}"
 

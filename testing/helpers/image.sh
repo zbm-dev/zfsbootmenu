@@ -27,7 +27,7 @@ cleanup() {
 TESTDIR="${1?Usage: $0 <testdir> <size> <distro> <pool name>}"
 SIZE="${2?Usage: $0 <testdir> <size> <distro> <pool name>}"
 DISTRO="${3?Usage: $0 <testdir> <size> <distro> <pool name>}"
-ZBM_POOL="${3?Usage: $0 <testdir> <size> <distro> <pool name>}"
+zpool_name="${4?Usage: $0 <testdir> <size> <distro> <pool name>}"
 
 if [ -z "${TESTDIR}" ] || [ ! -d "${TESTDIR}" ]; then
   echo "ERROR: test directory must be specified and must exist"
@@ -46,7 +46,7 @@ if [ ! -x "${CHROOT_SCRIPT}" ]; then
   exit 1
 fi
 
-export ZBM_POOL
+export ZBM_POOL=""
 export LOOP_DEV=""
 
 CHROOT_MNT="$( mktemp -d )" || exit 1
@@ -55,7 +55,7 @@ export CHROOT_MNT
 # Perform all necessary cleanup for this script
 trap cleanup EXIT INT TERM
 
-ZBMIMG="${TESTDIR}/${ZBM_POOL}-pool.img"
+ZBMIMG="${TESTDIR}/${zpool_name}-pool.img"
 qemu-img create "${ZBMIMG}" "${SIZE}"
 chown "$( stat -c %U . ):$( stat -c %G . )" "${ZBMIMG}"
 
@@ -74,15 +74,15 @@ ENCRYPT_OPTS=()
 if [ -n "${ENCRYPT}" ]; then
   ENCRYPT_OPTS=( "-O" "encryption=aes-256-gcm" "-O" "keyformat=passphrase" )
 
-  echo "zfsbootmenu" > "${TESTDIR}/${ZBM_POOL}.key"
-  if [ ! -r "${TESTDIR}/${ZBM_POOL}.key" ]; then
+  echo "zfsbootmenu" > "${TESTDIR}/${zpool_name}.key"
+  if [ ! -r "${TESTDIR}/${zpool_name}.key" ]; then
     echo "ERROR: unable to read encryption keyfile"
     exit 1
   fi
 
-  chown "$( stat -c %U . ):$( stat -c %G . )" "${TESTDIR}/${ZBM_POOL}.key"
+  chown "$( stat -c %U . ):$( stat -c %G . )" "${TESTDIR}/${zpool_name}.key"
 
-  if ! ENCRYPT_KEYFILE="$( realpath -e "${TESTDIR}/${ZBM_POOL}.key" )"; then
+  if ! ENCRYPT_KEYFILE="$( realpath -e "${TESTDIR}/${zpool_name}.key" )"; then
     echo "ERROR: unable to find real path to encryption keyfile"
     exit 1
   fi
@@ -109,10 +109,10 @@ if zpool create -f -m none \
       -o cachefile=none \
       "${LEGACY_OPTS[@]}" \
       "${ENCRYPT_OPTS[@]}" \
-      "${ZBM_POOL}" "${LOOP_DEV}"; then
-  export ZBM_POOL="${ZBM_POOL}"
+      "${zpool_name}" "${LOOP_DEV}"; then
+  export ZBM_POOL="${zpool_name}"
 else
-  echo "ERROR: unable to create pool ${ZBM_POOL}"
+  echo "ERROR: unable to create pool ${zpool_name}"
   exit 1
 fi
 
