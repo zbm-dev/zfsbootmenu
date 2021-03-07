@@ -31,6 +31,7 @@ if mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
   if [ -x "${mountpoint}/bin/bash" ] \
     && chroot "${mountpoint}" /bin/bash -c "exit 0" >/dev/null 2>&1 ; then
     _SHELL="/bin/bash"
+    chroot_extra="--norc"
   elif [ -x "${mountpoint}/bin/sh" ] \
     && chroot "${mountpoint}" /bin/sh -c "exit 0" >/dev/null 2>&1 ; then
     _SHELL="/bin/sh"
@@ -42,7 +43,7 @@ if mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
     echo -e "$( colorize orange "${selected}") is mounted ${writemode}, /tmp is shared and read/write\n"
 
     # regardless of shell, set PS1
-    if ! env "PS1=$( colorize orange "${selected}") > " chroot "${mountpoint}" "${_SHELL}" ; then
+    if ! env "PS1=$( colorize orange "${selected}") > " chroot "${mountpoint}" "${_SHELL}" "${chroot_extra}" ; then
       zdebug "chroot ${selected}:${_SHELL} returned code $?"
     fi
   fi
