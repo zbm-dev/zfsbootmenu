@@ -72,6 +72,10 @@ while true; do
 
     # Retry the cycle with a matched hostid
     continue
+  elif [ -n "${try_pool}" ]; then
+    # Failure to import a specific pool is not an emergency;
+    # subsequent import passes try all other possible pools
+    continue
   fi
 
   # Allow the user to attempt recovery
