@@ -6,8 +6,12 @@ GENZBM=0
 IMAGE=0
 CONFD=0
 DRACUT=0
-SIZE="2G"
+SIZE="5G"
 DISTRO="void"
+POOL_PREFIX="ztest"
+
+# Dictionary for random pool names, provided by words-en
+dictfile="/usr/share/dict/words"
 
 usage() {
   cat <<EOF
@@ -22,9 +26,21 @@ Usage: $0 [options]
   -s  Specify size of VM image
   -e  Enable native ZFS encryption
   -l  Disable features for legacy (zfs<2.0.0) support
+  -p  Specify a pool name
+  -r  Use a randomized pool name
   -o  Specify another distribution
       [ void, void-musl, arch, debian, ubuntu ]
 EOF
+}
+
+random_dict_value() {
+  sed -n "$(shuf -i 1-"$( wc -l "${dictfile}" | cut -d ' ' -f 1)" -n 1)"p "${dictfile}" \
+    | sed s/\'s// \
+    | tr '[:upper:]' '[:lower:]'
+}
+
+random_name() {
+  echo "$( random_dict_value )$( random_dict_value | sed -e 's/\b./\u\0/' )"
 }
 
 if [ $# -eq 0 ]; then
@@ -32,7 +48,7 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "heycgdaiD:s:o:l" opt; do
+while getopts "heycgdaiD:s:o:lp:r" opt; do
   case "${opt}" in
     e)
       ENCRYPT=1
@@ -70,6 +86,14 @@ while getopts "heycgdaiD:s:o:l" opt; do
       ;;
     l)
       LEGACY_POOL=1
+      ;;
+    p)
+      POOL_PREFIX="${OPTARG}"
+      ;;
+    r)
+      if [ -r "${dictfile}" ]; then
+        RANDOM_NAME=1
+      fi
       ;;
     *)
       usage
@@ -122,7 +146,6 @@ if ((GENZBM)) ; then
   ln -s "$(realpath -e ../bin/generate-zbm)" "${TESTDIR}/generate-zbm"
 fi
 
-
 # Setup a local config file
 if ((YAML)) ; then
   echo "Configuring local.yaml"
@@ -137,6 +160,34 @@ if ((YAML)) ; then
   yq-go eval -P -C "${yamlconf}"
 fi
 
+# seed our initial pool name attempt
+if ((RANDOM_NAME)); then
+  POOL_NAME="$( random_name )"
+else
+  POOL_NAME="${POOL_PREFIX}"
+  idx=0
+fi
+
+while true; do
+  # Check that a file doesn't exist with this name, or that
+  # a currently-imported pool doesn't have this name
+  if [ ! -r "${TESTDIR}/${POOL_NAME}-pool.img" ] \
+    && ! zpool list -o name -H "${POOL_NAME}" >/dev/null 2>&1
+  then
+    break
+  fi
+
+  # Generate a new random name / bump the index
+  if ((RANDOM_NAME)); then
+    POOL_NAME="$( random_name )"
+  else
+    idx=$(( idx + 1 ))
+    POOL_NAME="$( printf "${POOL_PREFIX}-%02d" "${idx}" )"
+  fi
+done
+
+echo "Generated pool name: ${POOL_NAME}"
+
 # Create an image
 if ((IMAGE)); then
   IMAGE_SCRIPT="./helpers/image-${DISTRO}.sh"
@@ -148,5 +199,5 @@ if ((IMAGE)); then
     ENCRYPT="${ENCRYPT}" \
     LEGACY_POOL="${LEGACY_POOL}" \
     PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" \
-    "${IMAGE_SCRIPT}" "${TESTDIR}" "${SIZE}" "${DISTRO}"
+    "${IMAGE_SCRIPT}" "${TESTDIR}" "${SIZE}" "${DISTRO}" "${POOL_NAME}"
 fi
