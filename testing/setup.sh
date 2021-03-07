@@ -169,7 +169,11 @@ else
 fi
 
 while true; do
-  if [ ! -r "${TESTDIR}/${POOL_NAME}-pool.img" ]; then
+  # Check that a file doesn't exist with this name, or that
+  # a currently-imported pool doesn't have this name
+  if [ ! -r "${TESTDIR}/${POOL_NAME}-pool.img" ] \
+    && ! zpool list -o name -H "${POOL_NAME}" >/dev/null 2>&1
+  then
     break
   fi
 
