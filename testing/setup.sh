@@ -28,6 +28,8 @@ Usage: $0 [options]
   -l  Disable features for legacy (zfs<2.0.0) support
   -p  Specify a pool name
   -r  Use a randomized pool name
+  -x  Use an existing pool image
+  -k  Populate host SSH host and authorized keys
   -o  Specify another distribution
       [ void, void-musl, arch, debian, ubuntu ]
 EOF
@@ -48,7 +50,7 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "heycgdaiD:s:o:lp:r" opt; do
+while getopts "heycgdaiD:s:o:lp:rxk" opt; do
   case "${opt}" in
     e)
       ENCRYPT=1
@@ -94,6 +96,12 @@ while getopts "heycgdaiD:s:o:lp:r" opt; do
       if [ -r "${dictfile}" ]; then
         RANDOM_NAME=1
       fi
+      ;;
+    x)
+      EXISTING_POOL=1
+      ;;
+    k)
+      INCLUDE_KEYS=1
       ;;
     *)
       usage
@@ -168,7 +176,7 @@ else
   idx=0
 fi
 
-while true; do
+while [ -z "${EXISTING_POOL}" ]; do
   # Check that a file doesn't exist with this name, or that
   # a currently-imported pool doesn't have this name
   if [ ! -r "${TESTDIR}/${POOL_NAME}-pool.img" ] \
@@ -188,6 +196,18 @@ done
 
 echo "Generated pool name: ${POOL_NAME}"
 
+if ((INCLUDE_KEYS)); then
+  # ssh-keygen expects to dump into ${PREFIX}/etc/ssh
+  mkdir -p ./keys/etc/ssh
+  # Generate any missing keys
+  ssh-keygen -A -f ./keys
+
+  # Copy authorized keys for convenience
+  if [ -r "${HOME}/.ssh/authorized_keys" ] && [ ! -r ./keys/authorized_keys ]; then
+    cp "${HOME}/.ssh/authorized_keys" ./keys/
+  fi
+fi
+
 # Create an image
 if ((IMAGE)); then
   IMAGE_SCRIPT="./helpers/image-${DISTRO}.sh"
@@ -195,9 +215,10 @@ if ((IMAGE)); then
     IMAGE_SCRIPT="./helpers/image.sh"
   fi
 
-  sudo env \
+  sudo unshare --fork --pid --mount env \
     ENCRYPT="${ENCRYPT}" \
     LEGACY_POOL="${LEGACY_POOL}" \
+    EXISTING_POOL="${EXISTING_POOL}" \
     PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" \
     "${IMAGE_SCRIPT}" "${TESTDIR}" "${SIZE}" "${DISTRO}" "${POOL_NAME}"
 fi

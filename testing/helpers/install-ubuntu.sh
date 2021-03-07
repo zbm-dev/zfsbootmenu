@@ -11,7 +11,7 @@ if [ -r "${ENCRYPT_KEYFILE}" ]; then
   cp "${ENCRYPT_KEYFILE}" "${CHROOT_MNT}/etc/zfs/"
 fi
 
-debootstrap focal "${CHROOT_MNT}" http://us.archive.ubuntu.com/ubuntu/
+./helpers/debootstrap.sh focal "${CHROOT_MNT}" http://us.archive.ubuntu.com/ubuntu/
 
 cp /etc/hostid "${CHROOT_MNT}/etc/"
 cp /etc/resolv.conf "${CHROOT_MNT}/etc/"
