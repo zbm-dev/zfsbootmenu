@@ -34,13 +34,13 @@ EOF
 }
 
 random_dict_value() {
-  sed -n "$(shuf -i 1-"$( wc -l "${1}" | cut -d ' ' -f 1)" -n 1)"p "${1}" \
+  sed -n "$(shuf -i 1-"$( wc -l "${dictfile}" | cut -d ' ' -f 1)" -n 1)"p "${dictfile}" \
     | sed s/\'s// \
     | tr '[:upper:]' '[:lower:]'
 }
 
 random_name() {
-  echo "$( random_dict_value "${dictfile}" )$( random_dict_value "${dictfile}" | sed -e 's/\b./\u\0/' )"
+  echo "$( random_dict_value )$( random_dict_value | sed -e 's/\b./\u\0/' )"
 }
 
 if [ $# -eq 0 ]; then
