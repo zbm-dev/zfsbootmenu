@@ -24,9 +24,10 @@ cleanup() {
   exit
 }
 
-TESTDIR="${1?Usage: $0 <testdir> <size> <distro>}"
-SIZE="${2?Usage: $0 <testdir> <size> <distro>}"
-DISTRO="${3?Usage: $0 <testdir> <size> <distro>}"
+TESTDIR="${1?Usage: $0 <testdir> <size> <distro> <pool name>}"
+SIZE="${2?Usage: $0 <testdir> <size> <distro> <pool name>}"
+DISTRO="${3?Usage: $0 <testdir> <size> <distro> <pool name>}"
+ZBM_POOL="${3?Usage: $0 <testdir> <size> <distro> <pool name>}"
 
 if [ -z "${TESTDIR}" ] || [ ! -d "${TESTDIR}" ]; then
   echo "ERROR: test directory must be specified and must exist"
@@ -45,7 +46,7 @@ if [ ! -x "${CHROOT_SCRIPT}" ]; then
   exit 1
 fi
 
-export ZBM_POOL=""
+export ZBM_POOL
 export LOOP_DEV=""
 
 CHROOT_MNT="$( mktemp -d )" || exit 1
@@ -54,7 +55,7 @@ export CHROOT_MNT
 # Perform all necessary cleanup for this script
 trap cleanup EXIT INT TERM
 
-ZBMIMG="${TESTDIR}/zfsbootmenu-pool.img"
+ZBMIMG="${TESTDIR}/${ZBM_POOL}-pool.img"
 qemu-img create "${ZBMIMG}" "${SIZE}"
 chown "$( stat -c %U . ):$( stat -c %G . )" "${ZBMIMG}"
 
@@ -73,15 +74,15 @@ ENCRYPT_OPTS=()
 if [ -n "${ENCRYPT}" ]; then
   ENCRYPT_OPTS=( "-O" "encryption=aes-256-gcm" "-O" "keyformat=passphrase" )
 
-  echo "zfsbootmenu" > "${TESTDIR}/ztest.key"
-  if [ ! -r "${TESTDIR}/ztest.key" ]; then
+  echo "zfsbootmenu" > "${TESTDIR}/${ZBM_POOL}.key"
+  if [ ! -r "${TESTDIR}/${ZBM_POOL}.key" ]; then
     echo "ERROR: unable to read encryption keyfile"
     exit 1
   fi
 
-  chown "$( stat -c %U . ):$( stat -c %G . )" "${TESTDIR}/ztest.key"
+  chown "$( stat -c %U . ):$( stat -c %G . )" "${TESTDIR}/${ZBM_POOL}.key"
 
-  if ! ENCRYPT_KEYFILE="$( realpath -e "${TESTDIR}/ztest.key" )"; then
+  if ! ENCRYPT_KEYFILE="$( realpath -e "${TESTDIR}/${ZBM_POOL}.key" )"; then
     echo "ERROR: unable to find real path to encryption keyfile"
     exit 1
   fi
@@ -99,16 +100,6 @@ if [ -n "${LEGACY_POOL}" ]; then
   done
 fi
 
-# Try 100 unique pool names
-zpool_name=ztest
-for ((idx = 1; idx < 100; idx++)); do
-  if zpool list -o name -H "${zpool_name}" >/dev/null 2>&1; then
-    zpool_name="$( printf "ztest-%02d" "${idx}" )"
-  else
-    break
-  fi
-done
-
 if zpool create -f -m none \
       -O compression=lz4 \
       -O acltype=posixacl \
@@ -118,15 +109,15 @@ if zpool create -f -m none \
       -o cachefile=none \
       "${LEGACY_OPTS[@]}" \
       "${ENCRYPT_OPTS[@]}" \
-      "${zpool_name}" "${LOOP_DEV}"; then
-  export ZBM_POOL="${zpool_name}"
+      "${ZBM_POOL}" "${LOOP_DEV}"; then
+  export ZBM_POOL="${ZBM_POOL}"
 else
-  echo "ERROR: unable to create pool ${zpool_name}"
+  echo "ERROR: unable to create pool ${ZBM_POOL}"
   exit 1
 fi
 
 if [ -n "${ENCRYPT}" ]; then
-  zfs set "keylocation=file:///etc/zfs/ztest.key" "${ZBM_POOL}"
+  zfs set "keylocation=file:///etc/zfs/${ZBM_POOL}.key" "${ZBM_POOL}"
 fi
 
 zfs snapshot -r "${ZBM_POOL}@barepool"

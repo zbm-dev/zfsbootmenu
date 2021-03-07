@@ -8,6 +8,14 @@ The testing environment setup and runtime depends on the following tools:
 * ZFS
 * kvm kernel module
 
+## Arch
+* m4
+* pacman
+* gpg
+
+## Ubuntu, Debian
+* debootstrap
+
 # Creating a ZFSBootMenu Test Pool for QEMU
 
 First, run `./setup.sh -a`; this will create, if necessary, a test directory
