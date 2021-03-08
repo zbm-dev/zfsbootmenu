@@ -215,7 +215,7 @@ if ((IMAGE)); then
     IMAGE_SCRIPT="./helpers/image.sh"
   fi
 
-  sudo env \
+  sudo unshare --fork --pid --mount env \
     ENCRYPT="${ENCRYPT}" \
     LEGACY_POOL="${LEGACY_POOL}" \
     EXISTING_POOL="${EXISTING_POOL}" \
