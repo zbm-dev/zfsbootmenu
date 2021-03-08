@@ -58,31 +58,26 @@ trap cleanup EXIT INT TERM
 ZBMIMG="${TESTDIR}/${zpool_name}-pool.img"
 
 if [ -z "${EXISTING_POOL}" ]; then
+  usergroup="$( stat -c %U . ):$( stat -c %G . )"
+
   qemu-img create "${ZBMIMG}" "${SIZE}"
-  chown "$( stat -c %U . ):$( stat -c %G . )" "${ZBMIMG}"
+  chown "${usergroup}" "${ZBMIMG}"
+
+  # When a new pool should be encrypted, it needs a key
+  if [ -n "${ENCRYPT}" ]; then
+    echo "zfsbootmenu" > "${TESTDIR}/${zpool_name}.key"
+    chown "${usergroup}" "${TESTDIR}/${zpool_name}.key"
+  fi
 elif [ ! -e "${ZBMIMG}" ]; then
   echo "ERROR: cannot use non-existent image ${ZBMIMG} as existing pool"
   exit 1
 fi
 
-if [ -n "${ENCRYPT}" ]; then
-  if [ -z "${EXISTING_POOL}" ]; then
-    # Must make a key file if a new encrypted pool is created
-    echo "zfsbootmenu" > "${TESTDIR}/${zpool_name}.key"
-    if [ ! -r "${TESTDIR}/${zpool_name}.key" ]; then
-      echo "ERROR: unable to read encryption keyfile"
-      exit 1
-    fi
-
-    chown "$( stat -c %U . ):$( stat -c %G . )" "${TESTDIR}/${zpool_name}.key"
-  fi
-
-  if ! ENCRYPT_KEYFILE="$( realpath -e "${TESTDIR}/${zpool_name}.key" )"; then
-    echo "ERROR: unable to find real path to encryption keyfile"
-    exit 1
-  fi
-
+if ENCRYPT_KEYFILE="$( realpath -e "${TESTDIR}/${zpool_name}.key" 2>/dev/null )"; then
   export ENCRYPT_KEYFILE
+elif [ -n "${ENCRYPT}" ]; then
+  echo "ERROR: unable to find real path to encryption key file"
+  exit 1
 fi
 
 if ! LOOP_DEV="$( losetup -f --show "${ZBMIMG}" )"; then
@@ -152,15 +147,23 @@ if zfs list -o name -H "${ZBM_ROOT}" >/dev/null 2>&1; then
   exit 1
 fi
 
+case "$( zfs get -H -o value encryptionroot "${ZBM_POOL}" 2>/dev/null )" in
+  "-"|"")
+    ;;
+  *)
+    if [ -r "${ENCRYPT_KEYFILE}" ]; then
+      zfs load-key -L "file://${ENCRYPT_KEYFILE}" "${ZBM_POOL}"
+    else
+      zfs load-key -L prompt "${ZBM_POOL}"
+      export ENCRYPT_KEYFILE=""
+    fi
+esac
+
 zfs create -o mountpoint=/ -o canmount=noauto "${ZBM_ROOT}"
 zfs snapshot -r "${ZBM_ROOT}@barebe"
 
 zfs set org.zfsbootmenu:commandline="spl_hostid=$( hostid ) rw loglevel=4 console=tty1 console=ttyS0" "${ZBM_ROOT}"
 zpool set bootfs="${ZBM_ROOT}" "${ZBM_POOL}"
-
-if [ -r "${ENCRYPT_KEYFILE}" ]; then
-  zfs load-key -L "file://${ENCRYPT_KEYFILE}" "${ZBM_POOL}"
-fi
 
 if ! zfs mount "${ZBM_ROOT}"; then
   echo "ERROR: unable to mount ${ZBM_ROOT}"
