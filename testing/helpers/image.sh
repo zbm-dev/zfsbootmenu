@@ -192,6 +192,19 @@ mount -t devpts pts "${CHROOT_MNT}/dev/pts"
 mkdir -p "${CHROOT_MNT}/etc/zfs"
 zpool set cachefile="${CHROOT_MNT}/etc/zfs/zpool.cache" "${ZBM_POOL}"
 
+# Pre-populate SSH keys, if available
+if [ -d "./keys/etc/ssh" ]; then
+  mkdir -p "${CHROOT_MNT}/etc"
+  cp -R "./keys/etc/ssh" "${CHROOT_MNT}/etc/"
+fi
+
+# Pre-populate authorized keys, if available
+if [ -r "./keys/authorized_keys" ]; then
+  mkdir -p "${CHROOT_MNT}/root/.ssh"
+  chmod 700 "${CHROOT_MNT}/root/.ssh"
+  cp "./keys/authorized_keys" "${CHROOT_MNT}/root/.ssh/"
+fi
+
 # Launch the chroot script
 if ! chroot "${CHROOT_MNT}" "/root/${CHROOT_SCRIPT##*/}"; then
   echo "ERROR: chroot script '${CHROOT_SCRIPT}' failed"

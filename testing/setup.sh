@@ -29,6 +29,7 @@ Usage: $0 [options]
   -p  Specify a pool name
   -r  Use a randomized pool name
   -x  Use an existing pool image
+  -k  Populate host SSH host and authorized keys
   -o  Specify another distribution
       [ void, void-musl, arch, debian, ubuntu ]
 EOF
@@ -49,7 +50,7 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "heycgdaiD:s:o:lp:rx" opt; do
+while getopts "heycgdaiD:s:o:lp:rxk" opt; do
   case "${opt}" in
     e)
       ENCRYPT=1
@@ -98,6 +99,9 @@ while getopts "heycgdaiD:s:o:lp:rx" opt; do
       ;;
     x)
       EXISTING_POOL=1
+      ;;
+    k)
+      INCLUDE_KEYS=1
       ;;
     *)
       usage
@@ -191,6 +195,18 @@ while [ -z "${EXISTING_POOL}" ]; do
 done
 
 echo "Generated pool name: ${POOL_NAME}"
+
+if ((INCLUDE_KEYS)); then
+  # ssh-keygen expects to dump into ${PREFIX}/etc/ssh
+  mkdir -p ./keys/etc/ssh
+  # Generate any missing keys
+  ssh-keygen -A -f ./keys
+
+  # Copy authorized keys for convenience
+  if [ -r "${HOME}/.ssh/authorized_keys" ] && [ ! -r ./keys/authorized_keys ]; then
+    cp "${HOME}/.ssh/authorized_keys" ./keys/
+  fi
+fi
 
 # Create an image
 if ((IMAGE)); then
