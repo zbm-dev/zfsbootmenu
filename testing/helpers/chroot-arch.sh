@@ -23,6 +23,9 @@ echo 'root:zfsbootmenu' | chpasswd -c SHA256
 # Space checks in pacman don't work right
 sed -e "/CheckSpace/d" -i /etc/pacman.conf
 
+# Make sure gpg-agent components die to avoid blocking pool export
+trap 'gpgconf --homedir /etc/pacman.d/gnupg --kill all; exit' EXIT INT TERM
+
 pacman-key --init
 pacman-key --populate
 
@@ -75,6 +78,3 @@ if [ -x /root/network-systemd.sh ]; then
   /root/network-systemd.sh
   rm /root/network-systemd.sh
 fi
-
-# Make sure gpg-agent components die to avoid blocking pool export
-gpgconf --homedir /etc/pacman.d/gnupg --kill all
