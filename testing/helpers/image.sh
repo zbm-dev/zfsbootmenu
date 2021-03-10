@@ -176,6 +176,17 @@ if [ -r "${ENCRYPT_KEYFILE}" ]; then
   cp "${ENCRYPT_KEYFILE}" "${CHROOT_MNT}/etc/zfs/"
 fi
 
+# Create a cache directory and mount in the target
+if CACHEDIR="$( realpath -e "${CACHEDIR:-./cache}" )"; then
+  HOSTCACHE="${CHROOT_MNT}/hostcache"
+  if [ -d "${CACHEDIR}" ]; then
+    mkdir -p "${CACHEDIR}/${DISTRO}" && \
+    mkdir -p "${HOSTCACHE}" && \
+    mount -B "${CACHEDIR}/${DISTRO}" "${HOSTCACHE}" && \
+    mount --make-slave "${HOSTCACHE}"
+  fi
+fi
+
 if ! "${INSTALL_SCRIPT}"; then
   echo "ERROR: install script '${INSTALL_SCRIPT}' failed"
   exit 1

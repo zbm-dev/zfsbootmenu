@@ -10,3 +10,4 @@ dracut.conf.d
 generate-zbm
 test.*
 keys
+cache
