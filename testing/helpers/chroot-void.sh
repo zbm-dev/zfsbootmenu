@@ -1,23 +1,21 @@
 #!/bin/sh
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
-if echo "$0" | grep -q "musl"; then
-  MUSL="yes"
-fi
-
 # Configure a default locale
 cat << EOF >> /etc/default/libc-locales
 en_US.UTF-8 UTF-8
 en_US ISO-8859-1
 EOF
 
-[ -z "${MUSL}" ] && xbps-reconfigure -f glibc-locales
+# Update all packages
+xbps-install -Suy xbps
+xbps-install -uy
 
-# Install a kernel and ZFS
-xbps-install -S
-xbps-install -y linux5.10 linux5.10-headers zfs
+xbps-query glibc-locales >/dev/null 2>&1 && xbps-reconfigure -f glibc-locales
+xbps-reconfigure -a
 
 # Setup ZFS in Dracut
+mkdir -p /etc/dracut.conf.d
 cat << EOF > /etc/dracut.conf.d/zol.conf
 nofsck="yes"
 add_dracutmodules+=" zfs "
@@ -30,7 +28,7 @@ for keyfile in /etc/zfs/*.key; do
   echo "install_items+=\" ${keyfile} \"" >> /etc/dracut.conf.d/zol.conf
 done
 
-xbps-reconfigure -f linux5.10
+xbps-install -y linux5.10 linux5.10-headers dracut zfs
 
 # Set kernel commandline
 case "$(uname -m)" in
@@ -58,7 +56,7 @@ EOF
 echo 'root:zfsbootmenu' | chpasswd -c SHA256
 
 # enable services
-ln -s /etc/sv/dhclient /etc/runit/runsvdir/default
+ln -s /etc/sv/dhcpcd /etc/runit/runsvdir/default
 ln -s /etc/sv/sshd /etc/runit/runsvdir/default
 ln -s /etc/sv/agetty-ttyS0 /etc/runit/runsvdir/default
 ln -s /etc/sv/agetty-hvc0 /etc/runit/runsvdir/default
@@ -68,3 +66,11 @@ chsh -s /bin/bash
 
 # enable root login over ssh with a password
 sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+# Pre-install zfsbootmenu
+if [ -x /root/zbm-populate.sh ]; then
+  xbps-query -Rp run_depends zfsbootmenu | xargs xbps-install -y
+  xbps-install -y git
+  SKIP_PERL=yes /root/zbm-populate.sh
+  rm /root/zbm-populate.sh
+fi
