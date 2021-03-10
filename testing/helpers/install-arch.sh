@@ -40,24 +40,12 @@ fi
 
 trap cleanup EXIT INT TERM
 
-archmirror="https://mirrors.edge.kernel.org/archlinux/iso/latest"
-archpattern="archlinux-bootstrap-[-_.A-Za-z0-9]\+-x86_64\.tar\.gz"
-archimg="$( curl -L "${archmirror}" | \
-  grep -o "${archpattern}" | sort -Vr | head -n 1 | tr -d '\n')"
-
-if [ -z "${archimg}" ]; then
-  echo "ERROR: cannot identify Arch bootstrap image"
+MIRROR="https://mirrors.edge.kernel.org/archlinux/iso/latest"
+PATTERN="archlinux-bootstrap-[-_.A-Za-z0-9]\+-x86_64\.tar\.gz"
+if ! ./helpers/extract_remote.sh "${MIRROR}" "${PACROOT}" "${PATTERN}"; then
+  echo "ERROR: could not fetch and extract Arch bootstrap image"
   exit 1
 fi
-
-if ! curl -L -o "${PACROOT}/${archimg}" "${archmirror}/${archimg}"; then
-  echo "ERROR: failed to fetch Arch bootstrap image"
-  echo "Check URL at ${archmirror}/${archimg}"
-  exit 1
-fi
-
-# Unpack the bootstrap image
-tar xf "${PACROOT}/${archimg}" -C "${PACROOT}"
 
 PACSTRAP="${PACROOT}/root.x86_64"
 if [ ! -d "${PACSTRAP}" ]; then
@@ -75,7 +63,7 @@ Server = http://mirror.arizona.edu/archlinux/$repo/os/$arch
 Server = http://mirrors.rit.edu/archlinux/$repo/os/$arch
 EOF
 
-mount --bind "${CHROOT_MNT}" "${PACSTRAP}/mnt"
+mount --rbind "${CHROOT_MNT}" "${PACSTRAP}/mnt" && mount --make-rslave "${PACSTRAP}/mnt"
 mount --rbind /dev "${PACSTRAP}/dev" && mount --make-rslave "${PACSTRAP}/dev"
 mount -t sysfs sys "${PACSTRAP}/sys"
 mount -t proc proc "${PACSTRAP}/proc"
@@ -83,12 +71,24 @@ mount -t proc proc "${PACSTRAP}/proc"
 cp "${PACROOT}/mirrorlist" "${PACSTRAP}/etc/pacman.d/"
 cp "/etc/resolv.conf" "${PACSTRAP}/etc/"
 
+# Configure pacstrap to use host cache as pacman cache
+if [ -d "${CHROOT_MNT}/hostcache" ]; then
+  sed -i  "${PACSTRAP}/etc/pacman.conf" \
+    -e 's@var/cache/pacman/pkg@mnt/hostcache@g' -e 's/^#CacheDir/CacheDir/'
+fi
+
 unshare --fork --pid chroot "${PACSTRAP}" /bin/bash <<-EOF
 trap 'gpgconf --homedir /etc/pacman.d/gnupg --kill all; exit' EXIT INT TERM
 pacman-key --init
 pacman-key --populate
-pacstrap /mnt base
+pacstrap -c /mnt base
 EOF
+
+if [ -d "${CHROOT_MNT}/hostcache" ]; then
+  # Use host cache as pacman cache
+  sed -i "${CHROOT_MNT}/etc/pacman.conf" \
+    -e 's@var/cache/pacman/pkg@hostcache@g' \ -e 's/^#CacheDir/CacheDir/'
+fi
 
 mkdir -p "${CHROOT_MNT}/etc"
 cp /etc/hostid "${CHROOT_MNT}/etc/"
