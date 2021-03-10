@@ -65,6 +65,9 @@ if [ ! -d "${PACSTRAP}" ]; then
   exit 1
 fi
 
+# Space checks in pacman don't work right
+sed -e "/CheckSpace/d" -i "${PACSTRAP}/etc/pacman.conf"
+
 cat >> "${PACROOT}/mirrorlist" << 'EOF'
 Server = http://mirrors.mit.edu/archlinux/$repo/os/$arch
 Server = http://mirror.cs.pitt.edu/archlinux/$repo/os/$arch
