@@ -170,10 +170,15 @@ if ! zfs mount "${ZBM_ROOT}"; then
   exit 1
 fi
 
-# Make sure the ZFS key exists in the BE
 if [ -r "${ENCRYPT_KEYFILE}" ]; then
+  # Make sure the ZFS key exists in the BE
   mkdir -p "${CHROOT_MNT}/etc/zfs"
   cp "${ENCRYPT_KEYFILE}" "${CHROOT_MNT}/etc/zfs/"
+
+  # Set a ZBM key source if one is not already provided
+  if [ "$( zfs get -o value -H org.zfsbootmenu:keysource "${ZBM_POOL}" )" = "-" ]; then
+    zfs set "org.zfsbootmenu:keysource=${ZBM_ROOT}" "${ZBM_POOL}"
+  fi
 fi
 
 # Create a cache directory and mount in the target
