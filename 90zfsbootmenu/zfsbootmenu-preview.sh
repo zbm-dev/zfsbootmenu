@@ -11,25 +11,27 @@ BOOTFS="${2}"
 IFS=' ' read -r _fs selected_kernel _initramfs <<<"$( select_kernel "${ENV}")"
 selected_kernel="${selected_kernel##*/}"
 
-pool="${ENV%%/*}"
-if is_writable "${pool}" ; then
-  _readonly="r/w"
-  _COLOR="red"
-else
-  _readonly="r/o"
-  _COLOR="green"
+if [ "${BOOTFS}" = "${ENV}" ]; then
+  _EXTRAS+=( "default," )
 fi
 
-if [ "${BOOTFS}" = "${ENV}" ]; then
-  _DEFAULT="default, "
+if be_has_encroot "${ENV}" >/dev/null; then
+  _EXTRAS+=( "encrypted," )
+fi
+
+pool="${ENV%%/*}"
+if is_writable "${pool}" ; then
+  _EXTRAS+=( "r/w" )
+  _COLOR="red"
 else
-  _DEFAULT=""
+  _EXTRAS+=( "r/o" )
+  _COLOR="green"
 fi
 
 selected_arguments="$( load_be_cmdline "${ENV}" )"
 selected_arguments="$( center_string "$( load_be_cmdline "${ENV}" )" )"
 
-selected_env_str="$( center_string "${ENV} (${_DEFAULT}${_readonly}) - ${selected_kernel}" )"
+selected_env_str="$( center_string "${ENV} (${_EXTRAS[*]}) - ${selected_kernel}" )"
 
 # colorize doesn't automatically add a newline
 if [ -f "${BASE}/have_errors" ]; then
