@@ -24,7 +24,7 @@ export DEBIAN_FRONTEND=noninteractive
 export DEBCONF_NONINTERACTIVE_SEEN=true
 
 apt-get install --yes locales console-setup
-dpkg-reconfigure -a -f noninteractive
+dpkg-reconfigure -f noninteractive
 
 # Make sure the kernel is installed and configured before ZFS
 apt-get install --yes linux-{headers,image}-amd64 openssh-{client,server}
@@ -39,7 +39,8 @@ echo 'root:zfsbootmenu' | chpasswd -c SHA256
 
 # Install components necessary for building ZFSBootMenu
 if [ -x /root/zbm-populate.sh ]; then
-  apt-get install --yes git dracut-core fzf kexec-tools cpanminus gcc make
+  apt-get install --yes --no-install-recommends \
+    git dracut-core fzf kexec-tools cpanminus gcc make
   /root/zbm-populate.sh
   rm /root/zbm-populate.sh
 fi

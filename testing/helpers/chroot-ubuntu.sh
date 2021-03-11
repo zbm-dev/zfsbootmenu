@@ -21,7 +21,9 @@ apt-get install --yes locales console-setup
 dpkg-reconfigure -f noninteractive
 
 # Make sure the kernel is installed and configured before ZFS
-apt-get install --yes linux-image-generic openssh-{client,server}
+# Don't allow the kernel to pull in recommended packages (including GRUB)
+apt-get install --yes --no-install-recommends \
+  linux-image-generic initramfs-tools openssh-{client,server}
 apt-get install --yes zfsutils-linux zfs-initramfs
 
 systemctl enable zfs.target
@@ -33,7 +35,8 @@ echo 'root:zfsbootmenu' | chpasswd -c SHA256
 
 # Install components necessary for building ZFSBootMenu
 if [ -x /root/zbm-populate.sh ]; then
-  apt-get install --yes git dracut-core fzf kexec-tools cpanminus gcc make
+  apt-get install --yes --no-install-recommends \
+    git dracut-core fzf kexec-tools cpanminus gcc make
   /root/zbm-populate.sh
   rm /root/zbm-populate.sh
 fi
