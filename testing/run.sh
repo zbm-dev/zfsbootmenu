@@ -7,14 +7,14 @@ Usage: $0 [options]
   -a  Set kernel command line
   -A+ Append additional arguments to kernel command line
   -d+ Set one or more non-standard disk images 
-  -n  Do not recreate the initramfs
+  -f  Force recreation of the initramfs
   -s  Enable serial console on stdio
   -v  Set type of qemu display to use
   -D  Set test directory
 EOF
 }
 
-CMDOPTS="D:A:a:d:nsv:h"
+CMDOPTS="D:A:a:d:fsv:h"
 
 # First-pass option parsing just looks for test directory
 while getopts "${CMDOPTS}" opt; do
@@ -70,7 +70,7 @@ DRIVE=()
 INITRD="${TESTDIR}/initramfs-bootmenu.img"
 MEMORY="2048M"
 SMP="2"
-CREATE=1
+CREATE=0
 SERIAL=0
 DISPLAY_TYPE=
 
@@ -98,8 +98,8 @@ while getopts "${CMDOPTS}" opt; do
         exit 1
       fi
       ;;
-    n)
-      CREATE=0
+    f)
+      CREATE=1
       ;;
     s)
       SERIAL=1
@@ -140,6 +140,11 @@ fi
 
 if [ "${#AAPPEND[@]}" -gt 0 ]; then
   APPEND="${APPEND} ${AAPPEND[*]}"
+fi
+
+# Creation is required if either kernel or initramfs is missing
+if [ ! -f "${KERNEL}" ] || [ ! -f "${INITRD}" ]; then
+  CREATE=1
 fi
 
 if ((CREATE)) ; then
