@@ -97,11 +97,6 @@ cp /etc/resolv.conf "${CHROOT_MNT}/etc/"
 mkdir -p "${CHROOT_MNT}/etc/pacman.d"
 cp "${PACROOT}/mirrorlist" "${CHROOT_MNT}/etc/pacman.d/"
 
-if [ -r "${ENCRYPT_KEYFILE}" ]; then
-  mkdir -p "${CHROOT_MNT}/etc/zfs"
-  cp "${ENCRYPT_KEYFILE}" "${CHROOT_MNT}/etc/zfs/"
-fi
-
 # Add network configuration script
 if [ -x ./helpers/network-systemd.sh ]; then
   mkdir -p "${CHROOT_MNT}/root"

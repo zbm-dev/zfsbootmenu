@@ -170,6 +170,12 @@ if ! zfs mount "${ZBM_ROOT}"; then
   exit 1
 fi
 
+# Make sure the ZFS key exists in the BE
+if [ -r "${ENCRYPT_KEYFILE}" ]; then
+  mkdir -p "${CHROOT_MNT}/etc/zfs"
+  cp "${ENCRYPT_KEYFILE}" "${CHROOT_MNT}/etc/zfs/"
+fi
+
 if ! "${INSTALL_SCRIPT}"; then
   echo "ERROR: install script '${INSTALL_SCRIPT}' failed"
   exit 1

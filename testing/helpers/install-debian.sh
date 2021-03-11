@@ -6,12 +6,11 @@ if [ -z "${CHROOT_MNT}" ] || [ ! -d "${CHROOT_MNT}" ]; then
   exit 1
 fi
 
-if [ -r "${ENCRYPT_KEYFILE}" ]; then
-  mkdir -p "${CHROOT_MNT}/etc/zfs"
-  cp "${ENCRYPT_KEYFILE}" "${CHROOT_MNT}/etc/zfs/"
+if [[ "$0" =~ "ubuntu" ]]; then
+  ./helpers/debootstrap.sh focal "${CHROOT_MNT}" http://us.archive.ubuntu.com/ubuntu/
+else
+  ./helpers/debootstrap.sh buster "${CHROOT_MNT}"
 fi
-
-./helpers/debootstrap.sh buster "${CHROOT_MNT}"
 
 cp /etc/hostid "${CHROOT_MNT}/etc/"
 cp /etc/resolv.conf "${CHROOT_MNT}/etc/"
