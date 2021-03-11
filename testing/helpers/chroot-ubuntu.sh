@@ -17,36 +17,16 @@ export TERM=linux
 export DEBIAN_FRONTEND=noninteractive
 export DEBCONF_NONINTERACTIVE_SEEN=true
 
-apt-get install --yes locales console-setup
+apt-get install --yes locales console-setup ca-certificates openssh-{client,server}
 dpkg-reconfigure -f noninteractive
 
 # Make sure the kernel is installed and configured before ZFS
 # Don't allow the kernel to pull in recommended packages (including GRUB)
-apt-get install --yes --no-install-recommends \
-  linux-image-generic initramfs-tools openssh-{client,server}
+apt-get install --yes --no-install-recommends linux-image-generic initramfs-tools
 apt-get install --yes zfsutils-linux zfs-initramfs
 
-systemctl enable zfs.target
-systemctl enable zfs-import-cache
-systemctl enable zfs-mount
-systemctl enable zfs-import.target
-
-echo 'root:zfsbootmenu' | chpasswd -c SHA256
-
-# Install components necessary for building ZFSBootMenu
-if [ -x /root/zbm-populate.sh ]; then
-  apt-get install --yes --no-install-recommends \
-    git dracut-core fzf kexec-tools cpanminus gcc make
-  /root/zbm-populate.sh
-  rm /root/zbm-populate.sh
+# Post-setup configuration
+if [ -x /root/configure-ubuntu.sh ]; then
+  /root/configure-ubuntu.sh
+  rm /root/configure-ubuntu.sh
 fi
-
-# Configure networking and ssh, clean up installation script
-if [ -x /root/network-systemd.sh ]; then
-  /root/network-systemd.sh
-  rm /root/network-systemd.sh
-fi
-
-# Clean the cache and remove some build tools
-apt-get autoremove
-apt-get clean

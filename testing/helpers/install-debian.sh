@@ -7,22 +7,37 @@ if [ -z "${CHROOT_MNT}" ] || [ ! -d "${CHROOT_MNT}" ]; then
 fi
 
 if [[ "$0" =~ "ubuntu" ]]; then
-  ./helpers/debootstrap.sh focal "${CHROOT_MNT}" http://us.archive.ubuntu.com/ubuntu/
+  SUITE="focal"
+  MIRROR="http://us.archive.ubuntu.com/ubuntu/"
+  CONFIGURATOR="configure-ubuntu.sh"
 else
-  ./helpers/debootstrap.sh buster "${CHROOT_MNT}"
+  SUITE="buster"
+  MIRROR="http://ftp.us.debian.org/debian/"
+  CONFIGURATOR="configure-debian.sh"
 fi
+
+DBARGS=()
+if [ -d "${CHROOT_MNT}/hostcache" ]; then
+  DBARGS+=( "--cache-dir=$( realpath -e "${CHROOT_MNT}/hostcache" )" )
+fi
+
+./helpers/debootstrap.sh "${DBARGS[@]}" "${SUITE}" "${CHROOT_MNT}" "${MIRROR}"
 
 cp /etc/hostid "${CHROOT_MNT}/etc/"
 cp /etc/resolv.conf "${CHROOT_MNT}/etc/"
 
-# Add network configuration script
-if [ -x ./helpers/network-systemd.sh ]; then
-  mkdir -p "${CHROOT_MNT}/root"
-  cp ./helpers/network-systemd.sh "${CHROOT_MNT}/root/"
+if [ -d "${CHROOT_MNT}/hostcache" ]; then
+  _aptdir="${CHROOT_MNT}/etc/apt/apt.conf.d"
+  mkdir -p "${_aptdir}"
+  echo "Dir::Cache::Archives /hostcache;" > "${_aptdir}/00hostcache"
 fi
 
-# Add ZFSBootMenu population script
-if [ -x ./helpers/zbm-populate.sh ]; then
-  mkdir -p "${CHROOT_MNT}/root"
-  cp ./helpers/zbm-populate.sh "${CHROOT_MNT}/root/"
-fi
+# Add post-installation setup scripts
+mkdir -p "${CHROOT_MNT}/root"
+for script in "${CONFIGURATOR}" "network-systemd.sh" "zbm-populate.sh"; do
+  script="./helpers/${script}"
+  if [ -x "${script}" ]; then
+    echo "Copying post-installation script ${script} into chroot"
+    cp "${script}" "${CHROOT_MNT}/root/"
+  fi
+done

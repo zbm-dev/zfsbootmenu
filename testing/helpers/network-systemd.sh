@@ -10,15 +10,15 @@ Name=en*
 DHCP=yes
 EOF
 
-systemctl enable systemd-networkd.service
+systemctl enable systemd-networkd.service || true
 
 # Enable system resolver
 rm -f /etc/resolv.conf
-systemctl enable systemd-resolved.service
+systemctl enable systemd-resolved.service || true
 ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 
 # Enable root login over ssh with a password
 if [ -f /etc/ssh/sshd_config ]; then
   sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
-  systemctl enable sshd.service
+  systemctl enable sshd.service || true
 fi
