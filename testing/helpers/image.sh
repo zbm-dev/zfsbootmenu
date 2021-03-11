@@ -56,17 +56,17 @@ export CHROOT_MNT
 trap cleanup EXIT INT TERM
 
 ZBMIMG="${TESTDIR}/${zpool_name}-pool.img"
+USERGROUP="$( stat -c %U . ):$( stat -c %G . )"
 
 if [ -z "${EXISTING_POOL}" ]; then
-  usergroup="$( stat -c %U . ):$( stat -c %G . )"
 
   qemu-img create "${ZBMIMG}" "${SIZE}"
-  chown "${usergroup}" "${ZBMIMG}"
+  chown "${USERGROUP}" "${ZBMIMG}"
 
   # When a new pool should be encrypted, it needs a key
   if [ -n "${ENCRYPT}" ]; then
     echo "zfsbootmenu" > "${TESTDIR}/${zpool_name}.key"
-    chown "${usergroup}" "${TESTDIR}/${zpool_name}.key"
+    chown "${USERGROUP}" "${TESTDIR}/${zpool_name}.key"
   fi
 elif [ ! -e "${ZBMIMG}" ]; then
   echo "ERROR: cannot use non-existent image ${ZBMIMG} as existing pool"
@@ -233,6 +233,19 @@ fi
 if ! chroot "${CHROOT_MNT}" "/root/${CHROOT_SCRIPT##*/}"; then
   echo "ERROR: chroot script '${CHROOT_SCRIPT}' failed"
   exit 1
+fi
+
+# Pre-populate the test environment with ZBM from the testbed
+if [ -d "${CHROOT_MNT}/zfsbootmenu" ]; then
+  if chroot "${CHROOT_MNT}" /usr/bin/generate-zbm --prefix vmlinuz; then
+    for f in vmlinuz-bootmenu initramfs-bootmenu.img; do
+      file="${CHROOT_MNT}/zfsbootmenu/build/${f}"
+      [ -f "${file}" ] || continue
+      cp "${file}" "${TESTDIR}"
+      chmod 644 "${TESTDIR}/${f}"
+      chown "${USERGROUP}" "${TESTDIR}/${f}"
+    done
+  fi
 fi
 
 zfs snapshot -r "${ZBM_ROOT}@full-setup"
