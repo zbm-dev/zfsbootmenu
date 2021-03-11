@@ -2,7 +2,8 @@
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
 cleanup() {
-  [ -f "${SSH_CONF_DIR}/${TESTDIR}" ] && rm "${SSH_CONF_DIR}/${TESTDIR}"
+  [ -f "${SSH_CONF_DIR}/${TESTHOST}" ] && rm "${SSH_CONF_DIR}/${TESTHOST}"
+  exit
 }
 
 usage() {
@@ -188,7 +189,7 @@ while true; do
   fi
 done
 
-SSH_CONF_DIR="${HOME}/.ssh/zfsbootmenu.d"
+export SSH_CONF_DIR="${HOME}/.ssh/zfsbootmenu.d"
 [ -d "${SSH_CONF_DIR}" ] && SSH_INCLUDE=1
 
 if ((SSH_INCLUDE)); then
@@ -196,8 +197,18 @@ if ((SSH_INCLUDE)); then
 
   echo "Creating host records in ${SSH_CONF_DIR}"
 
-  cat << EOF > "${SSH_CONF_DIR}/${TESTDIR}"
-Host ${TESTDIR}
+  # Strip directory components
+  TESTHOST="${TESTDIR##*/}"
+  # Make sure the host starts with "test." even if the directory does not
+  TESTHOST="test.${TESTHOST#test.}"
+
+  [ "${TESTHOST}" = "test." ] && TESTHOST=""
+
+  export TESTHOST
+
+  if [ -n "${TESTHOST}" ]; then
+    cat << EOF > "${SSH_CONF_DIR}/${TESTHOST}"
+Host ${TESTHOST}
   HostName localhost
   Port ${SSH_PORT}
   User root
@@ -205,8 +216,9 @@ Host ${TESTDIR}
   StrictHostKeyChecking no
   LogLevel error
 EOF
+  fi
 
-  chmod 0600 "${SSH_CONF_DIR}/${TESTDIR}"
+  chmod 0600 "${SSH_CONF_DIR}/${TESTHOST}"
   trap cleanup EXIT INT TERM
 fi
 
