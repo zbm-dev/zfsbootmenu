@@ -188,9 +188,13 @@ while true; do
   fi
 done
 
-if ((SSH_INCLUDE)) ; then
-  SSH_CONF_DIR="${HOME}/.ssh/zfsbootmenu.d"
+SSH_CONF_DIR="${HOME}/.ssh/zfsbootmenu.d"
+[ -d "${SSH_CONF_DIR}" ] && SSH_INCLUDE=1
+
+if ((SSH_INCLUDE)); then
   [ -d "${SSH_CONF_DIR}" ] || mkdir "${SSH_CONF_DIR}" && chmod 700 "${SSH_CONF_DIR}"
+
+  echo "Creating host records in ${SSH_CONF_DIR}"
 
   cat << EOF > "${SSH_CONF_DIR}/${TESTDIR}"
 Host ${TESTDIR}
