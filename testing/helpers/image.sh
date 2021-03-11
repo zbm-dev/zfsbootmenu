@@ -214,9 +214,11 @@ mount -t devpts pts "${CHROOT_MNT}/dev/pts"
 mkdir -p "${CHROOT_MNT}/etc/zfs"
 zpool set cachefile="${CHROOT_MNT}/etc/zfs/zpool.cache" "${ZBM_POOL}"
 
+# Set hostname for environment
+echo "${DISTRO}" > "${CHROOT_MNT}/etc/hostname"
+
 # Pre-populate SSH keys, if available
 if [ -d "./keys/etc/ssh" ]; then
-  mkdir -p "${CHROOT_MNT}/etc"
   cp -R "./keys/etc/ssh" "${CHROOT_MNT}/etc/"
 fi
 
