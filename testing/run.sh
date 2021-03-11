@@ -197,6 +197,9 @@ Host ${TESTDIR}
   HostName localhost
   Port ${SSH_PORT}
   User root
+  UserKnownHostsFile /dev/null
+  StrictHostKeyChecking no
+  LogLevel error
 EOF
 
   chmod 0600 "${SSH_CONF_DIR}/${TESTDIR}"
