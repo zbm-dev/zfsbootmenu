@@ -1,6 +1,10 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
+cleanup() {
+  [ -f "${SSH_CONF_DIR}/${TESTDIR}" ] && rm "${SSH_CONF_DIR}/${TESTDIR}"
+}
+
 usage() {
   cat <<EOF
 Usage: $0 [options]
@@ -11,10 +15,11 @@ Usage: $0 [options]
   -s  Enable serial console on stdio
   -v  Set type of qemu display to use
   -D  Set test directory
+  -i  Write SSH config include
 EOF
 }
 
-CMDOPTS="D:A:a:d:fsv:h"
+CMDOPTS="D:A:a:d:fsv:hi"
 
 # First-pass option parsing just looks for test directory
 while getopts "${CMDOPTS}" opt; do
@@ -73,6 +78,7 @@ SMP="2"
 CREATE=0
 SERIAL=0
 DISPLAY_TYPE=
+SSH_INCLUDE=0
 
 # Override any default variables
 #shellcheck disable=SC1091
@@ -106,6 +112,9 @@ while getopts "${CMDOPTS}" opt; do
       ;;
     v)
       DISPLAY_TYPE="${OPTARG}"
+      ;;
+    i)
+      SSH_INCLUDE=1
       ;;
     *)
       ;;
@@ -173,16 +182,25 @@ while true; do
   PID="$( lsof -Pi :${SSH_PORT} -sTCP:LISTEN -t )"
   if [ -n "${PID}" ] ; then
     SSH_PORT=$((SSH_PORT+1))
-    NONSTANDARD=1
     continue
   else
     break
   fi
 done
 
-if [ -n "${NONSTANDARD}" ]; then
-  echo "Using SSH port ${SSH_PORT}"
-  sleep 5
+if ((SSH_INCLUDE)) ; then
+  SSH_CONF_DIR="${HOME}/.ssh/zfsbootmenu.d"
+  [ -d "${SSH_CONF_DIR}" ] || mkdir "${SSH_CONF_DIR}" && chmod 700 "${SSH_CONF_DIR}"
+
+  cat << EOF > "${SSH_CONF_DIR}/${TESTDIR}"
+Host ${TESTDIR}
+  HostName localhost
+  Port ${SSH_PORT}
+  User root
+EOF
+
+  chmod 0600 "${SSH_CONF_DIR}/${TESTDIR}"
+  trap cleanup EXIT INT TERM
 fi
 
 # shellcheck disable=SC2086
