@@ -35,7 +35,7 @@ like
 
 where `<pool-name>` is a name distinct from any other pool currently present in
 the testbed (the default pool name is `ztest`, but numeric components may be
-appended [01, 02, etc.] may be appended to distinguish a pool from another
+appended [01, 02, etc.] to distinguish a pool from another
 currently imported pool. Again, the `-e` flag is optional.
 
 It is also possible to add a distinct boot environment to an existing pool,
@@ -204,3 +204,16 @@ of the kernel list. That BE should be selected when entering the list.
   toggling its pool between read-only and read/write should force a passphrase
   prompt each time. (Keys must not have been already cached before a keysource
   property is cleared, or the previously cached keys will continue to be used.)
+
+## OS-Specific Image Creation
+
+- [ ] For each supported distribution [Void, Void Musl, Arch, Ubuntu, Debian], verify 
+  that `module-setup.sh` is able to correctly install all required binaries in the
+  initramfs.
+  
+- [ ] For each supported distribution, verify that `generate-zbm` can successfully
+   produce an versioned and unversioned initramfs and a unified EFI bundle.
+   
+- [ ] For each supported distribution, verify that the components and EFI bundles
+  are able to correctly boot other systems. The check stages listed above should be
+  used and any functionality that is missing or broken noted.
