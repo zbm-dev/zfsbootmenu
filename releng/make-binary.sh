@@ -15,8 +15,6 @@ if [ ! -x "${DRACUTBIN}" ]; then
   exit 1
 fi
 
-echo "Creating images in ${TEMP}"
-
 cp -a /usr/lib/dracut "${TEMP}"
 cp "${DRACUTBIN}" "${TEMP}/dracut"
 
@@ -55,4 +53,6 @@ yq-go eval "del(.Kernel.CommandLine)" -i "${yamlconf}"
     --cmdline "loglevel=4 nomodeset"
 ) >/dev/null 2>&1
 
-mv "${TEMP}/release/vmlinuz.EFI" "${TEMP}/release/zfsbootmenu-${version}.EFI"
+EFI_FILE="${TEMP}/release/zfsbootmenu-${version}.EFI"
+mv "${TEMP}/release/vmlinuz.EFI" "${EFI_FILE}"
+echo "${EFI_FILE}"

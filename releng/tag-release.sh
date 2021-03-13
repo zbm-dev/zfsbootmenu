@@ -7,7 +7,7 @@ error () {
 }
 
 cleanup () {
-  test -d "${BIN_TEMP}" && rm -rf "${BIN_TEMP}"
+  test -d "${temp}" && rm -rf "${temp}"
   exit
 }
 
@@ -97,14 +97,14 @@ fi
 
 # Create binary EFI file
 trap cleanup EXIT INT TERM
-BIN_TEMP="$( mktemp -d )"
-releng/make-binary.sh "${release}" "${BIN_TEMP}"
+temp="$( mktemp -d )"
+EFI_FILE="$( releng/make-binary.sh "${release}" "${temp}" )"
 
 # Use github-cli or hub to push the release
 if command -v gh >/dev/null 2>&1; then
   # github-cli does not automatically strip header that hub uses for a title
   sed -i '1,/^$/d' "${relnotes}"
-  gh release create "${tag}" ${prerelease} -F "${relnotes}" -t "ZFSBootMenu ${tag}" "${TEMP}/release/zfsbootmenu-${release}.EFI"
+  gh release create "${tag}" ${prerelease} -F "${relnotes}" -t "ZFSBootMenu ${tag}" "${EFI_FILE}"
 elif command -v hub >/dev/null 2>&1; then
   hub release create ${prerelease} -F "${relnotes}" "${tag}"
 else
