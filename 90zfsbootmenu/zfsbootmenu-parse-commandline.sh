@@ -8,6 +8,12 @@
 # shellcheck disable=SC1091
 [ -r /etc/zfsbootmenu.conf ] && source /etc/zfsbootmenu.conf
 
+# shellcheck disable=SC2154
+if [ -n "${embedded_kcl}" ]; then
+  mkdir -p /etc/cmdline.d/
+  echo "${embedded_kcl}" > /etc/cmdline.d/zfsbootmenu.conf
+fi
+
 if [ -z "${BYTE_ORDER}" ]; then
   warn "unable to determine platform endianness; assuming little-endian"
   BYTE_ORDER="le"

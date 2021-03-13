@@ -295,7 +295,6 @@ EOF
   # Embed a kernel command line in the initramfs
   # shellcheck disable=SC2154
   if [ -n "${embedded_kcl}" ]; then
-    mkdir -p "${initdir}/etc/cmdline.d"
-    echo "${embedded_kcl}" > "${initdir}/etc/cmdline.d/zfsbootmenu.conf"
+    echo "export embedded_kcl=\"${embedded_kcl}\"" >> "${initdir}/etc/zfsbootmenu.conf"
   fi
 }
