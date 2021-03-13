@@ -25,6 +25,8 @@ cp -Rp etc/zfsbootmenu/dracut.conf.d "${TEMP}"
 cat << EOF > "${TEMP}/dracut.conf.d/release.conf"
 omit_drivers+=" amdgpu radeon nvidia nouveau i915 "
 omit_dracutmodules+=" qemu qemu-net crypt-ssh nfs lunmask network network-legacy kernel-network-modules "
+embedded_kcl="zbm.import_policy=hostid zbm.set_hostid rd.hostonly=0 loglevel=4 nomodeset"
+zfsbootmenu_teardown+=" $( realpath contrib/xhci-teardown.sh ) "
 EOF
 
 _dracut_mods="${TEMP}/dracut/modules.d"
@@ -44,12 +46,12 @@ yq-go eval ".Global.ManageImages = true" -i "${yamlconf}"
 yq-go eval ".Global.DracutConfDir = \"${TEMP}/dracut.conf.d\"" -i "${yamlconf}"
 yq-go eval ".Global.DracutFlags = [ \"--local\", \"--no-early-microcode\" ]" -i "${yamlconf}"
 yq-go eval "del(.Global.BootMountPoint)" -i "${yamlconf}"
+yq-go eval "del(.Kernel.CommandLine)" -i "${yamlconf}"
 
 (
   "${TEMP}/generate-zbm" \
     --version "${version}" \
-    --config "${yamlconf}" \
-    --cmdline="zbm.import_policy=hostid zbm.set_hostid rd.hostonly=0 loglevel=4 nomodeset"
+    --config "${yamlconf}"
 ) >/dev/null 2>&1
 
 mv "${TEMP}/release/vmlinuz.EFI" "${TEMP}/release/zfsbootmenu-${version}.EFI"

@@ -291,4 +291,11 @@ export HAS_NOESCAPE=${has_escape}
 export HAS_REFRESH=${has_refresh}
 export HAS_INFO=${has_info}
 EOF
+
+  # Embed a kernel command line in the initramfs
+  # shellcheck disable=SC2154
+  if [ -n "${embedded_kcl}" ]; then
+    mkdir -p "${initdir}/etc/cmdline.d"
+    echo "${embedded_kcl}" > "${initdir}/etc/cmdline.d/zfsbootmenu.conf"
+  fi
 }
