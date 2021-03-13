@@ -6,6 +6,11 @@ error () {
   exit 1
 }
 
+cleanup () {
+  test -d "${BIN_TEMP}" && rm -rf "${BIN_TEMP}"
+  exit
+}
+
 # Accept optional leading "v" from the release version
 release="${1#v}"
 if [ -z "${release}" ] || [ $# -ne 1 ]; then
@@ -90,11 +95,16 @@ if echo "${release}" | grep -q "[A-Za-z]"; then
   prerelease="--prerelease"
 fi
 
+# Create binary EFI file
+trap cleanup EXIT INT TERM
+BIN_TEMP="$( mktemp -d )"
+releng/make-binary.sh "${release}" "${BIN_TEMP}"
+
 # Use github-cli or hub to push the release
 if command -v gh >/dev/null 2>&1; then
   # github-cli does not automatically strip header that hub uses for a title
   sed -i '1,/^$/d' "${relnotes}"
-  gh release create "${tag}" ${prerelease} -F "${relnotes}" -t "ZFSBootMenu ${tag}"
+  gh release create "${tag}" ${prerelease} -F "${relnotes}" -t "ZFSBootMenu ${tag}" "${TEMP}/release/zfsbootmenu-${release}.EFI"
 elif command -v hub >/dev/null 2>&1; then
   hub release create ${prerelease} -F "${relnotes}" "${tag}"
 else
