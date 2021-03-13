@@ -40,6 +40,13 @@ fuzzy_default_options+=(
  "--bind" '"ctrl-q:ignore,ctrl-c:ignore,ctrl-g:ignore,enter:ignore"'
 )
 
+# Any info visibly repaints when following dmesg under tmux
+if [ -n "${HAS_INFO}" ] ; then
+  fuzzy_default_options+=("--info=hidden")
+else
+  fuzzy_default_options+=("--inline-info")
+fi
+
 if ((ALLOW_EXIT)) ; then
   # shellcheck disable=SC2016
   fuzzy_default_options+=("--bind" '"esc:execute-silent[ kill $( cat ${PID_FILE} ) ]+abort"')
@@ -49,7 +56,7 @@ fi
 
 if command -v fzf >/dev/null 2>&1; then
   FUZZYSEL=fzf
-  export FZF_DEFAULT_OPTS="--no-mouse --inline-info ${fuzzy_default_options[*]}"
+  export FZF_DEFAULT_OPTS="--no-mouse ${fuzzy_default_options[*]}"
 elif command -v sk >/dev/null 2>&1; then
   FUZZYSEL=sk
   export SKIM_DEFAULT_OPTIONS="${fuzzy_default_options[*]}"

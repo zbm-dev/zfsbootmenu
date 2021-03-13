@@ -273,11 +273,22 @@ install() {
     has_refresh=
   fi
 
+  # Check if fuzzy finder supports the --info= flag
+  # Added in fzf 0.19.0
+  if command -v "${FUZZY_FIND}" >/dev/null 2>&1 && \
+    echo "abc" | "${FUZZY_FIND}" -f "abc" --info=hidden --exit-0 >/dev/null 2>&1
+  then
+    has_info=1
+  else
+    has_info=
+  fi
+
   # Collect all of our build-time feature flags
   # shellcheck disable=SC2154
   cat << EOF > "${initdir}/etc/zfsbootmenu.conf"
 export BYTE_ORDER=${endian}
 export HAS_NOESCAPE=${has_escape}
 export HAS_REFRESH=${has_refresh}
+export HAS_INFO=${has_info}
 EOF
 }
