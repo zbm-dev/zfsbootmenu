@@ -91,7 +91,10 @@ if echo "${release}" | grep -q "[A-Za-z]"; then
 fi
 
 # Create binary EFI file
-releng/make-binary.sh "${release}"
+if ! releng/make-binary.sh "${release}" ; then
+  echo "Unable to make release assets, exiting!"
+  exit 1
+fi
 
 assets="$( realpath -e "releng/assets/${release}" )"
 efi_asset="${assets}/zfsbootmenu-${release}.EFI"

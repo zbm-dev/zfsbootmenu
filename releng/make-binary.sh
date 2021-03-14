@@ -6,7 +6,7 @@ cleanup() {
   exit
 }
 
-release="${1?ERROR: no release release specified}"
+release="${1?ERROR: no release version specified}"
 trap cleanup EXIT INT TERM
 temp="$( mktemp -d )"
 
@@ -71,10 +71,10 @@ mkdir -p "${components}"
 mv "${build}/initramfs-bootmenu.img" "${components}"
 mv "${build}/vmlinuz-bootmenu" "${components}"
 
-cd "${build}" || exit
+cd "${build}" || exit 1
 tar -czvf "${assets}/zfsbootmenu-${release}.tar.gz" "$( basename "${components}" )"
 
-cd "${assets}" || exit 0
+cd "${assets}" || exit 1
 
 [ -f sha256sum.txt ] && rm sha256sum.txt
 sha256sum -- * > sha256sum.txt
