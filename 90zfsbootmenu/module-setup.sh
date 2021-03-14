@@ -297,4 +297,10 @@ EOF
   if [ -n "${embedded_kcl}" ]; then
     echo "export embedded_kcl=\"${embedded_kcl}\"" >> "${initdir}/etc/zfsbootmenu.conf"
   fi
+
+  # Force rd.hostonly=0 in the KCL for releases, this will purge itself after 99base/init.sh runs
+  # shellcheck disable=SC2154
+  if [ -n "${release_build}" ]; then
+    echo "rd.hostonly=0" > "${initdir}/etc/cmdline.d/hostonly.conf"
+  fi
 }

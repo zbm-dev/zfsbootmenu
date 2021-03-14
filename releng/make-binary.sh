@@ -30,6 +30,7 @@ cat << EOF > "${temp}/dracut.conf.d/release.conf"
 omit_drivers+=" amdgpu radeon nvidia nouveau i915 "
 omit_dracutmodules+=" qemu qemu-net crypt-ssh nfs lunmask network network-legacy kernel-network-modules "
 embedded_kcl="zbm.import_policy=hostid zbm.set_hostid rd.hostonly=0"
+release_build=1
 zfsbootmenu_teardown+=" $( realpath contrib/xhci-teardown.sh ) "
 EOF
 
@@ -59,7 +60,6 @@ yq-go eval "del(.Kernel.CommandLine)" -i "${yamlconf}"
   --version "${release}" \
   --config "${yamlconf}" \
   --cmdline "loglevel=4 nomodeset"
-
 
 assets="$( realpath -e releng )/assets/${release}/"
 
