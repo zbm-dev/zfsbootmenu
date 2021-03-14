@@ -91,14 +91,33 @@ if echo "${release}" | grep -q "[A-Za-z]"; then
 fi
 
 # Create binary EFI file
-trap cleanup EXIT INT TERM
 releng/make-binary.sh "${release}"
+
+assets="$( realpath -e "releng/assets/${release}" )"
+efi_asset="${assets}/zfsbootmenu-${release}.EFI"
+components_asset="${assets}/zfsbootmenu-${release}.tar.gz"
+shasum_asset="${assets}/sha256sum.txt"
+
+if [ ! -f "${efi_asset}" ]; then
+  echo "EFI asset not found: ${efi_asset}"
+  exit 1
+fi
+
+if [ ! -f "${components_asset}" ]; then
+  echo "Components asset not found: ${components_asset}"
+  exit 1
+fi
+
+if [ ! -f "${shasum_asset}" ]; then
+  echo "sha256sum asset not found: ${shasum_asset}"
+  exit 1
+fi
 
 # Use github-cli or hub to push the release
 if command -v gh >/dev/null 2>&1; then
   # github-cli does not automatically strip header that hub uses for a title
   sed -i '1,/^$/d' "${relnotes}"
-  gh release create "${tag}" ${prerelease} -F "${relnotes}" -t "ZFSBootMenu ${tag}" "releng/assets/${release}/*"
+  gh release create "${tag}" ${prerelease} -F "${relnotes}" -t "ZFSBootMenu ${tag}" "${efi_asset}" "${components_asset}" "${shasum_asset}"
 elif command -v hub >/dev/null 2>&1; then
   hub release create ${prerelease} -F "${relnotes}" "${tag}"
 else

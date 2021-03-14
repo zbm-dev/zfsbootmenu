@@ -60,7 +60,9 @@ yq-go eval "del(.Kernel.CommandLine)" -i "${yamlconf}"
   --config "${yamlconf}" \
   --cmdline "loglevel=4 nomodeset"
 
+
 assets="$( realpath -e releng )/assets/${release}/"
+
 mkdir -p "${assets}"
 mv "${build}/vmlinuz.EFI" "${assets}/zfsbootmenu-${release}.EFI"
 
@@ -73,4 +75,6 @@ cd "${build}" || exit
 tar -czvf "${assets}/zfsbootmenu-${release}.tar.gz" "$( basename "${components}" )"
 
 cd "${assets}" || exit 0
+
+[ -f sha256sum.txt ] && rm sha256sum.txt
 sha256sum -- * > sha256sum.txt
