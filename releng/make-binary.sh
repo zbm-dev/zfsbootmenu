@@ -21,6 +21,13 @@ if [ ! -x "${DRACUTBIN}" ]; then
   exit 1
 fi
 
+assets="releng/assets/${release}"
+if [ -d "${assets}" ]; then
+  rm -f "${assets}/*"
+else
+  mkdir -p "${assets}"
+fi
+
 cp -a /usr/lib/dracut "${temp}"
 cp "${DRACUTBIN}" "${temp}/dracut"
 
@@ -44,10 +51,21 @@ yamlconf="${temp}/local.yaml"
 cp etc/zfsbootmenu/config.yaml "${yamlconf}"
 build="${temp}/build"
 
+arch="$( uname -m )"
+BUILD_EFI="false"
+
+case "${arch}" in
+  x86_64)
+    BUILD_EFI="true"
+    ;;
+  *)
+    ;;
+esac
+
 yq-go eval ".Components.Enabled = true" -i "${yamlconf}"
 yq-go eval ".Components.Versions = false" -i "${yamlconf}"
 yq-go eval ".Components.ImageDir = \"${build}\"" -i "${yamlconf}"
-yq-go eval ".EFI.Enabled = true" -i "${yamlconf}"
+yq-go eval ".EFI.Enabled = ${BUILD_EFI}" -i "${yamlconf}"
 yq-go eval ".EFI.Versions = false" -i "${yamlconf}"
 yq-go eval ".EFI.ImageDir = \"${build}\"" -i "${yamlconf}"
 yq-go eval ".Global.ManageImages = true" -i "${yamlconf}"
@@ -61,20 +79,16 @@ yq-go eval "del(.Kernel.CommandLine)" -i "${yamlconf}"
   --config "${yamlconf}" \
   --cmdline "loglevel=4 nomodeset"
 
-assets="$( realpath -e releng )/assets/${release}/"
+# EFI file is currently only built on x86_64
+if [ "${BUILD_EFI}" = "true" ]; then
+  mv "${build}/vmlinuz.EFI" "${assets}/zfsbootmenu-${arch}-${release}.EFI"
+fi
 
-mkdir -p "${assets}"
-mv "${build}/vmlinuz.EFI" "${assets}/zfsbootmenu-${release}.EFI"
-
-components="${build}/zfsbootmenu-${release}"
+# Components are always built
+components="${build}/zfsbootmenu-${arch}-${release}"
 mkdir -p "${components}"
 mv "${build}/initramfs-bootmenu.img" "${components}"
 mv "${build}/vmlinuz-bootmenu" "${components}"
 
-cd "${build}" || exit 1
-tar -czvf "${assets}/zfsbootmenu-${release}.tar.gz" "$( basename "${components}" )"
-
-cd "${assets}" || exit 1
-
-[ -f sha256sum.txt ] && rm sha256sum.txt
-sha256sum -- * > sha256sum.txt
+( cd "${build}" && tar czvf "${assets}/zfsbootmenu-${arch}-${release}.tar.gz" "$( basename "${components}" )" ) || exit 1
+( cd "${assets}" && rm -f sha256sum.txt && sha256sum -- * > sha256sum.txt ) || exit 1

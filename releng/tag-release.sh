@@ -33,6 +33,13 @@ if [ -n "$(git status --porcelain=v1 | grep -v '.. CHANGELOG.md$')" ]; then
   error "ERROR: will not tag release with non-changelog changes in tree"
 fi
 
+# x86_64 users are the primary consumers of ZFSBootMenu
+# Releases should always be done on an x86_64 host, so that .EFI builds take place
+arch="$( uname -m )"
+if [ "${arch}" != "x86_64" ]; then
+  error "Releases must always be tagged on x86_64 hosts so that EFI binaries can be built"
+fi
+
 # Make sure the tag has a leading "v"
 tag="v${release}"
 
@@ -97,8 +104,8 @@ if ! releng/make-binary.sh "${release}" ; then
 fi
 
 assets="$( realpath -e "releng/assets/${release}" )"
-efi_asset="${assets}/zfsbootmenu-${release}.EFI"
-components_asset="${assets}/zfsbootmenu-${release}.tar.gz"
+efi_asset="${assets}/zfsbootmenu-${arch}-${release}.EFI"
+components_asset="${assets}/zfsbootmenu-${arch}-${release}.tar.gz"
 shasum_asset="${assets}/sha256sum.txt"
 
 if [ ! -f "${efi_asset}" ]; then
@@ -121,8 +128,6 @@ if command -v gh >/dev/null 2>&1; then
   # github-cli does not automatically strip header that hub uses for a title
   sed -i '1,/^$/d' "${relnotes}"
   gh release create "${tag}" ${prerelease} -F "${relnotes}" -t "ZFSBootMenu ${tag}" "${efi_asset}" "${components_asset}" "${shasum_asset}"
-elif command -v hub >/dev/null 2>&1; then
-  hub release create ${prerelease} -F "${relnotes}" "${tag}"
 else
-  error "ERROR: Please install github-cli or hub"
+  error "ERROR: Please install github-cli"
 fi
