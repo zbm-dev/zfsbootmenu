@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
 error () {
@@ -13,6 +13,7 @@ if [ -z "${release}" ] || [ $# -ne 1 ]; then
 fi
 
 # Validate release
+# shellcheck  disable=SC2001
 if [ -n "$(echo "${release}" | sed 's/[0-9][A-Za-z0-9_.-]*$//')" ]; then
   error "ERROR: release must start with a number and contain [A-Za-z0-9_.-]"
 fi
@@ -37,7 +38,12 @@ fi
 # Releases should always be done on an x86_64 host, so that .EFI builds take place
 arch="$( uname -m )"
 if [ "${arch}" != "x86_64" ]; then
-  error "Releases must always be tagged on x86_64 hosts so that EFI binaries can be built"
+  error "ERROR: releases must be tagged on x86_64 hosts to build EFI binaries"
+fi
+
+# Use github-cli or hub to push the release
+if ! command -v gh >/dev/null 2>&1; then
+  error "ERROR: github-cli is required to tag releases"
 fi
 
 # Make sure the tag has a leading "v"
@@ -97,37 +103,31 @@ if echo "${release}" | grep -q "[A-Za-z]"; then
   prerelease="--prerelease"
 fi
 
-# Create binary EFI file
-if ! releng/make-binary.sh "${release}" ; then
-  echo "Unable to make release assets, exiting!"
-  exit 1
+# Create binary assets
+if ! releng/make-binary.sh "${release}"; then
+  error "ERROR: unable to make release assets, exiting!"
+fi
+
+# Sign the binary assets
+if ! releng/sign-assets.sh "${release}"; then
+  error "ERROR: unable to sign release assets, exiting!"
 fi
 
 assets="$( realpath -e "releng/assets/${release}" )"
-efi_asset="${assets}/zfsbootmenu-${arch}-v${release}.EFI"
-components_asset="${assets}/zfsbootmenu-${arch}-v${release}.tar.gz"
-shasum_asset="${assets}/sha256sum.txt"
+asset_files=()
 
-if [ ! -f "${efi_asset}" ]; then
-  echo "EFI asset not found: ${efi_asset}"
-  exit 1
-fi
+for ext in EFI tar.gz; do
+  f="${assets}/zfsbootmenu-${arch}-v${release}.${ext}"
+  [ -f "${f}" ] || error "ERROR: missing boot image ${f}"
+  asset_files+=( "${f}" )
+done
 
-if [ ! -f "${components_asset}" ]; then
-  echo "Components asset not found: ${components_asset}"
-  exit 1
-fi
+for f in sha256.{txt,sig}; do
+  [ -f "${assets}/${f}" ] || error "ERROR: missng sum file ${assets}/${f}"
+  asset_files+=( "${assets}/${f}" )
+done
 
-if [ ! -f "${shasum_asset}" ]; then
-  echo "sha256sum asset not found: ${shasum_asset}"
-  exit 1
-fi
-
-# Use github-cli or hub to push the release
-if command -v gh >/dev/null 2>&1; then
-  # github-cli does not automatically strip header that hub uses for a title
-  sed -i '1,/^$/d' "${relnotes}"
-  gh release create "${tag}" ${prerelease} -F "${relnotes}" -t "ZFSBootMenu ${tag}" "${efi_asset}" "${components_asset}" "${shasum_asset}"
-else
-  error "ERROR: Please install github-cli"
-fi
+# github-cli does not automatically strip header that hub uses for a title
+sed -i '1,/^$/d' "${relnotes}"
+gh release create "${tag}" ${prerelease} \
+  -F "${relnotes}" -t "ZFSBootMenu ${tag}" "${asset_files[@]}"
