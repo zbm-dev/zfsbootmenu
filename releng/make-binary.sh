@@ -23,7 +23,7 @@ fi
 
 assets="$( realpath -e releng)/assets/${release}"
 if [ -d "${assets}" ]; then
-  rm -f "${assets}/*"
+  rm -f "${assets}"/*
 else
   mkdir -p "${assets}"
 fi
