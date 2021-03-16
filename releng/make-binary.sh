@@ -91,4 +91,3 @@ mv "${build}/initramfs-bootmenu.img" "${components}"
 mv "${build}/vmlinuz-bootmenu" "${components}"
 
 ( cd "${build}" && tar czvf "${assets}/zfsbootmenu-${arch}-v${release}.tar.gz" "$( basename "${components}" )" ) || exit 1
-( cd "${assets}" && rm -f sha256sum.txt && sha256sum -- * > sha256sum.txt ) || exit 1
