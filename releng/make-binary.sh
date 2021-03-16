@@ -21,7 +21,7 @@ if [ ! -x "${DRACUTBIN}" ]; then
   exit 1
 fi
 
-assets="releng/assets/${release}"
+assets="$( realpath -e releng)/assets/${release}"
 if [ -d "${assets}" ]; then
   rm -f "${assets}/*"
 else
@@ -81,14 +81,14 @@ yq-go eval "del(.Kernel.CommandLine)" -i "${yamlconf}"
 
 # EFI file is currently only built on x86_64
 if [ "${BUILD_EFI}" = "true" ]; then
-  mv "${build}/vmlinuz.EFI" "${assets}/zfsbootmenu-${arch}-${release}.EFI"
+  mv "${build}/vmlinuz.EFI" "${assets}/zfsbootmenu-${arch}-v${release}.EFI"
 fi
 
 # Components are always built
-components="${build}/zfsbootmenu-${arch}-${release}"
+components="${build}/zfsbootmenu-${arch}-v${release}"
 mkdir -p "${components}"
 mv "${build}/initramfs-bootmenu.img" "${components}"
 mv "${build}/vmlinuz-bootmenu" "${components}"
 
-( cd "${build}" && tar czvf "${assets}/zfsbootmenu-${arch}-${release}.tar.gz" "$( basename "${components}" )" ) || exit 1
+( cd "${build}" && tar czvf "${assets}/zfsbootmenu-${arch}-v${release}.tar.gz" "$( basename "${components}" )" ) || exit 1
 ( cd "${assets}" && rm -f sha256sum.txt && sha256sum -- * > sha256sum.txt ) || exit 1

@@ -104,8 +104,8 @@ if ! releng/make-binary.sh "${release}" ; then
 fi
 
 assets="$( realpath -e "releng/assets/${release}" )"
-efi_asset="${assets}/zfsbootmenu-${arch}-${release}.EFI"
-components_asset="${assets}/zfsbootmenu-${arch}-${release}.tar.gz"
+efi_asset="${assets}/zfsbootmenu-${arch}-v${release}.EFI"
+components_asset="${assets}/zfsbootmenu-${arch}-v${release}.tar.gz"
 shasum_asset="${assets}/sha256sum.txt"
 
 if [ ! -f "${efi_asset}" ]; then
