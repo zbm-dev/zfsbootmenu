@@ -2028,3 +2028,10 @@ change_sort() {
   zbm_sort="${zrem};${zsa}"
   zdebug "Setting zbm_sort to ${zbm_sort}"
 }
+
+# prints: contents of $BASE/zbm.cmdline
+# returns: nothing
+
+zbmcmdline() {
+  [ -f "${BASE}/zbm.cmdline" ] && echo | cat "${BASE}/zbm.cmdline" -
+}
