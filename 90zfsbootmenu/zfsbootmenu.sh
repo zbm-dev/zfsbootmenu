@@ -64,15 +64,15 @@ fuzzy_default_options=( "--ansi" "--no-clear"
 
 if [ -n "${HAS_REFRESH}" ] ; then
   fuzzy_default_options+=(
-    "--bind" '"alt-l:execute[ /bin/zlogtail -l warn -F user,daemon -c ]+refresh-preview"'
-    "--bind" '"ctrl-l:execute[ /bin/zlogtail -l warn -F user,daemon -c ]+refresh-preview"'
-    "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l warn -F user,daemon -c ]+refresh-preview"'
+    "--bind" '"alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]+refresh-preview"'
+    "--bind" '"ctrl-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]+refresh-preview"'
+    "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]+refresh-preview"'
   )
 else
   fuzzy_default_options+=(
-    "--bind" '"alt-l:execute[ /bin/zlogtail -l warn -F user,daemon -c ]"'
-    "--bind" '"ctrl-l:execute[ /bin/zlogtail -l warn -F user,daemon -c ]"'
-    "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l warn -F user,daemon -c ]"'
+    "--bind" '"alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
+    "--bind" '"ctrl-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
+    "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
   )
 fi
 
