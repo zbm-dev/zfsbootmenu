@@ -212,7 +212,7 @@ of the kernel list. That BE should be selected when entering the list.
   initramfs.
   
 - [ ] For each supported distribution, verify that `generate-zbm` can successfully
-   produce an versioned and unversioned initramfs and a unified EFI bundle.
+  produce an versioned and unversioned initramfs and a unified EFI bundle.
    
 - [ ] For each supported distribution, verify that the components and EFI bundles
   are able to correctly boot other systems. The check stages listed above should be

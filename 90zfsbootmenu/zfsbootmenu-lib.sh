@@ -771,9 +771,9 @@ duplicate_snapshot() {
     trap 'exit 0' SIGINT
     if command -v mbuffer >/dev/null 2>&1; then
       # Buffer the exchange when possible
-      zfs send "${selected}" | mbuffer | zfs recv "${recv_args[@]}"
+      zfs send -p -w "${selected}" | mbuffer | zfs recv "${recv_args[@]}"
     else
-      zfs send "${selected}" | zfs recv "${recv_args[@]}"
+      zfs send -p -w "${selected}" | zfs recv "${recv_args[@]}"
     fi
   )
 }
