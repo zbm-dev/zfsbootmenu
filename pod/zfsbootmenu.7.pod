@@ -90,6 +90,12 @@ Display a countdown timer for the specified number of seconds before booting the
 
 Indicate that ZFSBootMenu should be run under B<tmux> in the initramfs. With this enabled, debug-level logging for the ZFSBootMenu scripts can be easily viewed. The tooling must also be installed with an additional dracut configuration option listed below.
 
+=back
+
+=head1 Deprecated Command-Line Parameters
+
+=over 4
+
 =item B<timeout>
 
 Deprecated; use B<zbm.timeout>.

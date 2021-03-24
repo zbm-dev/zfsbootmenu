@@ -1,3 +1,101 @@
+# ZFSBootMenu v1.9.0 (2021-03-29)
+
+This release is dedicated to the late Jürgen Buchmüller (@pullmoll), a major contributor to the Void Linux project. Although ZFSBootMenu strives to support as many Linux distributions as possible, Void Linux is the distribution of choice for the entire ZFSBootMenu team. We have benefited greatly from pullmoll's enduring commitment to Void Linux. He will be missed.
+
+## Fixes
+
+* Snapshot duplication now carries over ZFS properties from the source (cloning has always copied properties)
+* When forcing a pool read-write via MOD+W, the screen is now cleared before a password prompt
+* Prompts in Arch/Ubuntu/Debian chroots are now correctly set
+* Build-time checks for version-specific flags in fzf/sk/dmesg improve compatibility with older versions found on Debian and Ubuntu
+* Add `stty` to the list of required binaries
+* When `generate-zbm` is executed with the `--debug` flag, `-q` is no longer passed in to Dracut
+* When possible, try to let Dracut determine the path to the EFI stub file. The path can be explicitly specified by setting `EFI.Stub` in `config.yaml`
+* Update the list of allowed characters in a ZFS filesystem name; removing `,` and adding `:`
+* Use the Dracut built-in `inst_rules` to install udev rules, instead of hard-coding a file path
+* Correctly set a `root=` prefix for Gentoo systems
+* Improve kernel version detection in unversioned file names
+* Update documentation to clarify driver exclusions and teardown hooks
+
+## Major New features
+
+### `hostid` configuration assistance
+A pair of new features have been developed to combat the delicate dance sometimes required to synchronize `hostid` in the boot environment (BE), the initramfs for the BE, and the initramfs for ZFSBootMenu. Both of these are controlled by ZFSBootMenu kernel command line options.
+
+Set `zbm.import_policy=hostid` to allow run-time reconfiguration of the SPL hostid. If a pool is preferred via `zbm.prefer` and the pool can not be imported with a preconfigured hostid, the system will attempt to adopt the hostid of the system that last imported the pool. If a preferred pool is not set and no pools can be imported using a preconfigured hostid, the system will adopt the hostid of the first otherwise-importable pool. After adopting a detected hostid, ZFSBootMenu will subsequently attempt to import as many pools as possible.
+
+Setting `zbm.set_hostid` will cause ZFSBootMenu to set the `spl.spl_hostid` command-line parameter for the selected boot environment to the hostid used to import its pool. The SPL kernel module will use this value as the hostid of the booted environment regardless of the contents of `/etc/hostid`. As a special case, if the hostid to be set is zero, ZFSBootMenu will instead set `spl_hostid=00000000`, which should be used by dracut-based initramfs images to write an all-zero /etc/hostid in the initramfs prior to importing the boot pool.
+
+## Minor new features
+
+### Boot environment / snapshot sorting
+The main boot environment screen and snapshot list screen can now be sorted by multiple criteria. By default, these listings are sorted by name. One of `zbm.sort_key=name`, `zbm.sort_key=creation`, or `zbm.sort_key=used` can be set on the command line to change the default used. `MOD+O` can be pressed at run time to change the sort order to the next in the list.
+
+### Helper functions in the recovery shell
+
+The internal `zfsbootmenu-lib.sh` library is now sourced by default in the recovery shell. This makes a number of helper functions available for general use.
+
+### Combined command line printer
+
+Since `Dracut` can find command line options from multiple places, it can be difficult to determine which option was used to control bootloader behavior. The command `zbmcmdline` will show the command line as seen by Dracut.
+
+### Shorcut key layout improvements
+
+Instead of flowing the helper key text to the width of the screen, shortcut key text is now arranged in one or more columns. Low resolution screens or terminals with small dimensions will use a single column to show the text. As the terminal dimensions increase, text will be laid out in up to a maximum of three left-aligned columns.
+
+### Logging system
+
+ZFSBootMenu has an internal logging system backed by `/dev/kmsg` and `dmesg`. Logging is now enabled throughout the entire system, tracking both `debug` level messages as well as `warnings` and `errors`. When a warning or error condition has occurred, a yellow `[!]` or red `[!]` notification will appear in the upper left of the screen. Pressing `MOD+L` will access this logging system, allowing you to easily see these messages.
+
+To aid in debugging issues, debug logging has been added in all of the internal library functions. These messages can be enabled by setting `loglevel=7` on the ZFSBootMenu command line.
+
+## Binary release for x86_64
+
+Binary releases in the form of a standalone EFI file and a kernel/initramfs pair for `x86_64` will now be made available with each future tagged release. To allow for the most compatiblity with the myriad system configurations out there, a few features will be embedded in the builds:
+
+* `zbm.import_policy=hostid`
+* `zbm.set_hostid`
+* [xhci-teardown.sh](https://github.com/zbm-dev/zfsbootmenu/blob/master/contrib/xhci-teardown.sh)
+
+The EFI binary can be used as a recovery tool by naming it `BOOTX86.EFI` and adding it to an `EF00` partition on a USB drive. It can also be used as a drop-in bootloader for your system without needing to locally build a copy. See [UEFI Booting](https://github.com/zbm-dev/zfsbootmenu/wiki/UEFI-Booting-without-an-Intermediate-Boot-Manager#booting-the-bundled-executable) for example `efibootmgr` commands.
+
+
+## Other changes
+
+Some command line options have now been deprecated with the inclusion of `zbm.import_policy`. See [zfsbootmenu(7)](https://github.com/zbm-dev/zfsbootmenu/blob/master/pod/zfsbootmenu.7.pod#deprecated-command-line-parameters).
+
+## Testing improvements
+
+* Ability to install Arch / Ubuntu / Debian / Void / Void-musl on ZFS, in a VM, with a single command
+  * This is huge.
+* Verify that ZBM builds on Arch / Ubuntu / Debian / Void / Void-musl
+* Verify that ZBM built on any distro boots any other distro
+* Improvments to `run.sh` and `setup.sh` testing scripts to simplify usage
+
+## Significant commits in this release
+* fadfd0f - Use --props and --raw when send | recv duplicating (Andrew J. Hesford)
+* 0a4b1f7 - Use signify to sign binary assets (Andrew J. Hesford)
+* 98cfc69 - Show if BE is encrypted, add path to chroot prompt (#157) (Zach Dykstra)
+* 848bfc9 - Do not drop to emergency shell if zbm.preferred cannot be imported (Andrew J. Hesford)
+* fd94635 - Fix PS1 in arch/debian/ubuntu, set custom prompt in emergency shell (#151) (Zach Dykstra)
+* dee6228 - Support older versions of fzf/sk/dmesg (Zach Dykstra)
+* 6e28f42 - Non-zero return from chroot should be debug info, not an error (Andrew J. Hesford)
+* 82ab9a7 - Add `stty` to required exectables in module-setup.sh (Andrew J. Hesford)
+* f962f50 - Use configurable destinations for all paths in Makefile (Andrew J. Hesford)
+* 03a38b5 - Column view for help key footers (Andrew J. Hesford)
+* 951111e - Add support to discover and assume a hostid, as well as fix arguments passed to a BE (#147) (Zach Dykstra)
+* 29cf15c - Logging lifecycle (#146) (Zach Dykstra)
+* 629346f - Automagically source zfsbootmenu-lib in emergency shell (Zach Dykstra)
+* 73dc5c2 - Move more helper functions to -lib, cleanup scripts (#144) (Zach Dykstra)
+* 44ed892 - Allow BE and snapshot sorting by different criteria  (#143) (Zach Dykstra)
+* 9afa8b4 - comma is invalid, colon is valid (Zach Dykstra)
+* a99a8de - Update README.md to explain driver exclusions and teardown hooks (RoundDuckKira)
+* 5ac481f - Use inst_rules to install rule programs (Witaut Bajaryn)
+* 6cf753f - Use genkernel root prefix by default on Gentoo (#139) (Witaut Bajaryn)
+* a6e02c0 - Only specify `--uefi-stub` when EFI.Stub is configured (Andrew J. Hesford)
+* 893cbe9 - Improve kernel version detection. (Andrew J. Hesford)
+* 8db6d8f - README: Describe more Perl dependencies (#134) (Witaut Bajaryn)
+
 # ZFSBootMenu v1.8.1 (2021-01-12)
 
 Happy New Year! ZFSBootMenu 1.8.1 provides a few minor enhancements and bug fixes.
