@@ -35,6 +35,9 @@ EOF
 
 getcmdline > "${BASE}/zbm.cmdline"
 
+# Set a non-empty hostname so we show up in zpool history correctly
+echo "ZFSBootMenu" > /proc/sys/kernel/hostname
+
 modprobe zfs 2>/dev/null
 udevadm settle
 
