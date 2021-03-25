@@ -144,7 +144,7 @@ if [ "${BYTE_ORDER}" = "be" ]; then
   info "ZFSBootMenu: big endian detected, disabling automatic replacement of spl_hostid"
 elif getargbool 0 zbm.set_hostid ; then
   zbm_set_hostid=1
-  info "ZFSBootMenu: defaulting automatic replacement of spl_hostid to on"
+  info "ZFSBootMenu: enabling automatic replacement of spl_hostid"
 else
   zbm_set_hostid=0
   info "ZFSBootMenu: disabling automatic replacement of spl_hostid"
