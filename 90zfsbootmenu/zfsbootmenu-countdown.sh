@@ -7,6 +7,10 @@ trap '' SIGINT
 # shellcheck disable=SC1091
 [ -r /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
 
+
+# Make sure /dev/zfs exists, otherwise drop to a recovery shell
+[ -e /dev/zfs ] || emergency_shell "/dev/zfs missing, check that kernel modules are loaded"
+
 if [ -z "${BASE}" ]; then
   export BASE="/zfsbootmenu"
 fi
