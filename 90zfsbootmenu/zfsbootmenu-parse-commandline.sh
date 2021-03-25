@@ -178,12 +178,7 @@ case "${root}" in
     ;;
 esac
 
-# Make sure Dracut is happy that we have a root and will wait for ZFS
-# modules to settle before mounting.
+# Make sure Dracut is happy that we have a root
 if [ ${wait_for_zfs} -eq 1 ]; then
   ln -s /dev/null /dev/root 2>/dev/null
-  # shellcheck disable=SC2154
-  initqueuedir="${hookdir}/initqueue/finished"
-  [ -d "${initqueuedir}" ] || initqueuedir="${hookdir}/initqueue-finished"
-  echo '[ -e /dev/zfs ]' > "${initqueuedir}/zfs.sh"
 fi
