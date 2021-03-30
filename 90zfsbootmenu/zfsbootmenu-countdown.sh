@@ -18,11 +18,11 @@ mkdir -p "${BASE}"
 
 # Write out a default or overridden hostid
 if [ -n "${spl_hostid}" ] ; then
-  zinfo "ZFSBootMenu: writing /etc/hostid from command line: ${spl_hostid}"
+  zinfo "writing /etc/hostid from command line: ${spl_hostid}"
   write_hostid "${spl_hostid}"
 elif [ ! -e /etc/hostid ]; then
-  zinfo "ZFSBootMenu: no hostid found on kernel command line or /etc/hostid"
-  zinfo "ZFSBootMenu: defaulting hostid to 00000000"
+  zinfo "no hostid found on kernel command line or /etc/hostid"
+  zinfo "defaulting hostid to 00000000"
   write_hostid 0
 fi
 
