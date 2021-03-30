@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "zfsbootmenu 7"
-.TH zfsbootmenu 7 "2021-02-06" "1.8.1" "ZFSBootMenu"
+.TH zfsbootmenu 7 "2021-03-30" "1.9.0" "ZFSBootMenu"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -146,25 +146,36 @@ ZFSBootMenu behavior is controlled through \s-1ZFS\s0 filesystem properties and 
 .SH "Command-Line Parameters"
 .IX Header "Command-Line Parameters"
 These options are set on the kernel command line when booting the initramfs or \s-1UEFI\s0 bundle. Default options were chosen to allow general systems to boot without setting any values.
-.IP "\fBroot=zfsbootmenu:POOL=<pool>\fR" 4
-.IX Item "root=zfsbootmenu:POOL=<pool>"
-By default, ZFSBootMenu will look for the \fIbootfs\fR property on the first pool it imports to select the default boot environment. If you have multiple pools, substitute the name of your preferred pool for \fB<pool>\fR in the argument \fBroot=zfsbootmenu:POOL=<pool>\fR.
 .IP "\fBspl_hostid=<hostid>\fR" 4
 .IX Item "spl_hostid=<hostid>"
-When creating an initramfs or \s-1UEFI\s0 bundle, the \fIhostid\fR from the system is copied into the target. If this image will be used on another system with a different \fIhostid\fR, it can be overridden with this option.
-.Sp
-Replace \fB<hostid>\fR with an eight-digit hexadecimal number.
-.IP "\fBzbm.force_import=1\fR" 4
-.IX Item "zbm.force_import=1"
+When creating an initramfs or \s-1UEFI\s0 bundle, the \fI/etc/hostid\fR from the system is copied into the target. If this image will be used on another system with a different hostid, replace \fB<hostid>\fR with the desired hostid, as an eight-digit hexadecimal number, to override the value contained within the image.
+.IP "\fBzbm.prefer=<pool>\fR" 4
+.IX Item "zbm.prefer=<pool>"
+By default, ZFSBootMenu will look for the \fIbootfs\fR property on the first imported pool (sorted alphabetically) to select the default boot environment. If you have multiple pools, replace \fB<pool>\fR with the name of your preferred pool to override the default.
+.IP "\fBzbm.import_policy\fR" 4
+.IX Item "zbm.import_policy"
+This option controls how the pool import process should take place.
+.RS 4
+.IP "\fBzbm.import_policy=hostid\fR" 2
+.IX Item "zbm.import_policy=hostid"
+Set this option to allow run-time reconfiguration of the \s-1SPL\s0 hostid. If a pool is preferred via \fBzbm.prefer\fR and the pool can not be imported with a preconfigured hostid, the system will attempt to adopt the hostid of the system that last imported the pool. If a preferred pool is not set and no pools can be imported using a preconfigured hostid, the system will adopt the hostid of the first otherwise-importable pool. After adopting a detected hostid, ZFSBootMenu will subsequently attempt to import as many pools as possible. This option is forbidden on big-endian systems.
+.IP "\fBzbm.import_policy=strict\fR" 2
+.IX Item "zbm.import_policy=strict"
+Set this option to only import pools that match the \s-1SPL\s0 hostid configured in ZFSBootMenu. If none can be imported, an emergency shell will be invoked. The \fIstrict\fR policy is consistent with the behavior of earlier versions of ZFSBootMenu and is the default import policy.
+.IP "\fBzbm.import_policy=force\fR" 2
+.IX Item "zbm.import_policy=force"
 Set this option to attempt to force pool imports. When set, this invokes \fIzpool import \-f\fR in place of the regular \fIzpool import\fR command, which will attempt to import a pool that's potentially in use on another system. Use this option with caution!
+.RE
+.RS 4
+.RE
+.IP "\fBzbm.set_hostid\fR" 4
+.IX Item "zbm.set_hostid"
+On little-endian systems, setting this option will cause ZFSBootMenu to set the \fIspl.spl_hostid\fR command-line parameter for the selected boot environment to the hostid used to import its pool. The \s-1SPL\s0 kernel module will use this value as the hostid of the booted environment regardless of the contents of \fI/etc/hostid\fR. As a special case, if the hostid to be set is zero, ZFSBootMenu will instead set \fIspl_hostid=00000000\fR, which should be used by dracut-based initramfs images to write an all-zero \fI/etc/hostid\fR in the initramfs prior to importing the boot pool.
 .Sp
-Omit this option or explicitly specify \fBzbm.force_import=0\fR to disable forced imports.
-.IP "\fBforce_import=1\fR" 4
-.IX Item "force_import=1"
-Deprecated; use \fBzbm.force_import\fR.
+This option has no effect on big-endian systems.
 .IP "\fBzbm.sort_key\fR" 4
 .IX Item "zbm.sort_key"
-This option accepts a \s-1ZFS\s0 property name by which the boot environment and snapshot lists should be sorted.
+This option accepts a \s-1ZFS\s0 property name by which the boot environment and snapshot lists will be sorted.
 .RS 4
 .IP "\fBzbm.sort_key=name\fR" 2
 .IX Item "zbm.sort_key=name"
@@ -180,8 +191,7 @@ Sort the lists by size \fIused\fR.
 .RE
 .IP "\fBzbm.timeout\fR" 4
 .IX Item "zbm.timeout"
-This option accepts numeric values that control whether and when the
-boot-environment menu should be displayed.
+This option accepts numeric values that control whether and when the boot-environment menu should be displayed.
 .RS 4
 .IP "\fBzbm.timeout=0\fR | \fBzbm.skip\fR" 2
 .IX Item "zbm.timeout=0 | zbm.skip"
@@ -195,12 +205,23 @@ Display a countdown timer for the specified number of seconds before booting the
 .RE
 .RS 4
 .RE
-.IP "\fBtimeout\fR" 4
-.IX Item "timeout"
-Deprecated; use \fBzbm.timeout\fR.
 .IP "\fBzbm.tmux\fR" 4
 .IX Item "zbm.tmux"
 Indicate that ZFSBootMenu should be run under \fBtmux\fR in the initramfs. With this enabled, debug-level logging for the ZFSBootMenu scripts can be easily viewed. The tooling must also be installed with an additional dracut configuration option listed below.
+.SH "Deprecated Command-Line Parameters"
+.IX Header "Deprecated Command-Line Parameters"
+.IP "\fBtimeout\fR" 4
+.IX Item "timeout"
+Deprecated; use \fBzbm.timeout\fR.
+.IP "\fBroot=zfsbootmenu:POOL=<pool>\fR" 4
+.IX Item "root=zfsbootmenu:POOL=<pool>"
+Deprecated; use \fBzbm.prefer\fR.
+.IP "\fBforce_import=1\fR" 4
+.IX Item "force_import=1"
+Deprecated; use \fBzbm.import_policy=force\fR.
+.IP "\fBzbm.force_import=1\fR" 4
+.IX Item "zbm.force_import=1"
+Deprecated; use \fBzbm.import_policy=force\fR.
 .SH "ZFS Properties"
 .IX Header "ZFS Properties"
 The following properties can be set at any level of the boot-environment hierarchy to control boot behavior.
