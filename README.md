@@ -4,12 +4,11 @@
 
 ZFSBootMenu is a Dracut module that intends to provide Linux distributions with an experience similar to FreeBSD's bootloader. By taking advantage of ZFS features, it allows a user to have multiple "boot environments" (with different distros, for example), manipulate snapshots before booting, and, for the adventurous user, even bootstrap a system installation via `zfs recv`.
 
-[![asciicast](https://asciinema.org/a/8GDkUpX0IsupMdx0lgWHMG5QP.svg)](https://asciinema.org/a/8GDkUpX0IsupMdx0lgWHMG5QP)
-
+![screenshot](/media/v1.9.0-multi-be.png)
 
 In broad strokes, it works as follows:
 
-* Via GRUB, direct EFI booting, etc, boot a Linux kernel along with an initramfs containing ZFSBootMenu.
+* Via direct EFI booting, `rEFInd`, `syslinux`, etc, boot a Linux kernel along with an initramfs containing ZFSBootMenu.
 * Look for `zfsbootmenu` in the kernel command line.
     * Optionally specify a default pool (if multiple are present).
 * Find all healthy ZFS pools and import them.
