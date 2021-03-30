@@ -22,8 +22,8 @@ if [ -n "${spl_hostid}" ] ; then
   write_hostid "${spl_hostid}"
 elif [ ! -e /etc/hostid ]; then
   zinfo "no hostid found on kernel command line or /etc/hostid"
-  zinfo "defaulting hostid to 00000000"
-  write_hostid 0
+  zinfo "defaulting hostid to 00bab10c"
+  write_hostid 00bab10c
 fi
 
 # Prefer a specific pool when checking for a bootfs value
