@@ -1260,7 +1260,7 @@ load_be_cmdline() {
   fi
 
   # shellcheck disable=SC2154
-  if [ "${zbm_set_hostid}" -eq 1 ] && spl_hostid="$( get_spl_hostid )"; then
+  if [ "${zbm_set_hostid:-0}" -eq 1 ] && spl_hostid="$( get_spl_hostid )"; then
     zdebug "overriding spl_hostid and spl.spl_hostid in: '${zfsbe_args}'"
     zfsbe_args="$( suppress_kcl_arg spl_hostid "${zfsbe_args}" )"
     zfsbe_args="$( suppress_kcl_arg spl.spl_hostid "${zfsbe_args}" )"
