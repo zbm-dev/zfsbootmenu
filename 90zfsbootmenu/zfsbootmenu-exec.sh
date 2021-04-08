@@ -1,15 +1,6 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
-export endian
-export spl_hostid
-export import_policy
-export menu_timeout
-export loglevel
-export root
-export zbm_sort
-export zbm_set_hostid
-
 # Disable all kernel messages to the console
 echo 0 > /proc/sys/kernel/printk
 
@@ -29,6 +20,18 @@ echo "Loading ZFSBootMenu ..."
 
 export BASE="/zfsbootmenu"
 mkdir -p "${BASE}"
+
+# shellcheck disable=SC2154
+cat > "${BASE}/environment" <<EOF
+export endian="${endian}"
+export spl_hostid="${spl_hostid}"
+export import_policy="${import_policy}"
+export menu_timeout="${menu_timeout}"
+export loglevel="${loglevel}"
+export root="${root}"
+export zbm_sort="${zbm_sort}"
+export zbm_set_hostid="${zbm_set_hostid}"
+EOF
 
 getcmdline > "${BASE}/zbm.cmdline"
 
