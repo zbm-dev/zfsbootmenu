@@ -16,6 +16,13 @@ fi
 
 mkdir -p "${BASE}"
 
+if [ -r "${BASE}/environment" ]; then
+  # shellcheck disable=SC1090
+  source "${BASE}/environment"
+else
+  zwarn "failed to source ZBM environment"
+fi
+
 # Write out a default or overridden hostid
 if [ -n "${spl_hostid}" ] ; then
   zinfo "writing /etc/hostid from command line: ${spl_hostid}"

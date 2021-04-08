@@ -12,6 +12,13 @@ if [ -z "${BASE}" ]; then
   export BASE="/zfsbootmenu"
 fi
 
+if [ -r "${BASE}/environment" ]; then
+  # shellcheck disable=SC1090
+  source "${BASE}/environment"
+else
+  zwarn "failed to source ZBM environment"
+fi
+
 while [ ! -e "${BASE}/initialized" ]; do
   if ! delay=5 prompt="Press [ESC] to cancel" timed_prompt "Waiting for ZFSBootMenu initialization"; then
     zdebug "exited while waiting for initialization"
@@ -107,9 +114,9 @@ while true; do
   if [ "${BE_SELECTED}" -eq 0 ]; then
     # Populate the BE list, load any keys as necessary
     # If no BEs were found, remove the empty environment file
-    populate_be_list "${BASE}/env" || rm -f "${BASE}/env"
+    populate_be_list "${BASE}/bootenvs" || rm -f "${BASE}/bootenvs"
 
-    bootenv="$( draw_be "${BASE}/env" )"
+    bootenv="$( draw_be "${BASE}/bootenvs" )"
     ret=$?
 
     if [ "${ret}" -eq 130 ]; then
