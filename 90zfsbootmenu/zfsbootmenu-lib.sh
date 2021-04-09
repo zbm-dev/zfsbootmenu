@@ -9,7 +9,7 @@
 # returns: nothing
 
 zlog() {
-  local _script _func
+  local _script _func prefix offset join
   [ -z "${1}" ] && return
   [ -z "${2}" ] && return
 
@@ -25,12 +25,22 @@ zlog() {
 
   # Only add script/function tracing to debug messages
   if [ "${1}" -eq 7 ] && [ -n "${HAS_NOESCAPE}" ] ; then
-    echo -e "<${1}>ZBM:\033[0;33m${_script}[$$]\033[0;31m:${_func}()\033[0m: ${2}" | fold -s -w "${WIDTH}" > /dev/kmsg
+    prefix="<${1}>ZBM:\033[0;33m${_script}[$$]\033[0;31m:${_func}()\033[0m"
   elif [ "${1}" -eq 7 ]; then
-    echo -e "<${1}>ZBM:${_script}[$$]:${_func}(): ${2}" | fold -s -w "${WIDTH}" > /dev/kmsg
+    prefix="<${1}>ZBM:${_script}[$$]:${_func}()"
   else
-    echo -e "<${1}>ZFSBootMenu: ${2}" | fold -s -w "${WIDTH}" > /dev/kmsg
+    prefix="<${1}>ZFSBootMenu"
   fi
+
+  # account for the fzf gutter and kernel timestamp
+  offset="${#prefix}"
+  WIDTH=$(( WIDTH - ( offset - 15 ) ))
+
+  join=': '
+  while read -r line; do
+    echo -e "${prefix}${join}${line}" > /dev/kmsg
+    join='+ '
+  done <<<"$( echo "${2}" | fold -s -w "${WIDTH}" )"
 }
 
 # arg1: log line
