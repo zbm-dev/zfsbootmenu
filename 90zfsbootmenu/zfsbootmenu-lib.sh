@@ -578,6 +578,7 @@ draw_snapshots() {
 
 draw_diff() {
   local snapshot pool diff_target mnt
+  local zfs_diff zfs_diff_PID
 
   snapshot="${1}"
   if [ -z "${snapshot}" ]; then
@@ -604,15 +605,18 @@ draw_diff() {
     return
   fi
 
-  # shellcheck disable=SC2016
-  ( zfs diff -F -H "${snapshot}" "${diff_target}" & echo $! >&3 ) 3>"${BASE}/diff.pid" | \
-    sed "s,${mnt},," | \
-    HELP_SECTION=DIFF ${FUZZYSEL} --prompt "${snapshot} > " \
-      --preview="/libexec/zfsbootmenu-preview ${diff_target} ${BOOTFS}" \
-      --preview-window="up:${PREVIEW_HEIGHT}" \
-      --bind 'esc:execute-silent[ kill $( cat ${BASE}/diff.pid ) ]+abort'
+  coproc zfs_diff ( zfs diff -F -H "${snapshot}" "${diff_target}" )
 
-  rm -f "${BASE}/diff.pid"
+  # Clone the FD so it is available in our subshell
+  exec 3>&"${zfs_diff[0]}"
+
+  # shellcheck disable=SC2154
+  ( sed "s,${mnt},," <&3 ) | HELP_SECTION=DIFF ${FUZZYSEL} --prompt "${snapshot} > " \
+    --preview="/libexec/zfsbootmenu-preview ${diff_target} ${BOOTFS}" \
+    --preview-window="up:${PREVIEW_HEIGHT}"
+
+  kill "${zfs_diff_PID}"
+
   umount "${mnt}"
 
   return
