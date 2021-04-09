@@ -607,15 +607,15 @@ draw_diff() {
 
   coproc zfs_diff ( zfs diff -F -H "${snapshot}" "${diff_target}" )
 
-  # Clone the FD so it is available in our subshell
+  # Bash won't use an FD referenced in a variable on the left side of a pipe
   exec 3>&"${zfs_diff[0]}"
 
   # shellcheck disable=SC2154
-  ( sed "s,${mnt},," <&3 ) | HELP_SECTION=DIFF ${FUZZYSEL} --prompt "${snapshot} > " \
+  sed "s,${mnt},," <&3 | HELP_SECTION=DIFF ${FUZZYSEL} --prompt "${snapshot} > " \
     --preview="/libexec/zfsbootmenu-preview ${diff_target} ${BOOTFS}" \
     --preview-window="up:${PREVIEW_HEIGHT}"
 
-  kill "${zfs_diff_PID}"
+  [ -n "${zfs_diff_PID}" ] && kill "${zfs_diff_PID}"
 
   umount "${mnt}"
 
