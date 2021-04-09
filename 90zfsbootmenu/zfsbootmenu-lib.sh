@@ -39,7 +39,7 @@ zlog() {
   join=': '
   while read -r line; do
     echo -e "${prefix}${join}${line}" > /dev/kmsg
-    join='+ '
+    join='+   '
   done <<<"$( echo "${2}" | fold -s -w "${WIDTH}" )"
 }
 
