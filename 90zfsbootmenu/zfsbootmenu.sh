@@ -207,12 +207,6 @@ while true; do
       tput cnorm
 
       case "${subkey}" in
-        "mod-d")
-          draw_diff "${selected_snap}"
-          # Return to snapshot submenu, don't redraw main menu
-          BE_SELECTED=1
-          continue
-        ;;
         "mod-i")
           zfs_chroot "${selected_snap}"
           BE_SELECTED=1

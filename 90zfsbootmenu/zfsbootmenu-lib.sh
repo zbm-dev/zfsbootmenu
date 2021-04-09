@@ -552,12 +552,15 @@ draw_snapshots() {
     "[CTRL+I] interactive chroot" "[CTRL+D] show diff" "" \
     "[CTRL+L] view logs" "[CTRL+H] help" )"
 
-  expects="--expect=alt-x,alt-c,alt-d,alt-i,alt-o"
+  expects="--expect=alt-x,alt-c,alt-i,alt-o"
 
   if ! selected="$( zfs list -t snapshot -H -o name "${benv}" -S "${sort_key}" |
       HELP_SECTION=SNAPSHOT ${FUZZYSEL} \
         --prompt "Snapshot > " --header="${header}" --tac \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
+        --bind='alt-d:execute[ /libexec/zfunc draw_diff {} ]' \
+        --bind='ctrl-d:execute[ /libexec/zfunc draw_diff {} ]' \
+        --bind='ctrl-alt-d:execute[ /libexec/zfunc draw_diff {} ]' \
         --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS}" \
         --preview-window="up:${PREVIEW_HEIGHT}" )"; then
     return 1
