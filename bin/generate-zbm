@@ -15,6 +15,7 @@ use File::stat;
 use File::Path qw(make_path remove_tree);
 use File::Glob qw(:globally :nocase);
 use Sort::Versions;
+use Config;
 
 use Pod::Usage qw(pod2usage);
 
@@ -293,17 +294,21 @@ printf "Creating ZFSBootMenu %s from kernel %s\n", $runConf{version}, $runConf{k
 my $spl_hostid = "/sys/module/spl/parameters/spl_hostid";
 if ( -f $spl_hostid ) {
   open PROC, $spl_hostid;
-  $runConf{hostid}{module} = lc(sprintf("%X", <PROC>));
+  $runConf{hostid}{module} = sprintf("%08x", <PROC>);
   close PROC;
+}
 
-  my @hostid  = execute(qw(hostid));
-  my $status = pop(@hostid);
-  if ( $status eq 0 and scalar @hostid ) {
-    chomp($runConf{hostid}{command} = pop(@hostid));
-  }
+my $etc_hostid = "/etc/hostid";
+if ( $runConf{hostid}{module} ne 0 and -f $etc_hostid ) {
+  open SPL, '<:raw', $etc_hostid;
+  read SPL, my $hostid, 4;
+  close SPL;
 
-  if ($runConf{hostid}{module} ne $runConf{hostid}{command}) {
-    print "SPL ($runConf{hostid}{module}) and system ($runConf{hostid}{command}) hostids do not match!\n";
+  # There must be a better way to do this
+  $runConf{hostid}{etc} = reverse(unpack('h8', $hostid));
+
+  if ($runConf{hostid}{module} ne $runConf{hostid}{etc}) {
+    print "SPL ($runConf{hostid}{module}) and system ($runConf{hostid}{etc}) hostids do not match!\n";
   }
 }
 
