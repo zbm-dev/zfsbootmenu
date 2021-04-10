@@ -15,7 +15,6 @@ use File::stat;
 use File::Path qw(make_path remove_tree);
 use File::Glob qw(:globally :nocase);
 use Sort::Versions;
-use Config;
 
 use Pod::Usage qw(pod2usage);
 
@@ -304,8 +303,13 @@ if ( $runConf{hostid}{module} ne 0 and -f $etc_hostid ) {
   read SPL, my $hostid, 4;
   close SPL;
 
-  # There must be a better way to do this
-  $runConf{hostid}{etc} = reverse(unpack('h8', $hostid));
+  if ( unpack( 'c', pack( 's', 1 ) ) eq 1 ) {
+    # little endian
+    $runConf{hostid}{etc} = sprintf("%08x", unpack('L<4', $hostid));
+  } else {
+    # big endian
+    $runConf{hostid}{etc} = sprintf("%08x", unpack('L>4', $hostid));
+  }
 
   if ($runConf{hostid}{module} ne $runConf{hostid}{etc}) {
     print "SPL ($runConf{hostid}{module}) and system ($runConf{hostid}{etc}) hostids do not match!\n";
