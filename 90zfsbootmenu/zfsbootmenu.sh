@@ -207,17 +207,6 @@ while true; do
       tput cnorm
 
       case "${subkey}" in
-        "mod-d")
-          draw_diff "${selected_snap}"
-          # Return to snapshot submenu, don't redraw main menu
-          BE_SELECTED=1
-          continue
-        ;;
-        "mod-i")
-          zfs_chroot "${selected_snap}"
-          BE_SELECTED=1
-          continue
-        ;;
         "mod-o")
           change_sort
           BE_SELECTED=1
@@ -297,7 +286,7 @@ while true; do
       else
         set_rw_pool "${pool}"
       fi
-    
+
       # Clear the screen ahead of a potential password prompt from populate_be_list
       tput clear
       tput cnorm
@@ -321,9 +310,6 @@ while true; do
         echo "${cmdline}" > "${BASE}/cmdline"
       fi
       ;;
-    "mod-i")
-      zfs_chroot "${selected_be}"
-    ;;
     "mod-o")
       change_sort
     ;;

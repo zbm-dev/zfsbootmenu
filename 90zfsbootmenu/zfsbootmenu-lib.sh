@@ -472,10 +472,13 @@ draw_be() {
     "[CTRL+E] edit kcl" "[CTRL+I] interactive chroot" "[CTRL+R] recovery shell" "" \
     "[CTRL+L] view logs" " " "[CTRL+H] help" )"
 
-  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-i,alt-o"
+  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-o"
 
   if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
+      --bind='alt-i:execute[ /libexec/zfunc zfs_chroot {} ]' \
+      --bind='ctrl-i:execute[ /libexec/zfunc zfs_chroot {} ]' \
+      --bind='ctrl-alt-i:execute[ /libexec/zfunc zfs_chroot {} ]' \
       --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}" \
       --preview="/libexec/zfsbootmenu-preview {} ${BOOTFS}" < "${env}" )"; then
     return 1
@@ -552,12 +555,19 @@ draw_snapshots() {
     "[CTRL+I] interactive chroot" "[CTRL+D] show diff" "" \
     "[CTRL+L] view logs" "[CTRL+H] help" )"
 
-  expects="--expect=alt-x,alt-c,alt-d,alt-i,alt-o"
+  expects="--expect=alt-x,alt-c,alt-o"
 
+  # shellcheck disable=SC2086,SC2090
   if ! selected="$( zfs list -t snapshot -H -o name "${benv}" -S "${sort_key}" |
       HELP_SECTION=SNAPSHOT ${FUZZYSEL} \
         --prompt "Snapshot > " --header="${header}" --tac \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
+        --bind='alt-d:execute[ /libexec/zfunc draw_diff {} ]' \
+        --bind='ctrl-d:execute[ /libexec/zfunc draw_diff {} ]' \
+        --bind='ctrl-alt-d:execute[ /libexec/zfunc draw_diff {} ]' \
+        --bind='alt-i:execute[ /libexec/zfunc zfs_chroot {} ]' \
+        --bind='ctrl-i:execute[ /libexec/zfunc zfs_chroot {} ]' \
+        --bind='ctrl-alt-i:execute[ /libexec/zfunc zfs_chroot {} ]' \
         --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS}" \
         --preview-window="up:${PREVIEW_HEIGHT}" )"; then
     return 1
