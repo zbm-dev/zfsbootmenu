@@ -200,11 +200,6 @@ while true; do
       tput cnorm
 
       case "${subkey}" in
-        "mod-i")
-          zfs_chroot "${selected_snap}"
-          BE_SELECTED=1
-          continue
-        ;;
         "mod-o")
           change_sort
           BE_SELECTED=1

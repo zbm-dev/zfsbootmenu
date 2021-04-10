@@ -4,6 +4,11 @@
 # shellcheck disable=SC1091
 [ -r /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
 
-zdebug "argv[1]: ${1}"
+# First argument is the function name
+# the rest are positional params
+func="${1}"
+shift
 
-draw_diff "${1}"
+zdebug "Calling ${1} with $*"
+
+$func "$@"
