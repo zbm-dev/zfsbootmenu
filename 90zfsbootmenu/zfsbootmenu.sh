@@ -279,7 +279,7 @@ while true; do
       else
         set_rw_pool "${pool}"
       fi
-    
+
       # Clear the screen ahead of a potential password prompt from populate_be_list
       tput clear
       tput cnorm
@@ -303,9 +303,6 @@ while true; do
         echo "${cmdline}" > "${BASE}/cmdline"
       fi
       ;;
-    "mod-i")
-      zfs_chroot "${selected_be}"
-    ;;
     "mod-o")
       change_sort
     ;;

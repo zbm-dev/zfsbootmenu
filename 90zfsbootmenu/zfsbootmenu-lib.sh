@@ -472,10 +472,13 @@ draw_be() {
     "[CTRL+E] edit kcl" "[CTRL+I] interactive chroot" "[CTRL+R] recovery shell" "" \
     "[CTRL+L] view logs" " " "[CTRL+H] help" )"
 
-  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-i,alt-o"
+  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-o"
 
   if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
+      --bind='alt-i:execute[ /libexec/zfunc zfs_chroot {} ]' \
+      --bind='ctrl-i:execute[ /libexec/zfunc zfs_chroot {} ]' \
+      --bind='ctrl-alt-i:execute[ /libexec/zfunc zfs_chroot {} ]' \
       --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}" \
       --preview="/libexec/zfsbootmenu-preview {} ${BOOTFS}" < "${env}" )"; then
     return 1
