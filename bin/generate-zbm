@@ -290,6 +290,32 @@ unless ( nonempty $runConf{kernel_prefix} and nonempty $runConf{kernel_version} 
 
 printf "Creating ZFSBootMenu %s from kernel %s\n", $runConf{version}, $runConf{kernel};
 
+my $spl_hostid = "/sys/module/spl/parameters/spl_hostid";
+if ( -f $spl_hostid ) {
+  open PROC, $spl_hostid;
+  $runConf{hostid}{module} = sprintf("%08x", <PROC>);
+  close PROC;
+}
+
+my $etc_hostid = "/etc/hostid";
+if ( $runConf{hostid}{module} ne 0 and -f $etc_hostid ) {
+  open SPL, '<:raw', $etc_hostid;
+  read SPL, my $hostid, 4;
+  close SPL;
+
+  if ( unpack( 'c', pack( 's', 1 ) ) eq 1 ) {
+    # little endian
+    $runConf{hostid}{etc} = sprintf("%08x", unpack('L<4', $hostid));
+  } else {
+    # big endian
+    $runConf{hostid}{etc} = sprintf("%08x", unpack('L>4', $hostid));
+  }
+
+  if ($runConf{hostid}{module} ne $runConf{hostid}{etc}) {
+    print "SPL ($runConf{hostid}{module}) and system ($runConf{hostid}{etc}) hostids do not match!\n";
+  }
+}
+
 # Create a unified kernel/initramfs/command line EFI file
 if ( enabled $config{EFI} ) {
   my $unified_efi = createInitramfs( $tempdir, $runConf{kernel_version}, $runConf{kernel} );
