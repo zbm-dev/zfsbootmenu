@@ -9,6 +9,6 @@
 func="${1}"
 shift
 
-zdebug "Calling ${1} with $*"
+zdebug "Calling ${func} with $*"
 
 $func "$@"
