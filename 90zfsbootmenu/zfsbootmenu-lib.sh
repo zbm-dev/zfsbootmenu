@@ -224,7 +224,7 @@ match_hostid() {
     hostid="$( zpool import -o readonly=on -N "${pool}" 2>&1 | grep -E -o "hostid=[A-Za-z0-9]{1,8}")"
 
     if [ -n "${hostid}" ]; then
-      hostid="${hostid##*=}"
+      hostid="$( printf "%08x" "0x${hostid##*=}" )"
       zdebug "discovered pool owner hostid: ${hostid}"
     else
       zdebug "unable to scrape hostid for ${pool}, skipping"
