@@ -2030,7 +2030,7 @@ emergency_shell() {
 
   echo -n "Launching emergency shell: "
   echo -e "${message}\n"
-  env "PS1=$( colorize orange "zfsbootmenu") \w > " /bin/bash --rcfile <( test -f /lib/zfsbootmenu-lib.sh && echo "source /lib/zfsbootmenu-lib.sh" )
+  /bin/bash -l
 }
 
 # prints: nothing
