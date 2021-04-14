@@ -22,7 +22,8 @@ export BASE="/zfsbootmenu"
 mkdir -p "${BASE}"
 
 # shellcheck disable=SC2154
-cat > "${BASE}/environment" <<EOF
+cat >> "/etc/profile" <<EOF
+# Added by zfsbootmenu-exec.sh
 export endian="${endian}"
 export spl_hostid="${spl_hostid}"
 export import_policy="${import_policy}"

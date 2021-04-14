@@ -4,8 +4,14 @@
 # disable ctrl-c (SIGINT)
 trap '' SIGINT
 
-# shellcheck disable=SC1091
-[ -r /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
+if [ -r "/etc/profile" ]; then
+  # shellcheck disable=SC1091
+  source /etc/profile
+else
+  # shellcheck disable=SC1091
+  [ -r /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
+  zwarn "failed to source ZBM environment"
+fi
 
 # Make sure /dev/zfs exists, otherwise drop to a recovery shell
 [ -e /dev/zfs ] || emergency_shell "/dev/zfs missing, check that kernel modules are loaded"
@@ -15,13 +21,6 @@ if [ -z "${BASE}" ]; then
 fi
 
 mkdir -p "${BASE}"
-
-if [ -r "${BASE}/environment" ]; then
-  # shellcheck disable=SC1090
-  source "${BASE}/environment"
-else
-  zwarn "failed to source ZBM environment"
-fi
 
 # Write out a default or overridden hostid
 if [ -n "${spl_hostid}" ] ; then
