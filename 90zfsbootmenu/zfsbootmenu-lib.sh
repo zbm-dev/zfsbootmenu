@@ -2051,3 +2051,10 @@ change_sort() {
 zbmcmdline() {
   [ -f "${BASE}/zbm.cmdline" ] && echo | cat "${BASE}/zbm.cmdline" -
 }
+
+# prints: nothing
+# returns: 0
+
+is_lib_sourced() {
+  return 0
+}

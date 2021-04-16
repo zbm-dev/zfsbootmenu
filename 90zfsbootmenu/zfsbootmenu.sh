@@ -3,12 +3,21 @@
 
 if [ -r "/etc/profile" ]; then
   # shellcheck disable=SC1091
-  source "/etc/profile"
+  source /etc/profile
 else
   # shellcheck disable=SC1091
-  [ -r /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
+  source /lib/zfsbootmenu-lib.sh
   zwarn "failed to source ZBM environment"
 fi
+
+# Prove that /lib/zfsbootmenu-lib.sh was sourced, or hard fail
+if ! is_lib_sourced > /dev/null 2>&1 ; then
+  echo -e "\033[0;31mWARNING: /lib/zfsbootmenu-lib.sh was not sourced; unable to proceed\033[0m"
+  exec /bin/bash
+fi
+
+# Make sure /dev/zfs exists, otherwise drop to a recovery shell
+[ -e /dev/zfs ] || emergency_shell "/dev/zfs missing, check that kernel modules are loaded"
 
 if [ -z "${BASE}" ]; then
   export BASE="/zfsbootmenu"
