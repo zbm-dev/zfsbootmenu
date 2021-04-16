@@ -1,23 +1,29 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
-##
-# Look for BEs with kernels and present a selection menu
-##
+if [ -r "/etc/profile" ]; then
+  # shellcheck disable=SC1091
+  source /etc/profile
+else
+  # shellcheck disable=SC1091
+  source /lib/zfsbootmenu-lib.sh
+  zwarn "failed to source ZBM environment"
+fi
 
-# shellcheck disable=SC1091
-[ -r /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
+# Prove that /lib/zfsbootmenu-lib.sh was sourced, or hard fail
+if ! is_lib_sourced > /dev/null 2>&1 ; then
+  echo -e "\033[0;31mWARNING: /lib/zfsbootmenu-lib.sh was not sourced; unable to proceed\033[0m"
+  exec /bin/bash
+fi
+
+# Make sure /dev/zfs exists, otherwise drop to a recovery shell
+[ -e /dev/zfs ] || emergency_shell "/dev/zfs missing, check that kernel modules are loaded"
 
 if [ -z "${BASE}" ]; then
   export BASE="/zfsbootmenu"
 fi
 
-if [ -r "${BASE}/environment" ]; then
-  # shellcheck disable=SC1090
-  source "${BASE}/environment"
-else
-  zwarn "failed to source ZBM environment"
-fi
+mkdir -p "${BASE}"
 
 while [ ! -e "${BASE}/initialized" ]; do
   if ! delay=5 prompt="Press [ESC] to cancel" timed_prompt "Waiting for ZFSBootMenu initialization"; then
@@ -291,7 +297,7 @@ while true; do
       else
         set_rw_pool "${pool}"
       fi
-    
+
       # Clear the screen ahead of a potential password prompt from populate_be_list
       tput clear
       tput cnorm
