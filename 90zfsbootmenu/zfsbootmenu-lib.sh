@@ -309,7 +309,7 @@ mount_zfs() {
   fi
 
   # zfsutil is required for non-legacy mounts and omitted for legacy mounts or snapshots
-  if [ "x$(zfs get -H -o value mountpoint "${fs}")" = "xlegacy" ] || [ -n "${is_snapshot}" ]; then
+  if [ "$(zfs get -H -o value mountpoint "${fs}")" = "legacy" ] || [ -n "${is_snapshot}" ]; then
     zdebug "mounting ${fs} at ${mnt} (${rwo})"
     mount -o "${rwo}" -t zfs "${fs}" "${mnt}"
     ret=$?
@@ -853,7 +853,7 @@ clone_snapshot() {
     return 1
   fi
 
-  if [ "x$promote" != "xnopromote" ]; then
+  if [ "$promote" != "nopromote" ]; then
     # Promotion must succeed to continue
     zdebug "promoting ${target}"
     if ! zfs promote "${target}"; then
@@ -1185,7 +1185,7 @@ preload_be_cmdline() {
   if [ -n "${zfsbe_mnt}" ] && [ -r "${zfsbe_mnt}/etc/default/grub" ]; then
     zdebug "using ${zfsbe_mnt}/etc/default/grub"
     echo "$(
-      # shellcheck disable=SC1090
+      # shellcheck disable=SC1090,SC1091
       . "${zfsbe_mnt}/etc/default/grub" ;
       echo "${GRUB_CMDLINE_LINUX_DEFAULT}"
     )" > "${args_file}"
@@ -1281,7 +1281,7 @@ load_be_cmdline() {
     zfsbe_args="$( suppress_kcl_arg spl_hostid "${zfsbe_args}" )"
     zfsbe_args="$( suppress_kcl_arg spl.spl_hostid "${zfsbe_args}" )"
 
-    if [ "x${spl_hostid}" = "x0x00000000" ]; then
+    if [ "${spl_hostid}" = "0x00000000" ]; then
       # spl.spl_hostid=0 is a no-op; imports fall back to /etc/hostid.
       # Dracut writes spl_hostid to /etc/hostid. to yield expected results.
       # Others (initramfs-tools, mkinitcpio) ignore this, but there isn't much
@@ -1432,7 +1432,7 @@ rewind_checkpoint() {
 
   decision="$( /libexec/zfsbootmenu-input )"
 
-  [ "x${decision}" = "xREWIND" ] || return 1
+  [ "${decision}" = "REWIND" ] || return 1
 
   rewind_to_checkpoint=yes force_export=yes set_rw_pool "${pool}"
   return $?
@@ -1571,9 +1571,9 @@ resume_prompt() {
 
     decision="$( /libexec/zfsbootmenu-input )"
 
-    if [ "x${decision}" = "xDANGEROUS" ]; then
+    if [ "${decision}" = "DANGEROUS" ]; then
       return 0
-    elif [ "x${decision}" = "xNORESUME" ]; then
+    elif [ "${decision}" = "NORESUME" ]; then
       : > "${BASE}/noresume"
       return 0
     else
@@ -1602,7 +1602,7 @@ is_writable() {
   roflag="$( zpool get -H -o value readonly "${pool}" 2>/dev/null )" || return 1
   zdebug "${pool} readonly property: ${roflag}"
 
-  if [ "x${roflag}" = "xoff" ]; then
+  if [ "${roflag}" = "off" ]; then
     return 0
   fi
 
@@ -1674,7 +1674,7 @@ be_has_encroot() {
 
   if encroot="$( zfs get -H -o value encryptionroot "${fs}" 2>/dev/null )"; then
     zdebug "${fs} encryptionroot property: ${encroot}"
-    if [ "x${encroot}" != "x-" ]; then
+    if [ "${encroot}" != "-" ]; then
       echo "${encroot}"
       return 0
     fi
@@ -1736,7 +1736,7 @@ be_keysource() {
     return 1
   fi
 
-  if [ "x${keysrc}" = "x-" ] || [ -z "${keysrc}" ]; then
+  if [ "${keysrc}" = "-" ] || [ -z "${keysrc}" ]; then
     echo ""
     return 1;
   fi
@@ -1778,7 +1778,7 @@ cache_key() {
   # Make file relative to root
   keyfile="${keyfile#/}"
 
-  if [ "x${keyfile}" = "x${keylocation}" ] || [ -z "${keyfile}" ]; then
+  if [ "${keyfile}" = "${keylocation}" ] || [ -z "${keyfile}" ]; then
     # No change or no file => keylocation is not a file => nothing to cache
     return 1;
   fi
@@ -1830,7 +1830,7 @@ cache_key() {
   ret=1
   if [ -e "${mnt}/${keyfile}" ]; then
     keydir="${keyfile%/*}"
-    if [ "x${keydir}" != "x${keyfile}" ] && [ -n "${keydir}" ]; then
+    if [ "${keydir}" != "${keyfile}" ] && [ -n "${keydir}" ]; then
       mkdir -p "${keycache}/${keydir}"
     fi
 
@@ -1924,7 +1924,7 @@ load_key() {
 
   # Otherwise, try to prompt for "passphrase" keys
   keyformat="$( zfs get -H -o value keyformat "${encroot}" )" || keyformat=""
-  if [ "x${keyformat}" != "xpassphrase" ]; then
+  if [ "${keyformat}" != "passphrase" ]; then
     zdebug "unable to load key with format ${keyformat} for ${encroot}"
     return 1
   fi
@@ -1960,17 +1960,17 @@ populate_be_list() {
 
   # Find valid BEs
   while IFS=$'\t' read -r fs mnt active; do
-    if [ "x${mnt}" = "x/" ]; then
+    if [ "${mnt}" = "/" ]; then
       # When mountpoint=/, BE is a candidate unless org.zfsbootmenu:active=off
-      [ "x${active}" = "xoff" ] && continue
-    elif [ "x${mnt}" = "xlegacy" ]; then
+      [ "${active}" = "off" ] && continue
+    elif [ "${mnt}" = "legacy" ]; then
       # When mountpoint=legacy, BE is a candidate only if org.zfsbootmenu:active=on
-      [ "x${active}" = "xon" ] || continue
+      [ "${active}" = "on" ] || continue
     else
       # All other datasets are ignored
       continue
     fi
-    if [ "x${BOOTFS}" = "x${fs}" ] ; then
+    if [ "${BOOTFS}" = "${fs}" ] ; then
       # If BOOTFS is defined, we'll manually append it to the array
       continue
     fi

@@ -53,7 +53,7 @@ trap "umount '${mnt}'" EXIT
 while read -r keyloc; do
 	# Make sure key location is a file:// URI, strip the scheme
 	keyfile="${keyloc#file://}"
-	[ "x${keyloc}" = "x${keyfile}" ] && continue
+	[ "${keyloc}" = "${keyfile}" ] && continue
 
 	# If the keyfile already exists, there is nothing left to do
 	[ -f "${keyfile}" ] && continue
@@ -63,7 +63,7 @@ while read -r keyloc; do
 
 	# Create the key directory if needed
 	keydir="${keyfile%/*}"
-	[ "x${keydir}" = "x${keyfile}" ] && keydir=
+	[ "${keydir}" = "${keyfile}" ] && keydir=
 	[ -n "${keydir}" ] && mkdir -p "${keydir}"
 
 	# Copy the key in place

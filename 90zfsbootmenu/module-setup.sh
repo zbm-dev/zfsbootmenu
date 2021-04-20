@@ -211,10 +211,10 @@ install() {
 
   # Determine platform endianness, defaulting to le
   ival="$( echo -n 3 | od -tx2 -N2 -An | tr -d '[:space:]' )"
-  if [ "x${ival}" = "x3300" ]; then
+  if [ "${ival}" = "3300" ]; then
     endian="be"
   else
-    if [ "x${ival}" != "x0033" ]; then
+    if [ "${ival}" != "0033" ]; then
       warn "unable to determine platform endianness; assuming little-endian"
     fi
     endian="le"
