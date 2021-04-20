@@ -111,7 +111,7 @@ Cycle the sorting key through the following list:
  $( colorize orange "creation") Use the filesystem or snapshot creation time
      $( colorize orange "used") Use the filesystem or snapshot size
 
-The default sort key is $( colorize orange "name") . 
+The default sort key is $( colorize orange "name") .
 
 
 $( mod_header L "view logs" )
@@ -176,7 +176,7 @@ Cycle the sorting key through the following list:
  $( colorize orange "creation") Use the filesystem or snapshot creation time
      $( colorize orange "used") Use the filesystem or snapshot size
 
-The default sort key is $( colorize orange "name") . 
+The default sort key is $( colorize orange "name") .
 
 
 $( mod_header L "view logs" )

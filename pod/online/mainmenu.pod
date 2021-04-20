@@ -1,0 +1,77 @@
+=head1 Keyboard Actions
+
+=over 2
+
+=item B<boot> I<[ENTER]>
+
+Boot the selected boot environment, with the listed kernel and kernel command line visible at the top of the screen.
+
+=item B<kernels> I<[MOD+K]>
+
+Access a list of kernels available in the boot environment.
+
+=item B<snapshots> I<[MOD+S]>
+
+Access a list of snapshots of the selected boot environment. New boot environments can be created here.
+
+=item B<set bootfs> I<[MOD+D]>
+
+Set the selected boot environment as the default for the pool.
+
+The operation will fail gracefully if the pool can not be set I<read/write>.
+
+=item B<edit kcl> I<[MOD+E]>
+
+Temporarily edit the kernel command line that will be used to boot the chosen kernel in the selected boot environment. This change does not persist across reboots.
+
+=item B<pool status> I<[MOD+P]>
+
+View the health and status of each imported pool.
+
+=item B<recovery shell> I<[MOD+R]>
+
+Execute a Bash shell with minimal tooling, enabling system maintenance.
+
+=item B<interactive chroot> I<[MOD+I]>
+
+Enter a chroot of the selected boot environment. The boot environment is mounted I<read/write> if the zpool is imported I<read/write>.
+
+=item B<import read/write> I<[MOD+W]>
+
+If possible, the pool behind the selected boot environment is exported and then re-imported in $( colorize red "read/write") mode.
+
+This is not possible if any of the following conditions are met:
+
+=over 4
+
+=item *
+ The version of ZFS in ZFSBootMenu has detected unsupported pool features, due to an upgraded pool.
+
+=item *
+ The system has an active $( colorize red "resume") image, indicating that the pool is currently in use.
+
+=back
+
+Upon successful re-import in I<read/write> mode, each of the boot environments on this pool will be highlighted in I<red> at the top of the screen.
+
+=item B<sort order> I<[MOD+O]>
+
+Cycle the sorting key through the following list:
+
+=over 4
+
+=item B<name> Use the filesystem or snapshot name
+=item B<creation> Use the filesystem or snapshot creation time
+=item B<used> Use the filesystem or snapshot size
+
+=back
+
+The default sort key is I<name>.
+
+=item B<view logs> I<[MOD+L]>
+
+View logs, as indicated by I<[!]>. The indicator will be yellow for warning conditions and red for errors.
+
+=back
+
+=cut
