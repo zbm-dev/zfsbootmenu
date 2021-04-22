@@ -1,6 +1,6 @@
 =pod
 
-=head1 ZFSBOotMenu ZPOOL Health
+=head1 ZPOOL Health
 
 =over 2
 

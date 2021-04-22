@@ -71,9 +71,9 @@ trap '' SIGINT
 # shellcheck disable=SC2016
 fuzzy_default_options=( "--ansi" "--no-clear"
   "--layout=reverse-list" "--inline-info" "--tac" "--color=16"
-  "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
-  "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"'
-  "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-MAIN} ]"' )
+  "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-menu} ]"'
+  "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-menu} ]"'
+  "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-menu} ]"' )
 
 if [ -n "${HAS_REFRESH}" ] ; then
   fuzzy_default_options+=(

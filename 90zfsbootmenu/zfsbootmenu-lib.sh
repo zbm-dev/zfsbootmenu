@@ -524,7 +524,7 @@ draw_kernel() {
 
   expects="--expect=alt-d"
 
-  if ! selected="$( HELP_SECTION=KERNEL ${FUZZYSEL} \
+  if ! selected="$( HELP_SECTION=kernel-management ${FUZZYSEL} \
      --prompt "${benv} > " --tac --with-nth=2 --header="${header}" \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
       --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS}"  \
@@ -564,7 +564,7 @@ draw_snapshots() {
   expects="--expect=alt-x,alt-c,alt-i,alt-o"
 
   if ! selected="$( zfs list -t snapshot -H -o name "${benv}" -S "${sort_key}" |
-      HELP_SECTION=SNAPSHOT ${FUZZYSEL} \
+      HELP_SECTION=snapshot-management ${FUZZYSEL} \
         --prompt "Snapshot > " --header="${header}" --tac \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
         --bind='alt-d:execute[ /libexec/zfunc draw_diff {} ]' \
@@ -623,7 +623,7 @@ draw_diff() {
   exec 3>&"${zfs_diff[0]}"
 
   # shellcheck disable=SC2154
-  sed "s,${mnt},," <&3 | HELP_SECTION=DIFF ${FUZZYSEL} --prompt "${snapshot} > " \
+  sed "s,${mnt},," <&3 | HELP_SECTION=diff-viewer ${FUZZYSEL} --prompt "${snapshot} > " \
     --preview="/libexec/zfsbootmenu-preview ${diff_target} ${BOOTFS}" \
     --preview-window="up:${PREVIEW_HEIGHT}"
 
@@ -650,7 +650,7 @@ draw_pool_status() {
     "[CTRL+R] rewind checkpoint" "" "[CTRL+L] view logs" "" "[CTRL+H] help" )"
 
   if ! selected="$( zpool list -H -o name |
-      HELP_SECTION=POOL ${FUZZYSEL} \
+      HELP_SECTION=zpool-health ${FUZZYSEL} \
       --prompt "Pool > " --tac --expect=alt-r,ctrl-r,ctrl-alt-r \
       --preview-window="right:${psize}" \
       --preview="zpool status -v {}" --header="${header}" )"; then
