@@ -1,6 +1,6 @@
 =pod
 
-=head1 ZFSBootMenu Snapshot Management
+=head1 Snapshot Management
 
 =over 2
 
@@ -65,7 +65,7 @@ View logs, as indicated by I<[!]>. The indicator will be yellow for warning cond
 
 =back
 
-=head1 AUTHOR
+=head2 AUTHOR
 
 ZFSBootMenu Team L<https://github.com/zbm-dev/zfsbootmenu>
 

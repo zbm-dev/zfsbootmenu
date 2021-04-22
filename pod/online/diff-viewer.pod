@@ -1,6 +1,6 @@
 =pod
 
-=head1 ZFSBootMenu Diff Viewer
+=head1 Diff Viewer
 
 =over 2
 
@@ -36,7 +36,7 @@ I<F> Regular file
 
 =back
 
-=head1 AUTHOR
+=head2 AUTHOR
 
 ZFSBootMenu Team L<https://github.com/zbm-dev/zfsbootmenu>
 
