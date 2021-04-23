@@ -1,6 +1,10 @@
 =pod
 
-=head1 Diff Viewer
+=head1 NAME
+
+B<zfsbootmenu> - Diff Viewer
+
+=head1 Keyboard Shortcuts
 
 =over 2
 

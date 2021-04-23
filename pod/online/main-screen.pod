@@ -1,6 +1,10 @@
 =pod
 
-=head1 Main Screen
+=head1 NAME
+
+B<zfsbootmenu> - Main Screen
+
+=head1 Keyboard Shortcuts
 
 =over 2
 

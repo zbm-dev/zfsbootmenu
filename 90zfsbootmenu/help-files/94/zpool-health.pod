@@ -1,4 +1,8 @@
-[1mZPOOL Health[0m
+[1mNAME[0m
+
+[1mzfsbootmenu[0m - ZPOOL Health
+
+[1mKeyboard Shortcuts[0m
 
 [33m[MOD+R][0m [1mrewind checkpoint[0m
   If a pool checkpoint is available, the selected pool is exported and then imported with the

@@ -61,6 +61,7 @@ if [ ! -x releng/pod2man.sh ]; then
 fi
 
 releng/pod2man.sh "${release}"
+releng/pod2help.sh
 
 # Generate a short history for CHANGELOG.md
 # git log --format="* %h - %s (%an)" v1.4.1..HEAD

@@ -1,6 +1,9 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
+# shellcheck disable=SC1091
+source /lib/zfsbootmenu-lib.sh
+
 # zfsbootmenu-help invokes itself, so the value of $WIDTH depends
 # on if $0 is launching fzf/sk (-L) or is being launched inside
 # fzf/sk (-s).
@@ -32,26 +35,28 @@ help_pager() {
     --preview-window="right:${PREVIEW_SIZE}:wrap" \
     --header="$( colorize green "[ESC]" ) $( colorize lightblue "back" )" \
     --tac \
-    --ansi \
-    --color='border:6'
+    --ansi
 }
 
 # shellcheck disable=SC2012
-for size in $( ls help-files | sort -n -r ) ; do
+for size in $( ls /usr/share/docs/help-files | sort -n -r ) ; do
   if [ "${PREVIEW_SIZE}" -gt "${size}" ]; then
-    doc_path="help-files/${size}"
+    doc_path="/usr/share/docs/help-files/${size}"
     break
   fi
 done
 
 if [ -z "${doc_path}" ]; then
   # shellcheck disable=SC2012
-  doc_path="help-files/$( ls help-files | sort -n | head -1 )"
+  doc_path="/usr/share/docs/$( ls help-files | sort -n | head -1 )"
 fi
 
 for pod in "${doc_path}"/* ; do
-  DESC="$( head -1 "${pod}" )"
-  SECTIONS+=( "${pod} ${DESC}" )
+  desc="$( head -3 "${pod}" | grep zfsbootmenu )"
+  # shellcheck disable=SC2206
+  broken=(${desc//-/ })
+  unset "broken[0]"
+  SECTIONS+=( "${pod} ${broken[*]}" )
 done
 
 while getopts "lL:s:" opt; do
@@ -65,7 +70,8 @@ while getopts "lL:s:" opt; do
       exit
       ;;
     s)
-      cat "${OPTARG}"
+      # Skip the first three lines
+      tail -n +3 "${OPTARG}"
       exit
       ;;
     ?)

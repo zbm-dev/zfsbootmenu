@@ -1,6 +1,10 @@
 =pod
 
-=head1 Kernel Management
+=head1 NAME
+
+B<zfsbootmenu> - Kernel Management
+
+=head1 Keyboard Shortcuts
 
 =over 2
 

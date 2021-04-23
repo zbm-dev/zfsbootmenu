@@ -1,4 +1,8 @@
-[1mMain Screen[0m
+[1mNAME[0m
+
+[1mzfsbootmenu[0m - Main Screen
+
+[1mKeyboard Shortcuts[0m
 
 [33m[ENTER][0m [1mboot[0m
   Boot the selected boot environment, with the listed kernel and kernel command line visible at the top of the screen.

@@ -1,4 +1,8 @@
-[1mDiff Viewer[0m
+[1mNAME[0m
+
+[1mzfsbootmenu[0m - Diff Viewer
+
+[1mKeyboard Shortcuts[0m
 
 [1mColumn 1 descriptions[0m
   [33m-[0m The path has been removed

@@ -1,4 +1,8 @@
-[1mKernel Management[0m
+[1mNAME[0m
+
+[1mzfsbootmenu[0m - Kernel Management
+
+[1mKeyboard Shortcuts[0m
 
 [33m[ENTER][0m [1mboot[0m
   Immediately boot the chosen kernel in the selected boot environment, with the kernel command line shown at the top of the screen.

@@ -1,6 +1,10 @@
 =pod
 
-=head1 ZPOOL Health
+=head1 NAME
+
+B<zfsbootmenu> - ZPOOL Health
+
+=head1 Keyboard Shortcuts
 
 =over 2
 

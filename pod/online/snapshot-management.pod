@@ -1,6 +1,10 @@
 =pod
 
-=head1 Snapshot Management
+=head1 NAME
+
+B<zfsbootmenu> - Snapshot Management
+
+=head1 Keyboard Shortcuts
 
 =over 2
 

@@ -133,6 +133,11 @@ install() {
     exit 1
   fi
 
+  # shellcheck disable=SC2154
+  mkdir "${initdir}/usr/share/docs/"
+  # shellcheck disable=SC2154
+  cp -Rp "${moddir}/help-files" "${initdir}/usr/share/docs/" 
+
   _ret=0
   # shellcheck disable=SC2154
   inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh" || _ret=$?
