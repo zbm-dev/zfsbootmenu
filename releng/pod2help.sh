@@ -1,7 +1,7 @@
 #!/bin/bash
 
 td="90zfsbootmenu/help-files"
-for pod in pod/online/*.pod ; do
+for pod in pod/online/*.pod pod/zfsbootmenu.7.pod; do
   for size in 54 94 134 ; do
     [ -d "${td}/${size}" ] || mkdir -p "${td}/${size}"
     file="$( basename "${pod}" )"

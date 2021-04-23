@@ -78,4 +78,4 @@ while getopts "lL:s:" opt; do
 done
 
 # No options detected, show the main help section
-help_pager "main-menu"
+help_pager "main-screen"
