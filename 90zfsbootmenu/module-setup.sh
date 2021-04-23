@@ -134,9 +134,10 @@ install() {
   fi
 
   # shellcheck disable=SC2154
-  mkdir "${initdir}/usr/share/docs/"
-  # shellcheck disable=SC2154
-  cp -Rp "${moddir}/help-files" "${initdir}/usr/share/docs/" 
+  while read -r doc ; do
+    relative="${doc//${moddir}\//}"
+    inst_simple "${doc}" "/usr/share/docs/${relative}"
+  done <<<"$( find "${moddir}/help-files" -type f )"
 
   _ret=0
   # shellcheck disable=SC2154
