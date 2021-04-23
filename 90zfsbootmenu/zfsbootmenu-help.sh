@@ -38,17 +38,19 @@ help_pager() {
     --ansi
 }
 
+doc_base="/usr/share/docs/help-files"
+
 # shellcheck disable=SC2012
-for size in $( ls /usr/share/docs/help-files | sort -n -r ) ; do
-  if [ "${PREVIEW_SIZE}" -gt "${size}" ]; then
-    doc_path="/usr/share/docs/help-files/${size}"
+for size in $( ls "${doc_base}" | sort -n -r ) ; do
+  if [ "${PREVIEW_SIZE}" -ge "${size}" ]; then
+    doc_path="${doc_base}/${size}"
     break
   fi
 done
 
 if [ -z "${doc_path}" ]; then
   # shellcheck disable=SC2012
-  doc_path="/usr/share/docs/$( ls help-files | sort -n | head -1 )"
+  doc_path="${doc_base}/$( ls "${doc_base}" | sort -n | head -1 )"
 fi
 
 for pod in "${doc_path}"/* ; do
