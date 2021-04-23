@@ -1,6 +1,6 @@
 [1mNAME[0m
 
-[1mzfsbootmenu[0m - System integration
+[1mzfsbootmenu[0m - System Integration
 
 [1mSYNOPSIS[0m
 
