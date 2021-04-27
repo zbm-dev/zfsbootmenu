@@ -1,6 +1,8 @@
+=pod
+
 =head1 NAME
 
-B<zfsbootmenu> - System integration
+B<zfsbootmenu> - System Integration
 
 =head1 SYNOPSIS
 

@@ -1,0 +1,47 @@
+=pod
+
+=head1 NAME
+
+B<zfsbootmenu> - Diff Viewer
+
+=head1 Keyboard Shortcuts
+
+=over 2
+
+=item B<Column 1 descriptions>
+
+I<-> The path has been removed
+
+I<+> The path has been created
+
+I<M> The path has been modified
+
+I<R> The path has been renamed
+
+=item B<Column 2 descriptions>
+
+I<B> Block device
+
+I<C> Character device
+
+I</> Directory
+
+I<E<gt>> Door
+
+I<|> Named pipe
+
+I<@> Symbolic link
+
+I<P> Event port
+
+I<=> Socket
+
+I<F> Regular file
+
+=back
+
+=head2 AUTHOR
+
+ZFSBootMenu Team L<https://github.com/zbm-dev/zfsbootmenu>
+
+=cut

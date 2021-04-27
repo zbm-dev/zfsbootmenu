@@ -1,0 +1,20 @@
+[1mNAME[0m
+
+[1mzfsbootmenu[0m - ZPOOL Health
+
+[1mKeyboard Shortcuts[0m
+
+[33m[MOD+R][0m [1mrewind checkpoint[0m
+  If a pool checkpoint is available, the selected pool is exported and then imported with the
+  [33m--rewind-to-checkpoint[0m flag set.
+
+  The operation will fail gracefully if the pool can not be set [33mread/write[0m.
+
+[33m[MOD+L][0m [1mview logs[0m
+  View logs, as indicated by [33m[!][0m. The indicator will be yellow for warning conditions and red
+  for errors.
+
+[1mAUTHOR[0m
+
+ZFSBootMenu Team <https://github.com/zbm-dev/zfsbootmenu>
+

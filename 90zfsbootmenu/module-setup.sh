@@ -133,6 +133,12 @@ install() {
     exit 1
   fi
 
+  # shellcheck disable=SC2154
+  while read -r doc ; do
+    relative="${doc//${moddir}\//}"
+    inst_simple "${doc}" "/usr/share/docs/${relative}"
+  done <<<"$( find "${moddir}/help-files" -type f )"
+
   _ret=0
   # shellcheck disable=SC2154
   inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh" || _ret=$?

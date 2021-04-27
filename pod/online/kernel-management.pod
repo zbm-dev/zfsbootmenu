@@ -1,0 +1,33 @@
+=pod
+
+=head1 NAME
+
+B<zfsbootmenu> - Kernel Management
+
+=head1 Keyboard Shortcuts
+
+=over 2
+
+=item I<[ENTER]> B<boot>
+
+Immediately boot the chosen kernel in the selected boot environment, with the kernel command line shown at the top of the screen.
+
+=item I<[MOD+D]> B<set default>
+
+Set the selected kernel as the default for the boot environment.
+
+The ZFS property I<org.zfsbootmenu:kernel> is used to store the default kernel for the boot environment.
+
+The operation will fail gracefully if the pool can not be set I<read/write>.
+
+=item I<[MOD+L]> B<view logs>
+
+View logs, as indicated by I<[!]>. The indicator will be yellow for warning conditions and red for errors.
+
+=back
+
+=head2 AUTHOR
+
+ZFSBootMenu Team L<https://github.com/zbm-dev/zfsbootmenu>
+
+=cut

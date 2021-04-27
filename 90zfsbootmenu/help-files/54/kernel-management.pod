@@ -1,0 +1,30 @@
+[1mNAME[0m
+
+[1mzfsbootmenu[0m - Kernel Management
+
+[1mKeyboard Shortcuts[0m
+
+[33m[ENTER][0m [1mboot[0m
+  Immediately boot the chosen kernel in the selected
+  boot environment, with the kernel command line shown
+  at the top of the screen.
+
+[33m[MOD+D][0m [1mset default[0m
+  Set the selected kernel as the default for the boot
+  environment.
+
+  The ZFS property [33morg.zfsbootmenu:kernel[0m is used to
+  store the default kernel for the boot environment.
+
+  The operation will fail gracefully if the pool can
+  not be set [33mread/write[0m.
+
+[33m[MOD+L][0m [1mview logs[0m
+  View logs, as indicated by [33m[!][0m. The indicator will
+  be yellow for warning conditions and red for errors.
+
+[1mAUTHOR[0m
+
+ZFSBootMenu Team
+<https://github.com/zbm-dev/zfsbootmenu>
+

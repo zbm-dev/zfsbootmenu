@@ -1,0 +1,76 @@
+=pod
+
+=head1 NAME
+
+B<zfsbootmenu> - Snapshot Management
+
+=head1 Keyboard Shortcuts
+
+=over 2
+
+=item I<[ENTER]> B<duplicate>
+
+Creation method: I<zfs send | zfs recv>
+
+This creates a boot environment that does not depend on any other snapshots, allowing it to be destroyed at will. The new boot environment will immediately consume space on the pool equal to the I<REFER> value of the snapshot.
+
+A duplicated boot environment is commonly used if you need a new boot environment without any associated snapshots.
+
+The operation will fail gracefully if the pool can not be set I<read/write>.
+
+If I<mbuffer> is available, it is used to provide feedback.
+
+
+=item I<[MOD+X]> B<clone and promote>
+
+Creation method: I<zfs clone , zfs promote>
+
+This creates a boot environment that is not dependent on the origin snapshot, allowing you to destroy the file system that the clone was created from. A cloned and promoted boot environment is commonly used when you've done an upgrade but want to preserve historical snapshots.
+
+The operation will fail gracefully if the pool can not be set I<read/write>.
+
+=item I<[MOD+C]> B<clone>
+
+Creation method: I<zfs clone>
+
+This creates a boot environment from a snapshot with out modifying snapshot inheritence. A cloned boot environment is commonly used if you need to boot a previous system state for a short time and then discard the environment.
+
+The operation will fail gracefully if the pool can not be set I<read/write>.
+
+=item I<[MOD+D]> B<diff>
+
+Compare the differences between the selected snapshot and the current state of the boot environment.
+
+The operation will fail gracefully if the pool can not be set I<read/write>.
+
+=item I<[MOD+I]> B<interactive chroot>
+
+Enter a chroot of the selected boot environment snapshot. The snapshot is always mounted read-only.
+
+=item I<[MOD+O]> B<sort order>
+
+Cycle the sorting key through the following list:
+
+=over 2
+
+=item B<name> Use the filesystem or snapshot name
+
+=item B<creation> Use the filesystem or snapshot creation time
+
+=item B<used> Use the filesystem or snapshot size
+
+=back
+
+The default sort key is I<name>.
+
+=item I<[MOD+L]> B<view logs>
+
+View logs, as indicated by I<[!]>. The indicator will be yellow for warning conditions and red for errors.
+
+=back
+
+=head2 AUTHOR
+
+ZFSBootMenu Team L<https://github.com/zbm-dev/zfsbootmenu>
+
+=cut
