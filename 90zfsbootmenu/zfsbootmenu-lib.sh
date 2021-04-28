@@ -1149,6 +1149,68 @@ find_root_prefix() {
 }
 
 # arg1: ZFS filesystem
+# prints: value of org.zfsbootmenu:commandline, with %{parent} recursively expanded
+# returns: 0 on success
+
+read_kcl_prop() {
+  local zfsbe args parfs par_args inherited
+
+  zfsbe="${1}"
+  if [ -z "${zfsbe}" ]; then
+    zerror "zfsbe is undefined"
+    return 1
+  fi
+
+  if ! args="$( zfs get -H -o value org.zfsbootmenu:commandline "${zfsbe}" )"; then
+    zerror "unable to read org.zfsbootmenu:commandline on ${zfsbe}"
+    return 1
+  fi
+
+  # KCL is empty, nothing to see
+  if [ "${args}" = "-" ]; then
+    zdebug "org.zfsbootmenu:commandline on ${zfsbe} has no value"
+    echo ""
+    return 0
+  fi
+
+  # KCL does not specify parent inheritance, just return the args
+  if ! [[ "${args}" =~ "%{parent}" ]]; then
+    zdebug "no parent reference in org.zfsbootmenu:commandline on ${zfsbe}"
+    echo "${args}"
+    return 0
+  fi
+
+  # Need to recursively expand "%{parent}"
+
+  parfs="${zfsbe%/*}"
+  if [ -z "${parfs}" ] || [ "${parfs}" = "${zfsbe}" ]; then
+    # There is no parent, par_args is empty
+    par_args=""
+  else
+    # Query the parent for kcl properties
+    if ! par_args="$( read_kcl_prop "${parfs}" )"; then
+      zwarn "failed to invoke read_kcl_prop on parent ${parfs}"
+      par_args=""
+    fi
+
+    # When the KCL property is inherited, recursive expansion fully populates
+    # the KCL at the level of the ancestor that actually defines the property.
+    if inherited="$( zfs get -H -o source -s inherited org.zfsbootmenu:commandline "${zfsbe}" 2>/dev/null )"; then
+      # Inherited property have a source of "inherited from <ancestor>";
+      # non-inherited properties will not be printed with `-s inherited`
+      if [ -n "${inherited}" ]; then
+        zdebug "org.zfsbootmenu:commandline on ${zfsbe} is inherited, using parent expansion verbatim"
+        echo "${par_args}"
+        return 0
+      fi
+    fi
+  fi
+
+  echo "${args//%\{parent\}/${par_args}}"
+  return 0
+}
+
+# arg1: ZFS filesystem
 # arg2: path for a mounted filesystem
 # prints: nothing
 # returns: 0 on success
@@ -1172,13 +1234,10 @@ preload_be_cmdline() {
 
   args_file="${BASE}/${zfsbe_fs}/cmdline"
 
-  if [ -n "${zfsbe_fs}" ]; then
-    zfsbe_args="$( zfs get -H -o value org.zfsbootmenu:commandline "${zfsbe_fs}" )"
-    if [ "${zfsbe_args}" != "-" ]; then
-      zdebug "using org.zfsbootmenu:commandline"
-      echo "${zfsbe_args}" > "${args_file}"
-      return
-    fi
+  if zfsbe_args="$( read_kcl_prop "${zfsbe_fs}" )" && [ -n "${zfsbe_args}" ]; then
+    zdebug "using org.zfsbootmenu:commandline"
+    echo "${zfsbe_args}" > "${args_file}"
+    return
   fi
 
   if [ -n "${zfsbe_mnt}" ] && [ -r "${zfsbe_mnt}/etc/default/zfsbootmenu" ]; then
