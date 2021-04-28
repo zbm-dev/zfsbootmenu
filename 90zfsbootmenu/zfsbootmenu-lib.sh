@@ -122,7 +122,8 @@ center_string() {
 # returns: 0 on successful write, 1 on error
 
 write_hostid() {
-  local hostid ret
+  local hostid ret splmod
+  splmod="/sys/module/spl/parameters/spl_hostid"
 
   # Normalize the hostid
   if ! hostid="$( printf "%08x" "0x${1:-0}" 2>/dev/null )"; then
@@ -140,6 +141,10 @@ write_hostid() {
     zdebug "writing hostid ${hostid} to /etc/hostid (little-endian)"
     echo -ne "\\x${hostid:6:2}\\x${hostid:4:2}\\x${hostid:2:2}\\x${hostid:0:2}" > "/etc/hostid"
     ret=$?
+  fi
+
+  if [ "${ret}" -eq 0 ] && [ -w "${splmod}" ]; then
+    echo 0 > "${splmod}" || zwarn "failed to force spl.spl_hostid=0 for host ID matching"
   fi
 
   return ${ret}
