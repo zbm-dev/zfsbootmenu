@@ -525,9 +525,9 @@ draw_kernel() {
   zdebug "using kernels file: ${_kernels}"
 
   header="$( header_wrap "[RETURN] boot" "[ESCAPE] back" "[CTRL+D] set default" "" \
-      "[CTRL+L] view logs" " " "[CTRL+H] help" )"
+      "[CTRL+L] view logs" "[CTRL+U] unset default" "[CTRL+H] help" )"
 
-  expects="--expect=alt-d"
+  expects="--expect=alt-d,alt-u"
 
   if ! selected="$( HELP_SECTION=kernel-management ${FUZZYSEL} \
      --prompt "${benv} > " --tac --with-nth=2 --header="${header}" \
