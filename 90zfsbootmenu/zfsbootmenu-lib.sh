@@ -1153,7 +1153,7 @@ find_root_prefix() {
 # returns: 0 on success
 
 read_kcl_prop() {
-  local zfsbe args parfs par_args
+  local zfsbe args parfs par_args inherited
 
   zfsbe="${1}"
   if [ -z "${zfsbe}" ]; then
@@ -1168,12 +1168,14 @@ read_kcl_prop() {
 
   # KCL is empty, nothing to see
   if [ "${args}" = "-" ]; then
+    zdebug "org.zfsbootmenu:commandline on ${zfsbe} has no value"
     echo ""
     return 0
   fi
 
   # KCL does not specify parent inheritance, just return the args
   if ! [[ "${args}" =~ "%{parent}" ]]; then
+    zdebug "no parent reference in org.zfsbootmenu:commandline on ${zfsbe}"
     echo "${args}"
     return 0
   fi
@@ -1187,7 +1189,20 @@ read_kcl_prop() {
   else
     # Query the parent for kcl properties
     if ! par_args="$( read_kcl_prop "${parfs}" )"; then
+      zwarn "failed to invoke read_kcl_prop on parent ${parfs}"
       par_args=""
+    fi
+
+    # When the KCL property is inherited, recursive expansion fully populates
+    # the KCL at the level of the ancestor that actually defines the property.
+    if inherited="$( zfs get -H -o source -s inherited org.zfsbootmenu:commandline "${zfsbe}" 2>/dev/null )"; then
+      # Inherited property have a source of "inherited from <ancestor>";
+      # non-inherited properties will not be printed with `-s inherited`
+      if [ -n "${inherited}" ]; then
+        zdebug "org.zfsbootmenu:commandline on ${zfsbe} is inherited, using parent expansion verbatim"
+        echo "${par_args}"
+        return 0
+      fi
     fi
   fi
 
