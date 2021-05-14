@@ -20,6 +20,12 @@ The ZFS property I<org.zfsbootmenu:kernel> is used to store the default kernel f
 
 The operation will fail gracefully if the pool can not be set I<read/write>.
 
+=item I<[MOD+U]> B<unset default>
+
+Inherit the ZFS property I<org.zfsbootmenu:kernel> from a parent if present, otherwise unset the property.
+
+The operation will fail gracefully if the pool can not be set I<read/write>.
+
 =item I<[MOD+L]> B<view logs>
 
 View logs, as indicated by I<[!]>. The indicator will be yellow for warning conditions and red for errors.
