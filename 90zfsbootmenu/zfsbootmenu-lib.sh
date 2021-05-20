@@ -1118,7 +1118,7 @@ find_root_prefix() {
 
       for ostype in $ID $ID_LIKE; do
         case "$ostype" in
-          void|ubuntu|debian)
+          void|ubuntu|debian|devuan)
             echo "root=zfs:"
             break
             ;;
