@@ -231,3 +231,26 @@ install_items+=" /etc/zfs/zroot.key "
 ```
 
 It's critical that you do not include this key file into the ZFSBootMenu initramfs, since that file exists on an unencrypted volume - leaving your pool essentially wide-open.
+
+# Signature Verification and Prebuilt EFI Executables
+
+ZFSBootMenu is now distributed as a prebuilt EFI executable alongside the source releases. For many systems, it is sufficient to drop the EFI executable on an EFI System Partition and configure your firmware to boot the file.
+
+Each EFI executable we release is signed with [`signify`](https://flak.tedunangst.com/post/signify), which provides a simple method for verifying that the contents of the file are as this project intended. Once you've installed `signify` (that's left as an exercise, although Void Linux provides the `signify` package for this purpose), just download the EFI bundle from the [releases page](https://github.com/zbm-dev/zfsbootmenu/releases), download the `sha256.sig` file alongside it, and run
+
+```
+signify -C -x sha256.sig`
+```
+
+You will also need the public key used to sign ZFSBootMenu executables. The key is available at [releng/keys/zfsbootmenu.pub](https://github.com/zbm-dev/zfsbootmenu/blob/master/releng/keys/zfsbootmenu.pub). Install this file as `/etc/signify/zfsbootmenu.pub` if you like; this key can be used for all subsequent verifications. Otherwise, look at the `-p` command-line option for `signify` to provide a path to the key.
+
+The signature file `sha256.sig` also includes a signature for the source tarball corresponding to the release. If this file is not present alongside the EFI bundle and the signature file, `signify` will complain about its signature. This error message is OK to ignore; alternatively, tell `signify` to verify only the EFI bundle, or download the source tarball alongside the other files.
+
+The signify key `zfsbootmenu.pub` may be verified; alongside the public key is [releng/keys/zfsbootmenu.pub.gpg](https://github.com/zbm-dev/zfsbootmenu/blob/master/releng/keys/zfsbootmenu.pub.gpg), a GnuPG signature produced with a personal key from [@ahesford](http://keys.gnupg.net/pks/lookup?op=vindex&fingerprint=on&search=0x312485BE75E3D7AC), one of the members of the ZFSBootMenu project. To verify the `signify` key, download the key `zfsbootmenu.pub` and its signature file `zfsbootmenu.pub.gpg`, then run
+
+```
+gpg2 --recv-key 0x312485BE75E3D7AC
+gpg2 --verify zfsbootmenu.pub.gpg
+```
+
+NOTE: on some distributions, `gpg2` may instead by `gpg`.
