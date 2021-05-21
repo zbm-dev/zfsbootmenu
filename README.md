@@ -239,7 +239,7 @@ ZFSBootMenu is now distributed as a prebuilt EFI executable alongside the source
 Each EFI executable we release is signed with [`signify`](https://flak.tedunangst.com/post/signify), which provides a simple method for verifying that the contents of the file are as this project intended. Once you've installed `signify` (that's left as an exercise, although Void Linux provides the `signify` package for this purpose), just download the EFI bundle from the [releases page](https://github.com/zbm-dev/zfsbootmenu/releases), download the `sha256.sig` file alongside it, and run
 
 ```
-signify -C -x sha256.sig`
+signify -C -x sha256.sig
 ```
 
 You will also need the public key used to sign ZFSBootMenu executables. The key is available at [releng/keys/zfsbootmenu.pub](https://github.com/zbm-dev/zfsbootmenu/blob/master/releng/keys/zfsbootmenu.pub). Install this file as `/etc/signify/zfsbootmenu.pub` if you like; this key can be used for all subsequent verifications. Otherwise, look at the `-p` command-line option for `signify` to provide a path to the key.
