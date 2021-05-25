@@ -67,16 +67,16 @@ if [ -n "${import_policy}" ]; then
       info "ZFSBootMenu: setting import_policy to strict"
       ;;
     *)
-      info "ZFSBootMenu: unknown import policy ${import_policy}, defaulting to strict"
-      import_policy="strict"
+      info "ZFSBootMenu: unknown import policy ${import_policy}, defaulting to hostid"
+      import_policy="hostid"
       ;;
   esac
 elif getargbool 0 zbm.force_import -d force_import ; then
   import_policy="force"
   info "ZFSBootMenu: setting import_policy to force"
 else
-  info "ZFSBootMenu: defaulting import_policy to strict"
-  import_policy="strict"
+  info "ZFSBootMenu: defaulting import_policy to hostid"
+  import_policy="hostid"
 fi
 
 # zbm.timeout= overrides timeout=
