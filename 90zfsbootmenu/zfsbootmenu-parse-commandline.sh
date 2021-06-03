@@ -93,6 +93,24 @@ else
   menu_timeout=10
 fi
 
+zbm_import_retries=$( getarg zbm.import_retries )
+if [ "${zbm_import_retries:-0}" -gt 0 ] 2>/dev/null ; then 
+  # Beyond logging, this validates that zbm_import_retries is a number
+  info "ZFSBootMenu: will attempt up to ${zbm_import_retries} import retries"
+else
+  zbm_import_retries=0
+fi
+
+zbm_import_delay=$( getarg zbm.import_delay )
+if [ "${zbm_import_delay:-0}" -gt 0 ] 2>/dev/null ; then 
+  # Again, this validates that zbm_import_delay is numeric in addition to logging
+  if [ "${zbm_import_retries}" -gt 0 ]; then
+    info "ZFSBootMenu: import retry delay is ${zbm_import_delay} seconds"
+  fi
+else
+  zbm_import_delay=5
+fi
+
 # Allow setting of console size; there are no defaults here
 # shellcheck disable=SC2034
 zbm_lines=$( getarg zbm.lines=)

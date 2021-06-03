@@ -22,6 +22,14 @@ When creating an initramfs or UEFI bundle, the I</etc/hostid> from the system is
 
 By default, ZFSBootMenu will look for the I<bootfs> property on the first imported pool (sorted alphabetically) to select the default boot environment. If you have multiple pools, replace B<E<lt>poolE<gt>> with the name of your preferred pool to override the default.
 
+=item B<zbm.import_retries=E<lt>countE<gt>>
+
+If ZFSBootMenu fails to import a pool and B<E<lt>countE<gt>> is a positive integer, the import will be attempted up to B<E<lt>countE<gt>> times before dropping to an emergency shell to facilitate recovery. By default or if B<E<lt>countE<gt>> is anything besides a positive integer, imports will not be retried.
+
+=item B<zbm.import_delay=E<lt>timeE<gt>>
+
+If ZFSBootMenu is configured to retry imports via B<zbm.import_retries>, each retried attempt will proceed after a delay of B<E<lt>timeE<gt>> seconds. When B<E<lt>timeE<gt>> is unspecified or is anything other than a positive integer, a default value of 5 seconds will be used.
+
 =item B<zbm.import_policy>
 
 This option controls how the pool import process should take place.
