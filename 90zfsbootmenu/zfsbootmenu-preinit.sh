@@ -23,7 +23,7 @@ mkdir -p "${BASE}"
 
 # shellcheck disable=SC2154
 cat >> "/etc/profile" <<EOF
-# Added by zfsbootmenu-exec.sh
+# Added by zfsbootmenu-preinit.sh
 export endian="${endian}"
 export spl_hostid="${spl_hostid}"
 export import_policy="${import_policy}"
@@ -50,11 +50,11 @@ udevadm settle
 
 #shellcheck disable=SC2154
 if [ -n "${zbm_tmux}" ] && [ -x /bin/tmux ]; then
-  tmux new-session -n ZFSBootMenu -d /libexec/zfsbootmenu-countdown
+  tmux new-session -n ZFSBootMenu -d /libexec/zfsbootmenu-init
   tmux new-window -n logs /bin/zlogtail -f -n
   tmux new-window -n shell
   exec tmux attach-session \; select-window -t ZFSBootMenu
 else
   # https://busybox.net/FAQ.html#job_control
-  exec setsid bash -c "exec /libexec/zfsbootmenu-countdown <${control_term} >${control_term} 2>&1"
+  exec setsid bash -c "exec /libexec/zfsbootmenu-init <${control_term} >${control_term} 2>&1"
 fi
