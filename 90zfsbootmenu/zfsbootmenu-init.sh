@@ -53,6 +53,7 @@ else
   first_pass=1
 fi
 
+zbm_import_attempt=0
 while true; do
   if [ "${first_pass}" -eq 0 ]; then
     # Try the preferred pool, exactly once
@@ -91,6 +92,19 @@ while true; do
     # Failure to import a specific pool is not an emergency;
     # subsequent import passes try all other possible pools
     continue
+  fi
+
+  if [ "${zbm_import_attempt}" -lt "${zbm_import_retries:-0}" ]; then
+    # The max number of import attempts has not been reached;
+    # retry unless the user decides to abort immediately
+    zbm_import_attempt="$((zbm_import_attempt + 1))"
+
+    zinfo "pool import failed on attempt ${zbm_import_attempt} of ${zbm_import_retries}"
+
+    if delay="${zbm_import_delay:-5}" prompt="Unable to import pool, retrying in %0.2d seconds" \
+        timed_prompt "[RETURN] to retry immediately" "[ESCAPE] for a recovery shell"; then
+      continue
+    fi
   fi
 
   # Allow the user to attempt recovery

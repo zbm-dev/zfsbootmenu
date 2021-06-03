@@ -133,13 +133,13 @@
 .\" ========================================================================
 .\"
 .IX Title "zfsbootmenu 7"
-.TH zfsbootmenu 7 "2021-04-23" "1.9.0" "ZFSBootMenu"
+.TH zfsbootmenu 7 "2021-06-03" "1.9.0" "ZFSBootMenu"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
 .nh
 .SH "NAME"
-zfsbootmenu \- System integration
+zfsbootmenu \- System Integration
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 ZFSBootMenu behavior is controlled through \s-1ZFS\s0 filesystem properties and command-line options provided to the ZFSBootMenu kernel.
@@ -152,6 +152,12 @@ When creating an initramfs or \s-1UEFI\s0 bundle, the \fI/etc/hostid\fR from the
 .IP "\fBzbm.prefer=<pool>\fR" 4
 .IX Item "zbm.prefer=<pool>"
 By default, ZFSBootMenu will look for the \fIbootfs\fR property on the first imported pool (sorted alphabetically) to select the default boot environment. If you have multiple pools, replace \fB<pool>\fR with the name of your preferred pool to override the default.
+.IP "\fBzbm.import_retries=<count>\fR" 4
+.IX Item "zbm.import_retries=<count>"
+If ZFSBootMenu fails to import a pool and \fB<count>\fR is a positive integer, the import will be attempted up to \fB<count>\fR times before dropping to an emergency shell to facilitate recovery. By default or if \fB<count>\fR is anything besides a positive integer, imports will not be retried.
+.IP "\fBzbm.import_delay=<time>\fR" 4
+.IX Item "zbm.import_delay=<time>"
+If ZFSBootMenu is configured to retry imports via \fBzbm.import_retries\fR, each retried attempt will proceed after a delay of \fB<time>\fR seconds. When \fB<time>\fR is unspecified or is anything other than a positive integer, a default value of 5 seconds will be used.
 .IP "\fBzbm.import_policy\fR" 4
 .IX Item "zbm.import_policy"
 This option controls how the pool import process should take place.
