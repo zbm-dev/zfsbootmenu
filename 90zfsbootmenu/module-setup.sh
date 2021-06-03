@@ -142,7 +142,7 @@ install() {
   _ret=0
   # shellcheck disable=SC2154
   inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh" || _ret=$?
-  inst_simple "${moddir}/zfsbootmenu-countdown.sh" "/libexec/zfsbootmenu-countdown" || _ret=$?
+  inst_simple "${moddir}/zfsbootmenu-init.sh" "/libexec/zfsbootmenu-init" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu-preview.sh" "/libexec/zfsbootmenu-preview" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu-input.sh" "/libexec/zfsbootmenu-input" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu-help.sh" "/libexec/zfsbootmenu-help" || _ret=$?
@@ -151,7 +151,7 @@ install() {
   inst_simple "${moddir}/zfsbootmenu.sh" "/bin/zfsbootmenu" || _ret=$?
   inst_simple "${moddir}/zlogtail.sh" "/bin/zlogtail" || _ret=$?
   inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh" || _ret=$?
-  inst_hook pre-mount 90 "${moddir}/zfsbootmenu-exec.sh" || _ret=$?
+  inst_hook pre-mount 90 "${moddir}/zfsbootmenu-preinit.sh" || _ret=$?
 
   # Install "setup" hooks
   # shellcheck disable=SC2154
