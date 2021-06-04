@@ -26,8 +26,8 @@ spl_hostid=$(getarg spl_hostid=)
 # Use the last defined console= to control menu output
 control_term=$( getarg console=)
 if [ -n "${control_term}" ]; then
+  control_term="/dev/${control_term%,*}"
   info "ZFSBootMenu: setting controlling terminal to: ${control_term}"
-  control_term="/dev/${control_term}"
 else
   control_term="/dev/tty1"
   info "ZFSBootMenu: defaulting controlling terminal to: ${control_term}"

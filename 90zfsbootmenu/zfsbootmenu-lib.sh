@@ -1372,7 +1372,7 @@ load_be_cmdline() {
 # rewind_to_checkpoint=1: enable --rewind-to-checkpoint
 
 import_pool() {
-  local pool import_args
+  local pool import_args import_output
 
   pool="${1}"
 
@@ -1413,7 +1413,9 @@ import_pool() {
 
   zdebug "zpool import arguments: ${import_args[*]} ${pool}"
 
-  zpool import "${import_args[@]}" "${pool}" >/dev/null 2>&1
+  import_output="$(
+    zpool import "${import_args[@]}" "${pool}" 2>&1
+  )"
   ret=$?
 
   if [ "$ret" -eq 0 ]; then
@@ -1421,6 +1423,7 @@ import_pool() {
   else
     spl_hostid="$( get_spl_hostid )"
     zdebug "import process failed with code ${ret}, apparent hostid ${spl_hostid:-unknown}"
+    zdebug "${import_output}"
   fi
 
   return ${ret}
