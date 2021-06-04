@@ -7,6 +7,12 @@ en_US.UTF-8 UTF-8
 en_US ISO-8859-1
 EOF
 
+# Void kernel should be requested with explicit versions
+cat << EOF >> /etc/xbps.d/10-ignores.conf
+ignorepkg=linux
+ignorepkg=linux-headers
+EOF
+
 # Update all packages
 xbps-install -Suy xbps
 xbps-install -uy
