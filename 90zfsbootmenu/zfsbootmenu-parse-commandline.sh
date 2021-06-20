@@ -67,16 +67,16 @@ if [ -n "${import_policy}" ]; then
       info "ZFSBootMenu: setting import_policy to strict"
       ;;
     *)
-      info "ZFSBootMenu: unknown import policy ${import_policy}, defaulting to strict"
-      import_policy="strict"
+      info "ZFSBootMenu: unknown import policy ${import_policy}, defaulting to hostid"
+      import_policy="hostid"
       ;;
   esac
 elif getargbool 0 zbm.force_import -d force_import ; then
   import_policy="force"
   info "ZFSBootMenu: setting import_policy to force"
 else
-  info "ZFSBootMenu: defaulting import_policy to strict"
-  import_policy="strict"
+  info "ZFSBootMenu: defaulting import_policy to hostid"
+  import_policy="hostid"
 fi
 
 # zbm.timeout= overrides timeout=
@@ -160,7 +160,7 @@ fi
 if [ "${BYTE_ORDER}" = "be" ]; then
   zbm_set_hostid=0
   info "ZFSBootMenu: big endian detected, disabling automatic replacement of spl_hostid"
-elif getargbool 0 zbm.set_hostid ; then
+elif getargbool 1 zbm.set_hostid ; then
   zbm_set_hostid=1
   info "ZFSBootMenu: enabling automatic replacement of spl_hostid"
 else
