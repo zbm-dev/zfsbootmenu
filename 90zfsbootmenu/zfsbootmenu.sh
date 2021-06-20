@@ -176,6 +176,9 @@ while true; do
           IFS=' ' read -r fs kpath initrd <<< "${selected_kernel}"
           set_default_kernel "${fs}" "${kpath}"
           ;;
+        "mod-u")
+          set_default_kernel "${fs}"
+          ;;
       esac
       ;;
     "mod-p")
