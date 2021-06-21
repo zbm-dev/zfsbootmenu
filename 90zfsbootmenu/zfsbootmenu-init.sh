@@ -91,7 +91,7 @@ while true; do
   zinfo "unable to import a pool on attempt ${zbm_import_attempt}"
 
   # Just keep retrying after a delay until the user presses ESC
-  if delay="${zbm_import_delay:-5}" prompt="Unable to import pool, retrying in %0.2d seconds" \
+  if delay="${zbm_import_delay:-5}" prompt="Unable to import ${try_pool:-pool}, retrying in %0.2d seconds" \
     timed_prompt "[RETURN] to retry immediately" "[ESCAPE] for a recovery shell"; then
       continue
   fi
