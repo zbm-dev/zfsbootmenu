@@ -46,31 +46,21 @@ else
   boot_pool="${root}"
 fi
 
-# Do a dedicated pass for the preferred pool if one was provided
-if [ -n "${boot_pool}" ]; then
-  first_pass=0
-else
-  first_pass=1
-fi
-
+# If a boot pool is specified, that will be tried first
+try_pool="${boot_pool}"
 zbm_import_attempt=0
 while true; do
-  if [ "${first_pass}" -eq 0 ]; then
-    # Try the preferred pool, exactly once
-    zdebug "attempting to import preferred pool ${boot_pool}"
-    try_pool="${boot_pool}"
-  else
-    try_pool=""
+  if [ -n "${try_pool}" ]; then
+    zdebug "attempting to import preferred pool ${try_pool}"
   fi
-
-  first_pass=1
 
   read_write='' import_pool "${try_pool}"
 
   # shellcheck disable=SC2154
   if check_for_pools; then
     if [ -n "${try_pool}" ]; then
-      # If a single pool was requested and imported, try again for the others
+      # If a single pool was requested and imported, try importing others
+      try_pool=""
       continue
     else
       # Otherwise, all possible pools were imported, nothing more to try
@@ -86,25 +76,24 @@ while true; do
     # Store the hostid to use for for KCL overrides
     echo -n "$spl_hostid" > "${BASE}/spl_hostid"
 
-    # Retry the cycle with a matched hostid
+    # If match_hostid succeeds, it has imported *a* pool;
+    # allow another pass to pick up others with the same hostid
+    try_pool=""
     continue
-  elif [ -n "${try_pool}" ]; then
-    # Failure to import a specific pool is not an emergency;
-    # subsequent import passes try all other possible pools
+  elif [ -n "${try_pool}" ] && [ "${zbm_require_bpool:-0}" -ne 1 ]; then
+    # If a specific pool was tried unsuccessfully but is not a requirement,
+    # allow another pass to try any other importable pools
+    try_pool=""
     continue
   fi
 
-  if [ "${zbm_import_attempt}" -lt "${zbm_import_retries:-0}" ]; then
-    # The max number of import attempts has not been reached;
-    # retry unless the user decides to abort immediately
-    zbm_import_attempt="$((zbm_import_attempt + 1))"
+  zbm_import_attempt="$((zbm_import_attempt + 1))"
+  zinfo "unable to import a pool on attempt ${zbm_import_attempt}"
 
-    zinfo "pool import failed on attempt ${zbm_import_attempt} of ${zbm_import_retries}"
-
-    if delay="${zbm_import_delay:-5}" prompt="Unable to import pool, retrying in %0.2d seconds" \
-        timed_prompt "[RETURN] to retry immediately" "[ESCAPE] for a recovery shell"; then
+  # Just keep retrying after a delay until the user presses ESC
+  if delay="${zbm_import_delay:-5}" prompt="Unable to import pool, retrying in %0.2d seconds" \
+    timed_prompt "[RETURN] to retry immediately" "[ESCAPE] for a recovery shell"; then
       continue
-    fi
   fi
 
   # Allow the user to attempt recovery
