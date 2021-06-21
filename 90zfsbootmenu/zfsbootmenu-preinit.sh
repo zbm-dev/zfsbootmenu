@@ -30,10 +30,10 @@ export import_policy="${import_policy}"
 export menu_timeout="${menu_timeout}"
 export loglevel="${loglevel}"
 export root="${root}"
+export zbm_require_bpool="${zbm_require_bpool}"
 export zbm_sort="${zbm_sort}"
 export zbm_set_hostid="${zbm_set_hostid}"
 export zbm_import_delay="${zbm_import_delay}"
-export zbm_import_retries="${zbm_import_retries}"
 EOF
 
 getcmdline > "${BASE}/zbm.cmdline"

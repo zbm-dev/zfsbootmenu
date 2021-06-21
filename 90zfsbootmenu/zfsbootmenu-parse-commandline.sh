@@ -93,20 +93,10 @@ else
   menu_timeout=10
 fi
 
-zbm_import_retries=$( getarg zbm.import_retries )
-if [ "${zbm_import_retries:-0}" -gt 0 ] 2>/dev/null ; then 
-  # Beyond logging, this validates that zbm_import_retries is a number
-  info "ZFSBootMenu: will attempt up to ${zbm_import_retries} import retries"
-else
-  zbm_import_retries=0
-fi
-
 zbm_import_delay=$( getarg zbm.import_delay )
 if [ "${zbm_import_delay:-0}" -gt 0 ] 2>/dev/null ; then 
   # Again, this validates that zbm_import_delay is numeric in addition to logging
-  if [ "${zbm_import_retries}" -gt 0 ]; then
-    info "ZFSBootMenu: import retry delay is ${zbm_import_delay} seconds"
-  fi
+  info "ZFSBootMenu: import retry delay is ${zbm_import_delay} seconds"
 else
   zbm_import_delay=5
 fi
@@ -195,6 +185,14 @@ case "${root}" in
     info "ZFSBootMenu: preferring ${root} for bootfs"
     ;;
 esac
+
+# Pool preference ending in ! indicates a hard requirement
+bpool="${root%\!}"
+if [ "${bpool}" != "${root}" ]; then
+  # shellcheck disable=SC2034
+  zbm_require_bpool=1
+  root="${bpool}"
+fi
 
 # Make sure Dracut is happy that we have a root
 if [ ${wait_for_zfs} -eq 1 ]; then
