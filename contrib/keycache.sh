@@ -1,5 +1,8 @@
 #!/bin/bash
 
+## NOTE: This hook is obsolete; the recommended way to manage key caching is
+## with the org.zfsbootmenu:keysource property described in zfsbootmenu(7).
+
 ## This setup hook attempts to cache keyfiles for ZFS encryptionroots in the
 ## initramfs, reducing the number of password requests made by ZFSBootMenu.
 ## ZFSBootMenu will attempt to mount the default boot environment (i.e.,
