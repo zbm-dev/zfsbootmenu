@@ -84,6 +84,10 @@ install() {
     "chmod"
     "od"
     "stty"
+    "insmod"
+    "modinfo"
+    "lsmod"
+    "depmod"
   )
 
   for _exec in "${essential_execs[@]}"; do

@@ -31,6 +31,7 @@ export menu_timeout="${menu_timeout}"
 export loglevel="${loglevel}"
 export root="${root}"
 export zbm_require_bpool="${zbm_require_bpool}"
+export default_hostid=00bab10c
 export zbm_sort="${zbm_sort}"
 export zbm_set_hostid="${zbm_set_hostid}"
 export zbm_import_delay="${zbm_import_delay}"
@@ -40,9 +41,6 @@ getcmdline > "${BASE}/zbm.cmdline"
 
 # Set a non-empty hostname so we show up in zpool history correctly
 echo "ZFSBootMenu" > /proc/sys/kernel/hostname
-
-modprobe zfs 2>/dev/null
-udevadm settle
 
 # try to set console options for display and interaction
 # this is sometimes run as an initqueue hook, but cannot be guaranteed

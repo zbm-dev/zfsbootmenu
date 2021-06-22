@@ -19,9 +19,6 @@ if ! is_lib_sourced > /dev/null 2>&1 ; then
   exec /bin/bash
 fi
 
-# Make sure /dev/zfs exists, otherwise drop to a recovery shell
-[ -e /dev/zfs ] || emergency_shell "/dev/zfs missing, check that kernel modules are loaded"
-
 if [ -z "${BASE}" ]; then
   export BASE="/zfsbootmenu"
 fi
@@ -30,13 +27,37 @@ mkdir -p "${BASE}"
 
 # Write out a default or overridden hostid
 if [ -n "${spl_hostid}" ] ; then
-  zinfo "writing /etc/hostid from command line: ${spl_hostid}"
-  write_hostid "${spl_hostid}"
+  if write_hostid "${spl_hostid}" ; then
+    zinfo "writing /etc/hostid from command line: ${spl_hostid}"
+  else
+    # write_hostid logs an error for us, just note the new value
+    # shellcheck disable=SC2154
+    write_hostid "${default_hostid}"
+    zinfo "defaulting hostid to ${default_hostid}"
+  fi
 elif [ ! -e /etc/hostid ]; then
   zinfo "no hostid found on kernel command line or /etc/hostid"
-  zinfo "defaulting hostid to 00bab10c"
-  write_hostid 00bab10c
+  # shellcheck disable=SC2154
+  zinfo "defaulting hostid to ${default_hostid}"
+  write_hostid "${default_hostid}"
 fi
+
+# Capture the filename for spl.ko
+_modfilename="$( modinfo -F filename spl )"
+zinfo "loading ${_modfilename}"
+
+# Load with a hostid of 0, so that /etc/hostid takes precedence
+if ! _modload="$( insmod "${_modfilename}" "spl_hostid=0" 2>&1 )" ; then
+  zdebug "${_modload}"
+  emergency_shell "unable to load SPL kernel module"
+fi
+
+if ! _modload="$( modprobe zfs 2>&1 )" ; then
+  zdebug "${_modload}"
+  emergency_shell "unable to load ZFS kernel modules"
+fi
+
+udevadm settle
 
 # Prefer a specific pool when checking for a bootfs value
 # shellcheck disable=SC2154
