@@ -156,6 +156,8 @@ This specifies the prefix added to the ZFS filesystem provided as the root files
 
 The default prefix is I<root=zfs:> on all systems except those that appear to be Arch Linux. For Arch, the default root prefix is I<zfs=>.
 
+B<Note:> If you are using Arch with Dracut instead of the default mkinitcpio you will need to set B<org.zfsbootmenu:rootprefix=root=zfs:> for your system to boot.
+
 Set this property to override the value determined from inspecting the boot environment.
 
 =item B<org.zfsbootmenu:keysource=E<lt>filesystemE<gt>>

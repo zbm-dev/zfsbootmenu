@@ -256,6 +256,8 @@ This specifies the prefix added to the \s-1ZFS\s0 filesystem provided as the roo
 .Sp
 The default prefix is \fIroot=zfs:\fR on all systems except those that appear to be Arch Linux. For Arch, the default root prefix is \fIzfs=\fR.
 .Sp
+\&\fBNote:\fR If you are using Arch with Dracut instead of the default mkinitcpio you will need to set \fBorg.zfsbootmenu:rootprefix=root=zfs:\fR for your system to boot.
+.Sp
 Set this property to override the value determined from inspecting the boot environment.
 .IP "\fBorg.zfsbootmenu:keysource=<filesystem>\fR" 4
 .IX Item "org.zfsbootmenu:keysource=<filesystem>"
