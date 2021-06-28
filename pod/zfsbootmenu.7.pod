@@ -20,15 +20,11 @@ When creating an initramfs or UEFI bundle, the I</etc/hostid> from the system is
 
 =item B<zbm.prefer=E<lt>poolE<gt>>
 
-By default, ZFSBootMenu will look for the I<bootfs> property on the first imported pool (sorted alphabetically) to select the default boot environment. If you have multiple pools, replace B<E<lt>poolE<gt>> with the name of your preferred pool to override the default.
-
-=item B<zbm.import_retries=E<lt>countE<gt>>
-
-If ZFSBootMenu fails to import a pool and B<E<lt>countE<gt>> is a positive integer, the import will be attempted up to B<E<lt>countE<gt>> times before dropping to an emergency shell to facilitate recovery. By default or if B<E<lt>countE<gt>> is anything besides a positive integer, imports will not be retried.
+ZFSBootMenu will attempt to import as many pools as possible to identify boot environments and will, by default, look for the I<bootfs> property on the first imported pool (sorted alphabetically) to select the default boot environment. If you have multiple pools, replace B<E<lt>poolE<gt>> with the name of your preferred pool to override the default. If B<E<lt>poolE<gt>> is the name of a pool followed by a literal I<!> character, ZFSBootMenu will insist on successfully importing the named pool before attempting to import any others.
 
 =item B<zbm.import_delay=E<lt>timeE<gt>>
 
-If ZFSBootMenu is configured to retry imports via B<zbm.import_retries>, each retried attempt will proceed after a delay of B<E<lt>timeE<gt>> seconds. When B<E<lt>timeE<gt>> is unspecified or is anything other than a positive integer, a default value of 5 seconds will be used.
+Should ZFSBootMenu fail to successfully import any pool, it will repeat import attempts indefinitely until at least one pool can be imported or the user chooses to drop to a recovery shell. Each subsequent attempt will proceed after a delay of B<E<lt>timeE<gt>> seconds. When B<E<lt>timeE<gt>> is unspecified or is anything other than a positive integer, a default value of 5 seconds will be used.
 
 =item B<zbm.import_policy>
 
@@ -55,6 +51,14 @@ Set this option to attempt to force pool imports. When set, this invokes I<zpool
 On little-endian systems, setting this option will cause ZFSBootMenu to set the I<spl.spl_hostid> command-line parameter for the selected boot environment to the hostid used to import its pool. The SPL kernel module will use this value as the hostid of the booted environment regardless of the contents of I</etc/hostid>. As a special case, if the hostid to be set is zero, ZFSBootMenu will instead set I<spl_hostid=00000000>, which should be used by dracut-based initramfs images to write an all-zero I</etc/hostid> in the initramfs prior to importing the boot pool. This option is on by default.
 
 This option has no effect on big-endian systems.
+
+B<Note:> Setting I<spl.spl_hostid> to a non-zero value on the kernel commandline will make the ZFS kernel modules B<ignore> any value set in I</etc/hostid>. To restore standard ZFS behavior on a running system, execute
+
+=over 4
+
+echo 0 > /sys/module/spl/paramters/spl_hostid
+
+=back
 
 =item B<zbm.sort_key>
 
@@ -164,7 +168,7 @@ By default, ZFSBootMenu only shows boot environments with the property I<mountpo
 
 This specifies the prefix added to the ZFS filesystem provided as the root filesystem on the kernel command line. For example, the command-line argument I<root=zfs:zroot/ROOT/void> has root prefix I<root=zfs:>.
 
-The default prefix is I<root=zfs:> on all systems except those that appear to be Arch Linux. For Arch, the default root prefix is I<zfs=>.
+The default prefix is I<root=zfs:> for most boot environments. Environments that appear to be Arch Linux will use I<zfs=> by default, while those that appear to be Gentoo will use a default of I<root=ZFS=>. The root prefix is generally determined by the initramfs generator, and the default is selected to match the expectation of the preferred initramfs generator on each distribution.
 
 Set this property to override the value determined from inspecting the boot environment.
 
