@@ -42,14 +42,17 @@ elif [ ! -e /etc/hostid ]; then
   write_hostid "${default_hostid}"
 fi
 
-# Capture the filename for spl.ko
-_modfilename="$( modinfo -F filename spl )"
-zinfo "loading ${_modfilename}"
+# only load spl.ko if it isn't already loaded
+if ! lsmod | grep -E -q "^spl" ; then
+  # Capture the filename for spl.ko
+  _modfilename="$( modinfo -F filename spl )"
+  zinfo "loading ${_modfilename}"
 
-# Load with a hostid of 0, so that /etc/hostid takes precedence
-if ! _modload="$( insmod "${_modfilename}" "spl_hostid=0" 2>&1 )" ; then
-  zdebug "${_modload}"
-  emergency_shell "unable to load SPL kernel module"
+  # Load with a hostid of 0, so that /etc/hostid takes precedence
+  if ! _modload="$( insmod "${_modfilename}" "spl_hostid=0" 2>&1 )" ; then
+    zdebug "${_modload}"
+    emergency_shell "unable to load SPL kernel module"
+  fi
 fi
 
 if ! _modload="$( modprobe zfs 2>&1 )" ; then

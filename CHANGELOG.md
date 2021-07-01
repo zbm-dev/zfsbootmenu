@@ -1,3 +1,59 @@
+# ZFSBootMenu v1.10.0 (2021-06-27)
+
+ZFSBootMenu 1.10.0 brings some minor new features and some behavior changes that should improve the booting and configuration experience. Notably, some default behaviors have changed in this release. Read on for details about how this may impact your configuration.
+
+## Updated defaults
+
+Previous releases have had `zbm.import_policy=strict` and `zbm.set_hostid=0` set by default. Starting with this release, the default values are `zbm.import_policy=hostid` and `zbm.set_hostid=1`. `zbm.import_policy=hostid` can help ZFSBootMenu automatically and safely import a pool when the wrong hostid is provided. `zbm.set_hostid=1` passes the hostid used to import the pool to the boot environment, ensuring that it can also correctly import the pool.
+
+Please refer to [Command-Line Parameters](https://github.com/zbm-dev/zfsbootmenu/blob/master/pod/zfsbootmenu.7.pod#command-line-parameters) for a compete description of both of these feature flags.
+
+## Fixes
+* When no hostid is provided or discoverable, use `0x00bab10c` instead of `0x0`.
+* Force SPL to use `/etc/hostid` and always ensure that a valid hostid is stored in the file.
+* Blacklist Plymouth; the splash screens it draws interferes with the ZBM interface.
+* Persist runtime configuration to a file that is used when the interface is launched normally or through SSH.
+
+## New features
+* When exiting the diff browser, exit back to the snapshot list with the snapshot selection preserved.
+* Set a hostname in ZFSBootMenu so that it shows up in the pool history for read/write operations.
+* When generating an initramfs, warn if `/etc/hostid` doesn't match `spl_hostid` provided as a module parameter to SPL.
+* Support `console=` kernel parameters with a `,speed` suffix. This is normally used when setting a serial port as the machine console.
+* Add a shortcut key to remove the pinned kernel value for a boot environment.
+
+### Allow references to parent properties in org.zfsbootmenu:commandline
+
+Any reference to `%{parent}` in `org.zfsbootmenu:commandline` will be replaced with the value of the same property on the parent filesystem (with parent references above recursively expanded), allowing easy specification of common options at a mutual parent of two BEs and overrides or additions of individual options per-BE. The value of `%{parent}` is always an empty string on a root filesystem.
+
+This is not intended to be sophisticated, and `%{parent}` appearing within other words will be replaced regardless. The assumption is that `%{parent}` is unique enough and will not conflict with real KCL options, so dumb global replacement is sufficient.
+
+### zpool import process improvements
+
+The existing `zbm.prefer` option has been extended to support defining a mandatory pool. Append `!` to the pool name to indicate that the specific pool MUST be imported before any other pool imports will be attempted.
+
+* `zbm.prefer=zroot!` will require that `zroot` be imported on boot.
+
+Between pool import attempts, `zbm.import_delay` (default of 5 seconds) controls how long to pause. During this delay window, the escape key can be used to access a full recovery shell.
+
+Either one of `spl_hostid` or `spl.spl_hostid` can be provided on the ZFSBootMenu kernel command line, in either hex or decimal format. The parameter value is checked to ensure that it's either valid hex or decimal, and then normalized to an 8 digit hex value.
+
+Additional steps have been taken to ensure that SPL can be loaded if an invalid `spl.spl_hostid` value is provided on the kernel command line. A more strict test is now used to determine if the ZFS kernel module has been loaded and drop to a recovery shell if not.
+
+## Significant commits in this release
+* c759df9 - For musl/non-dracut compat, change default hostid to non-zero value (Zach Dykstra)
+* 8886db3 - Force spl.spl_hostid=0 when matching hostid (Andrew J. Hesford)
+* 24e6e6a - Blacklist plymouth; it directly conflicts with how we manage the tty (Zach Dykstra)
+* 9875115 - Store options from KCL in a file for easy sourcing (Andrew J. Hesford)
+* 98f3164 - Use fzf's execute[] function to render draw_diff (Zach Dykstra)
+* 64bd359 - Set a hostname in ZBM, check if spl.spl_hostid matches /etc/hostid (Zach Dykstra)
+* 40dd0e3 - Small quality of life improvements (Zach Dykstra)
+* 635d140 - Add keyboard shortcut to remove pinned kernel (Zach Dykstra)
+* 04f5b87 - Allow references to parent properties in org.zfsbootmenu:commandline (Andrew J. Hesford)
+* 5142aa1 - Support pool import retries (Andrew J. Hesford)
+* e2caa81 - Improved pool imports (Andrew J. Hesford)
+* 31cc1b3 - Validate spl_hostid, control loading spl.ko (Zach Dykstra)
+* ccfc92c - Change ZBM hostid handling defaults (Zach Dykstra)
+
 # ZFSBootMenu v1.9.0 (2021-03-29)
 
 This release is dedicated to the late Jürgen Buchmüller (@pullmoll), a major contributor to the Void Linux project. Although ZFSBootMenu strives to support as many Linux distributions as possible, Void Linux is the distribution of choice for the entire ZFSBootMenu team. We have benefited greatly from pullmoll's enduring commitment to Void Linux. He will be missed.

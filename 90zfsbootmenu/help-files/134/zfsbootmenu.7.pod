@@ -17,8 +17,15 @@ general systems to boot without setting any values.
     override the value contained within the image.
 
 [1mzbm.prefer=<pool>[0m
-    By default, ZFSBootMenu will look for the [33mbootfs[0m property on the first imported pool (sorted alphabetically) to select the default
-    boot environment. If you have multiple pools, replace [1m<pool>[0m with the name of your preferred pool to override the default.
+    ZFSBootMenu will attempt to import as many pools as possible to identify boot environments and will, by default, look for the
+    [33mbootfs[0m property on the first imported pool (sorted alphabetically) to select the default boot environment. If you have multiple
+    pools, replace [1m<pool>[0m with the name of your preferred pool to override the default. If [1m<pool>[0m is the name of a pool followed by a
+    literal [33m![0m character, ZFSBootMenu will insist on successfully importing the named pool before attempting to import any others.
+
+[1mzbm.import_delay=<time>[0m
+    Should ZFSBootMenu fail to successfully import any pool, it will repeat import attempts indefinitely until at least one pool can
+    be imported or the user chooses to drop to a recovery shell. Each subsequent attempt will proceed after a delay of [1m<time>[0m seconds.
+    When [1m<time>[0m is unspecified or is anything other than a positive integer, a default value of 5 seconds will be used.
 
 [1mzbm.import_policy[0m
     This option controls how the pool import process should take place.
@@ -28,12 +35,11 @@ general systems to boot without setting any values.
       be imported with a preconfigured hostid, the system will attempt to adopt the hostid of the system that last imported the pool.
       If a preferred pool is not set and no pools can be imported using a preconfigured hostid, the system will adopt the hostid of
       the first otherwise-importable pool. After adopting a detected hostid, ZFSBootMenu will subsequently attempt to import as many
-      pools as possible. This option is forbidden on big-endian systems.
+      pools as possible. This option is forbidden on big-endian systems. This is the default import policy.
 
     [1mzbm.import_policy=strict[0m
       Set this option to only import pools that match the SPL hostid configured in ZFSBootMenu. If none can be imported, an emergency
-      shell will be invoked. The [33mstrict[0m policy is consistent with the behavior of earlier versions of ZFSBootMenu and is the default
-      import policy.
+      shell will be invoked. The [33mstrict[0m policy is consistent with the behavior of earlier versions of ZFSBootMenu.
 
     [1mzbm.import_policy=force[0m
       Set this option to attempt to force pool imports. When set, this invokes [33mzpool import -f[0m in place of the regular [33mzpool import[0m
@@ -44,9 +50,14 @@ general systems to boot without setting any values.
     selected boot environment to the hostid used to import its pool. The SPL kernel module will use this value as the hostid of the
     booted environment regardless of the contents of [33m/etc/hostid[0m. As a special case, if the hostid to be set is zero, ZFSBootMenu will
     instead set [33mspl_hostid=00000000[0m, which should be used by dracut-based initramfs images to write an all-zero [33m/etc/hostid[0m in the
-    initramfs prior to importing the boot pool.
+    initramfs prior to importing the boot pool. This option is on by default.
 
     This option has no effect on big-endian systems.
+
+    [1mNote:[0m Setting [33mspl.spl_hostid[0m to a non-zero value on the kernel commandline will make the ZFS kernel modules [1mignore[0m any value set
+    in [33m/etc/hostid[0m. To restore standard ZFS behavior on a running system, execute
+
+        echo 0 > /sys/module/spl/paramters/spl_hostid
 
 [1mzbm.sort_key[0m
     This option accepts a ZFS property name by which the boot environment and snapshot lists will be sorted.
@@ -120,8 +131,9 @@ The following properties can be set at any level of the boot-environment hierarc
     This specifies the prefix added to the ZFS filesystem provided as the root filesystem on the kernel command line. For example, the
     command-line argument [33mroot=zfs:zroot/ROOT/void[0m has root prefix [33mroot=zfs:[0m.
 
-    The default prefix is [33mroot=zfs:[0m on all systems except those that appear to be Arch Linux. For Arch, the default root prefix is
-    [33mzfs=[0m.
+    The default prefix is [33mroot=zfs:[0m for most boot environments. Environments that appear to be Arch Linux will use [33mzfs=[0m by default,
+    while those that appear to be Gentoo will use a default of [33mroot=ZFS=[0m. The root prefix is generally determined by the initramfs
+    generator, and the default is selected to match the expectation of the preferred initramfs generator on each distribution.
 
     Set this property to override the value determined from inspecting the boot environment.
 

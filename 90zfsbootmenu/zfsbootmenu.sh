@@ -163,6 +163,9 @@ while true; do
       IFS=, read subkey selected_kernel <<< "${selection}"
       zdebug "selected kernel: ${selected_kernel}"
 
+      # shellcheck disable=SC2034
+      IFS=' ' read -r fs kpath initrd <<< "${selected_kernel}"
+
       case "${subkey}" in
         "enter")
           if ! kexec_kernel "${selected_kernel}"; then
@@ -172,8 +175,6 @@ while true; do
           exit
           ;;
         "mod-d")
-          # shellcheck disable=SC2034
-          IFS=' ' read -r fs kpath initrd <<< "${selected_kernel}"
           set_default_kernel "${fs}" "${kpath}"
           ;;
         "mod-u")
