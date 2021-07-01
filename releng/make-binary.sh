@@ -42,9 +42,14 @@ zfsbootmenu_teardown+=" $( realpath contrib/xhci-teardown.sh ) "
 EOF
 
 _dracut_mods="${temp}/dracut/modules.d"
-test -d "${_dracut_mods}" && rm -rf "${_dracut_mods}/90zfsbootmenu"
-ln -s "$(realpath -e 90zfsbootmenu)" "${_dracut_mods}"
+if [ -d "${_dracut_mods}/90zfsbootmenu" ] ; then
+  if ! rm -rf "${_dracut_mods}/90zfsbootmenu" ; then
+    echo "Unable to remove ${_dracut_mods}/90zfsbootmenu"
+    exit 1
+  fi
+fi
 
+ln -s "$(realpath -e 90zfsbootmenu)" "${_dracut_mods}"
 ln -s "$(realpath -e bin/generate-zbm)" "${temp}/generate-zbm"
 
 yamlconf="${temp}/local.yaml"
@@ -74,10 +79,14 @@ yq-go eval ".Global.DracutFlags = [ \"--local\", \"--no-early-microcode\" ]" -i 
 yq-go eval "del(.Global.BootMountPoint)" -i "${yamlconf}"
 yq-go eval "del(.Kernel.CommandLine)" -i "${yamlconf}"
 
-"${temp}/generate-zbm" \
+if ! ( cd "${temp}" && PATH=./dracut:${PATH} ./generate-zbm \
   --version "${release}" \
   --config "${yamlconf}" \
-  --cmdline "loglevel=4 nomodeset"
+  --cmdline "loglevel=4 nomodeset" ) ; then
+
+  echo "ERROR: Unable to create images"
+  exit 1
+fi
 
 # EFI file is currently only built on x86_64
 if [ "${BUILD_EFI}" = "true" ]; then
