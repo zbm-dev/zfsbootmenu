@@ -295,10 +295,12 @@ if ( -f $spl_hostid ) {
   open PROC, $spl_hostid;
   $runConf{hostid}{module} = sprintf("%08x", <PROC>);
   close PROC;
+} else {
+  $runConf{hostid}{module} = "00000000";
 }
 
 my $etc_hostid = "/etc/hostid";
-if ( $runConf{hostid}{module} ne 0 and -f $etc_hostid ) {
+if ( $runConf{hostid}{module} ne "00000000" and -f $etc_hostid ) {
   open SPL, '<:raw', $etc_hostid;
   read SPL, my $hostid, 4;
   close SPL;
