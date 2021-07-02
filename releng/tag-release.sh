@@ -135,7 +135,7 @@ while true; do
   echo "Continue? [Yes]/No"
   read -r response
   case "${response}" in
-    [Yy][Ee][Ss]|[Yy])
+    [Yy][Ee][Ss]|[Yy]|"")
       break
       ;;
     [Nn][Oo]|[Nn])
