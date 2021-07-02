@@ -130,7 +130,30 @@ done
 # github-cli does not automatically strip header that hub uses for a title
 sed -i '1,/^$/d' "${relnotes}"
 
-git push
+echo "Release ${release} ready to push and tag"
+while true; do
+  echo "Continue? [Yes]/No"
+  read -r response
+  case "${response}" in
+    [Yy][Ee][Ss]|[Yy])
+      break
+      ;;
+    [Nn][Oo]|[Nn])
+      error "Release aborted by user request; clean up your local branch!"
+      ;;
+    *)
+      echo "Unrecognized response, please answer 'yes' or 'no'"
+      ;;
+  esac
+done
 
-gh release create "${tag}" ${prerelease} \
-  -F "${relnotes}" -t "ZFSBootMenu ${tag}" "${asset_files[@]}"
+if ! git push; then
+  error "ERROR: failed to push to default branch; release aborted"
+fi
+
+if ! gh release create "${tag}" ${prerelease} \
+    -F "${relnotes}" -t "ZFSBootMenu ${tag}" "${asset_files[@]}"; then
+  error "ERROR: release creation failed"
+fi
+
+echo "Pushed and tagged release ${release}"
