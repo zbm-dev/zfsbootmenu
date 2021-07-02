@@ -97,7 +97,6 @@ sed -i bin/generate-zbm -e "s/our \$VERSION.*/our \$VERSION = '${release}';/"
 # Push updates for the release
 git add bin/generate-zbm CHANGELOG.md man/
 git commit -m "Bump to version ${release}"
-git push
 
 # Publish release, as prerelease if version contains alphabetics
 if echo "${release}" | grep -q "[A-Za-z]"; then
@@ -130,5 +129,8 @@ done
 
 # github-cli does not automatically strip header that hub uses for a title
 sed -i '1,/^$/d' "${relnotes}"
+
+git push
+
 gh release create "${tag}" ${prerelease} \
   -F "${relnotes}" -t "ZFSBootMenu ${tag}" "${asset_files[@]}"
