@@ -1,3 +1,17 @@
+# ZFSBootMenu v1.10.1 (2021-07-04)
+
+ZFSBootMenu 1.10.1 brings a pair of fixes to issues seen in the wild. 
+
+## Fixes
+
+* Remove a spurious warning when `generate-zbm` incorrectly detected a mismatch between `/etc/hostid` and the run-time `spl_hostid` SPL module parameter.
+* Fix a race condition between ZFSBootMenu and udev when attempting to load ZFS/SPL kernel modules, resulting in an incorrect drop to a recovery shell. 
+
+## Significant commits in this release
+
+* 2a9a6ab - Relax insmod spl failures, try to load zfs.ko (Zach Dykstra)
+* f657717 - generate-zbm: fix hostid comparison (Andrew J. Hesford)
+
 # ZFSBootMenu v1.10.0 (2021-06-27)
 
 ZFSBootMenu 1.10.0 brings some minor new features and some behavior changes that should improve the booting and configuration experience. Notably, some default behaviors have changed in this release. Read on for details about how this may impact your configuration.
