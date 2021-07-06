@@ -70,6 +70,9 @@ case "$(uname -m)" in
     APPEND="loglevel=7 zbm.show"
     SERDEV="ttyS0"
   ;;
+  *)
+    echo "Unknown machine type '$(uname -m)', please add it to run.sh"
+    exit 1
 esac
 
 DRIVE=()
