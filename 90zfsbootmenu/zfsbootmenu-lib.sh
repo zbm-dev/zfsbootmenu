@@ -2121,6 +2121,21 @@ zbmcmdline() {
 }
 
 # prints: nothing
+# returns: nothing
+
+takeover() {
+  local pid
+
+  # Kill the other running instance
+  if [ -f "${BASE}/active" ] ; then
+    read -r pid < "${BASE}/active"
+    [ -n "${pid}" ] && kill "${pid}"
+  fi
+
+  exec /bin/zfsbootmenu
+}
+
+# prints: nothing
 # returns: 0
 
 is_lib_sourced() {

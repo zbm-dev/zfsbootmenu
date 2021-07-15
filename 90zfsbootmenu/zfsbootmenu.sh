@@ -35,7 +35,7 @@ while [ ! -e "${BASE}/initialized" ]; do
 done
 
 while [ -e "${BASE}/active" ]; do
-  if ! delay=5 prompt="Press [ESC] to cancel" timed_prompt "Waiting for other ZFSBootMenu instace to terminate"; then
+  if ! delay=5 prompt="Press [ESC] to cancel" timed_prompt "Waiting for other ZFSBootMenu instance to terminate"; then
     zdebug "exited while waiting to own ${BASE}/active"
     tput cnorm
     tput clear
@@ -44,7 +44,7 @@ while [ -e "${BASE}/active" ]; do
 done
 
 # Prevent conflicting use of the boot menu
-: > "${BASE}/active"
+echo "$$" > "${BASE}/active"
 zdebug "creating ${BASE}/active"
 
 # shellcheck disable=SC2064
