@@ -19,10 +19,6 @@ fi
 # Make sure /dev/zfs exists, otherwise drop to a recovery shell
 [ -e /dev/zfs ] || emergency_shell "/dev/zfs missing, check that kernel modules are loaded"
 
-if [ -z "${BASE}" ]; then
-  export BASE="/zfsbootmenu"
-fi
-
 mkdir -p "${BASE}"
 
 while [ ! -e "${BASE}/initialized" ]; do

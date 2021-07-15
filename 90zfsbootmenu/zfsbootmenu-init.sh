@@ -19,10 +19,6 @@ if ! is_lib_sourced > /dev/null 2>&1 ; then
   exec /bin/bash
 fi
 
-if [ -z "${BASE}" ]; then
-  export BASE="/zfsbootmenu"
-fi
-
 mkdir -p "${BASE}"
 
 # Attempt to load spl normally

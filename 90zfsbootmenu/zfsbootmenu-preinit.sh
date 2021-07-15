@@ -24,6 +24,7 @@ mkdir -p "${BASE}"
 # shellcheck disable=SC2154
 cat >> "/etc/profile" <<EOF
 # Added by zfsbootmenu-preinit.sh
+export BASE="/zfsbootmenu"
 export endian="${endian}"
 export spl_hostid="${spl_hostid}"
 export import_policy="${import_policy}"

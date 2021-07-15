@@ -2125,14 +2125,16 @@ zbmcmdline() {
 
 takeover() {
   local pid
+  echo "Starting takeover"
 
   # Kill the other running instance
-  if [ -f "${BASE}/active" ] ; then
+  if [ -e "${BASE}/active" ] ; then
     read -r pid < "${BASE}/active"
     [ -n "${pid}" ] && kill "${pid}"
+    zinfo "Killing active zfsbootmenu with a PID of ${pid}"
   fi
 
-  exec /bin/zfsbootmenu
+  /bin/zfsbootmenu
 }
 
 # prints: nothing
