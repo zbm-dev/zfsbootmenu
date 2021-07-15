@@ -2160,6 +2160,7 @@ takeover() {
     echo "Stopping active zfsbootmenu with a PID of ${pid}"
 
     # Trip the USR1 handler in /bin/zfsbootmenu - 'exit 0'
+    zdebug "Sending USR1 to ${parent}"
     kill -USR1 "${parent}"
 
     # find the last child process of the active /bin/zfsbootmenu
