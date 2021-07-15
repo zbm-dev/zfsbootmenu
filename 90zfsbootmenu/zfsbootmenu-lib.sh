@@ -2095,6 +2095,7 @@ emergency_shell() {
 
   tput clear
   tput cnorm
+  stty echo
 
   echo -n "Launching emergency shell: "
   echo -e "${message}\n"
