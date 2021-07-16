@@ -2152,12 +2152,11 @@ find_child_pid() {
 takeover() {
   local pid child
 
-  # Kill the other running instance
   if [ -e "${BASE}/active" ] ; then
     read -r pid < "${BASE}/active"
     parent=${pid}
 
-    echo "Stopping active zfsbootmenu with a PID of ${pid}"
+    zinfo "Stopping active zfsbootmenu with a PID of ${pid}"
 
     # Trip the USR1 handler in /bin/zfsbootmenu - 'exit 0'
     zdebug "sending USR1 to ${parent}"
@@ -2176,8 +2175,6 @@ takeover() {
     zdebug "killing child process ${parent}"
     [ -n "${parent}" ] && kill "${parent}"
   fi
-
-  /bin/zfsbootmenu
 }
 
 # prints: nothing

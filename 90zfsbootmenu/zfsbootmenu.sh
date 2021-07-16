@@ -30,8 +30,11 @@ while [ ! -e "${BASE}/initialized" ]; do
   fi
 done
 
+[ -e "${BASE}/active" ] && takeover
+
+# If the takeover fails for some reason, spin until it ends
 while [ -e "${BASE}/active" ]; do
-  if ! delay=5 prompt="Press [ESC] to cancel" timed_prompt "Waiting for other ZFSBootMenu instance to terminate"; then
+  if ! delay=1 prompt="Press [ESC] to cancel" timed_prompt "Waiting for other ZFSBootMenu instance to terminate"; then
     zdebug "exited while waiting to own ${BASE}/active"
     tput cnorm
     tput clear
