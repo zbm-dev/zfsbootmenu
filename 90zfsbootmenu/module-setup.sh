@@ -146,6 +146,7 @@ install() {
   _ret=0
   # shellcheck disable=SC2154
   inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh" || _ret=$?
+  inst_simple "${moddir}/zfsbootmenu-completions.sh" "/lib/zfsbootmenu-completions.sh" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu-init.sh" "/libexec/zfsbootmenu-init" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu-preview.sh" "/libexec/zfsbootmenu-preview" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu-input.sh" "/libexec/zfsbootmenu-input" || _ret=$?
@@ -317,12 +318,27 @@ EOF
   cat << EOF >> "${initdir}/etc/profile"
 [ -f /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
 [ -f /etc/zfsbootmenu.conf ] && source /etc/zfsbootmenu.conf
+
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 export TERM=vt220
+
+zdebug "sourced /etc/profile"
+
+EOF
+
+  # Setup a default environment for all login shells
+  cat << EOF >> "${initdir}/.bashrc"
+[ -f /etc/profile ] && source /etc/profile
+[ -f /lib/zfsbootmenu-completions.sh ] && source /lib/zfsbootmenu-completions.sh
 export PS1="\033[0;33mzfsbootmenu\033[0m \w > "
+
 alias clear="tput clear"
 alias reset="tput reset"
 alias zbm="zfsbootmenu"
 alias logs="zlogtail -f"
+alias help="/libexec/zfsbootmenu-help -L recovery-shell"
+
+zdebug "sourced /.bashrc"
+
 EOF
 }

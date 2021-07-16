@@ -1,0 +1,31 @@
+[1mNAME[0m
+
+[1mzfsbootmenu[0m - Recovery Shell
+
+[1mCommon Commands[0m
+
+[33mzfsbootmenu[0m
+  Launch the interactive boot environment menu.
+
+[33mzfs-chroot[0m [1mzfs filesystem[0m
+  Enter a chroot of the specified boot environment. The boot environment is mounted [33mread/write[0m if the zpool is imported [33mread/write[0m.
+
+[33mset_rw_pool[0m [1mpool[0m
+  Export, then re-import the pool [33mread/write[0m.
+
+[33mset_ro_pool[0m [1mpool[0m
+  Export, then re-import the pool [33mread-only[0m.
+
+[33mmount_zfs[0m [1mzfs filesystem[0m
+  Mount the filesystem at a unique location and print the mount point.
+
+[33mhelp[0m
+  View the online help system.
+
+[33mlogs[0m
+  View warning/error/debug logs.
+
+[1mAUTHOR[0m
+
+ZFSBootMenu Team <https://github.com/zbm-dev/zfsbootmenu>
+
