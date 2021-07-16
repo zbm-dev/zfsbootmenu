@@ -327,5 +327,9 @@ EOF
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 export TERM=vt220
 export PS1="\033[0;33mzfsbootmenu\033[0m \w > "
+alias clear="tput clear"
+alias reset="tput reset"
+alias zbm="zfsbootmenu"
+alias logs="zlogtail -f"
 EOF
 }
