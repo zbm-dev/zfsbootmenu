@@ -45,7 +45,8 @@ zdebug "creating ${BASE}/active"
 
 # shellcheck disable=SC2064
 trap "rm -f '${BASE}/active'" EXIT
-trap "zdebug 'In the USR1 signal handler' ; exit 0" SIGUSR1
+trap "zdebug 'exiting via USR1 signal' ; exit 0" SIGUSR1
+trap '' SIGINT
 
 if [ -r "${BASE}/bootfs" ]; then
   read -r BOOTFS < "${BASE}/bootfs"
@@ -62,8 +63,6 @@ if [ -d /libexec/setup.d ]; then
   done
   unset _hook
 fi
-
-trap '' SIGINT
 
 # shellcheck disable=SC2016
 fuzzy_default_options=( "--ansi" "--no-clear"

@@ -2160,12 +2160,11 @@ takeover() {
     echo "Stopping active zfsbootmenu with a PID of ${pid}"
 
     # Trip the USR1 handler in /bin/zfsbootmenu - 'exit 0'
-    zdebug "Sending USR1 to ${parent}"
+    zdebug "sending USR1 to ${parent}"
     kill -USR1 "${parent}"
 
     # find the last child process of the active /bin/zfsbootmenu
     while child="$( find_child_pid "${parent}" )" ; do
-      zdebug "Child pid of ${parent} is ${child}"
       if [ -n "${child}" ] ; then
         parent=${child}
         continue
@@ -2173,9 +2172,8 @@ takeover() {
       break
     done
 
-    zdebug "Final child pid is ${parent}"
-
     # Kill the blocking child so that the USR1 handler actually executes
+    zdebug "killing child process ${parent}"
     [ -n "${parent}" ] && kill "${parent}"
   fi
 
