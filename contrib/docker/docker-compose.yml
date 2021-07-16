@@ -1,0 +1,9 @@
+# This builds the ZFSBootMenu builder and then runs it to create images
+version: "2"
+services:
+    zfsbootmenu-compiler:
+        build: "."
+        # Mount the current repo (../..) where the builder expects it
+        # Outputs will be stored in ../../contrib/docker/build
+        volumes:
+            - "../..:/zbm"
