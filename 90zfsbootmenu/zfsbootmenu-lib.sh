@@ -1710,6 +1710,33 @@ set_rw_pool() {
   return 1
 }
 
+# arg1: pool name
+# prints: nothing
+# returns: 0 on success, 1 on failure
+
+set_ro_pool() {
+  local pool ret
+
+  pool="${1}"
+  if [ -z "${pool}" ]; then
+    zerror "pool is undefined"
+    return 1
+  fi
+  zdebug "pool set to ${pool}"
+
+  if export_pool "${pool}" ; then
+    read_write='' import_pool "${pool}"
+    ret=$?
+
+    zdebug "import_pool: ${ret}"
+
+    return ${ret}
+  fi
+
+  return 1
+}
+
+
 # arg1: ZFS filesystem
 # prints: name of encryption root, if present
 # returns: 0 if system has an encryption root, 1 otherwise
@@ -2082,7 +2109,7 @@ zfs_chroot() {
 # returns: nothing
 
 emergency_shell() {
-  local message
+  local message skip mp fs
   message=${1:-unknown reason}
 
   tput clear
@@ -2091,7 +2118,17 @@ emergency_shell() {
 
   echo -n "Launching emergency shell: "
   echo -e "${message}\n"
-  /bin/bash -l
+
+  # -i (interactive) mode will source /.bashrc
+  /bin/bash -i
+
+  # shellcheck disable=SC2034
+  while read -r skip mp fs skip ; do
+    if [ "${fs}" == "zfs" ]; then
+      umount "${mp}"
+      zdebug "unmounting: ${mp}"
+    fi
+  done < /proc/self/mounts
 }
 
 # prints: nothing

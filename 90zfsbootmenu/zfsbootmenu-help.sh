@@ -28,13 +28,14 @@ help_pager() {
   SORTED+=("${FINAL}")
 
   printf '%s\n' "${SORTED[@]}" | ${FUZZYSEL} \
-    --prompt 'Topic >' \
+    --prompt 'Topic > ' \
     --with-nth=2.. \
     --bind pgup:preview-up,pgdn:preview-down \
     --preview="$0 -s {1}" \
     --preview-window="right:${PREVIEW_SIZE}:wrap" \
     --header="$( colorize green "[ESC]" ) $( colorize lightblue "back" )" \
     --tac \
+    --inline-info \
     --ansi
 }
 

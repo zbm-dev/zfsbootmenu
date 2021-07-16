@@ -299,7 +299,7 @@ while true; do
       # This will make all keys in the pool unavailable, but populate_be_list
       # should reload the missing keys in the next iteration, so why unlock here?
       if is_writable "${pool}"; then
-        export_pool "${pool}" && read_write='' import_pool "${pool}"
+        set_ro_pool "${pool}"
       else
         set_rw_pool "${pool}"
       fi
