@@ -1,0 +1,22 @@
+Global:
+  # Enable image creation
+  ManageImages: true
+  # Make sure to look for dracut configuration in the repo
+  DracutConfDir: /zbm/etc/zfsbootmenu/dracut.conf.d
+Components:
+  # Dump kernel/initramfs components in the tree;
+  # generate-zbm creates this directory if necessary
+  ImageDir: /zbm/contrib/docker/build
+  Enabled: true
+  # Disable versioning, this is usually a one-off creation
+  Versions: false
+  syslinux:
+    Enabled: false
+EFI:
+  ImageDir: /zbm/contrib/docker/build
+  Versions: false
+  Enabled: true
+Kernel:
+  # For the EFI bundle, turn off modesetting to avoid initializing GPUs
+  # Also set loglevel=4 to provide some helpful warning output
+  CommandLine: zfsbootmenu ro loglevel=4 nomodeset
