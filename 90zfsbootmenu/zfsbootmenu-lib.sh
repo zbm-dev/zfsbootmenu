@@ -18,7 +18,7 @@ zlog() {
   [ "${1}" -le "${loglevel:=4}" ] || return
 
   # shellcheck disable=SC2086
-  _script="$( basename $0 )"
+  _script="$( basename -- $0 )"
   _func="${FUNCNAME[2]}"
 
   # Only add script/function tracing to debug messages
@@ -2095,6 +2095,7 @@ emergency_shell() {
 
   tput clear
   tput cnorm
+  stty echo
 
   echo -n "Launching emergency shell: "
   echo -e "${message}\n"
@@ -2118,6 +2119,62 @@ change_sort() {
 
 zbmcmdline() {
   [ -f "${BASE}/zbm.cmdline" ] && echo | cat "${BASE}/zbm.cmdline" -
+}
+
+# arg1: pid
+# prints: child pid
+# returns: 0 if a child pid was found, 1 if there are no children
+
+find_child_pid() {
+  local pid child
+
+  pid="${1}"
+  if [ -z "${pid}" ]; then
+    zdebug "empty pid"
+    return 1
+  fi
+
+  if [ -e "/proc/${pid}/task/${pid}/children" ] ; then
+    read -r child < "/proc/${pid}/task/${pid}/children"
+
+    if [ -n "${child}" ] ; then
+      echo "${child}"
+      return 0
+    fi
+  fi
+
+  return 1
+}
+
+# prints: nothing
+# returns: nothing
+
+takeover() {
+  local pid child
+
+  if [ -e "${BASE}/active" ] ; then
+    read -r pid < "${BASE}/active"
+    parent=${pid}
+
+    zinfo "Stopping active zfsbootmenu with a PID of ${pid}"
+
+    # Trip the USR1 handler in /bin/zfsbootmenu - 'exit 0'
+    zdebug "sending USR1 to ${parent}"
+    kill -USR1 "${parent}"
+
+    # find the last child process of the active /bin/zfsbootmenu
+    while child="$( find_child_pid "${parent}" )" ; do
+      if [ -n "${child}" ] ; then
+        parent=${child}
+        continue
+      fi
+      break
+    done
+
+    # Kill the blocking child so that the USR1 handler actually executes
+    zdebug "killing child process ${parent}"
+    [ -n "${parent}" ] && kill "${parent}"
+  fi
 }
 
 # prints: nothing

@@ -19,10 +19,6 @@ fi
 # Make sure /dev/zfs exists, otherwise drop to a recovery shell
 [ -e /dev/zfs ] || emergency_shell "/dev/zfs missing, check that kernel modules are loaded"
 
-if [ -z "${BASE}" ]; then
-  export BASE="/zfsbootmenu"
-fi
-
 mkdir -p "${BASE}"
 
 while [ ! -e "${BASE}/initialized" ]; do
@@ -34,8 +30,11 @@ while [ ! -e "${BASE}/initialized" ]; do
   fi
 done
 
+[ -e "${BASE}/active" ] && takeover
+
+# If the takeover fails for some reason, spin until it ends
 while [ -e "${BASE}/active" ]; do
-  if ! delay=5 prompt="Press [ESC] to cancel" timed_prompt "Waiting for other ZFSBootMenu instace to terminate"; then
+  if ! delay=1 prompt="Press [ESC] to cancel" timed_prompt "Waiting for other ZFSBootMenu instance to terminate"; then
     zdebug "exited while waiting to own ${BASE}/active"
     tput cnorm
     tput clear
@@ -44,11 +43,13 @@ while [ -e "${BASE}/active" ]; do
 done
 
 # Prevent conflicting use of the boot menu
-: > "${BASE}/active"
+echo "$$" > "${BASE}/active"
 zdebug "creating ${BASE}/active"
 
 # shellcheck disable=SC2064
 trap "rm -f '${BASE}/active'" EXIT
+trap "zdebug 'exiting via USR1 signal' ; tput clear ; exit 0" SIGUSR1
+trap '' SIGINT
 
 if [ -r "${BASE}/bootfs" ]; then
   read -r BOOTFS < "${BASE}/bootfs"
@@ -65,8 +66,6 @@ if [ -d /libexec/setup.d ]; then
   done
   unset _hook
 fi
-
-trap '' SIGINT
 
 # shellcheck disable=SC2016
 fuzzy_default_options=( "--ansi" "--no-clear"
