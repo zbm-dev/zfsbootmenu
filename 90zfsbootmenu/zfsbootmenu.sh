@@ -48,7 +48,7 @@ zdebug "creating ${BASE}/active"
 
 # shellcheck disable=SC2064
 trap "rm -f '${BASE}/active'" EXIT
-trap "zdebug 'exiting via USR1 signal' ; exit 0" SIGUSR1
+trap "zdebug 'exiting via USR1 signal' ; tput clear ; exit 0" SIGUSR1
 trap '' SIGINT
 
 if [ -r "${BASE}/bootfs" ]; then
