@@ -185,11 +185,14 @@ fi
 : > "${BASE}/initialized"
 
 # If BOOTFS is not empty display the fast boot menu
-if [ -n "${BOOTFS}" ]; then
+# shellcheck disable=SC2154
+if [ "${menu_timeout}" -ge 0 ] && [ -n "${BOOTFS}" ]; then
   # Draw a countdown menu
   # shellcheck disable=SC2154
-  if [ "${menu_timeout}" -ge 0 ]; then
-    if delay="${menu_timeout}" prompt="Booting ${BOOTFS} in %0.${#menu_timeout}d seconds" timed_prompt "[ENTER] to boot" "[ESC] boot menu" ; then
+  if delay="${menu_timeout}" prompt="Booting ${BOOTFS} in %0.${#menu_timeout}d seconds" timed_prompt "[ENTER] to boot" "[ESC] boot menu" ; then
+    # This lock file is present if someone has SSH'd to take control
+    # Do not attempt to automatically boot if present
+    if [ ! -e "${BASE}/active" ] ; then
       # Clear screen before a possible password prompt
       tput clear
       if ! NO_CACHE=1 load_key "${BOOTFS}"; then
@@ -200,6 +203,12 @@ if [ -n "${BOOTFS}" ]; then
       fi
     fi
   fi
+fi
+
+# If the lock file is present, drop to a recovery shell to avoid
+# stealing control back from an SSH session
+if [ -e "${BASE}/active" ] ; then
+  emergency_shell "type 'exit' to return to ZFSBootMenu"
 fi
 
 while true; do
