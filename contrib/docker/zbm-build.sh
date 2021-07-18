@@ -9,18 +9,30 @@ error() {
 if ls -Aq /zbm | grep -q . >/dev/null 2>&1; then
 	# If /zbm is not empty, make sure it looks like it has what we need
 	[ -d /zbm/90zfsbootmenu ] || error "missing path /zbm/90zfsbootmenu"
-	[ -d /zbm/contrib/docker ] || error "missing path /zbm/contrib/docker"
 	[ -x /zbm/bin/generate-zbm ] || error "missing executable /zbm/bin/generate-zbm"
 else
 	# If /zbm is empty, clone the upstream repo into it
 	xbps-install -Sy git
-	git clone --depth=1 https://github.com/zbm-dev/zfsbootmenu /zbm
+	git clone https://github.com/zbm-dev/zfsbootmenu /zbm
+
+	# If the run specifies $ZBM_COMMIT_HASH, check out the hash
+	# Get a default value for ZBM_COMMIT_HASH from /etc/zbm-commit-hash
+	if [ -z "${ZBM_COMMIT_HASH}" ] && [ -r "/etc/zbm-commit-hash" ]; then
+		read -r ZBM_COMMIT_HASH < /etc/zbm-commit-hash
+	fi
+
+	if [ -n "${ZBM_COMMIT_HASH}" ]; then
+		if ! ( cd /zbm && git checkout -q "${ZBM_COMMIT_HASH}" ); then
+			error "failed to checkout commit, aborting"
+		fi
+	fi
 fi
+
+BUILDROOT="${1:-/zbm/contrib/docker}"
+[ -d "${BUILDROOT}" ] || error "Build root does not appear to exist"
 
 # Make sure that dracut can find the ZFSBootMenu module
 ln -sf /zbm/90zfsbootmenu /usr/lib/dracut/modules.d/90zfsbootmenu
-
-BUILDROOT="/zbm/contrib/docker"
 
 if [ ! -e "${BUILDROOT}/config.yaml" ]; then
 	# If there is no provided config, copy the default

@@ -8,13 +8,21 @@
 
 # Use the official Void Linux container
 FROM voidlinux/voidlinux:latest
+ARG ZBM_COMMIT_HASH
 
 # Ensure everything is up-to-date
 RUN xbps-install -Suy xbps && xbps-install -uy
 
+# Prefer an LTS version over whatever Void thinks is current
+RUN echo "ignorepkg=linux" > /etc/xbps.d/10-nolinux.conf \
+	&& echo "ignorepkg=linux-headers" >> /etc/xbps.d/10-nolinux.conf
+
 # Install components necessary to build the image
 RUN xbps-query -Rp run_depends zfsbootmenu | xargs xbps-install -y
-RUN xbps-install -y linux linux-headers zfs gummiboot-efistub
+RUN xbps-install -y linux5.10 linux5.10-headers zfs gummiboot-efistub
+
+# Record a commit hash if one was provided
+RUN if [ -n "${ZBM_COMMIT_HASH}" ]; then echo "${ZBM_COMMIT_HASH}" > /etc/zbm-commit-hash; fi
 
 # Copy the build script
 COPY zbm-build.sh /zbm-build.sh
@@ -22,5 +30,6 @@ COPY zbm-build.sh /zbm-build.sh
 # To replace the default ZFSBootMenu tree, bind-mount over /zbm
 VOLUME /zbm
 
-# Make sure a configuration exists or copy the default, then create the images
-CMD /zbm-build.sh
+# Run the build script with no arguments by default
+ENTRYPOINT [ "/zbm-build.sh" ]
+CMD [ ]
