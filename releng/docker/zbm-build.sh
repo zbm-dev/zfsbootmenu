@@ -22,7 +22,7 @@ Usage: $0 [options]
 
   -b <buildroot>
      Specify path for build root
-     (Default: /zbm/contrib/docker)
+     (Default: /zbm/releng/docker)
 
   -c <configuration>
      Specify path to generate-zbm(5) configuration
@@ -123,7 +123,7 @@ fi
 [ -x /zbm/bin/generate-zbm ] || error "missing executable /zbm/bin/generate-zbm"
 
 # Default BUILDROOT is in ZBM tree
-: "${BUILDROOT:=/zbm/contrib/docker}"
+: "${BUILDROOT:=/zbm/releng/docker}"
 [ -d "${BUILDROOT}" ] || error "Build root does not appear to exist"
 
 # Make sure that the output directory exists

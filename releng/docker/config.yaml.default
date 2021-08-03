@@ -5,7 +5,7 @@ Global:
   DracutConfDir: /zbm/etc/zfsbootmenu/dracut.conf.d
 Components:
   # zbm-build.sh overwrites this anyway
-  ImageDir: /zbm/contrib/docker/build
+  ImageDir: /zbm/releng/docker/build
   Enabled: true
   # Disable versioning, this is usually a one-off creation
   Versions: false
@@ -13,7 +13,7 @@ Components:
     Enabled: false
 EFI:
   # zbm-build.sh overwrites this anyway
-  ImageDir: /zbm/contrib/docker/build
+  ImageDir: /zbm/releng/docker/build
   Versions: false
   Enabled: true
 Kernel:

@@ -4,6 +4,6 @@ services:
     zfsbootmenu-compiler:
         build: "."
         # Mount the current repo (../..) where the builder expects it
-        # Outputs will be stored in ../../contrib/docker/build
+        # Outputs will be stored in ../../releng/docker/build
         volumes:
             - "../..:/zbm"

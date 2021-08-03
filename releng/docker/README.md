@@ -129,18 +129,18 @@ podman run -v /sw/zfsbootmenu:/zbm zbm
 ```
 
 After some console output, the container should terminate and the directory
-`/sw/zfsbootmenu/contrib/docker/build` should contain the UEFI bundle
+`/sw/zfsbootmenu/releng/docker/build` should contain the UEFI bundle
 `vmlinuz.EFI` as well as the components `vmlinuz-bootmenu` (a stock Void Linux
 kernel) and corresponding ZFSBootMenu initramfs `initramfs-bootmenu.img`.
 
 In the default configuration, the ZFSBootMenu images probably contain an
 arbitrary `/etc/hostid` that likely does not agree with the corresponding file
 on the host. To make sure that the hostid within the images remains consistent
-with the build host, first copy the file from the host to the `contrib/docker`
+with the build host, first copy the file from the host to the `releng/docker`
 directory:
 
 ```sh
-cp /etc/hostid /sw/zfsbootmenu/contrib/docker/hostid
+cp /etc/hostid /sw/zfsbootmenu/releng/docker/hostid
 podman run -v /sw/zfsbootmenu:/zbm zbm
 ```
 
