@@ -42,8 +42,7 @@ if ! podman inspect "${buildtag}" >/dev/null 2>&1; then
 fi
 
 buildtmp="$( mktemp -d )"
-
-mkdir -p "${buildtmp}/dracut.conf.d"
+mkdir -p "${buildtmp}/dracut.conf.d" || error "cannot create build directory"
 
 # Copy default dracut configuration and include a release-specific config
 if ! cp etc/zfsbootmenu/dracut.conf.d/* "${buildtmp}/dracut.conf.d"; then
@@ -67,22 +66,19 @@ if ! cp etc/zfsbootmenu/config.yaml "${yamlconf}"; then
 fi
 
 arch="$( uname -m )"
-BUILD_EFI="false"
-
 case "${arch}" in
   x86_64) BUILD_EFI="true" ;;
-  *) ;;
+  *) BUILD_EFI="false" ;;
 esac
 
 zbmtriplet="zfsbootmenu-${arch}-v${release}"
+mkdir -p "${buildtmp}/${zbmtriplet}" || error "cannot create output directory"
 
 # Modify the YAML configuration for the containerized build
 yq-go eval ".Components.Enabled = true" -i "${yamlconf}"
 yq-go eval ".Components.Versions = false" -i "${yamlconf}"
-yq-go eval ".Components.ImageDir = \"/build/${zbmtriplet}\"" -i "${yamlconf}"
 yq-go eval ".EFI.Enabled = ${BUILD_EFI}" -i "${yamlconf}"
 yq-go eval ".EFI.Versions = false" -i "${yamlconf}"
-yq-go eval ".EFI.ImageDir = \"/build/uefi\"" -i "${yamlconf}"
 yq-go eval ".Global.ManageImages = true" -i "${yamlconf}"
 yq-go eval ".Global.DracutConfDir = \"/build/dracut.conf.d\"" -i "${yamlconf}"
 yq-go eval ".Global.DracutFlags = [ \"--no-early-microcode\" ]" -i "${yamlconf}"
@@ -91,7 +87,8 @@ yq-go eval "del(.Global.BootMountPoint)" -i "${yamlconf}"
 
 # For the containerized build, use current repo by mounting at /zbm
 # Custom configs and outputs will be in the temp dir, mounted at /build
-podman run --rm -v ".:/zbm:ro" -v "${buildtmp}:/build" "${buildtag}" "/build" || exit 1
+podman run --rm -v ".:/zbm:ro" -v "${buildtmp}:/build" "${buildtag}" \
+  -b "/build" -o "/build/${zbmtriplet}" || error "failed to create image"
 
 if ! assets="$( realpath -e releng )/assets/${release}"; then
   error "unable to define path to built assets"
@@ -105,8 +102,9 @@ fi
 
 # EFI file is currently only built on x86_64
 if [ "${BUILD_EFI}" = "true" ]; then
-  cp "${buildtmp}/uefi/vmlinuz.EFI" "${assets}/${zbmtriplet}.EFI" || exit 1
+  cp "${buildtmp}/${zbmtriplet}/vmlinuz.EFI" "${assets}/${zbmtriplet}.EFI" || error "failed to copy UEFI bundle"
+  rm -f "${buildtmp}/${zbmtriplet}/vmlinuz.EFI"
 fi
 
 # Components are always built
-( cd "${buildtmp}" && tar czvf "${assets}/${zbmtriplet}.tar.gz" "${zbmtriplet}" ) || exit 1
+( cd "${buildtmp}" && tar czvf "${assets}/${zbmtriplet}.tar.gz" "${zbmtriplet}" ) || error "failed to pack components"

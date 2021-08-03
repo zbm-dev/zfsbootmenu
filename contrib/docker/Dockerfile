@@ -19,7 +19,14 @@ RUN echo "ignorepkg=linux" > /etc/xbps.d/10-nolinux.conf \
 
 # Install components necessary to build the image
 RUN xbps-query -Rp run_depends zfsbootmenu | xargs xbps-install -y
-RUN xbps-install -y linux5.10 linux5.10-headers zfs gummiboot-efistub
+RUN xbps-install -y linux5.10 linux5.10-headers \
+	zfs gummiboot-efistub curl yq-go bash
+
+# Remove headers and massive dkms development toolchain; binutils
+# provides objcopy, which is necessary for UEFI bundle creation
+RUN xbps-pkgdb -m manual binutils
+RUN echo "ignorepkg=dkms" > /etc/xbps.d/10-nodkms.conf
+RUN xbps-remove -Roy linux5.10-headers dkms && rm -f /var/cache/xbps/*
 
 # Record a commit hash if one was provided
 RUN if [ -n "${ZBM_COMMIT_HASH}" ]; then echo "${ZBM_COMMIT_HASH}" > /etc/zbm-commit-hash; fi

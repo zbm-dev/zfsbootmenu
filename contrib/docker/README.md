@@ -50,33 +50,73 @@ components of the ZFSBootMenu repository:
 
 - `90zfsbootmenu`, the Dracut module encapsulating ZFSBootMenu functionality;
 - `bin/generate-zbm`, the executable script that creates ZFSBootMenu images;
-- `contrib/docker`, providing either `config.yaml` or `config.yaml.default`.
 
-If the build script finds the volume mounted at `/zbm` empty, it will install
-the `git` package and clone the master branch of the upstream ZFSBootMenu
-repository. This makes the image capable of producing default images without
-needing a local clone of the repository. To build anything but the head commit
-of the upstream master branch, clone the repository, checkout an aribtrary
-commit or make local changes, and mount that repository at `/zbm`.
+If the build script finds the volume mounted at `/zbm` empty, it will fetch an
+archive of the official ZFSBootMenu repository on github.com. This makes the
+image capable of producing default images without needing a local clone of the
+repository. The specific commit, tag or branch to fetch can be specified at
+container run time.
 
-## Contents of `contrib/docker`
+## Command-Line Arguments and Environment Variables
 
-The build script expects to find a valid ZFSBootMenu configuration file at
-`/zbm/contrib/docker/config.yaml` within the container. If this file does not
-exist, the file `/zbm/contrib/docker/config.yaml.default` will be copied to the
-expected location. At least one of these files must exist or the build script
-will fail. The default configuration will store images in the directory
-`contrib/docker/build`, which will be created by `generate-zbm` if it does not
-already exist.
+The build script accepts several command-line arguments or environment
+variables that override its default behavior. Run the container with the `-h`
+command-line argument to see a summary of build options and their default
+options. The options are:
 
-Builder containers do not have access to local files `/etc/zfs/zpool.cache` or
-`/etc/hostid`. If one or both of these components are desired in the output
-image (for example, to ensure consistency with the build host), copy the
-desired files to `contrib/docker/zpool.cache` or `contrib/docker/hostid`,
-respectively. If the build script finds these files, it will copy them into the
-container where the ZFSBootMenu Dracut module expects to find them. If one of
-these files is missing, any corresponding file already installed in the
-container will be *removed*.
+- `$BUILDROOT` specifies a default root for image builds. The build root is
+  expected to hold a default default configuration file and output directory,
+  as well as optional hostid and pool cache files. If an output directory,
+  specific configuration and (when appropriate) hostid or pool cache are
+  specified, then `$BUILDROOT` is not relevant.
+
+  The environment variable or default can be overridden with the `-b` option.
+
+- `$ZBMCONF` specifies the in-container path to a specific configuration file.
+  The build script will override any `ImageDir` paths and remove any
+  `Global.BootMountPoint` option but otherwise uses the configuration as-is.A
+
+  The environment variable or default can be overridded with the `-c` option.
+
+- `$ZBMOUTPUT` specifies the in-container path to an output directory. As noted
+  above, the build script overrides any `ImageDir` path in a configuration,
+  pointing it instead to a temporary output directory. After the script
+  successfully runs `generate-zbm`, it will copy any artifacts from the
+  temporary build directory to `$ZBMOUTPUT`.
+
+  The environment variable or default can be overridded with the `-o` option.
+
+- `$HOSTID` specifies the in-container path to a hostid file. If this file is
+  specified, it will be copied to `/etc/hostid` inside the container for
+  inclusion in ZFSBootMenu images. If not, any `/etc/hostid` in the container
+  will be removed. (Note: unless the `zfsbootmenu` dracut module is configured
+  with `release_mode=1`, the module may still create an `/etc/hostid` with
+  potentially arbitrary contents in output images.
+
+  The environment variable or default can be overridded with the `-H` option.
+
+- `$POOLCACHE` specifies the in-container path to a ZFS pool cache file. If
+  this file is specified, it will be copied to `/etc/zfs/zpool.cache` inside
+  the container for inclusion in ZFSBootMenu images. If not, any
+  `/etc/zfs/zpool.cache` in the container will be removed.
+
+  The environment variable or default can be overridded with the `-C` option.
+
+- `$ZBMTAG` specifies any "commit-ish" label recognized by `git` as a pointer
+  to a specific git commit. This can be a branch name (to grab the head of that
+  branch), tag or commit hash. If `/zbm` in the container is not pre-populated,
+  the container will fetch and unpack the named tag. By default, the value of
+  `$ZBMTAG` will be taken from the contents of `/etc/zbm-commit-hash` if the
+  container was built with the `ZBM_COMMIT_HASH` build argument; otherwise, the
+  default is `master`. The tag is ignored if `/zbm` in the container is not
+  empty.
+
+  The environment variable or default can be overridded with the `-t` option.
+
+An additional command-line argument, `-e`, allows the ZFSBootMenu configuration
+to be modified with `yq-go eval` statements at container run time. Do not use
+this unless you review the build script and understand, without documentation,
+what will happen!
 
 ## Build Examples
 
@@ -85,7 +125,7 @@ default configuration using a local ZFSBootMenu repository `/sw/zfsbootmenu`,
 simply run
 
 ```sh
-podman run -v /sw/zfsbootmenu:/zbm /zbm
+podman run -v /sw/zfsbootmenu:/zbm zbm
 ```
 
 After some console output, the container should terminate and the directory
@@ -101,7 +141,18 @@ directory:
 
 ```sh
 cp /etc/hostid /sw/zfsbootmenu/contrib/docker/hostid
-podman run -v /sw/zfsbootmenu:/zbm /zbm
+podman run -v /sw/zfsbootmenu:/zbm zbm
+```
+
+To create an image from the current `master` branch without having a local
+repository, store the output images in `/boot/efi/EFI/zfsbootmenu` and include
+the hostid of the current system, assuming a `zbm` builder container is tagged
+locally:
+
+```sh
+mkdir -p /boot/efi/EFI/zfsbootmenu
+podman run -v /boot/efi/EFI/zfsbootmenu:/output \
+    -v /etc/hostid:/hostid:ro zbm -o /output -H /hostid
 ```
 
 # Using Docker Compose
