@@ -41,29 +41,16 @@ if ! podman inspect "${buildtag}" >/dev/null 2>&1; then
   fi
 fi
 
-buildtmp="$( mktemp -d )"
-mkdir -p "${buildtmp}/dracut.conf.d" || error "cannot create build directory"
+buildtmp="$( mktemp -d )" || error "cannot create build directory"
+mkdir -p "${buildtmp}/out" || error "cannot create output directory"
+mkdir -p "${buildtmp}/etc/dracut.conf.d" || error "cannot create config tree"
 
-# Copy default dracut configuration and include a release-specific config
-if ! cp etc/zfsbootmenu/dracut.conf.d/* "${buildtmp}/dracut.conf.d"; then
-  error "failed to copy dracut configuration"
-fi
+# Copy configuration components in place
+cp ./etc/zfsbootmenu/release.yaml "${buildtmp}/etc"
+cp ./etc/zfsbootmenu/dracut.conf.d/*.conf "${buildtmp}/etc/dracut.conf.d"
 
-cat <<-EOF > "${buildtmp}/dracut.conf.d/release.conf"
-	zfsbootmenu_teardown+="/zbm/contrib/xhci-teardown.sh"
-        install_optional_items+=" /etc/zbm-commit-hash "
-	omit_drivers+=" amdgpu radeon nvidia nouveau i915 "
-	omit_dracutmodules+=" network network-legacy kernel-network-modules "
-	omit_dracutmodules+=" qemu qemu-net crypt-ssh nfs lunmask "
-	embedded_kcl="rd.hostonly=0"
-	release_build=1
-EOF
-
-yamlconf="${buildtmp}/config.yaml"
-
-if ! cp etc/zfsbootmenu/config.yaml "${yamlconf}"; then
-  error "failed to copy default ZFSBootMenu configuration"
-fi
+# Files in release.conf.d are allowed to shadow regular defaults
+cp ./etc/zfsbootmenu/release.conf.d/*.conf "${buildtmp}/etc/dracut.conf.d"
 
 arch="$( uname -m )"
 case "${arch}" in
@@ -71,24 +58,26 @@ case "${arch}" in
   *) BUILD_EFI="false" ;;
 esac
 
-zbmtriplet="zfsbootmenu-${arch}-v${release}"
-mkdir -p "${buildtmp}/${zbmtriplet}" || error "cannot create output directory"
+# Volume mounts for the container; make sure stock config tree, with release
+# addendum, is available in-container at /etc/zfsbootmenu
+volmounts=(
+  "-v" ".:/zbm:ro"
+  "-v" "${buildtmp}/etc:/etc/zfsbootmenu:ro"
+  "-v" "${buildtmp}/out:/out"
+)
 
-# Modify the YAML configuration for the containerized build
-yq-go eval ".Components.Enabled = true" -i "${yamlconf}"
-yq-go eval ".Components.Versions = false" -i "${yamlconf}"
-yq-go eval ".EFI.Enabled = ${BUILD_EFI}" -i "${yamlconf}"
-yq-go eval ".EFI.Versions = false" -i "${yamlconf}"
-yq-go eval ".Global.ManageImages = true" -i "${yamlconf}"
-yq-go eval ".Global.DracutConfDir = \"/build/dracut.conf.d\"" -i "${yamlconf}"
-yq-go eval ".Global.DracutFlags = [ \"--no-early-microcode\" ]" -i "${yamlconf}"
-yq-go eval ".Kernel.CommandLine = \"loglevel=4 nomodeset\"" -i "${yamlconf}"
-yq-go eval "del(.Global.BootMountPoint)" -i "${yamlconf}"
+# Specify options for the build st
+buildopts=(
+  "-o" "/out"
+  "-e" ".EFI.Enabled = ${BUILD_EFI}"
+  "-c" "/etc/zfsbootmenu/release.yaml"
+)
 
 # For the containerized build, use current repo by mounting at /zbm
 # Custom configs and outputs will be in the temp dir, mounted at /build
-podman run --rm -v ".:/zbm:ro" -v "${buildtmp}:/build" "${buildtag}" \
-  -b "/build" -o "/build/${zbmtriplet}" || error "failed to create image"
+if ! podman run --rm "${volmounts[@]}" "${buildtag}" "${buildopts[@]}"; then
+  error "failed to create image"
+fi
 
 if ! assets="$( realpath -e releng )/assets/${release}"; then
   error "unable to define path to built assets"
@@ -100,11 +89,19 @@ else
   mkdir -p "${assets}"
 fi
 
+zbmtriplet="zfsbootmenu-${arch}-v${release}"
+
 # EFI file is currently only built on x86_64
 if [ "${BUILD_EFI}" = "true" ]; then
-  cp "${buildtmp}/${zbmtriplet}/vmlinuz.EFI" "${assets}/${zbmtriplet}.EFI" || error "failed to copy UEFI bundle"
-  rm -f "${buildtmp}/${zbmtriplet}/vmlinuz.EFI"
+  if !  cp "${buildtmp}/out/vmlinuz.EFI" "${assets}/${zbmtriplet}.EFI"; then
+    error "failed to copy UEFI bundle"
+  fi
 fi
 
-# Components are always built
-( cd "${buildtmp}" && tar czvf "${assets}/${zbmtriplet}.tar.gz" "${zbmtriplet}" ) || error "failed to pack components"
+# Nothing to archive if no components were produced
+[ -d "${buildtmp}/out/components" ] || exit 0
+
+# If components were produced, archive them
+( cd "${buildtmp}/out" && mv components "${zbmtriplet}" && \
+  tar czvf "${assets}/${zbmtriplet}.tar.gz" "${zbmtriplet}"
+) || error "failed to pack components"
