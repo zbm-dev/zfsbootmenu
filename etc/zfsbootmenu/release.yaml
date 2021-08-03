@@ -1,0 +1,14 @@
+Global:
+  ManageImages: true
+  DracutFlags:
+    - "--no-early-microcode"
+Components:
+  Versions: false
+  Enabled: true
+  syslinux:
+    Enabled: false
+EFI:
+  Versions: false
+  Enabled: true
+Kernel:
+  CommandLine: zfsbootmenu loglevel=4 nomodeset

@@ -149,7 +149,7 @@ ZBMCONF="${ZBMWORKDIR}/config.yaml"
 # Add forced overrides to the end of CONFIGEVALS
 CONFIGEVALS+=(
   ".Global.ManageImages = true"
-  ".Components.ImageDir = \"${ZBMWORKDIR}/build\""
+  ".Components.ImageDir = \"${ZBMWORKDIR}/build/components\""
   ".EFI.ImageDir = \"${ZBMWORKDIR}/build\""
   "del(.Global.BootMountPoint)"
 )
@@ -194,4 +194,8 @@ fi
 ln -sf /zbm/90zfsbootmenu /usr/lib/dracut/modules.d || error "unable to link dracut module"
 
 /zbm/bin/generate-zbm --config "${ZBMCONF}" || error "failed to build images"
-cp "${ZBMWORKDIR}/build"/* "${ZBMOUTPUT}"
+
+for f in "${ZBMWORKDIR}"/build/*; do
+  [ "${f}" != "${ZBMWORKDIR}/build/*" ] || error "no images to copy to output"
+  cp -R "${f}" "${ZBMOUTPUT}"
+done
