@@ -26,8 +26,8 @@ esac
 
 buildtag="${2:-localhost/zbm-builder:$(date '+%Y%m%d')}"
 if ! podman inspect "${buildtag}" >/dev/null 2>&1; then
-  if ! bldctx="$( realpath -e contrib/docker )"; then
-    error "missing contrib/docker, cannot create image ${buildtag}"
+  if ! bldctx="$( realpath -e releng/docker )"; then
+    error "missing releng/docker, cannot create image ${buildtag}"
   fi
 
   if ZBM_COMMIT_HASH="$(git rev-parse HEAD)" && [ -n "${ZBM_COMMIT_HASH}" ]; then
