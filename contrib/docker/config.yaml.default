@@ -4,8 +4,7 @@ Global:
   # Make sure to look for dracut configuration in the repo
   DracutConfDir: /zbm/etc/zfsbootmenu/dracut.conf.d
 Components:
-  # Dump kernel/initramfs components in the tree;
-  # generate-zbm creates this directory if necessary
+  # zbm-build.sh overwrites this anyway
   ImageDir: /zbm/contrib/docker/build
   Enabled: true
   # Disable versioning, this is usually a one-off creation
@@ -13,6 +12,7 @@ Components:
   syslinux:
     Enabled: false
 EFI:
+  # zbm-build.sh overwrites this anyway
   ImageDir: /zbm/contrib/docker/build
   Versions: false
   Enabled: true
