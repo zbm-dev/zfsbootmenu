@@ -1,0 +1,30 @@
+name: Build check
+on: [ pull_request ]
+
+jobs:
+  build:
+    name: Build boot images
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/zbm-dev/zbm-builder
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Create files
+        run: |
+          ln -s "$(pwd)" /zbm
+          [ -x /zbm/releng/docker/zbm-build.sh ] && /zbm/releng/docker/zbm-build.sh
+
+      - name: Archive EFI
+        uses: actions/upload-artifact@v2
+        with:
+          name: EFI
+          path: /zbm/releng/docker/build/*.EFI
+
+      - name: Archive components
+        uses: actions/upload-artifact@v2
+        with:
+          name: Components
+          path: |
+            /zbm/releng/docker/build/*
+            !/zbm/releng/docker/build/*.EFI
