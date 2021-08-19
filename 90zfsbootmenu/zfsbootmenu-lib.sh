@@ -33,7 +33,8 @@ zlog() {
   offset="${#prefix}"
 
   # account for the fzf gutter and kernel timestamp
-  _WIDTH=$(( $( tput cols ) - ( offset - 15 ) ))
+  [ -z "${COLUMNS}" ] && COLUMNS="$( tput cols )"
+  _WIDTH=$(( COLUMNS - ( offset - 15 ) ))
 
   join=': '
   while read -r line; do
