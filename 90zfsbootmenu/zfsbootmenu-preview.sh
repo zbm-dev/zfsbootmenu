@@ -28,7 +28,6 @@ else
   _COLOR="green"
 fi
 
-selected_arguments="$( load_be_cmdline "${ENV}" )"
 selected_arguments="$( center_string "$( load_be_cmdline "${ENV}" )" )"
 
 selected_env_str="$( center_string "${ENV} (${_EXTRAS[*]}) - ${selected_kernel}" )"
