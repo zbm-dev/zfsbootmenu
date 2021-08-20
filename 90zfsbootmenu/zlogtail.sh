@@ -31,8 +31,6 @@ while getopts "cfnl:F:" opt; do
   esac
 done
 
-[ -n "${HAS_NOESCAPE}" ] && NOESCAPE="--noescape"
-
 fuzzy_default_options+=(
  "--no-sort"
  "--ansi"
@@ -63,6 +61,6 @@ elif command -v sk >/dev/null 2>&1; then
 fi
 
 # shellcheck disable=SC2086
-( dmesg -T --time-format reltime ${NOESCAPE} -f ${FACILITY} -l ${LOG_LEVEL} ${FOLLOW} & echo $! >&3 ) \
+( dmesg -T --time-format reltime -f ${FACILITY} -l ${LOG_LEVEL} ${FOLLOW} & echo $! >&3 ) \
   3>"${PID_FILE}" \
   | ${FUZZYSEL}

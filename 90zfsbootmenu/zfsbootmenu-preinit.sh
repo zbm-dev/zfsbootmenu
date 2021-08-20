@@ -36,6 +36,7 @@ export default_hostid=00bab10c
 export zbm_sort="${zbm_sort}"
 export zbm_set_hostid="${zbm_set_hostid}"
 export zbm_import_delay="${zbm_import_delay}"
+export control_term="${control_term}"
 EOF
 
 getcmdline > "${BASE}/zbm.cmdline"

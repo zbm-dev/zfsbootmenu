@@ -154,6 +154,7 @@ install() {
   inst_simple "${moddir}/zfs-chroot.sh" "/bin/zfs-chroot" || _ret=$?
   inst_simple "${moddir}/zfsbootmenu.sh" "/bin/zfsbootmenu" || _ret=$?
   inst_simple "${moddir}/zlogtail.sh" "/bin/zlogtail" || _ret=$?
+  inst_simple "${moddir}/ztrace.sh" "/bin/ztrace" || _ret=$?
   inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh" || _ret=$?
   inst_hook pre-mount 90 "${moddir}/zfsbootmenu-preinit.sh" || _ret=$?
 
@@ -272,13 +273,6 @@ install() {
     mark_hostonly /etc/hostid
   fi
 
-  # Check if dmesg supports --noescape
-  if dmesg --noescape -V >/dev/null 2>&1 ; then
-    has_escape=1
-  else
-    has_escape=
-  fi
-
   # Check if fuzzy finder supports the refresh-preview flag
   # Added in fzf 0.22.0
   if command -v "${FUZZY_FIND}" >/dev/null 2>&1 && \
@@ -303,7 +297,6 @@ install() {
   # shellcheck disable=SC2154
   cat << EOF > "${initdir}/etc/zfsbootmenu.conf"
 export BYTE_ORDER=${endian:-le}
-export HAS_NOESCAPE=${has_escape}
 export HAS_REFRESH=${has_refresh}
 export HAS_INFO=${has_info}
 EOF
