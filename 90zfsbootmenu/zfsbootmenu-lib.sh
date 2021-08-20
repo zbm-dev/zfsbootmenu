@@ -9,7 +9,7 @@
 # returns: nothing
 
 zlog() {
-  local _script _func prefix offset join _WIDTH
+  local prefix trace last
   [ -z "${1}" ] && return
   [ -z "${2}" ] && return
 
@@ -17,30 +17,21 @@ zlog() {
   # shellcheck disable=SC2154
   [ "${1}" -le "${loglevel:=4}" ] || return
 
-  # shellcheck disable=SC2086
-  _script="$( basename -- $0 )"
-  _func="${FUNCNAME[2]}"
+  while IFS=$'\n' read -r line ; do
+    # Only add script/function tracing to debug messages
+    if [ "${1}" -eq 7 ] ; then
+      trace=
+      last=${#BASH_SOURCE[@]}
+      for (( i=2 ; i<last ; i++ )); do
+        trace="${FUNCNAME[$i]},${BASH_SOURCE[$i]},${BASH_LINENO[$i-1]}${trace:+;}${trace}"
+      done
+      prefix="<${1}>ZBM:[$$]|${trace}|"
+    else
+      prefix="<${1}>ZFSBootMenu: "
+    fi
 
-  # Only add script/function tracing to debug messages
-  if [ "${1}" -eq 7 ] && [ -n "${HAS_NOESCAPE}" ] ; then
-    prefix="<${1}>ZBM:\033[0;33m${_script}[$$]\033[0;31m:${_func}()\033[0m"
-  elif [ "${1}" -eq 7 ]; then
-    prefix="<${1}>ZBM:${_script}[$$]:${_func}()"
-  else
-    prefix="<${1}>ZFSBootMenu"
-  fi
-
-  offset="${#prefix}"
-
-  # account for the fzf gutter and kernel timestamp
-  [ -z "${COLUMNS}" ] && COLUMNS="$( tput cols )"
-  _WIDTH=$(( COLUMNS - ( offset - 15 ) ))
-
-  join=': '
-  while read -r line; do
-    echo -e "${prefix}${join}${line}" > /dev/kmsg
-    join='+   '
-  done <<<"$( echo "${2}" | fold -s -w "${_WIDTH}" )"
+    echo -e "${prefix}${line}" > /dev/kmsg
+  done <<<"${2}"
 }
 
 # arg1: log line
