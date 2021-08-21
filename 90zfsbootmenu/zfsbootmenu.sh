@@ -75,21 +75,11 @@ fuzzy_default_options=( "--ansi" "--no-clear"
   "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]"'
   "--bind" '"alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
   "--bind" '"ctrl-t:execute[ /sbin/ztrace > ${control_term} ]"'
-  "--bind" '"ctrl-alt-t:execute[ /sbin/ztrace > ${control_term} ]"' )
-
-if [ -n "${HAS_REFRESH}" ] ; then
-  fuzzy_default_options+=(
-    "--bind" '"alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]+refresh-preview"'
-    "--bind" '"ctrl-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]+refresh-preview"'
-    "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]+refresh-preview"'
-  )
-else
-  fuzzy_default_options+=(
-    "--bind" '"alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
-    "--bind" '"ctrl-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
-    "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
-  )
-fi
+  "--bind" '"ctrl-alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
+  "--bind" '"alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
+  "--bind" '"ctrl-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
+  "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
+)
 
 if command -v fzf >/dev/null 2>&1; then
   zdebug "using fzf for pager"

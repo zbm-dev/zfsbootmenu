@@ -161,14 +161,6 @@ else
   info "ZFSBootMenu: defaulting sort key order to ${zbm_sort}"
 fi
 
-
-# Turn on tmux integrations
-# shellcheck disable=SC2034
-if getargbool 0 zbm.tmux ; then
-  zbm_tmux=1
-  info "ZFSBootMenu: enabling tmux integrations"
-fi
-
 # shellcheck disable=SC2034
 if [ "${BYTE_ORDER}" = "be" ]; then
   zbm_set_hostid=0
