@@ -31,4 +31,4 @@ while read -r line ; do
     c="${o}"
   done
 
-done < <( dmesg -T --time-format reltime -f user -l 7 ) | less -R -S +G
+done < <( dmesg -T --time-format reltime -f user -l 7 ) | less -R -S +G -M --use-color
