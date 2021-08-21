@@ -188,30 +188,6 @@ install() {
     exit 1
   fi
 
-  # Optionally install tmux
-  # shellcheck disable=SC2154
-  if [ "${zfsbootmenu_tmux}" = true ]; then
-    # user-defined configuration file
-    if [ -n "${zfsbotmenu_tmux_conf}" ] && [ -e "${zfsbootmenu_tmux_conf}" ]; then
-      tmux_conf="${zfsbootmenu_tmux_conf}"
-    # default file shipped with zfsbootmenu
-    elif [ -e "${moddir}/tmux.conf" ]; then
-      tmux_conf="${moddir}/tmux.conf"
-    fi
-
-    # Only attempt to install if we have a configuration file available
-    if [ -n "${tmux_conf}" ] ; then
-      dracut_install tmux
-      inst_simple "${tmux_conf}" "/etc/tmux.conf"
-
-      # glibc locale file
-      if [ -e "/usr/lib/locale/locale-archive" ]; then
-        inst_simple "/usr/lib/locale/locale-archive" "/usr/lib/locale/locale-archive"
-      fi
-    fi
-  fi
-
-
   # zpool.cache, vdev_id.conf and hostid files are host-specific
   # and do not belong in public release images
   if [ -z "${release_build}" ]; then
@@ -274,16 +250,6 @@ install() {
     mark_hostonly /etc/hostid
   fi
 
-  # Check if fuzzy finder supports the refresh-preview flag
-  # Added in fzf 0.22.0
-  if command -v "${FUZZY_FIND}" >/dev/null 2>&1 && \
-    echo "abc" | "${FUZZY_FIND}" -f "abc" --bind "alt-l:refresh-preview" --exit-0 >/dev/null 2>&1
-  then
-    has_refresh=1
-  else
-    has_refresh=
-  fi
-
   # Check if fuzzy finder supports the --info= flag
   # Added in fzf 0.19.0
   if command -v "${FUZZY_FIND}" >/dev/null 2>&1 && \
@@ -298,7 +264,6 @@ install() {
   # shellcheck disable=SC2154
   cat << EOF > "${initdir}/etc/zfsbootmenu.conf"
 export BYTE_ORDER=${endian:-le}
-export HAS_REFRESH=${has_refresh}
 export HAS_INFO=${has_info}
 EOF
 
@@ -320,7 +285,6 @@ EOF
 [ -f /etc/zfsbootmenu.conf ] && source /etc/zfsbootmenu.conf
 
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
-export TERM=vt220
 
 zdebug "sourced /etc/profile"
 

@@ -50,13 +50,5 @@ echo "ZFSBootMenu" > /proc/sys/kernel/hostname
 [ -x /lib/udev/console_init ] && [ -c "${control_term}" ] \
   && /lib/udev/console_init "${control_term##*/}" >/dev/null 2>&1
 
-#shellcheck disable=SC2154
-if [ -n "${zbm_tmux}" ] && [ -x /bin/tmux ]; then
-  tmux new-session -n ZFSBootMenu -d /libexec/zfsbootmenu-init
-  tmux new-window -n logs /bin/zlogtail -f -n
-  tmux new-window -n shell
-  exec tmux attach-session \; select-window -t ZFSBootMenu
-else
-  # https://busybox.net/FAQ.html#job_control
-  exec setsid bash -c "exec /libexec/zfsbootmenu-init <${control_term} >${control_term} 2>&1"
-fi
+# https://busybox.net/FAQ.html#job_control
+exec setsid bash -c "exec /libexec/zfsbootmenu-init <${control_term} >${control_term} 2>&1"
