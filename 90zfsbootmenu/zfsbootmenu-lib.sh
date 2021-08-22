@@ -9,7 +9,7 @@
 # returns: nothing
 
 zlog() {
-  local prefix trace last
+  local prefix trace last i
   [ -z "${1}" ] && return
   [ -z "${2}" ] && return
 
