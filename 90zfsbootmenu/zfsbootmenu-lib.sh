@@ -196,10 +196,11 @@ get_spl_hostid() {
 # returns: 0 on successful pool import, 1 on failure
 
 match_hostid() {
-  local importable pool state hostid single
+  local importable pool state hostid hostid_re single
   importable=()
 
   single="${1}"
+  hostid_re='hostid=([A-Fa-f0-9]{1,8})'
 
   if [ -n "${single}" ]; then
     importable+=( "${single}" )
@@ -225,10 +226,9 @@ match_hostid() {
 
   for pool in "${importable[@]}"; do
     zdebug "trying to import: ${pool}"
-    hostid="$( zpool import -o readonly=on -N "${pool}" 2>&1 | grep -E -o "hostid=[A-Za-z0-9]{1,8}")"
 
-    if [ -n "${hostid}" ]; then
-      hostid="$( printf "%08x" "0x${hostid##*=}" )"
+    if [[ $( zpool import -o readonly=on -N "${pool}" 2>&1 ) =~ $hostid_re ]] ; then
+      hostid="$( printf "%08x" "0x${BASH_REMATCH[1]}" )"
       zdebug "discovered pool owner hostid: ${hostid}"
     else
       zdebug "unable to scrape hostid for ${pool}, skipping"
