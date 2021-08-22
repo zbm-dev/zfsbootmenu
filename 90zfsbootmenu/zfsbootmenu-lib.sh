@@ -9,7 +9,7 @@
 # returns: nothing
 
 zlog() {
-  local prefix trace last i
+  local prefix trace last lines lc i
   [ -z "${1}" ] && return
   [ -z "${2}" ] && return
 
@@ -17,19 +17,26 @@ zlog() {
   # shellcheck disable=SC2154
   [ "${1}" -le "${loglevel:=4}" ] || return
 
+  # Remove everything but new lines from the string, count the length
+  lines="${2//[!$'\n']/}"
+  lines="${#lines}"
+  lc=0
+
   while IFS=$'\n' read -r line ; do
     # Only add script/function tracing to debug messages
-    if [ "${1}" -eq 7 ] ; then
+    if [ "${1}" -eq 7 ] && [ "${lc}" -eq "${lines}" ] ; then
       trace=
       last=${#BASH_SOURCE[@]}
-      for (( i=2 ; i<last ; i++ )); do
+      for (( i=2 ; i<last ; i++ )) ; do
         trace="${FUNCNAME[$i]},${BASH_SOURCE[$i]},${BASH_LINENO[$i-1]}${trace:+;}${trace}"
       done
       prefix="<${1}>ZBM:[$$]|${trace}|"
+    elif [ "${1}" -eq 7 ] ; then
+      prefix="<${1}>ZBM:[$$]||"
     else
       prefix="<${1}>ZFSBootMenu: "
     fi
-
+    lc=$(( lc + 1 ))
     echo -e "${prefix}${line}" > /dev/kmsg
   done <<<"${2}"
 }
