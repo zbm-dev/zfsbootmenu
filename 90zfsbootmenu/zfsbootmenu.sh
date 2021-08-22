@@ -271,10 +271,10 @@ while true; do
           duplicate_snapshot "${selected_snap}" "${clone_target}"
           ;;
         "mod-x")
-          clone_snapshot "${selected_snap}" "${clone_target}"
+          PROMOTE=1 clone_snapshot "${selected_snap}" "${clone_target}"
           ;;
         "mod-c")
-          clone_snapshot "${selected_snap}" "${clone_target}" "nopromote"
+          clone_snapshot "${selected_snap}" "${clone_target}"
           ;;
       esac
       ;;

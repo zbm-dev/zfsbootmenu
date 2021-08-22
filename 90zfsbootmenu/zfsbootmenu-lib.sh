@@ -801,8 +801,6 @@ duplicate_snapshot() {
 clone_snapshot() {
   local selected target pool opts parent
 
-  promote="${3}"
-
   selected="${1}"
   if [ -z "$selected" ]; then
     zerror "selected is undefined"
@@ -816,9 +814,6 @@ clone_snapshot() {
     return 1
   fi
   zdebug "target: ${target}"
-
-  promote="${3}"
-  zdebug "promote: ${promote}"
 
   pool="${selected%%/*}"
   if ! set_rw_pool "${pool}" ; then
@@ -851,7 +846,7 @@ clone_snapshot() {
     return 1
   fi
 
-  if [ "$promote" != "nopromote" ]; then
+  if [ -n "${PROMOTE}" ]; then
     # Promotion must succeed to continue
     zdebug "promoting ${target}"
     if ! zfs promote "${target}"; then
