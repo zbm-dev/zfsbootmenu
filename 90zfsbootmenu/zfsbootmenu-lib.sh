@@ -63,6 +63,16 @@ zerror() {
   zlog 3 "$@"
 }
 
+traperror() {
+  zdebug "trapped error from: '${BASH_COMMAND}'"
+}
+
+if [ ${loglevel:-4} -eq 7 ] ; then
+  set -o errtrace
+  set -o functrace
+  trap traperror ERR
+fi
+
 # arg1: color name
 # arg2...argN: text to color
 # prints: text with color escape codes
