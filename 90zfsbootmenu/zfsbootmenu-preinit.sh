@@ -22,7 +22,7 @@ export BASE="/zfsbootmenu"
 mkdir -p "${BASE}"
 
 # shellcheck disable=SC2154
-cat >> "/etc/profile" <<EOF
+cat >> "/etc/zfsbootmenu.conf" <<EOF
 # Added by zfsbootmenu-preinit.sh
 export BASE="/zfsbootmenu"
 export endian="${endian}"

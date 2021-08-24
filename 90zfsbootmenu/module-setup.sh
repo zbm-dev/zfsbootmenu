@@ -292,8 +292,8 @@ EOF
 
   # Setup a default environment for all login shells
   cat << EOF >> "${initdir}/etc/profile"
-[ -f /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
 [ -f /etc/zfsbootmenu.conf ] && source /etc/zfsbootmenu.conf
+[ -f /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
 
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 
