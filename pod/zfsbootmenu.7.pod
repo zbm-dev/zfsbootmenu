@@ -184,6 +184,12 @@ In addition to standard dracut configuration options, the ZFSBootMenu dracut mod
 
 =over 4
 
+=item B<zfsbootmenu_early_setup=E<lt>executable-listE<gt>>
+
+An optional variable specifying a space-separated list of paths to setup hooks that will be installed in the ZFSBootMenu initramfs. Any path in the list B<E<lt>executable-listE<gt>> that exists and is executable will be installed.
+
+Any installed early hooks are run after SPL and ZFS kernel modules are loaded and a hostid is configured in I</etc/hostid>, but before any zpools have been imported.
+
 =item B<zfsbootmenu_setup=E<lt>executable-listE<gt>>
 
 An optional variable specifying a space-separated list of paths to setup hooks that will be installed in the ZFSBootMenu initramfs. Any path in the list B<E<lt>executable-listE<gt>> that exists and is executable will be installed.

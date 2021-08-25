@@ -70,6 +70,16 @@ elif [ ! -e /etc/hostid ]; then
   write_hostid "${default_hostid}"
 fi
 
+# Run early setup hooks, if they exist
+if [ -d /libexec/early-setup.d ]; then
+  tput clear
+  for _hook in /libexec/early-setup.d/*; do
+    zinfo "Processing hook: ${_hook}"
+    [ -x "${_hook}" ] && "${_hook}"
+  done
+  unset _hook
+fi
+
 # Prefer a specific pool when checking for a bootfs value
 # shellcheck disable=SC2154
 if [ "${root}" = "zfsbootmenu" ]; then

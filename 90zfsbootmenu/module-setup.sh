@@ -159,6 +159,18 @@ install() {
   inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh" || _ret=$?
   inst_hook pre-mount 90 "${moddir}/zfsbootmenu-preinit.sh" || _ret=$?
 
+  # Install "early setup" hooks
+  # shellcheck disable=SC2154
+  if [ -n "${zfsbootmenu_early_setup}" ]; then
+    for _exec in ${zfsbootmenu_early_setup}; do
+      if [ -x "${_exec}" ]; then
+        inst_simple "${_exec}" "/libexec/early-setup.d/$(basename "${_exec}")" || _ret=$?
+      else
+        dwarning "setup script (${_exec}) missing or not executable; cannot install"
+      fi
+    done
+  fi
+
   # Install "setup" hooks
   # shellcheck disable=SC2154
   if [ -n "${zfsbootmenu_setup}" ]; then
