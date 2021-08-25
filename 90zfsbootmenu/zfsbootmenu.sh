@@ -76,10 +76,24 @@ fuzzy_default_options=( "--ansi" "--no-clear"
   "--bind" '"alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
   "--bind" '"ctrl-t:execute[ /sbin/ztrace > ${control_term} ]"'
   "--bind" '"ctrl-alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
-  "--bind" '"alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
-  "--bind" '"ctrl-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
-  "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
 )
+
+# refresh-preview will redraw the top header after zlogtail has been executed
+# doing so will remove the [!] from warnings/errors
+# with out this, a new BE has to be selected to force a preview redraw
+if [ -n "${HAS_REFRESH}" ] ; then
+  fuzzy_default_options+=(
+    "--bind" '"alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]+refresh-preview"'
+    "--bind" '"ctrl-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]+refresh-preview"'
+    "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]+refresh-preview"'
+  )
+else
+  fuzzy_default_options+=(
+    "--bind" '"alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
+    "--bind" '"ctrl-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
+    "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
+  )
+fi
 
 if command -v fzf >/dev/null 2>&1; then
   zdebug "using fzf for pager"

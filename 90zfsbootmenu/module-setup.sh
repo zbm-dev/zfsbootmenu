@@ -250,6 +250,16 @@ install() {
     mark_hostonly /etc/hostid
   fi
 
+  # Check if fuzzy finder supports the refresh-preview flag
+  # Added in fzf 0.22.0
+  if command -v "${FUZZY_FIND}" >/dev/null 2>&1 && \
+    echo "abc" | "${FUZZY_FIND}" -f "abc" --bind "alt-l:refresh-preview" --exit-0 >/dev/null 2>&1
+  then
+    has_refresh=1
+  else
+    has_refresh=
+  fi
+
   # Check if fuzzy finder supports the --info= flag
   # Added in fzf 0.19.0
   if command -v "${FUZZY_FIND}" >/dev/null 2>&1 && \
@@ -264,6 +274,7 @@ install() {
   # shellcheck disable=SC2154
   cat << EOF > "${initdir}/etc/zfsbootmenu.conf"
 export BYTE_ORDER=${endian:-le}
+export HAS_REFRESH=${has_refresh}
 export HAS_INFO=${has_info}
 EOF
 
