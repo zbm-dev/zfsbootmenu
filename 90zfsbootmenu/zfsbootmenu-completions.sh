@@ -72,11 +72,13 @@ _mount_zfs() {
 complete -F _mount_zfs mount_zfs
 
 _zkexec() {
-  local ARG
+  local ARG index
   COMPREPLY=()
 
   shopt -s nullglob
-  case "${#COMP_WORDS[@]}" in
+
+  index="${#COMP_WORDS[@]}"
+  case "${index}" in
     2)
       for FS in $( zfs list -H -o name ) ; do
         ARG+=("${FS}")
@@ -84,7 +86,7 @@ _zkexec() {
 
       COMPREPLY=( $( compgen -W "${ARG[*]}" -- "${COMP_WORDS[1]}" ) )
     ;;
-    3)
+    3|4)
       mp="$( mount_zfs "${COMP_WORDS[1]}" )"
       [ -d "${mp}/boot" ] || return
 
@@ -93,18 +95,7 @@ _zkexec() {
         ARG+=("${BIN}")
       done
       umount "${mp}"
-      COMPREPLY=( $( compgen -W "${ARG[*]}" -- "${COMP_WORDS[2]}" ) )
-    ;;
-    4)
-      mp="$( mount_zfs "${COMP_WORDS[1]}" )"
-      [ -d "${mp}/boot" ] || return
-
-      for BIN in "${mp}"/boot/* ; do
-        BIN="${BIN##*/}"
-        ARG+=("${BIN}")
-      done
-      umount "${mp}"
-      COMPREPLY=( $( compgen -W "${ARG[*]}" -- "${COMP_WORDS[3]}" ) )
+      COMPREPLY=( $( compgen -W "${ARG[*]}" -- "${COMP_WORDS[$(( index - 1))]}" ) )
     ;;
   esac
 
