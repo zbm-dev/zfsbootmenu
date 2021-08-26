@@ -75,6 +75,7 @@ _zkexec() {
   local ARG
   COMPREPLY=()
 
+  shopt -s nullglob
   case "${#COMP_WORDS[@]}" in
     2)
       for FS in $( zfs list -H -o name ) ; do
@@ -87,7 +88,6 @@ _zkexec() {
       mp="$( mount_zfs "${COMP_WORDS[1]}" )"
       [ -d "${mp}/boot" ] || return
 
-      shopt -s nullglob
       for BIN in "${mp}"/boot/* ; do
         BIN="${BIN##*/}"
         ARG+=("${BIN}")
