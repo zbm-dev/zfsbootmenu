@@ -11,10 +11,14 @@ EXAMPLES=$(PREFIX)/share/examples/zfsbootmenu
 default:
 
 install:
+	# Recursively install non-executable parts of the Dracut module
+	find 90zfsbootmenu -type f -not -perm /111 -exec \
+		install -Dm 0644 "{}" "$(DESTDIR)$(MODDIR)/{}" \;
+	# Executable parts of the module
+	find 90zfsbootmenu -type f -perm /111 -exec \
+		install -Dm 0755 "{}" "$(DESTDIR)$(MODDIR)/{}" \;
 	install -m 0644 -t "$(DESTDIR)$(CONFDIR)" -D etc/zfsbootmenu/config.yaml
 	install -m 0644 -t "$(DESTDIR)$(CONFDIR)/dracut.conf.d/" -D etc/zfsbootmenu/dracut.conf.d/*
-	install -m 0755 -t "$(DESTDIR)$(MODDIR)/90zfsbootmenu" -D 90zfsbootmenu/*.sh
-	install -m 0644 -t "$(DESTDIR)$(MODDIR)/90zfsbootmenu" -D 90zfsbootmenu/*.conf
 	install -m 0755 -t "$(DESTDIR)$(BINDIR)" -D bin/generate-zbm
 	install -m 0644 -t "$(DESTDIR)$(MANDIR)/man5" -D man/generate-zbm.5
 	install -m 0644 -t "$(DESTDIR)$(MANDIR)/man7" -D man/zfsbootmenu.7
