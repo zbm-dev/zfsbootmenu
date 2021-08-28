@@ -70,3 +70,34 @@ _mount_zfs() {
   COMPREPLY=( $( compgen -W "${ZFS[*]}" -- "${COMP_WORDS[1]}" ) )
 }
 complete -F _mount_zfs mount_zfs
+
+_zkexec() {
+  local ARG index
+  COMPREPLY=()
+
+  shopt -s nullglob
+
+  index="${#COMP_WORDS[@]}"
+  case "${index}" in
+    2)
+      for FS in $( zfs list -H -o name ) ; do
+        ARG+=("${FS}")
+      done
+
+      COMPREPLY=( $( compgen -W "${ARG[*]}" -- "${COMP_WORDS[1]}" ) )
+    ;;
+    3|4)
+      mp="$( mount_zfs "${COMP_WORDS[1]}" )"
+      [ -d "${mp}/boot" ] || return
+
+      for BIN in "${mp}"/boot/* ; do
+        BIN="${BIN##*/}"
+        ARG+=("${BIN}")
+      done
+      umount "${mp}"
+      COMPREPLY=( $( compgen -W "${ARG[*]}" -- "${COMP_WORDS[$(( index - 1))]}" ) )
+    ;;
+  esac
+
+}
+complete -F _zkexec zkexec

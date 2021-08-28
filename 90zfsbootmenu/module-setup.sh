@@ -156,6 +156,7 @@ install() {
   inst_simple "${moddir}/zfsbootmenu.sh" "/bin/zfsbootmenu" || _ret=$?
   inst_simple "${moddir}/zlogtail.sh" "/bin/zlogtail" || _ret=$?
   inst_simple "${moddir}/ztrace.sh" "/bin/ztrace" || _ret=$?
+  inst_simple "${moddir}/zkexec.sh" "/bin/zkexec" || _ret=$?
   inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh" || _ret=$?
   inst_hook pre-mount 90 "${moddir}/zfsbootmenu-preinit.sh" || _ret=$?
 

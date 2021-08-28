@@ -12,9 +12,13 @@ B<zfsbootmenu> - Recovery Shell
 
 Launch the interactive boot environment menu.
 
-=item I<zfs-chroot> B<zfs filesystem>
+=item I<zfs-chroot> B<filesystem>
 
 Enter a chroot of the specified boot environment. The boot environment is mounted I<read/write> if the zpool is imported I<read/write>.
+
+=item I<zkexec> B<filesystem> B<kernel> B<initramfs>
+
+Directly I<kexec> a kernel and initramfs from a boot environment, allowing any kernel and initramfs to be loaded into memory and immediately booted.
 
 =item I<set_rw_pool> B<pool>
 
