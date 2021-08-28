@@ -17,10 +17,11 @@ Usage: $0 [options]
   -v  Set type of qemu display to use
   -D  Set test directory
   -i  Write SSH config include
+  -n  Do not reset the controlling terminal after the VM exits
 EOF
 }
 
-CMDOPTS="D:A:a:d:fsv:hi"
+CMDOPTS="D:A:a:d:fsv:hin"
 
 # First-pass option parsing just looks for test directory
 while getopts "${CMDOPTS}" opt; do
@@ -83,6 +84,7 @@ CREATE=0
 SERIAL=0
 DISPLAY_TYPE=
 SSH_INCLUDE=0
+RESET=1
 
 # Override any default variables
 #shellcheck disable=SC1091
@@ -119,6 +121,9 @@ while getopts "${CMDOPTS}" opt; do
       ;;
     i)
       SSH_INCLUDE=1
+      ;;
+    n)
+      RESET=0
       ;;
     *)
       ;;
@@ -241,6 +246,6 @@ fi
 	-netdev user,id=n1,hostfwd=tcp::${SSH_PORT}-:22 -device virtio-net-pci,netdev=n1 \
 	-append "${APPEND}" || exit 1
 
-if ((SERIAL)); then
+if ((SERIAL)) && ((RESET)); then
   reset
 fi
