@@ -23,7 +23,7 @@ First, run `./setup.sh -a`; this will create, if necessary, a test directory
 the test directory:
 
 * Create a test pool
-  1. Create a 2GB RAW image file,
+  1. Create a 5GB RAW image file,
   2. Attach it to a loopback device,
   3. Create a GPT label and a ZFS pool `ztest`,
   4. Install Void base-minimal onto the pool,
