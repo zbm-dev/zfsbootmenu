@@ -73,10 +73,16 @@ fuzzy_default_options=( "--ansi" "--no-clear"
   "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]"'
   "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]"'
   "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]"'
-  "--bind" '"alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
-  "--bind" '"ctrl-t:execute[ /sbin/ztrace > ${control_term} ]"'
-  "--bind" '"ctrl-alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
 )
+
+# shellcheck disable=SC2016,SC2086
+if [ ${loglevel:-4} -eq 7 ] ; then
+  fuzzy_default_options+=(
+    "--bind" '"alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
+    "--bind" '"ctrl-t:execute[ /sbin/ztrace > ${control_term} ]"'
+    "--bind" '"ctrl-alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
+  )
+fi
 
 # refresh-preview will redraw the top header after zlogtail has been executed
 # doing so will remove the [!] from warnings/errors
