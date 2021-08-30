@@ -540,7 +540,7 @@ draw_kernel() {
   expects="--expect=alt-d,alt-u"
 
   if ! selected="$( HELP_SECTION=kernel-management ${FUZZYSEL} \
-     --prompt "${benv} > " --tac --with-nth=2 --header="${header}" \
+      --prompt "${benv} > " --tac --with-nth=2 --header="${header}" \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
       --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS}"  \
       --preview-window="up:${PREVIEW_HEIGHT}" < "${_kernels}" )"; then
@@ -556,7 +556,7 @@ draw_kernel() {
 }
 
 # arg1: ZFS filesystem name
-# prints: selected snapshot
+# prints: selected snapshot name, optionally a second snapshot
 # returns: 130 on error, 0 otherwise
 
 draw_snapshots() {
@@ -575,18 +575,19 @@ draw_snapshots() {
     "[CTRL+X] clone and promote" "[CTRL+C] clone only" "" \
     "[CTRL+J] jump into chroot" "[CTRL+D] show diff" "" \
     "[CTRL+L] view logs" "[CTRL+H] help" )"
+  context="Note: for diff viewer, use tab to select/deselect up to two items"
 
   expects="--expect=alt-x,alt-c,alt-j,alt-o"
 
   if ! selected="$( zfs list -t snapshot -H -o name "${benv}" -S "${sort_key}" |
       HELP_SECTION=snapshot-management ${FUZZYSEL} \
-        --prompt "Snapshot > " --header="${header}" --tac \
+        --prompt "Snapshot > " --header="${header}" --tac --multi 2 \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
-        --bind='alt-d:execute[ /libexec/zfunc draw_diff {} ]' \
-        --bind='ctrl-d:execute[ /libexec/zfunc draw_diff {} ]' \
-        --bind='ctrl-alt-d:execute[ /libexec/zfunc draw_diff {} ]' \
-        --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS}" \
-        --preview-window="up:${PREVIEW_HEIGHT}" )"; then
+        --bind='alt-d:execute[ /libexec/zfunc draw_diff {+} ]' \
+        --bind='ctrl-d:execute[ /libexec/zfunc draw_diff {+} ]' \
+        --bind='ctrl-alt-d:execute[ /libexec/zfunc draw_diff {+} ]' \
+        --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS} '${context}'" \
+        --preview-window="up:$(( PREVIEW_HEIGHT + 1 ))" )"; then
     return 1
   fi
 
@@ -604,15 +605,34 @@ draw_snapshots() {
 # returns: nothing
 
 draw_diff() {
-  local snapshot pool diff_target mnt
+  local snapshot diff_target pool base_fs mnt
   local zfs_diff zfs_diff_PID
+  local line_one line_two left_pad
 
   snapshot="${1}"
   if [ -z "${snapshot}" ]; then
     zerror "snapshot is undefined"
     return 130
   fi
+
+  # if a second parameter was passed in and it's a snapshot, compare
+  # creation dates and make sure diff_target is newer than snapshot
+  if [ -n "${2}" ] ; then
+    local sd td
+    sd="$( zfs get -H -p -o value creation "${snapshot}" )"
+    td="$( zfs get -H -p -o value creation "${2}" )"
+    if [ "${sd}" -lt "${td}" ] ; then
+      diff_target="${2}"
+    else
+      diff_target="${snapshot}"
+      snapshot="${2}"
+    fi
+  else
+    diff_target="${snapshot%%@*}"
+  fi
+
   zdebug "snapshot: ${snapshot}"
+  zdebug "diff target: ${diff_target}"
 
   pool="${snapshot%%/*}"
   zdebug "pool: ${pool}"
@@ -622,24 +642,30 @@ draw_diff() {
     return
   fi
 
-  diff_target="${snapshot%%@*}"
-  zdebug "base filesystem: ${diff_target}"
+  base_fs="${snapshot%%@*}"
+  zdebug "base filesystem: ${base_fs}"
 
-  CLEAR_SCREEN=1 load_key "${diff_target}"
+  CLEAR_SCREEN=1 load_key "${base_fs}"
 
-  if ! mnt="$( mount_zfs "${diff_target}" )" ; then
-    zerror "unable to mount ${diff_target}"
+  if ! mnt="$( mount_zfs "${base_fs}" )" ; then
+    zerror "unable to mount ${base_fs}"
     return
   fi
 
+  zdebug "executing: zfs diff -F -H ${snapshot} ${diff_target}"
   coproc zfs_diff ( zfs diff -F -H "${snapshot}" "${diff_target}" )
 
   # Bash won't use an FD referenced in a variable on the left side of a pipe
   exec 3>&"${zfs_diff[0]}"
 
   # shellcheck disable=SC2154
-  sed "s,${mnt},," <&3 | HELP_SECTION=diff-viewer ${FUZZYSEL} --prompt "${snapshot} > " \
-    --preview="/libexec/zfsbootmenu-preview ${diff_target} ${BOOTFS}" \
+  line_one="$( center_string "---${snapshot}" )"
+  left_pad="${line_one//---${snapshot}/}"
+  line_one="$( colorize red "${line_one}" )"
+  line_two="${left_pad}$( colorize green "+++${diff_target}" )"
+
+  sed "s,${mnt},," <&3 | HELP_SECTION=diff-viewer ${FUZZYSEL} --prompt "> " \
+    --preview="echo -e '${line_one}\n${line_two}'" --no-sort \
     --preview-window="up:${PREVIEW_HEIGHT}"
 
   [ -n "${zfs_diff_PID}" ] && kill "${zfs_diff_PID}"

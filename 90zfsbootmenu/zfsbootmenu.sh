@@ -220,6 +220,9 @@ while true; do
 
       # shellcheck disable=SC2162
       IFS=, read subkey selected_snap <<< "${selection}"
+
+      # two snapshots were potentially returned - discard the second
+      selected_snap="${selected_snap%,*}"
       zdebug "selected snapshot: ${selected_snap}"
 
       # Parent of the selected dataset, must be nonempty
@@ -260,6 +263,9 @@ while true; do
       pre_populated="${selected_snap##*/}"
       # Strip snapshot name and append NEW
       pre_populated="${pre_populated%%@*}_NEW"
+
+      header="$( center_string "${selected_snap}" )"
+      colorize green "${header}"
 
       while true; do
         echo -e "\nNew boot environment name (leave blank to abort)"

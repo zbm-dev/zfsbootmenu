@@ -39,7 +39,7 @@ The operation will fail gracefully if the pool can not be set I<read/write>.
 
 =item I<[MOD+D]> B<diff>
 
-Compare the differences between the selected snapshot and the current state of the boot environment.
+Compare the differences between snapshots and filesystems. A single snapshot can be selected and a diff will be generated between that and the current state of the filesystem. Two snapshots can be selected (and deselected) with the tab key and a diff will be generated between them.
 
 The operation will fail gracefully if the pool can not be set I<read/write>.
 
