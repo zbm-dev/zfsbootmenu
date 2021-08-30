@@ -81,6 +81,7 @@ if [ ${loglevel:-4} -eq 7 ] ; then
     "--bind" '"alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
     "--bind" '"ctrl-t:execute[ /sbin/ztrace > ${control_term} ]"'
     "--bind" '"ctrl-alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
+    "--bind" '"f12:execute[ /libexec/zfunc emergency_shell \"debugging shell\" > ${control_term} ]"'
   )
 fi
 
