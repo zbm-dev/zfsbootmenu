@@ -30,7 +30,7 @@
 [33m[MOD+R][0m [1mrecovery shell[0m
   Execute a Bash shell with minimal tooling, enabling system maintenance.
 
-[33m[MOD+I][0m [1minteractive chroot[0m
+[33m[MOD+J][0m [1mjump into chroot[0m
   Enter a chroot of the selected boot environment. The boot environment is mounted [33mread/write[0m
   if the zpool is imported [33mread/write[0m.
 

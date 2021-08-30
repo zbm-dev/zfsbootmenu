@@ -492,10 +492,10 @@ draw_be() {
   header="$( header_wrap \
     "[RETURN] boot" "[ESCAPE] refresh view" "[CTRL+P] pool status" "" \
     "[CTRL+D] set bootfs" "[CTRL+S] snapshots" "[CTRL+K] kernels" "" \
-    "[CTRL+E] edit kcl" "[CTRL+I] interactive chroot" "[CTRL+R] recovery shell" "" \
+    "[CTRL+E] edit kcl" "[CTRL+J] jump into chroot" "[CTRL+R] recovery shell" "" \
     "[CTRL+L] view logs" " " "[CTRL+H] help" )"
 
-  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-i,alt-o"
+  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-j,alt-o"
 
   if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
@@ -573,10 +573,10 @@ draw_snapshots() {
 
   header="$( header_wrap "[RETURN] duplicate" "[ESCAPE] back" "" \
     "[CTRL+X] clone and promote" "[CTRL+C] clone only" "" \
-    "[CTRL+I] interactive chroot" "[CTRL+D] show diff" "" \
+    "[CTRL+J] jump into chroot" "[CTRL+D] show diff" "" \
     "[CTRL+L] view logs" "[CTRL+H] help" )"
 
-  expects="--expect=alt-x,alt-c,alt-i,alt-o"
+  expects="--expect=alt-x,alt-c,alt-j,alt-o"
 
   if ! selected="$( zfs list -t snapshot -H -o name "${benv}" -S "${sort_key}" |
       HELP_SECTION=snapshot-management ${FUZZYSEL} \

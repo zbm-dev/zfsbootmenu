@@ -43,7 +43,7 @@ Compare the differences between the selected snapshot and the current state of t
 
 The operation will fail gracefully if the pool can not be set I<read/write>.
 
-=item I<[MOD+I]> B<interactive chroot>
+=item I<[MOD+J]> B<jump into chroot>
 
 Enter a chroot of the selected boot environment snapshot. The snapshot is always mounted read-only.
 

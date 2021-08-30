@@ -229,7 +229,7 @@ while true; do
       tput cnorm
 
       case "${subkey}" in
-        "mod-i")
+        "mod-j")
           zfs_chroot "${selected_snap}"
           BE_SELECTED=1
           continue
@@ -337,7 +337,7 @@ while true; do
         echo "${cmdline}" > "${BASE}/cmdline"
       fi
       ;;
-    "mod-i")
+    "mod-j")
       zfs_chroot "${selected_be}"
     ;;
     "mod-o")

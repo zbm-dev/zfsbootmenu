@@ -38,7 +38,7 @@
 
   The operation will fail gracefully if the pool can not be set [33mread/write[0m.
 
-[33m[MOD+I][0m [1minteractive chroot[0m
+[33m[MOD+J][0m [1mjump into chroot[0m
   Enter a chroot of the selected boot environment snapshot. The snapshot is always mounted read-only.
 
 [33m[MOD+O][0m [1msort order[0m

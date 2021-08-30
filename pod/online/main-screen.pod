@@ -38,7 +38,7 @@ View the health and status of each imported pool.
 
 Execute a Bash shell with minimal tooling, enabling system maintenance.
 
-=item I<[MOD+I]> B<interactive chroot>
+=item I<[MOD+J]> B<jump into chroot>
 
 Enter a chroot of the selected boot environment. The boot environment is mounted I<read/write> if the zpool is imported I<read/write>.
 
