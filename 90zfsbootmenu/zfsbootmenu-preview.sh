@@ -43,3 +43,8 @@ fi
 
 colorize "${_COLOR}" "${selected_env_str}\n"
 echo "${selected_arguments}"
+
+if [ -n "${3}" ]; then
+  context="$( center_string "${3}" )"
+  colorize "orange" "${context}"
+fi
