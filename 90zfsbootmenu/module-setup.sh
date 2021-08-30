@@ -67,7 +67,6 @@ install() {
     "kexec"
     "mkdir"
     "tput"
-    "basename"
     "head"
     "mktemp"
     "sort"

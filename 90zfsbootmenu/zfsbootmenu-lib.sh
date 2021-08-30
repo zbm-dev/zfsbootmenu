@@ -984,7 +984,7 @@ find_be_kernels() {
   for kernel in $( ls \
       ${mnt}/boot/{{vm,}linu{x,z},kernel}{,-*} 2>/dev/null | sort -V ); do
     # Pull basename and validate
-    kernel=$( basename "${kernel}" )
+    kernel="${kernel##*/}"
     [ -e "${mnt}/boot/${kernel}" ] || continue
     zdebug "found ${mnt}/boot/${kernel}"
 
@@ -1034,7 +1034,7 @@ find_be_kernels() {
   fi
   zdebug "default kernel set to ${def_kernel}"
 
-  basename "${def_kernel}" > "${def_kernel_file}"
+  echo "${def_kernel##*/}" > "${def_kernel_file}"
 
   # Pre-load cmdline arguments, possibly from files on the mount
   preload_be_cmdline "${fs}" "${mnt}"
