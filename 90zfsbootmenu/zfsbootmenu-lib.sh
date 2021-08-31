@@ -1253,6 +1253,11 @@ preload_be_cmdline() {
 
   if [ -n "${zfsbe_mnt}" ] && [ -r "${zfsbe_mnt}/etc/default/grub" ]; then
     zdebug "using ${zfsbe_mnt}/etc/default/grub"
+
+    color=green delay=10 timed_prompt "Using KCL from /etc/default/grub on ${zfsbe_fs}" \
+      "This behavior is DEPRECATED and will be removed soon" \
+      "Migrate to an org.zfsbootmenu:commandline property on your BE"
+
     echo "$(
       # shellcheck disable=SC1090,SC1091
       . "${zfsbe_mnt}/etc/default/grub" ;
