@@ -23,7 +23,7 @@ mkdir -p "${BASE}"
 
 # shellcheck disable=SC2154
 cat >> "/etc/zfsbootmenu.conf" <<EOF
-# Added by zfsbootmenu-preinit.sh
+# BEGIN additions by zfsbootmenu-preinit.sh
 export BASE="/zfsbootmenu"
 export endian="${endian}"
 export spl_hostid="${spl_hostid}"
@@ -37,6 +37,7 @@ export zbm_sort="${zbm_sort}"
 export zbm_set_hostid="${zbm_set_hostid}"
 export zbm_import_delay="${zbm_import_delay}"
 export control_term="${control_term}"
+# END additions by zfsbootmenu-preinit.sh
 EOF
 
 getcmdline > "${BASE}/zbm.cmdline"
