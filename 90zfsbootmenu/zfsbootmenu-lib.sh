@@ -571,13 +571,12 @@ draw_snapshots() {
 
   sort_key="$( get_sort_key )"
 
-  header="$( header_wrap "[RETURN] duplicate" "[ESCAPE] back" "" \
-    "[CTRL+X] clone and promote" "[CTRL+C] clone only" "" \
-    "[CTRL+J] jump into chroot" "[CTRL+D] show diff" "" \
-    "[CTRL+L] view logs" "[CTRL+H] help" )"
+  header="$( header_wrap "[RETURN] duplicate" "[CTRL+C] clone only" "[CTRL+X] clone and promote" "" \
+    "[CTRL+N] create new snapshot" "[CTRL+J] jump into chroot" "[CTRL+D] show diff" "" \
+    "[CTRL+L] view logs" "[CTRL+H] help" "[ESCAPE] back" )"
   context="Note: for diff viewer, use tab to select/deselect up to two items"
 
-  expects="--expect=alt-x,alt-c,alt-j,alt-o"
+  expects="--expect=alt-x,alt-c,alt-j,alt-o,alt-n"
 
   if ! selected="$( zfs list -t snapshot -H -o name "${benv}" -S "${sort_key}" |
       HELP_SECTION=snapshot-management ${FUZZYSEL} \
@@ -900,6 +899,167 @@ clone_snapshot() {
 
   return 0
 }
+
+# arg1: filesystem name
+# arg2: snapshot name
+# prints: nothing
+# returns: 0 on success
+
+create_snapshot() {
+  local selected target pool
+
+  selected="${1}"
+  if [ -z "$selected" ]; then
+    zerror "selected is undefined"
+    return 1
+  fi
+  zdebug "selected: ${selected}"
+
+  target="${2}"
+  if [ -z "$target" ]; then
+    zerror "target is undefined"
+    return 1
+  fi
+  zdebug "target: ${target}"
+
+  pool="${selected%%/*}"
+  if ! set_rw_pool "${pool}" ; then
+    zerror "unable to set pool ${pool} read/write"
+    return 1
+  fi
+
+  load_key "${selected}"
+
+  zdebug "creating snapshot ${selected}@${target}"
+  if ! output="$( zfs snapshot "${selected}@${target}" )" ; then
+    zdebug "unable to create snapshot: ${output}"
+    return 1
+  fi
+
+  return 0
+}
+
+# arg1: selected snapshot
+# arg2: subkey
+# prints: snapshot/filesystem creation prompt
+# returns: nothing
+
+snapshot_dispatcher() {
+  local selected subkey
+  local parent_ds avail_space_exact be_size_exact leftover_space avail_space be_size
+  local prompt header check_base pre_populated user_input valid_name clone_target
+
+  selected="${1}"
+  if [ -z "$selected" ]; then
+    zerror "selected is undefined"
+    return 1
+  fi
+  zdebug "selected: ${selected}"
+
+  subkey="${2}"
+  if [ -z "$subkey" ]; then
+    zerror "subkey is undefined"
+    return 1
+  fi
+  zdebug "subkey: ${subkey}"
+
+  parent_ds="${selected%/*}"
+  parent_ds="${selected%@*}"
+
+  if [ -z "${parent_ds}" ]; then
+    zerror "unable to determine parent dataset for ${selected}"
+    return 1
+  fi
+  zdebug "parent_ds: ${parent_ds}"
+
+  # Do space calculations; bail early
+  case "${subkey}" in
+    "enter")
+      avail_space_exact="$( zfs list -p -H -o available "${parent_ds}" )"
+      be_size_exact="$( zfs list -p -H -o refer "${selected}" )"
+      leftover_space=$(( avail_space_exact - be_size_exact ))
+      if [ "${leftover_space}" -le 0 ]; then
+        avail_space="$( zfs list -H -o available "${parent_ds}" )"
+        be_size="$( zfs list -H -o refer "${selected}" )"
+        zerror "Insufficient space for duplication, ${parent_ds}' has ${avail_space} free but needs ${be_size}"
+        color=red delay=10 timed_prompt "Insufficient space for duplication" \
+          "'${parent_ds}' has ${avail_space} free but needs ${be_size}"
+        return 1
+      fi
+    ;;
+  esac
+
+  # Set prompt, header, existing check prefix
+  case "${subkey}" in
+    "enter"|"mod-x"|"mod-c")
+      prompt="\nNew boot environment name (CTRL-C or leave blank to abort)"
+      header="$( center_string "${selected}" )"
+      check_base="${parent_ds}/"
+
+      pre_populated="${selected##*/}"
+      pre_populated="${pre_populated%%@*}_NEW"
+      ;;
+    "mod-n")
+      prompt="\nNew snapshot name (CTRL-C or leave blank to abort)"
+      header="$( center_string "${selected%%@*}" )"
+      check_base="${selected%%@*}@"
+
+      pre_populated="$( printf "%(%Y-%m-%d-%H%M%S)T" )"
+      ;;
+  esac
+
+  tput clear
+  tput cnorm
+  colorize green "${header}"
+
+  while true; do
+    echo -e "${prompt}"
+    user_input="$( /libexec/zfsbootmenu-input "${pre_populated}" )"
+
+    [ -n "${user_input}" ] || return
+
+    valid_name=$( echo "${user_input}" | tr -c -d 'a-zA-Z0-9-_.:' )
+    if [[ "${user_input}" != "${valid_name}" ]]; then
+      echo "${user_input} is invalid, ${valid_name} can be used"
+      pre_populated="${valid_name}"
+    elif zfs list -H -o name "${check_base}${user_input}" >/dev/null 2>&1; then
+      echo "${check_base}${user_input} already exists, please use another name"
+      pre_populated="${user_input}"
+    else
+      break
+    fi
+  done
+
+  [ -n "${user_input}" ] || return
+
+  # Print what we're doing for anything but snapshot creation
+  case "${subkey}" in
+    "enter"|"mod-x"|"mod-c")
+      clone_target="${parent_ds}/${user_input}"
+      be_size="$( zfs list -H -o refer "${selected}" )"
+      echo -e "\nCreating ${clone_target} from ${selected} (${be_size})"
+      ;;
+  esac
+
+  # Finally, dispatch to one of the snapshot handler functions
+  case "${subkey}" in
+    "enter")
+      duplicate_snapshot "${selected}" "${clone_target}"
+      ;;
+    "mod-x")
+      PROMOTE=1 clone_snapshot "${selected}" "${clone_target}"
+      ;;
+    "mod-c")
+      clone_snapshot "${selected}" "${clone_target}"
+      ;;
+    "mod-n")
+      create_snapshot "${selected%%@*}" "${user_input}"
+      # shellcheck disable=SC2034
+      BE_SELECTED=1
+      ;;
+  esac
+}
+
 
 # arg1: ZFS filesystem
 # arg2: default kernel path (omit to unset default)

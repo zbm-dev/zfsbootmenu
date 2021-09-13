@@ -225,13 +225,6 @@ while true; do
       selected_snap="${selected_snap%,*}"
       zdebug "selected snapshot: ${selected_snap}"
 
-      # Parent of the selected dataset, must be nonempty
-      parent_ds="${selected_snap%/*}"
-      [ -n "$parent_ds" ] || continue
-
-      tput clear
-      tput cnorm
-
       case "${subkey}" in
         "mod-j")
           zfs_chroot "${selected_snap}"
@@ -243,66 +236,10 @@ while true; do
           BE_SELECTED=1
           continue
         ;;
-        # Check available space early in the process
-        "enter")
-          avail_space_exact="$( zfs list -p -H -o available "${parent_ds}" )"
-          be_size_exact="$( zfs list -p -H -o refer "${selected_snap}" )"
-          leftover_space=$(( avail_space_exact - be_size_exact ))
-          if [ "${leftover_space}" -le 0 ]; then
-            avail_space="$( zfs list -H -o available "${parent_ds}" )"
-            be_size="$( zfs list -H -o refer "${selected_snap}" )"
-            zerror "Insufficient space for duplication, ${parent_ds}' has ${avail_space} free but needs ${be_size}"
-            color=red delay=10 timed_prompt "Insufficient space for duplication" \
-              "'${parent_ds}' has ${avail_space} free but needs ${be_size}"
-            continue
-          fi
+        *)
+          snapshot_dispatcher "${selected_snap}" "${subkey}"
+          continue
         ;;
-      esac
-
-      # Strip parent datasets
-      pre_populated="${selected_snap##*/}"
-      # Strip snapshot name and append NEW
-      pre_populated="${pre_populated%%@*}_NEW"
-
-      header="$( center_string "${selected_snap}" )"
-      colorize green "${header}"
-
-      while true; do
-        echo -e "\nNew boot environment name (leave blank to abort)"
-        new_be="$( /libexec/zfsbootmenu-input "${pre_populated}" )"
-
-        [ -n "${new_be}" ] || break
-
-        valid_name=$( echo "${new_be}" | tr -c -d 'a-zA-Z0-9-_.:' )
-        # If the entered name is invalid, set the prompt to the valid form of the name
-        if [[ "${new_be}" != "${valid_name}" ]]; then
-          echo "${new_be} is invalid, ${valid_name} can be used"
-          pre_populated="${valid_name}"
-        elif zfs list -H -o name "${parent_ds}/${new_be}" >/dev/null 2>&1; then
-          echo "${new_be} already exists, please use another name"
-          pre_populated="${new_be}"
-        else
-          break
-        fi
-      done
-
-      # Must have a nonempty name for the new BE
-      [ -n "${new_be}" ] || continue
-
-      clone_target="${parent_ds}/${new_be}"
-      be_size="$( zfs list -H -o refer "${selected_snap}" )"
-      echo -e "\nCreating ${clone_target} from ${selected_snap} (${be_size})"
-
-      case "${subkey}" in
-        "enter")
-          duplicate_snapshot "${selected_snap}" "${clone_target}"
-          ;;
-        "mod-x")
-          PROMOTE=1 clone_snapshot "${selected_snap}" "${clone_target}"
-          ;;
-        "mod-c")
-          clone_snapshot "${selected_snap}" "${clone_target}"
-          ;;
       esac
       ;;
     "mod-r")
@@ -346,9 +283,9 @@ while true; do
       ;;
     "mod-j")
       zfs_chroot "${selected_be}"
-    ;;
+      ;;
     "mod-o")
       change_sort
-    ;;
+      ;;
   esac
 done
