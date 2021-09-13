@@ -113,7 +113,7 @@ install() {
 
   # Workaround for zfsonlinux/zfs#4749 by ensuring libgcc_s.so(.1) is included
   _ret=0
-  if ldd /usr/bin/zpool | grep -qF 'libgcc_s.so'; then
+  if ldd "$( command -v zpool )" | grep -qF 'libgcc_s.so'; then
     # Dracut will have already tracked and included it
     :
   elif command -v gcc-config >/dev/null 2>&1; then
