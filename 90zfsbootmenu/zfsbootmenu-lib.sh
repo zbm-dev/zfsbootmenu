@@ -1925,7 +1925,8 @@ be_keysource() {
 # returns: 0 iff a key was cached
 
 cache_key() {
-  local fs keylocation keyfile keydir keysrc keycache mutex mnt ret
+  local fs mnt ret mutex keycache
+  local ksmount relkeyloc keypath keylocation keyfile keydir keysrc
 
   fs="${1}"
   if [ -z "${fs}" ]; then
@@ -1995,19 +1996,60 @@ cache_key() {
     return 1
   fi
 
+  relkeyloc=""
+  if ksmount="$(zfs get -o value -H mountpoint "${keysrc}" )"; then
+    case "${ksmount}" in
+      none|legacy)
+        zdebug "no discernable mountpoint for ${keysrc}, using only absolute key path"
+        ;;
+      /*)
+        # For absolute mountpoints, strip the root
+        ksmount="${ksmount#/}"
+
+        # Key location relative to expected mountpoint of keysource
+        relkeyloc="${keyfile#${ksmount}}"
+        relkeyloc="${relkeyloc#/}"
+
+        zdebug "${keysrc} mounts at ${ksmount}, trying relative path ${relkeyloc}"
+
+        if [ "${relkeyloc}" = "${keyfile}" ]; then
+          # If location isn't different, there is no relative location
+          relkeyloc=""
+          zdebug "relative path ${relkeyloc} matches absolute, ignoring"
+        fi
+        ;;
+      *)
+        zwarn "ignoring nonsense mountpoint ${ksmount} on filesystem ${keysrc}"
+        ;;
+    esac
+  fi
+
+  if [ -n "${relkeyloc}" ] && [ -e "${mnt}/${relkeyloc}" ]; then
+    # Prefer a path relative to the expected mountpoint of the keysource
+    keypath="${mnt}/${relkeyloc}"
+    zdebug "caching key from mount-relative path ${keysrc}:${relkeyloc}"
+  elif [ -e "${mnt}/${keyfile}" ]; then
+    keypath="${mnt}/${keyfile}"
+    zdebug "caching key from absolute path ${keysrc}:${keyfile}"
+  else
+    keypath=""
+    zdebug "no key found at ${keysrc}:${keyfile}"
+  fi
+
   ret=1
-  if [ -e "${mnt}/${keyfile}" ]; then
+  if [ -n "${keypath}" ]; then
+    # Cache target is always full path below fs cache root
     keydir="${keyfile%/*}"
     if [ "${keydir}" != "${keyfile}" ] && [ -n "${keydir}" ]; then
       mkdir -p "${keycache}/${keydir}"
     fi
 
-    if cp "${mnt}/${keyfile}" "${keycache}/${keyfile}"; then
-      zdebug "copied key ${mnt}/${keyfile} to ${keycache}/${keyfile}"
+    if cp "${keypath}" "${keycache}/${keyfile}"; then
+      zdebug "copied key ${keypath} to ${keycache}/${keyfile}"
       ret=0
+    else
+      zerror "failed to copy ${keypath} to ${keycache}/${keyfile}"
     fi
-  else
-    zdebug "key file ${keysrc}:${keyfile} not found at ${mnt}/${keyfile}"
   fi
 
   # Clean up mount and mutex
