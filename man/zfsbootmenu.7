@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "zfsbootmenu 7"
-.TH zfsbootmenu 7 "2021-08-21" "1.10.1" "ZFSBootMenu"
+.TH zfsbootmenu 7 "2021-09-21" "1.10.1" "ZFSBootMenu"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -273,10 +273,15 @@ If specified, this provides the name of the \s-1ZFS\s0 filesystem from which key
 .Sp
 Normally, when ZFSBootMenu attempts to load encryption keys for a boot environment, it will attempt to look for a key file at the path specified by the \fIkeylocation\fR property on the \fIencryptionroot\fR for that boot environment. If that file does not exist, and \fIkeyformat=passphrase\fR is set for the \fIencryptionroot\fR (or \fIkeylocation=prompt\fR), ZFSBootMenu will prompt for a passphrase to unlock the boot environment. These passphrases entered are not cached by default.
 .Sp
-When \fBorg.zfsbootmenu:keysource\fR is a mountable \s-1ZFS\s0 filesystem, before prompting for a passphrase when \fIkeylocation\fR is not set to \fIprompt\fR, ZFSBootMenu will attempt to mount \fB<filesystem>\fR (unlocking that, if necessary) and search for the key file at \fIkeylocation\fR relative to \fB<filesystem>\fR. If such a file is found, it will be copied to the initramfs, and the copy in the initramfs will be used to decrypt the original boot environment. Any copied keys are retained until ZFSBootMenu boots an environment, so a single password prompt can be sufficient to unlock several pools with the same \fIkeysource\fR or prevent prompts from reappearing when the pool must be exported and reimported (for example, to alter boot parameters from within ZFSBootMenu).
+When \fBorg.zfsbootmenu:keysource\fR is a mountable \s-1ZFS\s0 filesystem, before prompting for a passphrase when \fIkeylocation\fR is not set to \fIprompt\fR, ZFSBootMenu will attempt to mount \fB<filesystem>\fR (unlocking that, if necessary) and search for the key file within \fB<filesystem>\fR. When \fB<filesystem>\fR specifies a \fImountpoint\fR property that is not \fInone\fR or \fIlegacy\fR, the specified mount point will be stripped (if possible) from the beginning of any \fIkeylocation\fR property to attempt to identify a key at the point where it would normally be mounted. If no file exists at the stripped path (or the \fImountpoint\fR specifies \fInone\fR or \fIlegacy\fR), keys will be sought at the full path of \fIkeylocation\fR relative to \fB<filesystem>\fR. If a key is found at either location, it will be copied to the initramfs. The copy in the initramfs will be used to decrypt the original boot environment. Copied keys are retained until ZFSBootMenu boots an environment, so a single password prompt can be sufficient to unlock several pools with the same \fIkeysource\fR or prevent prompts from reappearing when the pool must be exported and reimported (for example, to alter boot parameters from within ZFSBootMenu).
 .SH "Dracut Options"
 .IX Header "Dracut Options"
 In addition to standard dracut configuration options, the ZFSBootMenu dracut module supports addtional options to customize boot behavior.
+.IP "\fBzfsbootmenu_early_setup=<executable\-list>\fR" 4
+.IX Item "zfsbootmenu_early_setup=<executable-list>"
+An optional variable specifying a space-separated list of paths to setup hooks that will be installed in the ZFSBootMenu initramfs. Any path in the list \fB<executable\-list>\fR that exists and is executable will be installed.
+.Sp
+Any installed early hooks are run after \s-1SPL\s0 and \s-1ZFS\s0 kernel modules are loaded and a hostid is configured in \fI/etc/hostid\fR, but before any zpools have been imported.
 .IP "\fBzfsbootmenu_setup=<executable\-list>\fR" 4
 .IX Item "zfsbootmenu_setup=<executable-list>"
 An optional variable specifying a space-separated list of paths to setup hooks that will be installed in the ZFSBootMenu initramfs. Any path in the list \fB<executable\-list>\fR that exists and is executable will be installed.
