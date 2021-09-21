@@ -2402,7 +2402,7 @@ emergency_shell() {
   echo -n "Launching emergency shell: "
   echo -e "${message}\n"
 
-  # -i (interactive) mode will source /.bashrc
+  # -i (interactive) mode will source $HOME/.bashrc
   /bin/bash -i
 
   # shellcheck disable=SC2034

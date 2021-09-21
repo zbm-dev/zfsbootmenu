@@ -67,6 +67,10 @@ if [ -d /libexec/setup.d ]; then
   unset _hook
 fi
 
+# Override control_term if executing over SSH
+# shellcheck disable=SC2034
+[ -n "${SSH_TTY}" ] && control_term="${SSH_TTY}"
+
 # shellcheck disable=SC2016
 fuzzy_default_options=( "--ansi" "--no-clear"
   "--layout=reverse-list" "--inline-info" "--tac" "--color=16"

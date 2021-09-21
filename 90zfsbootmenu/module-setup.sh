@@ -308,13 +308,15 @@ EOF
 [ -f /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
 
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export TERM=linux
+export HOME=/root
 
 zdebug "sourced /etc/profile"
 
 EOF
 
-  # Setup a default environment for all login shells
-  cat << EOF >> "${initdir}/.bashrc"
+  # Setup a default environment for bash -i
+  cat << EOF >> "${initdir}/root/.bashrc"
 [ -f /etc/profile ] && source /etc/profile
 [ -f /lib/zfsbootmenu-completions.sh ] && source /lib/zfsbootmenu-completions.sh
 export PS1="\033[0;33mzfsbootmenu\033[0m \w > "
@@ -327,7 +329,10 @@ alias trace="ztrace"
 alias debug="ztrace"
 alias help="/libexec/zfsbootmenu-help -L recovery-shell"
 
-zdebug "sourced /.bashrc"
+zdebug "sourced /root/.bashrc"
 
 EOF
+
+  # symlink to .profile for /bin/sh - launched by dropbear
+  ln -s "/root/.bashrc" "${initdir}/root/.profile"
 }
