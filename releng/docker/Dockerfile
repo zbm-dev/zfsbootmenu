@@ -34,9 +34,6 @@ RUN if [ -n "${ZBM_COMMIT_HASH}" ]; then echo "${ZBM_COMMIT_HASH}" > /etc/zbm-co
 # Copy the build script
 COPY zbm-build.sh /zbm-build.sh
 
-# To replace the default ZFSBootMenu tree, bind-mount over /zbm
-VOLUME /zbm
-
 # Run the build script with no arguments by default
 ENTRYPOINT [ "/zbm-build.sh" ]
 CMD [ ]

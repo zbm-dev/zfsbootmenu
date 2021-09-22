@@ -19,7 +19,7 @@ The provided `Dockerfile` automates creation of the ZFSBootMenu builder image.
 From this directory, simply run
 
 ```sh
-podman build -t zbm .
+podman build --squash -t zbm .
 ```
 
 to create an image named `zbm`. (Podman automatically prepends `localhost` and
