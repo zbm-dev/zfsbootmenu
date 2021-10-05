@@ -113,22 +113,18 @@ install() {
 
   # Workaround for zfsonlinux/zfs#4749 by ensuring libgcc_s.so(.1) is included
   _ret=0
-  if ldd "$( command -v zpool )" | grep -qF 'libgcc_s.so'; then
-    # Dracut will have already tracked and included it
-    :
-  elif command -v gcc-config >/dev/null 2>&1; then
-    # On systems with gcc-config (Gentoo, Funtoo, etc.):
-    # Use the current profile to resolve the appropriate path
-    dracut_install "/usr/lib/gcc/$(s=$(gcc-config -c); echo "${s%-*}/${s##*-}")/libgcc_s.so.1"
-    _ret=$?
-  elif [[ -n "$(ls /usr/lib/libgcc_s.so* 2>/dev/null)" ]]; then
-    # Try a simple path first
-    dracut_install /usr/lib/libgcc_s.so*
-    _ret=$?
-  else
-    # Fallback: Guess the path and include all matches
-    dracut_install /usr/lib/gcc/*/*/libgcc_s.so*
-    _ret=$?
+  # If zpool requires libgcc_s.so*, dracut will track and include it
+  if ! ldd "$( command -v zpool )" | grep -qF 'libgcc_s.so'; then
+    # On systems with gcc-config (Gentoo, Funtoo, etc.), use it to find libgcc_s
+    if command -v gcc-config >/dev/null 2>&1; then
+      dracut_install "/usr/lib/gcc/$(s=$(gcc-config -c); echo "${s%-*}/${s##*-}")/libgcc_s.so.1"
+      _ret=$?
+    # Otherwise, use dracut's library installation function to find the right one
+    elif ! inst_libdir_file "libgcc_s.so*"; then
+      # If all else fails, just try looking for some gcc arch directory
+      dracut_install /usr/lib/gcc/*/*/libgcc_s.so*
+      _ret=$?
+    fi
   fi
 
   if [ ${_ret} -ne 0 ]; then
