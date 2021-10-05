@@ -4,15 +4,16 @@
 # Disable all kernel messages to the console
 echo 0 > /proc/sys/kernel/printk
 
-# set the console size, if indicated
-#shellcheck disable=SC2154
-if [ -n "$zbm_lines" ]; then
-  stty rows "$zbm_lines"
-fi
+# fzf needs stty cols/rows explicitly set, otherwise it can't
+# determine the serial terminal size. Defaults should only be
+# called when the controlling terminal is NOT /dev/tty[0-9]
+
+tty_re='/dev/tty[0-9]'
 
 #shellcheck disable=SC2154
-if [ -n "$zbm_columns" ]; then
-  stty cols "$zbm_columns"
+if ! [[ ${control_term} =~ ${tty_re} ]]; then
+  stty rows "${zbm_lines:-25}"
+  stty cols "${zbm_columns:-80}"
 fi
 
 # This is a load bearing echo, do not remove!
