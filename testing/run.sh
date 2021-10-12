@@ -11,17 +11,18 @@ usage() {
 Usage: $0 [options]
   -a  Set kernel command line
   -A+ Append additional arguments to kernel command line
-  -d+ Set one or more non-standard disk images 
+  -d+ Set one or more non-standard disk images
   -f  Force recreation of the initramfs
   -s  Enable serial console on stdio
   -v  Set type of qemu display to use
   -D  Set test directory
   -i  Write SSH config include
   -n  Do not reset the controlling terminal after the VM exits
+  -e  Boot the VM with an EFI bundle
 EOF
 }
 
-CMDOPTS="D:A:a:d:fsv:hin"
+CMDOPTS="D:A:a:d:fsv:hine"
 
 # First-pass option parsing just looks for test directory
 while getopts "${CMDOPTS}" opt; do
@@ -77,7 +78,9 @@ case "$(uname -m)" in
 esac
 
 DRIVE=()
+BFILES=()
 INITRD="${TESTDIR}/initramfs-bootmenu.img"
+OVMF="stubs/OVMF_CODE.fd"
 MEMORY="2048M"
 SMP="2"
 CREATE=0
@@ -85,6 +88,7 @@ SERIAL=0
 DISPLAY_TYPE=
 SSH_INCLUDE=0
 RESET=1
+EFI=0
 
 # Override any default variables
 #shellcheck disable=SC1091
@@ -125,6 +129,19 @@ while getopts "${CMDOPTS}" opt; do
     n)
       RESET=0
       ;;
+    e)
+      case "$(uname -m)" in
+        x86_64)
+          BUNDLE="${TESTDIR}/vmlinuz.EFI"
+          KERNEL=
+          INITRD=
+          EFI=1
+          ;;
+        *)
+          echo "EFI bundles unsupported on $(uname -m)"
+          ;;
+        esac
+      ;;
     *)
       ;;
   esac
@@ -161,29 +178,63 @@ if [ "${#AAPPEND[@]}" -gt 0 ]; then
 fi
 
 # Creation is required if either kernel or initramfs is missing
-if [ ! -f "${KERNEL}" ] || [ ! -f "${INITRD}" ]; then
-  CREATE=1
+if ((EFI)) ; then
+  [ ! -f "${BUNDLE}" ] && CREATE=1
+else
+  if [ -n "${KERNEL}" ] && [ ! -f "${KERNEL}" ] || [ -n "${INITRD}" ] && [ ! -f "${INITRD}" ]; then
+    CREATE=1
+  fi
 fi
 
 if ((CREATE)) ; then
-  # Create our initramfs
-  [ -f "${KERNEL}" ] && rm "${KERNEL}"
-  [ -f "${INITRD}" ] && rm "${INITRD}"
+  yamlconf="${TESTDIR}/local.yaml"
+  STUBS="$(realpath -e stubs)"
+
+  if ((EFI)) ; then
+    # toggle only EFI bundle creation
+    [ -f "${BUNDLE}" ] && rm "${BUNDLE}"
+    yq-go eval ".EFI.Enabled = true" -i "${yamlconf}"
+    yq-go eval ".Components.Enabled = false" -i "${yamlconf}"
+    yq-go eval ".EFI.Stub = \"${STUBS}/linuxx64.efi.stub\"" -i "${yamlconf}"
+  else
+    # toggle only component creation
+    [ -f "${KERNEL}" ] && rm "${KERNEL}"
+    [ -f "${INITRD}" ] && rm "${INITRD}"
+    yq-go eval ".EFI.Enabled = false" -i "${yamlconf}"
+    yq-go eval ".Components.Enabled = true" -i "${yamlconf}"
+  fi
 
   # Try to find the local dracut and generate-zbm first
   if ! ( cd "${TESTDIR}" && PATH=./dracut:${PATH} ./generate-zbm -c ./local.yaml ); then
     echo "ERROR: unable to create ZFSBootMenu images"
     exit 1
   fi
+
+  # always revert to component builds
+  if ((EFI)) ; then
+    yq-go eval ".EFI.Enabled = false" -i "${yamlconf}"
+    yq-go eval ".Components.Enabled = true" -i "${yamlconf}"
+  fi
 fi
 
 # Ensure kernel and initramfs exist
-if [ ! -f "${KERNEL}" ] ; then
+if [ -n "${KERNEL}" ] && [ ! -f "${KERNEL}" ] ; then
   echo "Missing kernel: ${KERNEL}"
   exit 1
-elif [ ! -f "${INITRD}" ] ; then
+elif [ -n "${INITRD}" ] && [ ! -f "${INITRD}" ] ; then
   echo "Missing initramfs: ${INITRD}"
   exit 1
+elif [ -n "${BUNDLE}" ] && [ ! -f "${BUNDLE}" ] ; then
+  echo "Missing EFI bundle: ${BUNDLE}"
+  exit 1
+fi
+
+if ((EFI)) ; then
+  BFILES+=( "-bios" "${OVMF}" )
+  BFILES+=( "-kernel" "${BUNDLE}" )
+else
+  BFILES+=( "-kernel" "${KERNEL}" )
+  BFILES+=( "-initrd" "${INITRD}" )
 fi
 
 SSH_PORT=2222
@@ -232,8 +283,7 @@ fi
 
 # shellcheck disable=SC2086
 "${BIN}" \
-	-kernel "${KERNEL}" \
-	-initrd "${INITRD}" \
+	"${BFILES[@]}" \
 	"${DRIVE[@]}" \
 	-m "${MEMORY}" \
 	-smp "${SMP}" \

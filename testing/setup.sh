@@ -157,9 +157,13 @@ fi
 if ((YAML)) ; then
   echo "Configuring local.yaml"
   yamlconf="${TESTDIR}/local.yaml"
+  STUBS="$(realpath -e stubs)"
   cp ../etc/zfsbootmenu/config.yaml "${yamlconf}"
   yq-go eval ".Components.ImageDir = \"${TESTDIR}\"" -i "${yamlconf}"
   yq-go eval ".Components.Versions = false" -i "${yamlconf}"
+  yq-go eval ".EFI.ImageDir = \"${TESTDIR}\"" -i "${yamlconf}"
+  yq-go eval ".EFI.Versions = false" -i "${yamlconf}"
+  yq-go eval ".EFI.Stub = \"${STUBS}/linuxx64.efi.stub\"" -i "${yamlconf}"
   yq-go eval ".Global.ManageImages = true" -i "${yamlconf}"
   yq-go eval ".Global.DracutConfDir = \"${TESTDIR}/dracut.conf.d\"" -i "${yamlconf}"
   yq-go eval ".Global.DracutFlags = [ \"--local\" ]" -i "${yamlconf}"
