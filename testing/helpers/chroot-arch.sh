@@ -60,7 +60,7 @@ zfsutils="https://raw.githubusercontent.com/archzfs/archzfs/master/src/zfs-utils
 cpiolib="/usr/lib/initcpio"
 curl -L -o "${cpiolib}/hooks/zfs" "${zfsutils}/zfs-utils.initcpio.hook"
 curl -L -o "${cpiolib}/install/zfs" "${zfsutils}/zfs-utils.initcpio.install"
-curl -L -o "${cpiolib}/install/zfsencryptssh" "${zfsutils}/zfs-utils.initcpio.zfsncrypt.sshinstall"
+curl -L -o "${cpiolib}/install/zfsencryptssh" "${zfsutils}/zfs-utils.initcpio.zfsencryptssh.install"
 
 # Arch doesn't play nicely with the pre-existing cache
 rm -f /etc/zfs/zpool.cache
