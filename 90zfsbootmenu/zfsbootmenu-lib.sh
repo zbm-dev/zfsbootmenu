@@ -2433,6 +2433,19 @@ zbmcmdline() {
   [ -f "${BASE}/zbm.cmdline" ] && echo | cat "${BASE}/zbm.cmdline" -
 }
 
+# prints: zpool list and zfs property list
+# returns: nothing
+
+zreport() {
+  cat <<-EOF
+	ZFS Version: $( modinfo -F version zfs ) / SPL Version: $( modinfo -F version spl )
+
+	$( zpool list )
+
+	$( zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource )
+	EOF
+}
+
 # arg1: pid
 # prints: child pid
 # returns: 0 if a child pid was found, 1 if there are no children
