@@ -13,10 +13,6 @@ zlog() {
   [ -z "${1}" ] && return
   [ -z "${2}" ] && return
 
-  # Assume a default log severity of "warning" if not specified
-  # shellcheck disable=SC2154
-  [ "${1}" -le "${loglevel:=4}" ] || return
-
   # Remove everything but new lines from the string, count the length
   lines="${2//[!$'\n']/}"
   lines="${#lines}"
@@ -43,22 +39,31 @@ zlog() {
 
 # arg1: log line
 # prints: nothing
-# returns: nothing
+# returns: 1 if loglevel isn't high enough
 
 zdebug() {
+  [ "${loglevel:-4}" -ge 7 ] || return 1
   zlog 7 "$@"
 }
 
 zinfo() {
+  [ "${loglevel:-4}" -ge 6 ] || return 1
   zlog 6 "$@"
 }
 
+znotice() {
+  [ "${loglevel:-4}" -ge 5 ] || return 1
+  zlog 5 "$@"
+}
+
 zwarn() {
+  [ "${loglevel:-4}" -ge 4 ] || return 1
   : > "${BASE}/have_warnings"
   zlog 4 "$@"
 }
 
 zerror() {
+  [ "${loglevel:-4}" -ge 3 ] || return 1
   : > "${BASE}/have_errors"
   zlog 3 "$@"
 }
@@ -67,7 +72,7 @@ traperror() {
   zdebug "trapped error from: '${BASH_COMMAND}'"
 }
 
-if [ ${loglevel:-4} -eq 7 ] ; then
+if [ "${loglevel:-4}" -eq 7 ] ; then
   set -o errtrace
   set -o functrace
   trap traperror ERR

@@ -150,7 +150,7 @@ while IFS=$'\t' read -r _pool _health; do
   fi
 done <<<"$( zpool list -H -o name,health )"
 
-zdebug "$( zreport )"
+zdebug && zdebug "$( zreport )"
 
 unsupported=0
 while IFS=$'\t' read -r _pool _property; do
