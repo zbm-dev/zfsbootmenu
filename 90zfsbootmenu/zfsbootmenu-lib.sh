@@ -565,7 +565,7 @@ draw_kernel() {
 # returns: 130 on error, 0 otherwise
 
 draw_snapshots() {
-  local benv selected header expects sort_key
+  local benv selected header expects sort_key snapshots
 
   benv="${1}"
   if [ -z "${benv}" ]; then
@@ -583,15 +583,18 @@ draw_snapshots() {
 
   expects="--expect=alt-x,alt-c,alt-j,alt-o,alt-n"
 
-  if ! selected="$( zfs list -t snapshot -H -o name "${benv}" -S "${sort_key}" |
-      HELP_SECTION=snapshot-management ${FUZZYSEL} \
+  # ${snapshots} must always be defined so that the mod-n handler can be executed
+  snapshots="$( zfs list -t snapshot -H -o name "${benv}" -S "${sort_key}" )"
+  snapshots="${snapshots:-No snaphots available}"
+
+  if ! selected="$( HELP_SECTION=snapshot-management ${FUZZYSEL} \
         --prompt "Snapshot > " --header="${header}" --tac --multi 2 \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
         --bind='alt-d:execute[ /libexec/zfunc draw_diff {+} ]' \
         --bind='ctrl-d:execute[ /libexec/zfunc draw_diff {+} ]' \
         --bind='ctrl-alt-d:execute[ /libexec/zfunc draw_diff {+} ]' \
         --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS} '${context}'" \
-        --preview-window="up:$(( PREVIEW_HEIGHT + 1 ))" )"; then
+        --preview-window="up:$(( PREVIEW_HEIGHT + 1 ))" <<<"${snapshots}" )"; then
     return 1
   fi
 

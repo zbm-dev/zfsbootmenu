@@ -229,22 +229,38 @@ while true; do
       selected_snap="${selected_snap%,*}"
       zdebug "selected snapshot: ${selected_snap}"
 
-      case "${subkey}" in
-        "mod-j")
-          zfs_chroot "${selected_snap}"
-          BE_SELECTED=1
-          continue
-        ;;
-        "mod-o")
-          change_sort
-          BE_SELECTED=1
-          continue
-        ;;
-        *)
-          snapshot_dispatcher "${selected_snap}" "${subkey}"
-          continue
-        ;;
-      esac
+      # Detect @ to skip acting on 'No snaphots available'
+      # for anything but mod-n
+
+      if [[ "${selected_snap}" =~ @ ]] ; then 
+        case "${subkey}" in
+          "mod-j")
+            zfs_chroot "${selected_snap}"
+            BE_SELECTED=1
+            continue
+          ;;
+          "mod-o")
+            change_sort
+            BE_SELECTED=1
+            continue
+          ;;
+          *)
+            snapshot_dispatcher "${selected_snap}" "${subkey}"
+            continue
+          ;;
+        esac
+      else
+        case "${subkey}" in
+          "mod-n")
+            snapshot_dispatcher "${selected_be}" "${subkey}"
+            continue
+          ;;
+          *)
+            BE_SELECTED=1
+            continue
+          ;;
+        esac
+      fi
       ;;
     "mod-r")
       tput cnorm
