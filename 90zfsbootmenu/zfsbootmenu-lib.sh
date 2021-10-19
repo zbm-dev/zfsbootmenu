@@ -2460,13 +2460,16 @@ zbmcmdline() {
 # returns: nothing
 
 zreport() {
-  cat <<-EOF
-	ZFS Version: $( modinfo -F version zfs ) / SPL Version: $( modinfo -F version spl )
-
-	$( zpool list )
-
-	$( zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource )
-	EOF
+  uname -a
+  echo -e "\n# modinfo"
+  echo "$( modinfo -F filename spl ): $( modinfo -F version spl )"
+  echo "$( modinfo -F filename zfs ): $( modinfo -F version zfs )"
+  echo -e "\n# zfs version"
+  zfs version
+  echo -e "\n# zpool list"
+  zpool list
+  echo -e "\n# zfs list"
+  zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource
 }
 
 # arg1: pid
