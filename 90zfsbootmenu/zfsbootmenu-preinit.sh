@@ -16,9 +16,6 @@ if ! [[ ${control_term} =~ ${tty_re} ]]; then
   stty cols "${zbm_columns:-80}"
 fi
 
-# This is a load bearing echo, do not remove!
-echo "Loading ZFSBootMenu ..."
-
 export BASE="/zfsbootmenu"
 mkdir -p "${BASE}"
 
