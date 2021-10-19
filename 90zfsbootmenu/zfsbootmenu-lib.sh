@@ -289,7 +289,7 @@ check_for_pools() {
 # If the filesystem is locked, this method fails without attempting unlock
 
 mount_zfs() {
-  local fs rwo mnt ret pool is_snapshot
+  local fs rwo mnt ret pool
 
   fs="${1}"
 
@@ -306,29 +306,24 @@ mount_zfs() {
   mnt="${BASE}/${fs}/mnt"
   mkdir -p "${mnt}"
 
-  # @ always denotes a snapshot
-  if [[ "${fs}" =~ @ ]]; then
-    is_snapshot=1
-  fi
-
   # filesystems are readonly by default, but read-write mounts may be requested
   rwo="ro"
+
   # shellcheck disable=SC2154
   if [ -n "${allow_rw}" ]; then
     pool="${fs%%/*}"
-    if is_writable "${pool}" && [ -z "${is_snapshot}" ]; then
+    if is_snapshot "${fs}" ; then
+      zwarn "read-write mount of ${fs} forbidden, filesystem is a snapshot"
+    elif is_writable "${pool}" ; then
       rwo="rw"
+      zdebug "allowing requested read-write mount of ${fs}"
     else
-      if [ -n "${is_snapshot}" ]; then
-        zwarn "read-write mount of ${fs} forbidden, filesystem is a snapshot"
-      else
-        zwarn "read-write mount of ${fs} forbidden, pool ${pool} is not writable"
-      fi
+      zwarn "read-write mount of ${fs} forbidden, pool ${pool} is not writable"
     fi
   fi
 
   # zfsutil is required for non-legacy mounts and omitted for legacy mounts or snapshots
-  if [ "$(zfs get -H -o value mountpoint "${fs}")" = "legacy" ] || [ -n "${is_snapshot}" ]; then
+  if [ "$(zfs get -H -o value mountpoint "${fs}")" = "legacy" ] || is_snapshot "${fs}" ; then
     zdebug "mounting ${fs} at ${mnt} (${rwo})"
     mount -o "${rwo}" -t zfs "${fs}" "${mnt}"
     ret=$?
@@ -1893,8 +1888,28 @@ resume_prompt() {
   return 0
 }
 
+# arg1: filesystem name
+# prints: nothing
+# returns: 0 when filesystem is snapshot, 1 otherwise
+
+is_snapshot() {
+  local snapshot
+
+  snapshot="${1}"
+  if [ -z "${snapshot}" ]; then
+    zerror "snapshot is undefined"
+    return 1
+  fi
+
+  if [[ "${snapshot}" =~ @ ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 # arg1: pool name
-# prints nothing
+# prints: nothing
 # returns: 0 when pool is writable, 1 otherwise
 
 is_writable() {

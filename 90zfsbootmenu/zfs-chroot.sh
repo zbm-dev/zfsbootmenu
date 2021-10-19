@@ -21,7 +21,7 @@ if mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
   pool="${selected%%/*}"
 
   # Snapshots and read-only pools always produce read-only mounts
-  if [[ "${selected}" =~ @ ]] || ! is_writable "${pool}"; then
+  if is_snapshot "${selected}" || ! is_writable "${pool}"; then
     writemode="$( colorize green "read-only")"
   else
     writemode="$( colorize red "read/write")"

@@ -229,10 +229,7 @@ while true; do
       selected_snap="${selected_snap%,*}"
       zdebug "selected snapshot: ${selected_snap}"
 
-      # Detect @ to skip acting on 'No snaphots available'
-      # for anything but mod-n
-
-      if [[ "${selected_snap}" =~ @ ]] ; then 
+      if is_snapshot "${selected_snap}" ; then
         case "${subkey}" in
           "mod-j")
             zfs_chroot "${selected_snap}"
