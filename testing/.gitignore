@@ -11,3 +11,4 @@ generate-zbm
 test.*
 keys
 cache
+environments

@@ -53,7 +53,7 @@ because each BE is placed at
 For testing, a mix of multiple pools and multiple BEs on a single pool are
 recommended.
 
-Once an environment is prepared, it can be run with 
+Once an environment is prepared, it can be run with
 
     ./run -i
 
@@ -110,7 +110,7 @@ From the main menu, perform the following checks:
 - [ ] Pressing `[CTRL+S]` displays the list of snapshots on the currently
   selected BE.
 
-- [ ] Pressing `[CTRL+K]` displays the list of bootable kernsl installed in the
+- [ ] Pressing `[CTRL+K]` displays the list of bootable kernels installed in the
   currently selected BE.
 
 - [ ] Pressing `[CTRL+E]` displays the KCL edit screen, pre-populating the
@@ -118,7 +118,7 @@ From the main menu, perform the following checks:
   dsplayed in the header and these changes should appear in `/proc/cmdline` in
   the next booted BE.
 
-- [ ] Pressing `[CTRL+I]` jumps into an interactive chroot for the selected BE,
+- [ ] Pressing `[CTRL+J]` jumps into an interactive chroot for the selected BE,
   which will be read-only if the pool is mounted read-only and read/write
   otherwise. If the pool is read-only, exiting the chroot should cause a yellow
   `[!]` warning icon to appear in the header.
@@ -128,6 +128,8 @@ From the main menu, perform the following checks:
 
 - [ ] Pressing `[CTRL+W]` toggles the pool holding the selected BE between
   read-only and read/write.
+
+- [ ] Pressing `[CTRL+O]` cycles through name/creation/used sort order
 
 ## Pool Status Checks
 
@@ -139,14 +141,18 @@ From the main menu, perform the following checks:
 
 ## Snapshot List Checks
 
-- [ ] Pressing `[CTRL+I]` jumps into an interactive chroot for the selected
+- [ ] Pressing `[CTRL+J]` jumps into an interactive chroot for the selected
   snapshot, or fails if the snapshot is missing a shell.
 
-- [ ] Pressing `[CTRL+D]` shows the diff viewer, which should update
-  dynamically as the diff is calculated; the diff should be interruptable.
+- [ ] Pressing `[CTRL+D]` shows the diff viewer
+    - Selecting one snapshot will show a diff between the snapshot and the filesystem
+    - Selecting two snapshots will show the diff between them
+    - The diff screen updates dynamically and is interruptable
+    - After exiting the diff screen, the same snapshots will be selected
 
 - [ ] Pressing `[RETURN]` presents the snapshot duplication interface:
-    - The new name is prepoluated the `_NEW` appended to the old name
+    - The new name is prepopulated with `_NEW` appended to the old name
+    - An existing environment with the same name triggers additional user input
     - Blanking the name and pressing `[RETURN]` aborts the duplication
     - Entering a non-empty name triggers a duplicate
     - The duplicate BE appears in the list of bootable environments
@@ -161,6 +167,15 @@ From the main menu, perform the following checks:
     - Cloning does not trigger a buffered send-receive and is faster
     - The ORIGIN property of the cloned BE will list the selected snapshot on
       the original BE
+
+- [ ] Pressing `[CTRL+N]` presents the snapshot creation interface:
+    - The new snapshot name is prepopulated with %Y-%m-%d-%H%M%S
+    - An existing snapshot with the same name triggers additional user input
+    - Blanking the name and pressing `[RETURN]` aborts the snapshot
+    - Entering a non-empty name triggers a new snapshot
+    - The new snapshot appears in the list of snapshots
+
+- [ ] Pressing `[CTRL+O]` cycles through name/creation/used sort order
 
 - [ ] Pressing `[ESCAPE]` returns to the main menu.
 
@@ -205,15 +220,38 @@ of the kernel list. That BE should be selected when entering the list.
   prompt each time. (Keys must not have been already cached before a keysource
   property is cleared, or the previously cached keys will continue to be used.)
 
+- [ ] ZBM can be forced to spin until the pool defined via zbm.prefer=pool!
+  is available. During the wait period, the user can exit to a recovery shell
+  via `[ESCAPE]`
+
+- [ ] Invalid `spl_hostid` or `spl.spl_hostid` values do not cause ZBM to fail
+
+- [ ] Adding `zbm.skip` to the KCL causes ZBM to immediately boot BOOTFS, otherwise
+  show the main menu.
+
+- [ ] Adding `zbm.show` to the KCL causes ZBM to always show the main menu.
+
+## Recovery shell and SSH access
+
+- [ ] Basic tab completion for some internal functions is available in the recovery
+  shell
+
+- [ ] SSH'ing in to dracut-crypt enabled ZBM build should result in a functional
+  shell, with a proper path and prompt set
+
+- [ ] A running copy of ZBM can be taken over by executing `zbm` from an SSH session
+    - If the running copy can't be correctly stopped, `zbm` will spin until it gets a lock
+      or the user cancels the attempt
+
 ## OS-Specific Image Creation
 
-- [ ] For each supported distribution [Void, Void Musl, Arch, Ubuntu, Debian], verify 
+- [ ] For each supported distribution [Void, Void Musl, Arch, Ubuntu, Debian], verify
   that `module-setup.sh` is able to correctly install all required binaries in the
   initramfs.
-  
+
 - [ ] For each supported distribution, verify that `generate-zbm` can successfully
   produce an versioned and unversioned initramfs and a unified EFI bundle.
-   
+
 - [ ] For each supported distribution, verify that the components and EFI bundles
   are able to correctly boot other systems. The check stages listed above should be
   used and any functionality that is missing or broken noted.
