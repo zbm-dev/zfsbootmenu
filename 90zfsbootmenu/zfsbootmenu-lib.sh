@@ -792,6 +792,7 @@ kexec_kernel() {
 
 duplicate_snapshot() {
   local selected target target_parent pool recv_args
+  local encroot keylocation
 
   selected="${1}"
   if [ -z "$selected" ]; then
@@ -825,6 +826,13 @@ duplicate_snapshot() {
   fi
 
   recv_args=( "-u" "-o" "canmount=noauto" "-o" "mountpoint=/" "${target}" )
+
+  if encroot="$( be_has_encroot "${selected}" )" ; then
+    keylocation="$( zfs get -H -o value keylocation "${encroot}" 2>/dev/null )"
+    if [ -n "${keylocation}" ] && [ "${keylocation}" != "-" ]; then
+      recv_args+=( "-o" "keylocation=${keylocation}" )
+    fi
+  fi
 
   (
     trap 'exit 0' SIGINT
