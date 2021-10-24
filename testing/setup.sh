@@ -7,8 +7,9 @@ IMAGE=0
 CONFD=0
 DRACUT=0
 SIZE="5G"
-DISTRO="void"
 POOL_PREFIX="ztest"
+
+DISTROS=()
 
 # Dictionary for random pool names, provided by words-en
 dictfile="/usr/share/dict/words"
@@ -30,7 +31,7 @@ Usage: $0 [options]
   -r  Use a randomized pool name
   -x  Use an existing pool image
   -k  Populate host SSH host and authorized keys
-  -o  Specify another distribution
+  -o  Distribution to install (may specify more than one)
       [ void, void-musl, arch, debian, ubuntu ]
 EOF
 }
@@ -84,7 +85,7 @@ while getopts "heycgdaiD:s:o:lp:rxk" opt; do
       SIZE="${OPTARG}"
       ;;
     o)
-      DISTRO="${OPTARG}"
+      DISTROS+=( "${OPTARG}" )
       ;;
     l)
       LEGACY_POOL=1
@@ -109,9 +110,13 @@ while getopts "heycgdaiD:s:o:lp:rxk" opt; do
   esac
 done
 
+if [ "${#DISTROS[@]}" -lt 1 ]; then
+  DISTROS=( "void" )
+fi
+
 # Assign a default dest directory if one was not provided
 if [ -z "${TESTDIR}" ]; then
-  TESTDIR="./test.${DISTRO}"
+  TESTDIR="./test.${DISTROS[0]}"
 fi
 
 TESTDIR="$(realpath "${TESTDIR}")" || exit 1
@@ -207,17 +212,22 @@ if ((INCLUDE_KEYS)); then
   fi
 fi
 
-# Create an image
+# Create image(s) for each specified distro
 if ((IMAGE)); then
-  IMAGE_SCRIPT="./helpers/image-${DISTRO}.sh"
-  if [ ! -x "${IMAGE_SCRIPT}" ]; then
-    IMAGE_SCRIPT="./helpers/image.sh"
-  fi
+  for DISTRO in "${DISTROS[@]}"; do
+    IMAGE_SCRIPT="./helpers/image-${DISTRO}.sh"
+    if [ ! -x "${IMAGE_SCRIPT}" ]; then
+      IMAGE_SCRIPT="./helpers/image.sh"
+    fi
 
-  sudo unshare --fork --pid --mount env \
-    ENCRYPT="${ENCRYPT}" \
-    LEGACY_POOL="${LEGACY_POOL}" \
-    EXISTING_POOL="${EXISTING_POOL}" \
-    PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" \
-    "${IMAGE_SCRIPT}" "${TESTDIR}" "${SIZE}" "${DISTRO}" "${POOL_NAME}"
+    sudo unshare --fork --pid --mount env \
+      ENCRYPT="${ENCRYPT}" \
+      LEGACY_POOL="${LEGACY_POOL}" \
+      EXISTING_POOL="${EXISTING_POOL}" \
+      PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" \
+      "${IMAGE_SCRIPT}" "${TESTDIR}" "${SIZE}" "${DISTRO}" "${POOL_NAME}"
+
+    # All subsequent distros use the same pool
+    EXISTING_POOL=1
+  done
 fi

@@ -241,9 +241,14 @@ if [ -d "${CHROOT_MNT}/zfsbootmenu" ]; then
     for f in vmlinuz-bootmenu initramfs-bootmenu.img; do
       file="${CHROOT_MNT}/zfsbootmenu/build/${f}"
       [ -f "${file}" ] || continue
-      cp "${file}" "${TESTDIR}"
-      chmod 644 "${TESTDIR}/${f}"
-      chown "${USERGROUP}" "${TESTDIR}/${f}"
+
+      cp "${file}" "${TESTDIR}/${f}.${DISTRO}"
+      chmod 644 "${TESTDIR}/${f}.${DISTRO}"
+      chown "${USERGROUP}" "${TESTDIR}/${f}.${DISTRO}"
+
+      if [ ! -e "${TESTDIR}/${f}" ] || [ -L "${TESTDIR}/${f}" ]; then
+        ln -sf "${f}.${DISTRO}" "${TESTDIR}/${f}"
+      fi
     done
   fi
 fi
