@@ -22,7 +22,7 @@ if [ -x /root/network-systemd.sh ]; then
 fi
 
 # Remove build tools
-apt-get autoremove
+apt-get --yes autoremove
 
 # If not using /hostcache, clean the cache
 [ -d /hostcache ] || apt-get clean
