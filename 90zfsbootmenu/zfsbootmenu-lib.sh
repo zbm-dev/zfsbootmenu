@@ -792,7 +792,7 @@ kexec_kernel() {
 
 duplicate_snapshot() {
   local selected target target_parent pool recv_args
-  local encroot keylocation
+  local fs encroot keylocation
 
   selected="${1}"
   if [ -z "$selected" ]; then
@@ -825,14 +825,18 @@ duplicate_snapshot() {
     CLEAR_SCREEN=0 load_key "${target_parent}"
   fi
 
-  recv_args=( "-u" "-o" "canmount=noauto" "-o" "mountpoint=/" "${target}" )
+  recv_args=( "-u" "-o" "canmount=noauto" "-o" "mountpoint=/" )
 
-  if encroot="$( be_has_encroot "${selected}" )" ; then
+  if encroot="$( be_has_encroot "${selected}" )"; then
     keylocation="$( zfs get -H -o value keylocation "${encroot}" 2>/dev/null )"
     if [ -n "${keylocation}" ] && [ "${keylocation}" != "-" ]; then
       recv_args+=( "-o" "keylocation=${keylocation}" )
     fi
   fi
+
+  recv_args+=( "${target}" )
+
+  echo ""
 
   (
     trap 'exit 0' SIGINT
@@ -842,7 +846,26 @@ duplicate_snapshot() {
     else
       zfs send -p -w "${selected}" | zfs recv "${recv_args[@]}"
     fi
-  )
+  ) || return
+
+  echo ""
+
+  # If the source was encrypted, the raw send will have created a new
+  # encryption root at the target. Move the encryption root to the parent if
+  # the source was not its own encryption root.
+
+  fs="${selected%@*}"
+  if [ -z "${encroot}" ] || [ "${encroot}" = "${fs}" ]; then
+    return 0
+  fi
+
+  if encroot="$( be_has_encroot "${target}" )"; then
+    if [ "${encroot}" = "${target}" ]; then
+      # Key must be loaded before changing
+      CLEAR_SCREEN=0 load_key "${target}"
+      zfs change-key -i "${target}"
+    fi
+  fi
 }
 
 # arg1: snapshot name
@@ -2013,14 +2036,14 @@ set_ro_pool() {
 }
 
 
-# arg1: ZFS filesystem
+# arg1: ZFS filesystem or snapshot
 # prints: name of encryption root, if present
 # returns: 0 if system has an encryption root, 1 otherwise
 
 be_has_encroot() {
   local fs pool encroot
 
-  fs="${1}"
+  fs="${1%@*}"
   if [ -z "${fs}" ]; then
     zerror "fs is undefined"
     return 1
