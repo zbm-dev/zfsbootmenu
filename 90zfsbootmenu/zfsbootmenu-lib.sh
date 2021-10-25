@@ -967,7 +967,11 @@ snapshot_dispatcher() {
   zdebug "subkey: ${subkey}"
 
   parent_ds="${selected%/*}"
-  parent_ds="${selected%@*}"
+
+  # Generally, stripping "/*" from $selected will also drop the snapshot part;
+  # however, if $selected is the root dataset, $parent_ds == $selected because
+  # $selected contains no "/". In that case, the snapshot must be stripped too.
+  parent_ds="${parent_ds%@*}"
 
   if [ -z "${parent_ds}" ]; then
     zerror "unable to determine parent dataset for ${selected}"
