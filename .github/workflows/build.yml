@@ -10,10 +10,11 @@ jobs:
     steps:
       - uses: actions/checkout@master
 
-      - name: Create files
+      - name: Build artifacts
         run: |
           ln -s "$(pwd)" /zbm
-          [ -x /zbm/releng/docker/zbm-build.sh ] && /zbm/releng/docker/zbm-build.sh
+          cp /zbm/etc/zfsbootmenu/release.conf.d/release.conf /zbm/etc/zfsbootmenu/dracut.conf.d/
+          /zbm/releng/docker/zbm-build.sh -e '.Global.DracutFlags += ["--no-early-microcode"]' -- --debug
 
       - name: Archive EFI
         uses: actions/upload-artifact@v2

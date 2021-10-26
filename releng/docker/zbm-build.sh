@@ -51,10 +51,14 @@ Usage: $0 [options]
 
      to modify the configuration used for image building.
      May be specified more than once to chain modifications.
+
+  -- <arguments>
+      Additional arguments to the generate-zbm binary
 EOF
 }
 
 CONFIGEVALS=()
+GENARGS=()
 while getopts "hc:b:o:H:C:t:e:" opt; do
   case "${opt}" in
     c)
@@ -87,6 +91,10 @@ while getopts "hc:b:o:H:C:t:e:" opt; do
       exit 1
   esac
 done
+
+# Start processing everything after --
+shift $((OPTIND-1))
+GENARGS+=( "${@}" )
 
 ZBMWORKDIR=""
 trap cleanup INT QUIT TERM EXIT
@@ -146,6 +154,8 @@ cp "${ZBMCONF}" "${ZBMWORKDIR}/config.yaml"
 # ZBMCONF now points to local copy
 ZBMCONF="${ZBMWORKDIR}/config.yaml"
 
+GENARGS+=( "--config" "${ZBMCONF}" )
+
 # Add forced overrides to the end of CONFIGEVALS
 CONFIGEVALS+=(
   ".Global.ManageImages = true"
@@ -193,7 +203,7 @@ fi
 [ -d /usr/lib/dracut/modules.d ] || error "dracut does not appear to be installed"
 ln -sf /zbm/90zfsbootmenu /usr/lib/dracut/modules.d || error "unable to link dracut module"
 
-/zbm/bin/generate-zbm --config "${ZBMCONF}" || error "failed to build images"
+/zbm/bin/generate-zbm "${GENARGS[@]}" || error "failed to build images"
 
 for f in "${ZBMWORKDIR}"/build/*; do
   [ "${f}" != "${ZBMWORKDIR}/build/*" ] || error "no images to copy to output"
