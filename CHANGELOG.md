@@ -1,3 +1,70 @@
+# ZFSBootMenu v1.11.0 (2021-10-31)
+
+## Updated defaults
+
+* The chroot hot-key has been changed to `MOD+J` to avoid a key conflict with the usage of `CTRL+I`.
+
+## Deprecated features
+
+* Support for reading the KCL from /etc/default/zfsbootmenu or /etc/default/grub will be removed in a future release. During the transition period, ZFSBootMenu will attempt to automatically convert a deprecated KCL configuration to the org.zfsbootmenu:commandline property.
+
+## Fixes
+
+* The Makefile now correctly installs all files (this fixes the missing help pages)
+* Make the width of the count down menu consistent as digits are dropped from the timer
+* Remove a spurious function call in the preview renderer
+* Where possible, prefer built-in Bash regex support over forking to grep
+* Remove uses of basename, prefering Bash string manipulation
+* Properly find the zpool executable when creating an initramfs
+* Set a consistent environment for SSH and recovery shells
+* Set default columns and rows for serial consoles when none are provided
+* Improve the reliability of detecting which libgcc_s.so to install
+* Set keylocation and a corrected encryption root for full-copy clones
+
+## New features
+
+* Allow taking over a running instance of ZFSBootMenu via `zbm`
+* Create a docker/podman image, based on Void Linux, that can be used to create ZFSBootMenu images
+* Allow diffing a snapshot with another snapshot, instead of just with the current state of the filesystem
+* Add early hooks, just after kernel modules have been loaded but before any pools have been imported
+* org.zfsbootmenu:keysource can now be an arbitrary ZFS filesystem instead of another boot environment
+* Snapshots can now be created, providing a starting point for a new boot environment
+* `zreport` is available in the recovery shell, which can provide details-at-a-glance for bug reports
+* The `testing/` infrastructure has been updated to allow the installation of multiple distributions in one command
+* The Debian testing environment has been updated to Bullseye
+* EFI bundles can be built and tested under `testing/`
+
+## Significant commits in this release
+* 32f138f - Try to inherit key (encryptionroot) in duplicate_snapshot (Andrew J. Hesford)
+* 357aa5e - Make keylocation of target match that of source in duplicate_snapshot (Zach Dykstra)
+* c048ead - testing: move debian to bullseye (Andrew J. Hesford)
+* 7bb154d - testing: allow installation of multiple distros in one setup run (Andrew J. Hesford)
+* 8fab2b5 - Rework GitHub actions to also build assets on push (Zach Dykstra)
+* 8922f87 - Add zreport function (Zach Dykstra)
+* f0d402c - Support creating EFI bundles in run.sh, along with booting them. (Zach Dykstra)
+* 2c58479 - Improve search for libgcc_s in module-setup.sh (Andrew J. Hesford)
+* 726894f - Default stty cols/rows values for serial consoles (Zach Dykstra)
+* 78656b0 - Small fixes for SSH usage (Zach Dykstra)
+* 0e14c7b - Update zfsbootmenu.7 to reflect new org.zfsbootmenu:keysource behavior (Andrew J. Hesford)
+* 891e44a - Allow snapshot creation / move logic to function (Zach Dykstra)
+* d208103 - Make cache_key aware of mountpoints on key sources (Andrew J. Hesford)
+* 2d03ff5 - Remove explicit path to zpool ldd check (Zach Dykstra)
+* 29a1049 - Deprecate KCL in /etc/default/{zfsbootmenu,grub} (Andrew J. Hesford)
+* c2a1bee - Support early hooks, add example luks-unlock.sh (Zach Dykstra)
+* 62f7315 - Enable snapshot <> snapshot diffing (Zach Dykstra)
+* c920c76 - Replace mod+i with mod+j (Zach Dykstra)
+* a79b9d0 - zkexec: recovery shell arbitrary kexec wrapper (Zach Dykstra)
+* 8d4d776 - Makefile: recursively install dracut module (Andrew J. Hesford)
+* c1feb56 - recovery shell quality of life improvements (Zach Dykstra)
+* 5876ca9 - Create a global debug/trace log viewer (Zach Dykstra)
+* 83b1766 - Overhaul, generalize containerized build scripts (Andrew J. Hesford)
+* cfa0455 - releng/make-binary.sh: use containerized image builds (Andrew J. Hesford)
+* 4166967 - Add Dockerfile and Compose service to build ZBM images (Thomas Oster)
+* 687295a - Allow zfsbootmenu to takeover a running instance (Zach Dykstra)
+* 9000687 - Start adding aliases for missing niceties (Zach Dykstra)
+* 804ef02 - Make sure feature flags are available everywhere (Zach Dykstra)
+* 739540a - Error out in testing if machine type isn't known to run.sh. (Érico Nogueira Rolim)
+
 # ZFSBootMenu v1.10.1 (2021-07-04)
 
 ZFSBootMenu 1.10.1 brings a pair of fixes to issues seen in the wild. 
