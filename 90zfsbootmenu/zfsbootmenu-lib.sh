@@ -584,15 +584,15 @@ draw_snapshots() {
 
   zdebug "snapshots: ${snapshots[*]}"
 
+  multi=( "--multi" )
+
   # skim's --multi doesn't support any arguments
-  if [ "${FUZZYSEL}" == "sk" ]; then
-    multi="--multi"
-  else
-    multi="--multi 2"
+  if [ "${FUZZYSEL}" == "fzf" ]; then
+    multi+=( "2" )
   fi
 
   if ! selected="$( HELP_SECTION=snapshot-management ${FUZZYSEL} \
-        --prompt "Snapshot > " --header="${header}" --tac "${multi}" \
+        --prompt "Snapshot > " --header="${header}" --tac "${multi[@]}" \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
         --bind='alt-d:execute[ /libexec/zfunc draw_diff {+} ]' \
         --bind='ctrl-d:execute[ /libexec/zfunc draw_diff {+} ]' \
