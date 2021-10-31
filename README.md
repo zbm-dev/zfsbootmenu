@@ -157,7 +157,7 @@ Each time ZFSBootMenu is updated, a new EFI entry will need to be manually added
 
 As with the efibootmgr section, the `root=zfsbootmenu:POOL=` and `spl_hostid=` options need to be configured to match your environment.
 
-This file will configure `rEFInd` to create two entries for each kernel and initrams pair it finds. The first will directly boot into the environment set via the `bootfs` pool property. The second will force ZFSBootMenu to display an environment / kernel / snapshot selection menu, allowing you to boot alternate environments, kernels and snapshots.
+This file will configure `rEFInd` to create two entries for each kernel and initramfs pair it finds. The first will directly boot into the environment set via the `bootfs` pool property. The second will force ZFSBootMenu to display an environment / kernel / snapshot selection menu, allowing you to boot alternate environments, kernels and snapshots.
 
 # Kernel command line options
 
@@ -205,7 +205,7 @@ The argument `[ini-config]` to `--migrate` is optional. When it is not provided,
 
 If (and only if) `generate-zbm` is run without a `--config` option (*i.e.*, it attempts to load the default `/etc/zfsbootmenu/config.yaml`) and the default configuration does *not* exist, `generate-zbm` will behave as if it had been passed the `--migrate /etc/zfsbootmenu/config.ini` option.
 
-Whenever `generate-zbm` attempts to migrate configuraton files, it will exit with a zero exit code on successful conversion and a nonzero exit code if problems were encountered during the conversion. No boot images will be produced in the same invocation as a migration attempt.
+Whenever `generate-zbm` attempts to migrate configuration files, it will exit with a zero exit code on successful conversion and a nonzero exit code if problems were encountered during the conversion. No boot images will be produced in the same invocation as a migration attempt.
 
 ## Dealing with driver conflicts
 
@@ -246,6 +246,21 @@ install_items+=" /etc/zfs/zroot.key "
 ```
 
 It's critical that you do not include this key file into the ZFSBootMenu initramfs, since that file exists on an unencrypted volume - leaving your pool essentially wide-open.
+
+For convenience, ZFSBootMenu recognizes the ZFS property `org.zfsbootmenu:keysource` as the name of a filesystem that should be searched for ZFS key files. When a boot environment specifies a `file://` URI as its `keylocation`, ZFSBootMenu will attempt to mount a filesystem indicated by the `org.zfsbootmenu:keysource` property (if it exists) and search for the named `keylocation` therein. If found, ZFSBootMenu will copy the key into a cache within the in-memory root filesystem so that subsequent operations that require reloading the key (for example, changing the default boot environment or cloning a snapshot) will not prompt the user for passphrases.
+
+When searching for a `keylocation` relative to the filesystem named by `org.zfsbootmenu:keysource`, ZFSBootMenu will first try to strip the `mountpoint` of the keysource filesystem from any `keylocation` URI that references the keys to map the `keylocation` that would be observed on a running system to the proper location in the keysource. For example, if the running system is set up so that `zroot` is the `encryptionroot` for all filesystems on a pool, running the commands
+
+```sh
+zfs create -o mountpoint=/etc/zfs/keys zroot/keystore
+echo "MySecretPassphrase" > /etc/zfs/keys/zroot.key
+chmod 000 /etc/zfs/keys/zroot.key
+zfs set keylocation=file:///etc/zfs/keys/zroot.key zroot
+zfs set org.zfsbootmenu:keysource=zroot/keystore zroot
+echo install_optional_items+=" /etc/zfs/keys/zroot.key " >> /etc/dracut.conf.d/zol.conf
+```
+
+will cause ZFSBootMenu to attempt to cache the key `file:///etc/zfs/keys/zroot.key` from `zroot/keystore` when unlocking the `zroot` pool. Because `zroot/keystore` specifies `mountpoint=/etc/zfs/keys`, ZFSBootMenu will first try to strip `/etc/zfs/keys` from the `keylocation` URI, looking for the file `zroot.key` at the root of the filesystem `zroot/keystore`. If this fails, ZFSBootMenu will fall back to the full path, looking for `etc/zfs/keys/zroot.key` within the keysource filesystem. If either location is found, ZFSBootMenu will retain a cache of the key should it be needed to unlock the pool again.
 
 # Signature Verification and Prebuilt EFI Executables
 
