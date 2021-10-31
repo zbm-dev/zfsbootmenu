@@ -19,7 +19,7 @@ In broad strokes, it works as follows:
         * If needed, prompt for encryption passphrases.
 * Once the countdown has been reached for the bootfs-selected environment, prompt for the encryption passphrase if needed.
 * Mount the filesystem and find the highest versioned kernel in `/boot` in the selected boot environment.
-* Load the selected kernel and initramfs with the kernel command line defined in the `org.zfsbootmenu:commandline` property (or, as a fallback, `/etc/default/grub`) into memory with `kexec`.
+* Load the selected kernel and initramfs with the kernel command line defined in the `org.zfsbootmenu:commandline` property into memory with `kexec`.
 * Unmount all ZFS filesystems.
 * Boot the final kernel and initramfs.
 
@@ -59,15 +59,30 @@ On start, ZFSBootMenu will find the highest versioned kernel in `zroot/ROOT/void
 
 # Installation
 
-Kernel command line arguments should be configured by setting the `org.zfsbootmenu:commandline` ZFS property for each boot environment. If the property is not defined for a boot environment or its parents, command line arguments will be taken from the `GRUB_CMDLINE_LINUX_DEFAULT` variable defined in the boot environment's `/etc/default/grub` file, if it exists and the variable is set. Do not set any `root=` or any other pool-related options in the kernel command line; these will be filled in automatically when a boot environment is selected.
+Kernel command-line (KCL) arguments should be configured by setting the `org.zfsbootmenu:commandline` ZFS property for each boot environment.  Do not set any `root=` or any other pool-related options in the kernel command line; these will be filled in automatically when a boot environment is selected.
 
-For example, I have the following command line arguments set for my boot environment:
+Because ZFS properties are inherited by default, it is possible to set the `org.zfsbootmenu:commandline` property on a common parent to apply the same KCL arguments to multiple environments. Setting the property locally on individual boot environments will override the common defaults.
+
+As a special accommodation, the substitution keyword `%{parent}` in the KCL property will be recursively expanded to whatever the value of `org.zfsbootmenu:commandline` would be on the parent dataset. This allows, for example, mixing options common to multiple environments with those specific to each:
+
+```sh
+zfs set org.zfsbootmenu:commandline="zfs.zfs_arc_max=8589934592 elevator=noop" zroot/ROOT
+zfs set org.zfsbootmenu:commandline="%{parent} loglevel=4" zroot/ROOT/void.2019.11.01
+zfs set org.zfsbootmenu:commandline="loglevel=7 %{parent}" zroot/ROOT/void.2019.10.04
+```
+
+will cause ZFSBootMenu to interpret the KCL for `zroot/ROOT/void.2019.11.01` as
 
 ```
-zfs.zfs_arc_max=8589934592 elevator=noop
+zfs.zfs_arc_max=8589934592 elevator=noop loglevel=4
 ```
 
-Because ZFS properties are inherited by default, it is possible to set the `org.zfsbootmenu:commandline` property on a common parent to apply the same arguments to multiple environments. Setting the property locally on individual boot environments will override the common defaults.
+while the KCL for `zroot/ROOT/void.2019.10.04` would be
+
+```
+loglevel=7 zfs.zfs_arc_max=8589934592 elevator=noop
+```
+
 
 ## EFI
 
@@ -174,7 +189,7 @@ Your distribution should have packages for these already.
 
 ## config.yaml
 
-[config.yaml](pod/generate-zbm.5.pod) is used to control the operation of [generate-zbm](bin/generate-zbm). 
+[config.yaml](pod/generate-zbm.5.pod) is used to control the operation of [generate-zbm](bin/generate-zbm).
 
 ## Conversion of legacy configurations
 

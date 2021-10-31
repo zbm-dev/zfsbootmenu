@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "zfsbootmenu 7"
-.TH zfsbootmenu 7 "2021-09-21" "1.10.1" "ZFSBootMenu"
+.TH zfsbootmenu 7 "2021-10-31" "1.11.0" "ZFSBootMenu"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -178,14 +178,10 @@ On little-endian systems, setting this option will cause ZFSBootMenu to set the 
 This option has no effect on big-endian systems.
 .Sp
 \&\fBNote:\fR Setting \fIspl.spl_hostid\fR to a non-zero value on the kernel commandline will make the \s-1ZFS\s0 kernel modules \fBignore\fR any value set in \fI/etc/hostid\fR. To restore standard \s-1ZFS\s0 behavior on a running system, execute
-.RS 4
 .Sp
-.RS 4
-echo 0 > /sys/module/spl/paramters/spl_hostid
-.RE
-.RE
-.RS 4
-.RE
+.Vb 1
+\& echo 0 > /sys/module/spl/paramters/spl_hostid
+.Ve
 .IP "\fBzbm.sort_key\fR" 4
 .IX Item "zbm.sort_key"
 This option accepts a \s-1ZFS\s0 property name by which the boot environment and snapshot lists will be sorted.
@@ -242,9 +238,21 @@ An identifier used to select which kernel to boot among all kernels found in the
 If the identifier does not match any kernels, the latest kernel will be chosen as a fallback.
 .IP "\fBorg.zfsbootmenu:commandline\fR" 4
 .IX Item "org.zfsbootmenu:commandline"
-A list of command-line arguments passed to the kernel selected by ZFSBootMenu for final boot.
+A list of command-line arguments passed to the kernel selected by ZFSBootMenu for final boot. The special keyword \fI%{parent}\fR will be recursively expanded to the value of \fBorg.zfsbootmenu:commandline\fR at the parent of the boot environment. Thus, for example,
 .Sp
-Do not set \fIroot=\fR; ZFSBootMenu will set this option for for you.
+.Vb 3
+\& zfs set org.zfsbootmenu:commandline="zfs.zfs_arc_max=8589934592" zroot
+\& zfs set org.zfsbootmenu:commandline="%{parent} elevator=noop" zroot/ROOT
+\& zfs set org.zfsbootmenu:commandline="loglevel=7 %{parent}" zroot/ROOT/be
+.Ve
+.Sp
+will cause ZFSBootMenu to interpret the kernel command-line for \fIzroot/ROOT/be\fR as
+.Sp
+.Vb 1
+\& loglevel=7 zfs.zfs_arc_max=8589934592 elevator=noop
+.Ve
+.Sp
+Never set the \fIroot=\fR argument; ZFSBootMenu always sets this option based on the selected boot environment.
 .IP "\fBorg.zfsbootmenu:active\fR" 4
 .IX Item "org.zfsbootmenu:active"
 This controls whether boot environments appear in or are hidden from ZFSBootMenu.

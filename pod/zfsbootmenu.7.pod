@@ -54,11 +54,7 @@ This option has no effect on big-endian systems.
 
 B<Note:> Setting I<spl.spl_hostid> to a non-zero value on the kernel commandline will make the ZFS kernel modules B<ignore> any value set in I</etc/hostid>. To restore standard ZFS behavior on a running system, execute
 
-=over 4
-
-echo 0 > /sys/module/spl/paramters/spl_hostid
-
-=back
+ echo 0 > /sys/module/spl/paramters/spl_hostid
 
 =item B<zbm.sort_key>
 
@@ -138,9 +134,17 @@ If the identifier does not match any kernels, the latest kernel will be chosen a
 
 =item B<org.zfsbootmenu:commandline>
 
-A list of command-line arguments passed to the kernel selected by ZFSBootMenu for final boot.
+A list of command-line arguments passed to the kernel selected by ZFSBootMenu for final boot. The special keyword I<%{parent}> will be recursively expanded to the value of B<org.zfsbootmenu:commandline> at the parent of the boot environment. Thus, for example,
 
-Do not set I<root=>; ZFSBootMenu will set this option for for you.
+ zfs set org.zfsbootmenu:commandline="zfs.zfs_arc_max=8589934592" zroot
+ zfs set org.zfsbootmenu:commandline="%{parent} elevator=noop" zroot/ROOT
+ zfs set org.zfsbootmenu:commandline="loglevel=7 %{parent}" zroot/ROOT/be
+
+will cause ZFSBootMenu to interpret the kernel command-line for I<zroot/ROOT/be> as
+
+ loglevel=7 zfs.zfs_arc_max=8589934592 elevator=noop
+
+Never set the I<root=> argument; ZFSBootMenu always sets this option based on the selected boot environment.
 
 =item B<org.zfsbootmenu:active>
 
