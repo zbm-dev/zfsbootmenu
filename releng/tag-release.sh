@@ -95,7 +95,7 @@ fi
 sed -i bin/generate-zbm -e "s/our \$VERSION.*/our \$VERSION = '${release}';/"
 
 # Push updates for the release
-git add bin/generate-zbm CHANGELOG.md man/
+git add bin/generate-zbm CHANGELOG.md man/ 90zfsbootmenu/help-files/
 git commit -m "Bump to version ${release}"
 
 # Publish release, as prerelease if version contains alphabetics
