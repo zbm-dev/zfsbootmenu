@@ -57,7 +57,7 @@ general systems to boot without setting any values.
     [1mNote:[0m Setting [33mspl.spl_hostid[0m to a non-zero value on the kernel commandline will make the ZFS kernel modules [1mignore[0m any value set
     in [33m/etc/hostid[0m. To restore standard ZFS behavior on a running system, execute
 
-        echo 0 > /sys/module/spl/paramters/spl_hostid
+     echo 0 > /sys/module/spl/paramters/spl_hostid
 
 [1mzbm.sort_key[0m
     This option accepts a ZFS property name by which the boot environment and snapshot lists will be sorted.
@@ -108,9 +108,18 @@ The following properties can be set at any level of the boot-environment hierarc
     If the identifier does not match any kernels, the latest kernel will be chosen as a fallback.
 
 [1morg.zfsbootmenu:commandline[0m
-    A list of command-line arguments passed to the kernel selected by ZFSBootMenu for final boot.
+    A list of command-line arguments passed to the kernel selected by ZFSBootMenu for final boot. The special keyword [33m%{parent}[0m will
+    be recursively expanded to the value of [1morg.zfsbootmenu:commandline[0m at the parent of the boot environment. Thus, for example,
 
-    Do not set [33mroot=[0m; ZFSBootMenu will set this option for for you.
+     zfs set org.zfsbootmenu:commandline="zfs.zfs_arc_max=8589934592" zroot
+     zfs set org.zfsbootmenu:commandline="%{parent} elevator=noop" zroot/ROOT
+     zfs set org.zfsbootmenu:commandline="loglevel=7 %{parent}" zroot/ROOT/be
+
+    will cause ZFSBootMenu to interpret the kernel command-line for [33mzroot/ROOT/be[0m as
+
+     loglevel=7 zfs.zfs_arc_max=8589934592 elevator=noop
+
+    Never set the [33mroot=[0m argument; ZFSBootMenu always sets this option based on the selected boot environment.
 
 [1morg.zfsbootmenu:active[0m
     This controls whether boot environments appear in or are hidden from ZFSBootMenu.
@@ -142,16 +151,26 @@ The following properties can be set at any level of the boot-environment hierarc
     boot environment. These passphrases entered are not cached by default.
 
     When [1morg.zfsbootmenu:keysource[0m is a mountable ZFS filesystem, before prompting for a passphrase when [33mkeylocation[0m is not set to
-    [33mprompt[0m, ZFSBootMenu will attempt to mount [1m<filesystem>[0m (unlocking that, if necessary) and search for the key file at [33mkeylocation[0m
-    relative to [1m<filesystem>[0m. If such a file is found, it will be copied to the initramfs, and the copy in the initramfs will be used
-    to decrypt the original boot environment. Any copied keys are retained until ZFSBootMenu boots an environment, so a single
-    password prompt can be sufficient to unlock several pools with the same [33mkeysource[0m or prevent prompts from reappearing when the
-    pool must be exported and reimported (for example, to alter boot parameters from within ZFSBootMenu).
+    [33mprompt[0m, ZFSBootMenu will attempt to mount [1m<filesystem>[0m (unlocking that, if necessary) and search for the key file within
+    [1m<filesystem>[0m. When [1m<filesystem>[0m specifies a [33mmountpoint[0m property that is not [33mnone[0m or [33mlegacy[0m, the specified mount point will be
+    stripped (if possible) from the beginning of any [33mkeylocation[0m property to attempt to identify a key at the point where it would
+    normally be mounted. If no file exists at the stripped path (or the [33mmountpoint[0m specifies [33mnone[0m or [33mlegacy[0m), keys will be sought at
+    the full path of [33mkeylocation[0m relative to [1m<filesystem>[0m. If a key is found at either location, it will be copied to the initramfs.
+    The copy in the initramfs will be used to decrypt the original boot environment. Copied keys are retained until ZFSBootMenu boots
+    an environment, so a single password prompt can be sufficient to unlock several pools with the same [33mkeysource[0m or prevent prompts
+    from reappearing when the pool must be exported and reimported (for example, to alter boot parameters from within ZFSBootMenu).
 
 [1mDracut Options[0m
 
 In addition to standard dracut configuration options, the ZFSBootMenu dracut module supports addtional options to customize boot
 behavior.
+
+[1mzfsbootmenu_early_setup=<executable-list>[0m
+    An optional variable specifying a space-separated list of paths to setup hooks that will be installed in the ZFSBootMenu
+    initramfs. Any path in the list [1m<executable-list>[0m that exists and is executable will be installed.
+
+    Any installed early hooks are run after SPL and ZFS kernel modules are loaded and a hostid is configured in [33m/etc/hostid[0m, but
+    before any zpools have been imported.
 
 [1mzfsbootmenu_setup=<executable-list>[0m
     An optional variable specifying a space-separated list of paths to setup hooks that will be installed in the ZFSBootMenu

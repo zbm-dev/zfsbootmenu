@@ -48,10 +48,22 @@
   The operation will fail gracefully if the pool can
   not be set [33mread/write[0m.
 
+[33m[MOD+N][0m [1msnapshot creation[0m
+  This creates a new snapshot of the currently
+  selected boot environment. A new snapshot is useful
+  if you need to repair a boot environment from a
+  chroot, to allow for easy roll-back of the changes.
+
+  The operation will fail gracefully if the pool can
+  not be set [33mread/write[0m.
+
 [33m[MOD+D][0m [1mdiff[0m
-  Compare the differences between the selected
-  snapshot and the current state of the boot
-  environment.
+  Compare the differences between snapshots and
+  filesystems. A single snapshot can be selected and a
+  diff will be generated between that and the current
+  state of the filesystem. Two snapshots can be
+  selected (and deselected) with the tab key and a
+  diff will be generated between them.
 
   The operation will fail gracefully if the pool can
   not be set [33mread/write[0m.
