@@ -30,10 +30,10 @@ if ! podman inspect "${buildtag}" >/dev/null 2>&1; then
     error "missing releng/docker, cannot create image ${buildtag}"
   fi
 
+  build_args=( "--squash" )
+
   if ZBM_COMMIT_HASH="$(git rev-parse HEAD)" && [ -n "${ZBM_COMMIT_HASH}" ]; then
-    build_args=( "--build-arg=ZBM_COMMIT_HASH=${ZBM_COMMIT_HASH}" )
-  else
-    build_args=()
+    build_args+=( "--build-arg=ZBM_COMMIT_HASH=${ZBM_COMMIT_HASH}" )
   fi
 
   if ! podman build -t "${buildtag}" "${build_args[@]}" "${bldctx}"; then
