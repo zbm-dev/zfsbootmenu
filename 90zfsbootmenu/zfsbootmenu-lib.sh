@@ -275,8 +275,10 @@ match_hostid() {
 # returns: 0 if at least one pool is available
 
 check_for_pools() {
-  while read -r _pool ; do
-    [ -n "${_pool}" ] && return 0
+  local pool
+
+  while read -r pool ; do
+    [ -n "${pool}" ] && return 0
   done <<<"$( zpool list -H -o name )"
 
   return 1
