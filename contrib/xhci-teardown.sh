@@ -25,7 +25,7 @@ SYS_XHCI=/sys/bus/pci/drivers/xhci_hcd
 # shellcheck disable=SC2231
 for DEVPATH in ${SYS_XHCI}/????:??:??.?; do
 	[ -L "${DEVPATH}" ] || continue
-	DEVICE="${DEVPATH#${SYS_XHCI}/}"
+	DEVICE="${DEVPATH#"${SYS_XHCI}"/}"
 	echo "Tearing down USB controller ${DEVICE}..."
 	echo "${DEVICE}" > ${SYS_XHCI}/unbind
 done

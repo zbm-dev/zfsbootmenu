@@ -1226,7 +1226,7 @@ find_be_kernels() {
     # Kernel "base" extends to first hyphen
     kernel_base="${kernel%%-*}"
     # Kernel "version" is everything after base and may be empty
-    version="${kernel#${kernel_base}}"
+    version="${kernel#"${kernel_base}"}"
     version="${version#-}"
     zdebug "kernel version: ${version}"
 
@@ -2236,7 +2236,7 @@ cache_key() {
         ksmount="${ksmount#/}"
 
         # Key location relative to expected mountpoint of keysource
-        relkeyloc="${keyfile#${ksmount}}"
+        relkeyloc="${keyfile#"${ksmount}"}"
         relkeyloc="${relkeyloc#/}"
 
         zdebug "${keysrc} mounts at ${ksmount}, trying relative path ${relkeyloc}"
