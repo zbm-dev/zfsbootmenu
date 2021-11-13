@@ -752,7 +752,7 @@ kexec_kernel() {
   cli_args="$( load_be_cmdline "${fs}" )"
   root_prefix="$( find_root_prefix "${fs}" "${mnt}" )"
 
-  if ! output="$( kexec -l "${mnt}${kernel}" \
+  if ! output="$( kexec -a -l "${mnt}${kernel}" \
     --initrd="${mnt}${initramfs}" \
     --command-line="${root_prefix}${fs} ${cli_args}" 2>&1 )"
   then
