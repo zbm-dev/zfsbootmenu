@@ -116,8 +116,8 @@ fi
 assets="$( realpath -e "releng/assets/${release}" )"
 asset_files=()
 
-for ext in EFI tar.gz; do
-  f="${assets}/zfsbootmenu-${arch}-v${release}.${ext}"
+for asset in zfsbootmenu-vmlinuz-${arch}-v${release}.EFI zfsbootmenu-${arch}-v${release}tar.gz; do
+  f="${assets}/${asset}"
   [ -f "${f}" ] || error "ERROR: missing boot image ${f}"
   asset_files+=( "${f}" )
 done

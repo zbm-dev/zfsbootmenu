@@ -89,7 +89,7 @@ else
   mkdir -p "${assets}"
 fi
 
-zbmtriplet="zfsbootmenu-${arch}-v${release}"
+zbmtriplet="zfsbootmenu-vmlinuz-${arch}-v${release}"
 
 # EFI file is currently only built on x86_64
 if [ "${BUILD_EFI}" = "true" ]; then
@@ -101,6 +101,7 @@ fi
 # Nothing to archive if no components were produced
 [ -d "${buildtmp}/out/components" ] || exit 0
 
+zbmtriplet="zfsbootmenu-${arch}-v${release}"
 # If components were produced, archive them
 ( cd "${buildtmp}/out" && mv components "${zbmtriplet}" && \
   tar czvf "${assets}/${zbmtriplet}.tar.gz" "${zbmtriplet}"
