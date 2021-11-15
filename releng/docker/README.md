@@ -15,8 +15,28 @@ the commands should work just as well by substituting `docker` for `podman`.
 
 # Creating a ZFSBootMenu Builder Image
 
-The provided `Dockerfile` automates creation of the ZFSBootMenu builder image.
-From this directory, simply run
+The script `image-build.sh` uses `buildah` to construct a ZBM builder image.
+This is the preferred way to construct the image and may, in the future,
+provide features not available with a `podman build` workflow. The script
+requires a single argument, the tag to use when naming the image.
+
+An optional second argument is a Git commit-like reference (a hash or tag) that
+will be recorded as `/etc/zbm-commit-hash` in the image. The contents of this
+file are used to checkout a specific state of the ZFSBootMenu repository. If
+the tag is unspecified on the command line, the build script will attempt to
+capture a reference to the current HEAD commit if the image is built in an
+active git repository. If a commit-like name is not provided and cannot be
+discovered, no default will be recorded and containers will attempt to build
+from the current `master`.
+
+The `image-build.sh` script expects to be run from the root of the ZFSBootMenu
+tree by default. From there, the path `releng/docker/zbm-build.sh` defines the
+entrypoint for build containers. To run the `image-build.sh` script from
+another directory, simply set the `ZBM_BUILDER` environment variable to the
+location of the `zbm-build.sh` script to use.
+
+For those without access to `buildah`, the `Dockerfile` will also create of a
+ZFSBootMenu builder image. From this directory, simply run
 
 ```sh
 podman build --squash -t zbm .
@@ -34,10 +54,10 @@ the latest release version packaged for Void; manually editing the `Dockerfile`
 to add new dependencies may be necessary until a new release is packaged.
 
 The builder image does **not** contain a ZFSBootMenu installation or a copy of
-the upstream git repository. Instead, the image contains a build script,
-installed as `/zbm-build.sh`, that runs by default. The script ensures that a
-ZFSBootMenu repository is available in a running container and invokes
-`generate-zbm` to build images.
+the upstream git repository. Instead, the entrypoint `/zbm-build.sh` will fetch
+a ZFSBootMenu archive when the container is instantiated (or allow a local copy
+to be bind-mounted) and, as noted above, attempt to check out a specific commit
+based on the contents of `/etc/zbm-commit-hash`.
 
 # Running a ZFSBootMenu Builder Container
 
