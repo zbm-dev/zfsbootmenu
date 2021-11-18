@@ -782,8 +782,10 @@ kexec_kernel() {
   # Run teardown hooks, if they exist
   if [ -d /libexec/teardown.d ]; then
     for tdhook in /libexec/teardown.d/*; do
+      [ -x "${tdhook}" ] || continue
       zinfo "Processing hook: ${tdhook}"
-      [ -x "${tdhook}" ] && "${tdhook}"
+      env "ZBM_SELECTED_INITRAMFS=${initramfs}" \
+        "ZBM_SELECTED_KERNEL=${kernel}" "ZBM_SELECTED_BE=${fs}" "${tdhook}"
     done
     unset tdhook
   fi
