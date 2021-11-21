@@ -2,6 +2,8 @@ Global:
   ManageImages: false
   BootMountPoint: /boot/efi
   DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
+  PreHooksDir: /etc/zfsbootmenu/generate-zbm.pre.d
+  PostHooksDir: /etc/zfsbootmenu/generate-zbm.post.d
 Components:
   ImageDir: /boot/efi/EFI/void
   Versions: 3

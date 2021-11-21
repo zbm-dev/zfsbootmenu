@@ -38,6 +38,14 @@ A specific ZFSBootMenu version string to use in producing images. In the string,
 
 An array of additional arguments that will be passed to B<dracut> when generating an initramfs.
 
+=item B<PreHooksDir>
+
+The path of the directory containing executables that should be executed after I<BootMountPoint> has been mounted. Files in this directory should be B<+x>, and are executed in the order returned by a shell glob. The exit code of each hook is ignored.
+
+=item B<PostHooksDir>
+
+The path of the directory containing executables that should be executed after all images have been created and any file pruning has taken place. Files in this directory should be B<+x>, and are executed in the order returned by a shell glob. The exit code of each hook is ignored.
+
 =back
 
 =head2 Kernel

@@ -194,6 +194,15 @@ if ( nonempty $config{Global}{BootMountPoint} ) {
   }
 }
 
+if ( nonempty $config{Global}{PreHooksDir} and -d $config{Global}{PreHooksDir} ) {
+  while (my $hook = <$config{Global}{PreHooksDir}/*> ){
+    next unless -x $hook;
+    Log("Processing hook: $hook");
+    my @output = execute(qq($hook));
+    Log( \@output );
+  }
+}
+
 # Create a temp directory
 # It is automatically purged on program exit
 my $dir     = File::Temp->newdir();
@@ -534,6 +543,15 @@ EOF
 
   make_path dirname( $config{Components}{syslinux}{Config} );
   safeCopy( $runConf{syslinux_temp}, $config{Components}{syslinux}{Config} ) or exit 1;
+}
+
+if ( nonempty $config{Global}{PostHooksDir} and -d $config{Global}{PostHooksDir} ) {
+  while (my $hook = <$config{Global}{PostHooksDir}/*> ){
+    next unless -x $hook;
+    Log("Processing hook: $hook");
+    my @output = execute(qq($hook));
+    Log( \@output );
+  }
 }
 
 END {
@@ -928,6 +946,11 @@ sub Log {
   chomp($entry);
   unless ( ref($entry) ) {
     print STDERR "## $entry\n";
+  } elsif ( ref $entry eq REFARRAY ) {
+    foreach my $line ( @{ $entry } ) {
+      chomp $line;
+      print STDERR "## $line\n";
+    }
   } else {
     print STDERR Dumper($entry);
   }

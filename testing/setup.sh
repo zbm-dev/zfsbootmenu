@@ -171,6 +171,8 @@ if ((YAML)) ; then
   yq-go eval ".EFI.Stub = \"${STUBS}/linuxx64.efi.stub\"" -i "${yamlconf}"
   yq-go eval ".Global.ManageImages = true" -i "${yamlconf}"
   yq-go eval ".Global.DracutConfDir = \"${TESTDIR}/dracut.conf.d\"" -i "${yamlconf}"
+  yq-go eval ".Global.PreHooksDir = \"${TESTDIR}/generate-zbm.pre.d\"" -i "${yamlconf}"
+  yq-go eval ".Global.PostHooksDir = \"${TESTDIR}/generate-zbm.post.d\"" -i "${yamlconf}"
   yq-go eval ".Global.DracutFlags = [ \"--local\" ]" -i "${yamlconf}"
   yq-go eval "del(.Global.BootMountPoint)" -i "${yamlconf}"
   yq-go eval -P -C "${yamlconf}"
