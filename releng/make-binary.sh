@@ -37,22 +37,15 @@ if ! podman inspect "${buildtag}" >/dev/null 2>&1; then
   fi
 fi
 
-buildtmp="$( mktemp -d )" || error "cannot create build directory"
-mkdir -p "${buildtmp}/out" || error "cannot create output directory"
-mkdir -p "${buildtmp}/etc/dracut.conf.d" || error "cannot create config tree"
-
-# Copy configuration components in place
-cp ./etc/zfsbootmenu/release.yaml "${buildtmp}/etc"
-cp ./etc/zfsbootmenu/dracut.conf.d/*.conf "${buildtmp}/etc/dracut.conf.d"
-
-# Files in release.conf.d are allowed to shadow regular defaults
-cp ./etc/zfsbootmenu/release.conf.d/*.conf "${buildtmp}/etc/dracut.conf.d"
-
 arch="$( uname -m )"
 case "${arch}" in
   x86_64) BUILD_EFI="true" ;;
   *) BUILD_EFI="false" ;;
 esac
+
+buildtmp="$( mktemp -d )" || error "cannot create build directory"
+mkdir -p "${buildtmp}/out" || error "cannot create output directory"
+mkdir -p "${buildtmp}/etc/dracut.conf.d" || error "cannot create config tree"
 
 # Volume mounts for the container; make sure stock config tree, with release
 # addendum, is available in-container at /etc/zfsbootmenu
@@ -61,19 +54,6 @@ volmounts=(
   "-v" "${buildtmp}/etc:/etc/zfsbootmenu:ro"
   "-v" "${buildtmp}/out:/out"
 )
-
-# Specify options for the build st
-buildopts=(
-  "-o" "/out"
-  "-e" ".EFI.Enabled = ${BUILD_EFI}"
-  "-c" "/etc/zfsbootmenu/release.yaml"
-)
-
-# For the containerized build, use current repo by mounting at /zbm
-# Custom configs and outputs will be in the temp dir, mounted at /build
-if ! podman run --rm "${volmounts[@]}" "${buildtag}" "${buildopts[@]}"; then
-  error "failed to create image"
-fi
 
 if ! assets="$( realpath -e releng )/assets/${release}"; then
   error "unable to define path to built assets"
@@ -85,20 +65,46 @@ else
   mkdir -p "${assets}"
 fi
 
-zbmtriplet="zfsbootmenu-vmlinuz-${arch}-v${release}"
+for style in release recovery; do
+  echo "Building style: ${style}"
+  # Copy configuration components in place
+  cp "./etc/zfsbootmenu/${style}.yaml" "${buildtmp}/etc"
+  cp ./etc/zfsbootmenu/dracut.conf.d/*.conf "${buildtmp}/etc/dracut.conf.d"
 
-# EFI file is currently only built on x86_64
-if [ "${BUILD_EFI}" = "true" ]; then
-  if !  cp "${buildtmp}/out/vmlinuz.EFI" "${assets}/${zbmtriplet}.EFI"; then
-    error "failed to copy UEFI bundle"
+  # Files in release.conf.d are allowed to shadow regular defaults
+  cp ./etc/zfsbootmenu/"${style}".conf.d/*.conf "${buildtmp}/etc/dracut.conf.d"
+
+  # Specify options for the build st
+  buildopts=(
+    "-o" "/out"
+    "-e" ".EFI.Enabled = ${BUILD_EFI}"
+    "-c" "/etc/zfsbootmenu/${style}.yaml"
+  )
+
+  # For the containerized build, use current repo by mounting at /zbm
+  # Custom configs and outputs will be in the temp dir, mounted at /build
+  if ! podman run --rm "${volmounts[@]}" "${buildtag}" "${buildopts[@]}"; then
+    error "failed to create image"
   fi
-fi
 
-# Nothing to archive if no components were produced
-[ -d "${buildtmp}/out/components" ] || exit 0
+  zbmtriplet="zfsbootmenu-${style}-vmlinuz-${arch}-v${release}"
 
-zbmtriplet="zfsbootmenu-${arch}-v${release}"
-# If components were produced, archive them
-( cd "${buildtmp}/out" && mv components "${zbmtriplet}" && \
-  tar czvf "${assets}/${zbmtriplet}.tar.gz" "${zbmtriplet}"
-) || error "failed to pack components"
+  # EFI file is currently only built on x86_64
+  if [ "${BUILD_EFI}" = "true" ]; then
+    if !  cp "${buildtmp}/out/vmlinuz.EFI" "${assets}/${zbmtriplet}.EFI"; then
+      error "failed to copy UEFI bundle"
+    fi
+  fi
+
+  # Nothing to archive if no components were produced
+  [ -d "${buildtmp}/out/components" ] || exit 0
+
+  zbmtriplet="zfsbootmenu-${style}-${arch}-v${release}"
+  # If components were produced, archive them
+  ( cd "${buildtmp}/out" && mv components "${zbmtriplet}" && \
+    tar czvf "${assets}/${zbmtriplet}.tar.gz" "${zbmtriplet}"
+  ) || error "failed to pack components"
+
+  rm "${buildtmp}"/etc/*.yaml
+  rm "${buildtmp}"/etc/dracut.conf.d/*.conf
+done

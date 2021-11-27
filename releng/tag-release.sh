@@ -118,18 +118,23 @@ if ! releng/sign-assets.sh "${release}"; then
   error "ERROR: unable to sign release assets, exiting!"
 fi
 
-assets="$( realpath -e "releng/assets/${release}" )"
+asset_dir="$( realpath -e "releng/assets/${release}" )"
 asset_files=()
 
-for asset in zfsbootmenu-vmlinuz-${arch}-v${release}.EFI zfsbootmenu-${arch}-v${release}tar.gz; do
-  f="${assets}/${asset}"
+for style in release recovery; do
+  assets+=( "zfsbootmenu-${style}-vmlinuz-${arch}-v${release}.EFI" )
+  assets+=( "zfsbootmenu-${style}-${arch}-v${release}.tar.gz" )
+done
+
+for asset in "${assets[@]}" ; do
+  f="${asset_dir}/${asset}"
   [ -f "${f}" ] || error "ERROR: missing boot image ${f}"
   asset_files+=( "${f}" )
 done
 
 for f in sha256.{txt,sig}; do
-  [ -f "${assets}/${f}" ] || error "ERROR: missng sum file ${assets}/${f}"
-  asset_files+=( "${assets}/${f}" )
+  [ -f "${asset_dir}/${f}" ] || error "ERROR: missng sum file ${asset_dir}/${f}"
+  asset_files+=( "${asset_dir}/${f}" )
 done
 
 # github-cli does not automatically strip header that hub uses for a title

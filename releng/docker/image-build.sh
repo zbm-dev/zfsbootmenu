@@ -47,7 +47,9 @@ EOF
 buildah run "${container}" \
   sh -c 'xbps-query -Rp run_depends zfsbootmenu | xargs xbps-install -y'
 buildah run "${container}" xbps-install -y \
-  linux5.10 linux5.10-headers gummiboot-efistub curl yq-go bash kbd terminus-font
+  linux5.10 linux5.10-headers gummiboot-efistub curl yq-go bash kbd terminus-font \
+  gptfdisk dracut-network iproute2 iputils parted curl dosfstools e2fsprogs \
+  efibootmgr
 
 # Remove headers and development toolchain, but keep binutils for objcopy
 buildah run "${container}" sh -c 'echo "ignorepkg=dkms" > /etc/xbps.d/10-nodkms.conf'
