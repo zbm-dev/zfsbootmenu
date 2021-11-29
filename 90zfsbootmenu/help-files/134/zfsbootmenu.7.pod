@@ -137,8 +137,9 @@ The following properties can be set at any level of the boot-environment hierarc
     command-line argument [33mroot=zfs:zroot/ROOT/void[0m has root prefix [33mroot=zfs:[0m.
 
     The default prefix is [33mroot=zfs:[0m for most boot environments. Environments that appear to be Arch Linux will use [33mzfs=[0m by default,
-    while those that appear to be Gentoo will use a default of [33mroot=ZFS=[0m. The root prefix is generally determined by the initramfs
-    generator, and the default is selected to match the expectation of the preferred initramfs generator on each distribution.
+    while those that appear to be Gentoo or Alpine will use a default of [33mroot=ZFS=[0m. The root prefix is generally determined by the
+    initramfs generator, and the default is selected to match the expectation of the preferred initramfs generator on each
+    distribution.
 
     Set this property to override the value determined from inspecting the boot environment.
 
@@ -187,8 +188,29 @@ behavior.
     initramfs. Any path in the list [1m<executable-list>[0m that exists and is executable will be installed.
 
     Some hardware initialized by the kernel used to boot ZFSBootMenu may not be properly reinitialized when a boot environment is
-    launched. Any teardown hooks installed into the ZFSBootMenu initramfs, will be run immediately before [1mkexec[0m is invoked to jump
-    into the selected kernel. This script can be used, for example, to unbind drivers from hardware or remove kernel modules.
+    launched. Any teardown hooks installed into the ZFSBootMenu initramfs will be run immediately before [1mkexec[0m is invoked to jump into
+    the selected kernel. This script can be used, for example, to unbind drivers from hardware or remove kernel modules.
+
+    Teardown hooks have access to three environment variables that describe the boot environment that is about to be launched:
+
+    [1mZBM_SELECTED_BE[0m
+        The ZFS filesystem containing the boot environment that is about to be launched.
+
+    [1mZBM_SELECTED_KERNEL[0m
+        The path to the kernel that will be booted, relative to the root of [1mZBM_SELECTED_BE[0m.
+
+    [1mZBM_SELECTED_INITRAMFS[0m
+        The path to the initramfs corresponding to the selected kernel, again relative to the root of [1mZBM_SELECTED_BE[0m.
+
+    The hook [33mmust not[0m assume that the filesystem [1mZBM_SELECTED_BE[0m is currently mounted or that the pool on which it resides is
+    currently imported. However, a teardown hook has the freedom to import a pool (preferably read-only) and mount the boot
+    environment to inject additional processing before boot. To abort a pending boot, invoking
+
+      kexec --unload
+
+    should be sufficient to return to the main menu. Likewise, the hook may construct and execute its own [33mkexec[0m command to alter
+    boot-time parameters. This may be useful, for example, to allow ZFSBootMenu to select a boot environment and then restructure the
+    boot process to launch a Xen kernel with the selected environment configured as dom0.
 
 [1mSEE ALSO[0m
 

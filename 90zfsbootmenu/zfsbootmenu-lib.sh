@@ -1368,7 +1368,7 @@ find_root_prefix() {
             echo "zfs="
             break
             ;;
-          gentoo)
+          gentoo|alpine)
             echo "root=ZFS="
             break
             ;;

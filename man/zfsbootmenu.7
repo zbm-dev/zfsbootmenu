@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "zfsbootmenu 7"
-.TH zfsbootmenu 7 "2021-11-19" "1.11.0" "ZFSBootMenu"
+.TH zfsbootmenu 7 "2021-11-29" "1.11.0" "ZFSBootMenu"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -272,7 +272,7 @@ By default, ZFSBootMenu only shows boot environments with the property \fImountp
 .IX Item "org.zfsbootmenu:rootprefix"
 This specifies the prefix added to the \s-1ZFS\s0 filesystem provided as the root filesystem on the kernel command line. For example, the command-line argument \fIroot=zfs:zroot/ROOT/void\fR has root prefix \fIroot=zfs:\fR.
 .Sp
-The default prefix is \fIroot=zfs:\fR for most boot environments. Environments that appear to be Arch Linux will use \fIzfs=\fR by default, while those that appear to be Gentoo will use a default of \fIroot=ZFS=\fR. The root prefix is generally determined by the initramfs generator, and the default is selected to match the expectation of the preferred initramfs generator on each distribution.
+The default prefix is \fIroot=zfs:\fR for most boot environments. Environments that appear to be Arch Linux will use \fIzfs=\fR by default, while those that appear to be Gentoo or Alpine will use a default of \fIroot=ZFS=\fR. The root prefix is generally determined by the initramfs generator, and the default is selected to match the expectation of the preferred initramfs generator on each distribution.
 .Sp
 Set this property to override the value determined from inspecting the boot environment.
 .IP "\fBorg.zfsbootmenu:keysource=<filesystem>\fR" 4

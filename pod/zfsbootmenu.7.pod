@@ -168,7 +168,7 @@ By default, ZFSBootMenu only shows boot environments with the property I<mountpo
 
 This specifies the prefix added to the ZFS filesystem provided as the root filesystem on the kernel command line. For example, the command-line argument I<root=zfs:zroot/ROOT/void> has root prefix I<root=zfs:>.
 
-The default prefix is I<root=zfs:> for most boot environments. Environments that appear to be Arch Linux will use I<zfs=> by default, while those that appear to be Gentoo will use a default of I<root=ZFS=>. The root prefix is generally determined by the initramfs generator, and the default is selected to match the expectation of the preferred initramfs generator on each distribution.
+The default prefix is I<root=zfs:> for most boot environments. Environments that appear to be Arch Linux will use I<zfs=> by default, while those that appear to be Gentoo or Alpine will use a default of I<root=ZFS=>. The root prefix is generally determined by the initramfs generator, and the default is selected to match the expectation of the preferred initramfs generator on each distribution.
 
 Set this property to override the value determined from inspecting the boot environment.
 
