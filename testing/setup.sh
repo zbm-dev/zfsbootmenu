@@ -32,7 +32,7 @@ Usage: $0 [options]
   -x  Use an existing pool image
   -k  Populate host SSH host and authorized keys
   -o  Distribution to install (may specify more than one)
-      [ void, void-musl, arch, debian, ubuntu ]
+      [ void, void-musl, alpine, arch, debian, ubuntu ]
 EOF
 }
 
