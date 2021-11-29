@@ -10,20 +10,28 @@ EOF
 # Update all packages
 apk update
 
-# Add and enable ZFS tools
-apk add linux-lts linux-lts-dev zfs zfs-lts bash
+# Add and enable ZFS tools, kernel and openssh
+apk add linux-lts linux-lts-dev zfs zfs-lts bash openssh
+
+rc-update add networking
+rc-update add hostname
+rc-update add sshd
+
+rc-update add root sysinit
+rc-update add localmount sysinit
 
 rc-update add zfs-import sysinit
 rc-update add zfs-mount sysinit
 
-# Enable DHCP and add SSH
-apk add openssh
-rc-update add sshd
-
 cat > /etc/network/interfaces <<EOF
+auto lo
+iface lo inet loopback
+
 auto eth0
 iface eth0 inet dhcp
 EOF
+
+echo "alpine" > /etc/hostname
 
 # Make sure any ZFS keyfiles and ZFS modules are included in initramfs
 for keyfile in /etc/zfs/*.key; do
