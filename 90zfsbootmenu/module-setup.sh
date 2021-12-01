@@ -96,13 +96,8 @@ install() {
     fi
   done
 
-  # sk can be used as a substitute for fzf
-  if dracut_install fzf; then
-    FUZZY_FIND="fzf"
-  elif dracut_install sk; then
-    FUZZY_FIND="sk"
-  else
-    dfatal "failed to install fzf or sk"
+  if ! dracut_install fzf; then
+    dfatal "failed to install fzf"
     exit 1
   fi
 
@@ -260,22 +255,12 @@ install() {
 
   # Check if fuzzy finder supports the refresh-preview flag
   # Added in fzf 0.22.0
-  if command -v "${FUZZY_FIND}" >/dev/null 2>&1 && \
-    echo "abc" | "${FUZZY_FIND}" -f "abc" --bind "alt-l:refresh-preview" --exit-0 >/dev/null 2>&1
+  if command -v fzf >/dev/null 2>&1 && \
+    echo "abc" | fzf -f "abc" --bind "alt-l:refresh-preview" --exit-0 >/dev/null 2>&1
   then
     has_refresh=1
   else
     has_refresh=
-  fi
-
-  # Check if fuzzy finder supports the --info= flag
-  # Added in fzf 0.19.0
-  if command -v "${FUZZY_FIND}" >/dev/null 2>&1 && \
-    echo "abc" | "${FUZZY_FIND}" -f "abc" --info=hidden --exit-0 >/dev/null 2>&1
-  then
-    has_info=1
-  else
-    has_info=
   fi
 
   # Collect all of our build-time feature flags
@@ -283,7 +268,6 @@ install() {
   cat << EOF > "${initdir}/etc/zfsbootmenu.conf"
 export BYTE_ORDER=${endian:-le}
 export HAS_REFRESH=${has_refresh}
-export HAS_INFO=${has_info}
 EOF
 
   # Embed a kernel command line in the initramfs

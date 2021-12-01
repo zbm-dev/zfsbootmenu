@@ -562,7 +562,7 @@ draw_kernel() {
 # returns: 130 on error, 0 otherwise
 
 draw_snapshots() {
-  local benv selected header expects sort_key snapshots multi
+  local benv selected header expects sort_key snapshots
 
   benv="${1}"
   if [ -z "${benv}" ]; then
@@ -586,15 +586,8 @@ draw_snapshots() {
 
   zdebug "snapshots: ${snapshots[*]}"
 
-  multi=( "--multi" )
-
-  # skim's --multi doesn't support any arguments
-  if [ "${FUZZYSEL}" == "fzf" ]; then
-    multi+=( "2" )
-  fi
-
   if ! selected="$( HELP_SECTION=snapshot-management ${FUZZYSEL} \
-        --prompt "Snapshot > " --header="${header}" --tac "${multi[@]}" \
+        --prompt "Snapshot > " --header="${header}" --tac --multi 2 \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
         --bind='alt-d:execute[ /libexec/zfunc draw_diff {+} ]' \
         --bind='ctrl-d:execute[ /libexec/zfunc draw_diff {+} ]' \

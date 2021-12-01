@@ -5,8 +5,8 @@
 source /lib/zfsbootmenu-lib.sh
 
 # zfsbootmenu-help invokes itself, so the value of $WIDTH depends
-# on if $0 is launching fzf/sk (-L) or is being launched inside
-# fzf/sk (-s).
+# on if $0 is launching fzf (-L) or is being launched inside
+# fzf (-s).
 
 WIDTH="$( tput cols )"
 PREVIEW_SIZE="$(( WIDTH - 26 ))"

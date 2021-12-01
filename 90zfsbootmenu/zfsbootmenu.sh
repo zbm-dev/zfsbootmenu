@@ -71,12 +71,20 @@ fi
 # shellcheck disable=SC2034
 [ -n "${SSH_TTY}" ] && control_term="${SSH_TTY}"
 
+# Single quote the help binds so that $HELP_SECTION expands when the key combo
+# is pressed, and not now.
+# Double quote the zlogtail lines so that they expand immediately
+
 # shellcheck disable=SC2016
-fuzzy_default_options=( "--ansi" "--no-clear"
-  "--layout=reverse-list" "--inline-info" "--tac" "--color=16"
+fuzzy_default_options=(
+  "--ansi" "--no-clear" "--cycle" "--color=16"
+  "--layout=reverse-list" "--inline-info" "--tac"
   "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]"'
   "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]"'
   "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]"'
+  "--bind" "\"alt-l:execute[ /bin/zlogtail ]${HAS_REFRESH:++refresh-preview}\""
+  "--bind" "\"ctrl-l:execute[ /bin/zlogtail ]${HAS_REFRESH:++refresh-preview}\""
+  "--bind" "\"ctrl-alt-l:execute[ /bin/zlogtail ]${HAS_REFRESH:++refresh-preview}\""
 )
 
 # shellcheck disable=SC2016,SC2086
@@ -89,37 +97,14 @@ if [ ${loglevel:-4} -eq 7 ] ; then
   )
 fi
 
-# refresh-preview will redraw the top header after zlogtail has been executed
-# doing so will remove the [!] from warnings/errors
-# with out this, a new BE has to be selected to force a preview redraw
-if [ -n "${HAS_REFRESH}" ] ; then
-  fuzzy_default_options+=(
-    "--bind" '"alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]+refresh-preview"'
-    "--bind" '"ctrl-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]+refresh-preview"'
-    "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]+refresh-preview"'
-  )
-else
-  fuzzy_default_options+=(
-    "--bind" '"alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
-    "--bind" '"ctrl-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
-    "--bind" '"ctrl-alt-l:execute[ /bin/zlogtail -l err,warn -F user,daemon -c ]"'
-  )
-fi
-
 if command -v fzf >/dev/null 2>&1; then
-  zdebug "using fzf for pager"
   export FUZZYSEL=fzf
   export PREVIEW_HEIGHT=2
-  export FZF_DEFAULT_OPTS="--cycle ${fuzzy_default_options[*]}"
-elif command -v sk >/dev/null 2>&1; then
-  zdebug "using sk for pager"
-  export FUZZYSEL=sk
-  export PREVIEW_HEIGHT=3
-  export SKIM_DEFAULT_OPTIONS="${fuzzy_default_options[*]}"
+  export FZF_DEFAULT_OPTS="${fuzzy_default_options[*]}"
 else
   # The menu needs a fuzzy menu
   color=red delay=10 timed_prompt \
-    "No fuzzy menu (fzf or sk) is available"
+    "fzf is not available"
     "Dropping to an emergency shell"
   tput clear
   tput cnorm
