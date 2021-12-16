@@ -1600,7 +1600,9 @@ load_be_cmdline() {
   # If a user-entered cmdline is found, it is not modified
   if [ -r "${BASE}/cmdline" ]; then
     zdebug "using ${BASE}/cmdline as commandline for ${zfsbe_fs}"
-    head -1 "${BASE}/cmdline" | tr -d '\n'
+
+    # root= is ALWAYS controlled by ZFSBootMenu
+    suppress_kcl_arg root "$(head -1 "${BASE}/cmdline" | tr -d '\n')"
     return
   fi
 
@@ -1616,6 +1618,9 @@ load_be_cmdline() {
     # Must replace resume= arguments and append a noresume
     zfsbe_args="$( suppress_kcl_arg resume "${zfsbe_args}" )noresume"
   fi
+
+  # root= is ALWAYS controlled by ZFSBootMenu
+  zfsbe_args="$( suppress_kcl_arg root "${zfsbe_args}" )"
 
   # shellcheck disable=SC2154
   if [ "${zbm_set_hostid:-0}" -eq 1 ] && spl_hostid="$( get_spl_hostid )"; then
