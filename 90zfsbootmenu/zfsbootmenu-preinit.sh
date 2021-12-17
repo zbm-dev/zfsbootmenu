@@ -43,11 +43,5 @@ getcmdline | sed -e 's/^[ \t]*//' > "${BASE}/zbm.cmdline"
 # Set a non-empty hostname so we show up in zpool history correctly
 echo "ZFSBootMenu" > /proc/sys/kernel/hostname
 
-# try to set console options for display and interaction
-# this is sometimes run as an initqueue hook, but cannot be guaranteed
-#shellcheck disable=SC2154
-[ -x /lib/udev/console_init ] && [ -c "${control_term}" ] \
-  && /lib/udev/console_init "${control_term##*/}" >/dev/null 2>&1
-
 # https://busybox.net/FAQ.html#job_control
 exec setsid bash -c "exec /libexec/zfsbootmenu-init <${control_term} >${control_term} 2>&1"
