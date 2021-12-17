@@ -61,6 +61,8 @@ install() {
   local essential_execs=(
     "zfs"
     "zpool"
+    "zdb"
+    "lsblk"
     "hostid"
     "mount"
     "mount.zfs"
