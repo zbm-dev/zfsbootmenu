@@ -38,7 +38,7 @@ export control_term="${control_term}"
 # END additions by zfsbootmenu-preinit.sh
 EOF
 
-getcmdline > "${BASE}/zbm.cmdline"
+getcmdline | sed -e 's/^[ \t]*//' > "${BASE}/zbm.cmdline"
 
 # Set a non-empty hostname so we show up in zpool history correctly
 echo "ZFSBootMenu" > /proc/sys/kernel/hostname
