@@ -151,6 +151,9 @@ install() {
   inst_simple "${moddir}/zkexec.sh" "/bin/zkexec" || _ret=$?
   inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh" || _ret=$?
   inst_hook pre-mount 90 "${moddir}/zfsbootmenu-preinit.sh" || _ret=$?
+  # Add hooks to force the dracut event loop to fire at least once
+  inst_hook initqueue/settled 99 "${moddir}/zfsbootmenu-ready-set.sh" || _ret=$?
+  inst_hook initqueue/finished 99 "${moddir}/zfsbootmenu-ready-chk.sh" || _ret=$?
 
   # Install "early setup" hooks
   # shellcheck disable=SC2154
