@@ -16,7 +16,7 @@ Usage: $0 [options]
   -s  Enable serial console on stdio
   -v  Set type of qemu display to use
   -D  Set test directory
-  -i  Write SSH config include
+  -i  Enable dropbear remote access via crypt-ssh
   -n  Do not reset the controlling terminal after the VM exits
   -e  Boot the VM with an EFI bundle
 EOF
@@ -173,8 +173,58 @@ else
   AAPPEND+=("console=${SERDEV}" "console=tty1")
 fi
 
-if [ "${#AAPPEND[@]}" -gt 0 ]; then
-  APPEND="${APPEND} ${AAPPEND[*]}"
+SSH_PORT=2222
+while true; do
+  PID="$( lsof -Pi :${SSH_PORT} -sTCP:LISTEN -t )"
+  if [ -n "${PID}" ] ; then
+    SSH_PORT=$((SSH_PORT+1))
+    continue
+  else
+    break
+  fi
+done
+
+if ((SSH_INCLUDE)); then
+  export SSH_CONF_DIR="${HOME}/.ssh/zfsbootmenu.d"
+  [ -d "${SSH_CONF_DIR}" ] || mkdir "${SSH_CONF_DIR}" && chmod 700 "${SSH_CONF_DIR}"
+
+  echo "Creating host records in ${SSH_CONF_DIR}"
+
+  # Strip directory components
+  TESTHOST="${TESTDIR##*/}"
+  # Make sure the host starts with "test." even if the directory does not
+  TESTHOST="test.${TESTHOST#test.}"
+
+  [ "${TESTHOST}" = "test." ] && TESTHOST=""
+
+  export TESTHOST
+
+  if [ -n "${TESTHOST}" ]; then
+    cat << EOF > "${SSH_CONF_DIR}/${TESTHOST}"
+Host ${TESTHOST}
+  HostName localhost
+  Port ${SSH_PORT}
+  User root
+  UserKnownHostsFile /dev/null
+  StrictHostKeyChecking no
+  LogLevel error
+EOF
+  fi
+
+  cat << EOF > "${TESTDIR}/dracut.conf.d/crypt-ssh.conf"
+dropbear_acl="${HOME}/.ssh/authorized_keys"
+dropbear_port="22"
+add_dracutmodules+=" crypt-ssh "
+EOF
+
+  AAPPEND+=("ip=dhcp" "rd.neednet")
+
+  chmod 0600 "${SSH_CONF_DIR}/${TESTHOST}"
+  trap cleanup EXIT INT TERM
+else
+  cat << EOF > "${TESTDIR}/dracut.conf.d/crypt-ssh.conf"
+omit_dracutmodules+=" crypt-ssh "
+EOF
 fi
 
 # Creation is required if either kernel or initramfs is missing
@@ -237,48 +287,8 @@ else
   BFILES+=( "-initrd" "${INITRD}" )
 fi
 
-SSH_PORT=2222
-while true; do
-  PID="$( lsof -Pi :${SSH_PORT} -sTCP:LISTEN -t )"
-  if [ -n "${PID}" ] ; then
-    SSH_PORT=$((SSH_PORT+1))
-    continue
-  else
-    break
-  fi
-done
-
-export SSH_CONF_DIR="${HOME}/.ssh/zfsbootmenu.d"
-[ -d "${SSH_CONF_DIR}" ] && SSH_INCLUDE=1
-
-if ((SSH_INCLUDE)); then
-  [ -d "${SSH_CONF_DIR}" ] || mkdir "${SSH_CONF_DIR}" && chmod 700 "${SSH_CONF_DIR}"
-
-  echo "Creating host records in ${SSH_CONF_DIR}"
-
-  # Strip directory components
-  TESTHOST="${TESTDIR##*/}"
-  # Make sure the host starts with "test." even if the directory does not
-  TESTHOST="test.${TESTHOST#test.}"
-
-  [ "${TESTHOST}" = "test." ] && TESTHOST=""
-
-  export TESTHOST
-
-  if [ -n "${TESTHOST}" ]; then
-    cat << EOF > "${SSH_CONF_DIR}/${TESTHOST}"
-Host ${TESTHOST}
-  HostName localhost
-  Port ${SSH_PORT}
-  User root
-  UserKnownHostsFile /dev/null
-  StrictHostKeyChecking no
-  LogLevel error
-EOF
-  fi
-
-  chmod 0600 "${SSH_CONF_DIR}/${TESTHOST}"
-  trap cleanup EXIT INT TERM
+if [ "${#AAPPEND[@]}" -gt 0 ]; then
+  APPEND="${APPEND} ${AAPPEND[*]}"
 fi
 
 # shellcheck disable=SC2086
