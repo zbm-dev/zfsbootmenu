@@ -73,11 +73,11 @@ The default sort key is I<name>.
 
 View logs, as indicated by I<[!]>. The indicator will be yellow for warning conditions and red for errors.
 
-=back
-
 =item I<[MOD+R]> B<roll back snapshot>
 
 Roll back a boot environment to the selected snapshot. This is a destructive operation that will not proceed without affirmative confirmation.
+
+=back
 
 =head2 AUTHOR
 
