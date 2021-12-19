@@ -575,10 +575,10 @@ draw_snapshots() {
 
   header="$( header_wrap "[RETURN] duplicate" "[CTRL+C] clone only" "[CTRL+X] clone and promote" "" \
     "[CTRL+N] create new snapshot" "[CTRL+J] jump into chroot" "[CTRL+D] show diff" "" \
-    "[CTRL+L] view logs" "[CTRL+H] help" "[ESCAPE] back" )"
+    "[CTRL+L] view logs" " " "[CTRL+H] help" "" "[ESCAPE] back" " " "[CTRL+R] rollback" )"
   context="Note: for diff viewer, use tab to select/deselect up to two items"
 
-  expects="--expect=alt-x,alt-c,alt-j,alt-o,alt-n"
+  expects="--expect=alt-x,alt-c,alt-j,alt-o,alt-n,alt-r"
 
   # ${snapshots} must always be defined so that the mod-n handler can be executed
   snapshots="$( zfs list -t snapshot -H -o name "${benv}" -S "${sort_key}" )"
@@ -979,6 +979,70 @@ create_snapshot() {
   return 0
 }
 
+# arg1: snapshot name
+# prints: nothing
+# returns: 0 on success
+
+rollback_snapshot() {
+  local snap pool
+
+  snap="${1}"
+  pool="${snap%%/*}"
+  if [ "${pool}" = "${snap}" ]; then
+    zerror "unable to determine pool for rollback"
+    return 1
+  fi
+
+  if ! find_be_kernels "${snap}" >/dev/null; then
+    color=red delay=10 timed_prompt \
+      "Snapshot ${snap} has no kernels, will not roll back" \
+      "Use a recovery shell to manually force rollback"
+    return 1
+  fi
+
+  tput clear
+  tput cnorm
+  tput cup 0 0
+
+  cat <<-EOF
+	WARNING!!!
+
+	You are attempting to roll back to the snapshot
+
+		$( colorize "red" "${snap}" )
+
+	This will DESTROY curent state and all newer snapshots.
+
+	Type $( colorize "red" "ROLLBACK" ) to proceed with the rollback.
+
+	Type any other text, or just press enter, to abort.
+
+	Proceed $( colorize "red" "[No]" ) ?
+	EOF
+
+  decision="$( /libexec/zfsbootmenu-input )"
+  if [ "${decision}" != "ROLLBACK" ]; then
+    zdebug "aborting rollback by user request"
+    return 0
+  fi
+
+  # Re-import pool read/write
+  if ! set_rw_pool "${pool}"; then
+    zerror "unable to set ${pool} read/write"
+    return 1
+  fi
+
+  # Make sure keys are loaded
+  CLEAR_SCREEN=1 load_key "${snap}"
+
+  zdebug "will roll back ${snap}"
+  if ! output="$( zfs rollback -r "${snap}" )"; then
+    zerror "failed to roll back snapshot ${snap}"
+    zerror "${output}"
+    return 1
+  fi
+}
+
 # arg1: selected snapshot
 # arg2: subkey
 # prints: snapshot/filesystem creation prompt
@@ -1003,6 +1067,11 @@ snapshot_dispatcher() {
   fi
   zdebug "subkey: ${subkey}"
 
+  if [ "${subkey}" = "mod-r" ]; then
+    rollback_snapshot "${selected}"
+    return
+  fi
+
   parent_ds="${selected%/*}"
 
   # Generally, stripping "/*" from $selected will also drop the snapshot part;
@@ -1016,9 +1085,8 @@ snapshot_dispatcher() {
   fi
   zdebug "parent_ds: ${parent_ds}"
 
-  # Do space calculations; bail early
-  case "${subkey}" in
-    "enter")
+  if [ "${subkey}" = "enter" ]; then
+      # Do space calculations; bail early
       avail_space_exact="$( zfs list -p -H -o available "${parent_ds}" )"
       be_size_exact="$( zfs list -p -H -o refer "${selected}" )"
       leftover_space=$(( avail_space_exact - be_size_exact ))
@@ -1030,8 +1098,7 @@ snapshot_dispatcher() {
           "'${parent_ds}' has ${avail_space} free but needs ${be_size}"
         return 1
       fi
-    ;;
-  esac
+  fi
 
   # Set prompt, header, existing check prefix
   case "${subkey}" in
