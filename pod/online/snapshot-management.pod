@@ -75,6 +75,10 @@ View logs, as indicated by I<[!]>. The indicator will be yellow for warning cond
 
 =back
 
+=item I<[MOD+R]> B<roll back snapshot>
+
+Roll back a boot environment to the selected snapshot. This is a destructive operation that will not proceed without affirmative confirmation.
+
 =head2 AUTHOR
 
 ZFSBootMenu Team L<https://github.com/zbm-dev/zfsbootmenu>
