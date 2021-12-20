@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e 
 
 release="${1?ERROR: no release version specified}"
 

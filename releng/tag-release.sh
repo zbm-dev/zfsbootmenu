@@ -60,8 +60,13 @@ if [ ! -x releng/pod2man.sh ]; then
   error "ERROR: unable to convert documentation"
 fi
 
-releng/pod2man.sh "${release}"
-releng/pod2help.sh
+if ! out="$( releng/pod2man.sh "${release}" )" ; then
+  error "ERROR: ${out}"
+fi
+
+if ! out="$( releng/pod2help.sh )" ; then
+  error "ERROR: ${out}"
+fi
 
 # Generate a short history for CHANGELOG.md
 # git log --format="* %h - %s (%an)" v1.4.1..HEAD
