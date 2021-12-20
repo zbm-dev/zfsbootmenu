@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 td="90zfsbootmenu/help-files"
 for size in 54 94 134 ; do
