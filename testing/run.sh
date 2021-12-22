@@ -6,6 +6,11 @@ cleanup() {
   exit
 }
 
+error() {
+  echo "ERROR:" "$@"
+  exit 1
+}
+
 usage() {
   cat <<EOF
 Usage: $0 [options]
@@ -19,10 +24,12 @@ Usage: $0 [options]
   -i  Enable dropbear remote access via crypt-ssh
   -n  Do not reset the controlling terminal after the VM exits
   -e  Boot the VM with an EFI bundle
+  -M  Set the amount of memory for the virtual machine
+  -C  Set the number of CPUs for the virtual machine
 EOF
 }
 
-CMDOPTS="D:A:a:d:fsv:hine"
+CMDOPTS="D:A:a:d:fsv:hineM:C:"
 
 # First-pass option parsing just looks for test directory
 while getopts "${CMDOPTS}" opt; do
@@ -42,7 +49,7 @@ done
 if [ -n "${TESTDIR}" ]; then
   # If a test directory was specified, it must exist
   if [ ! -d "${TESTDIR}" ]; then
-    echo "ERROR: test directory '${TESTDIR}' does not exist"
+    error "test directory '${TESTDIR}' does not exist"
     exit 1
   fi
 else
@@ -54,6 +61,10 @@ else
       break
     fi
   done
+fi
+
+if ! [ -d "${TESTDIR}/dracut.conf.d" ] ; then
+  error "test directory '${TESTDIR}' is incomplete"
 fi
 
 # Support x86_64 and ppc64(le)
@@ -73,8 +84,8 @@ case "$(uname -m)" in
     SERDEV="ttyS0"
   ;;
   *)
-    echo "Unknown machine type '$(uname -m)', please add it to run.sh"
-    exit 1
+    error "Unknown machine type '$(uname -m)', please add it to run.sh"
+  ;;
 esac
 
 DRIVE=()
@@ -141,6 +152,12 @@ while getopts "${CMDOPTS}" opt; do
           echo "EFI bundles unsupported on $(uname -m)"
           ;;
         esac
+      ;;
+    M)
+      MEMORY="${OPTARG}"
+      ;;
+    C)
+      SMP="${OPTARG}"
       ;;
     *)
       ;;
@@ -256,8 +273,7 @@ if ((CREATE)) ; then
 
   # Try to find the local dracut and generate-zbm first
   if ! ( cd "${TESTDIR}" && PATH=./dracut:${PATH} ./generate-zbm -c ./local.yaml ); then
-    echo "ERROR: unable to create ZFSBootMenu images"
-    exit 1
+    error "unable to create ZFSBootMenu images"
   fi
 
   # always revert to component builds
@@ -269,13 +285,11 @@ fi
 
 # Ensure kernel and initramfs exist
 if [ -n "${KERNEL}" ] && [ ! -f "${KERNEL}" ] ; then
-  echo "Missing kernel: ${KERNEL}"
-  exit 1
+  error "Missing kernel: ${KERNEL}"
 elif [ -n "${INITRD}" ] && [ ! -f "${INITRD}" ] ; then
-  echo "Missing initramfs: ${INITRD}"
-  exit 1
+  error "Missing initramfs: ${INITRD}"
 elif [ -n "${BUNDLE}" ] && [ ! -f "${BUNDLE}" ] ; then
-  echo "Missing EFI bundle: ${BUNDLE}"
+  error "Missing EFI bundle: ${BUNDLE}"
   exit 1
 fi
 
