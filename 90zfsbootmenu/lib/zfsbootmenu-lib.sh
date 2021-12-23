@@ -419,8 +419,8 @@ snapshot_dispatcher() {
         avail_space="$( zfs list -H -o available "${parent_ds}" )"
         be_size="$( zfs list -H -o refer "${selected}" )"
         zerror "Insufficient space for duplication, ${parent_ds}' has ${avail_space} free but needs ${be_size}"
-        color=red delay=10 timed_prompt "Insufficient space for duplication" \
-          "'${parent_ds}' has ${avail_space} free but needs ${be_size}"
+        timed_prompt -m "$( colorize red "Insufficient space for duplication" )" \
+          -m "'$( colorize magenta "${parent_ds}" )' has ${avail_space} free but needs ${be_size}"
         return 1
       fi
   fi

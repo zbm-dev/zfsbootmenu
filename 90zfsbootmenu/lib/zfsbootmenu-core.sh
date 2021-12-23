@@ -5,6 +5,16 @@
 [ -n "${_ZFSBOOTMENU_CORE}" ] && return
 readonly _ZFSBOOTMENU_CORE=1
 
+# arg1: text with color sequences
+# prints: text with color sequences removed
+# returns: nothing
+
+decolorize() {
+  shopt -s extglob
+  echo "${1//+(\\033\[[0-1];3[0-7]m|\\033\[0m|[[:cntrl:]]\[[0-1];3[0-7]m|[[:cntrl:]]\[0m)/}"
+  shopt -u extglob
+}
+
 # arg1: color name
 # arg2...argN: text to color
 # prints: text with color escape codes
@@ -312,9 +322,10 @@ kexec_kernel() {
     zerror "unable to load ${mnt}${kernel} and ${mnt}${initramfs} into memory"
     zerror "${output}"
     umount "${mnt}"
-    color=red delay=10 timed_prompt "Unable to load kernel or initramfs into memory" \
-      "${mnt}${kernel}" \
-      "${mnt}${initramfs}"
+    timed_prompt -d 10 \
+      -m "$( colorize red 'Unable to load kernel or initramfs into memory' )" \
+      -m "$( colorize orange "${mnt}${kernel}" )" \
+      -m "$( colorize orange "${mnt}${initramfs}" )"
 
     return 1
   else
@@ -346,7 +357,8 @@ kexec_kernel() {
   if ! output="$( kexec -e -i 2>&1 )"; then
     zerror "kexec -e -i failed!"
     zerror "${output}"
-    color=red delay=10 timed_prompt "kexec run of ${kernel} failed!"
+    timed_prompt -d 10 \
+      -m "$( colorize red "kexec run of ${kernel} failed!" )"
     return 1
   fi
 }
@@ -554,9 +566,9 @@ rollback_snapshot() {
   fi
 
   if ! find_be_kernels "${snap}" >/dev/null; then
-    color=red delay=10 timed_prompt \
-      "Snapshot ${snap} has no kernels, will not roll back" \
-      "Use a recovery shell to manually force rollback"
+    timed_prompt -d 10 \
+      -m "$( colorize red "Snapshot ${snap} has no kernels, will not roll back" )"\
+      -m "$( colorize red "Use a recovery shell to manually force rollback" )"
     return 1
   fi
 
@@ -997,11 +1009,13 @@ preload_be_cmdline() {
   fi
 
   # It is not an error if user declines automatic migration
-  if ! color=green delay=60 prompt="Will attempt migration in %0.2d seconds" \
-      timed_prompt "Using KCL from ${deprecated} on ${fs}" \
-      "This behavior is DEPRECATED and will be removed soon" "" \
-      "KCL should be migrated to an org.zfsbootmenu:commandline property" "" \
-      "[RETURN] to migrate" "[ESCAPE] to ignore "; then
+  if ! timed_prompt -d 60 \
+    -p "Will attempt migration in $( colorize yellow "%0.2d" ) seconds" \
+    -m "$( colorize green "Using KCL from ${deprecated} on ${fs}" )" \
+    -m "$( colorize green "This behavior is DEPRECATED and will be removed soon" )" \
+    -m "" \
+    -m "KCL should be migrated to an $( colorize orange "org.zfsbootmenu:commandline" ) property" ; then
+
     # Suppress repeated messages
     export zbm_ignore_kcl_deprecation=1
     echo 'export zbm_ignore_kcl_deprecation="1"' >> /etc/zfsbootmenu.conf
@@ -1301,54 +1315,77 @@ has_resume_device() {
   return 1
 }
 
-# arg1..argN: lines of warning message
-# prints: warning message
-# returns: 1 if user pressed ESC, 0 otherwise
+# getopts arguments:
+# -d  prompt countdown/delay
+# -p  prompt with countdown timer (%0.xd)
+# -m+ message to be printed above the prompt, usable multiple times
+# -r  message to be prefixed with [RETURN] (accept)
+# -e  message to be prefixed with [ESCAPE] (reject)
+#
+# -m, -r, -e are print in the order they are passed into the function
 
 timed_prompt() {
-  local prompt x y cnum
+  local prompt delay message
 
-  [ $# -gt 0 ] || return
-  [ -n "${delay}" ] || delay="30"
-  [ -n "${prompt}" ] || prompt="Press [RETURN] or wait %0.${#delay}d seconds to continue"
+  delay="30"
+  prompt="Press $( colorize green "[RETURN]") or wait $( colorize yellow "%0.${#delay}d" ) seconds to continue"
+  message=()
 
-  [ "${delay}" -eq 0 ] && return
+  local opt OPTIND
+  while getopts "d:p:m:r:e:" opt; do
+    case "${opt}" in
+      d)
+        delay="${OPTARG}"
+        ;;
+      p)
+        prompt="${OPTARG}"
+        ;;
+      m)
+        message+=( "${OPTARG}" )
+        ;;
+      r)
+        message+=( "$( colorize green "[RETURN]" ) ${OPTARG}" )
+        ;;
+      e)
+        message+=( "$( colorize red "[ESCAPE]" ) ${OPTARG}" )
+        ;;
+      *)
+        ;;
+    esac
+  done
 
-  # shellcheck disable=SC2154
-  case "${color}" in
-    red) cnum=1 ;;
-    green) cnum=2 ;;
-    yellow) cnum=3 ;;
-    blue) cnum=4 ;;
-    magenta) cnum=5 ;;
-    cyan) cnum=6 ;;
-    *) cnum="" ;;
-  esac
+  # Add a blank line between any messages and the prompt
+  message+=( "" )
+
+  local x y lines
+
+  lines="${#message[@]}"
+
+  [ "${lines}" -gt 0 ] || return 1
 
   tput civis
   HEIGHT=$( tput lines )
   WIDTH=$( tput cols )
   tput clear
 
-  x=$(( (HEIGHT - 0) / 2))
+  x=$(( ( (HEIGHT - 0 ) / 2 ) - lines ))
   [ "${x}" -lt 0 ] && x=0
 
-  [ -n "${cnum}" ] && tput setaf "${cnum}"
-  while [ $# -gt 0 ]; do
-    local line=${1}
-    y=$(( (WIDTH - ${#line}) / 2 ))
+  for line in "${message[@]}"; do
+    short="$( decolorize "${line}" )"
+    y=$(( (WIDTH - ${#short}) / 2 ))
     [ "${y}" -lt 0 ] && y=0
     tput cup $x $y
     echo -n -e "${line}"
     x=$(( x + 1 ))
     shift
   done
-  [ -n "${cnum}" ] && tput sgr0
 
   for (( i=delay; i>0; i-- )); do
     # shellcheck disable=SC2059
     mes="$( printf "${prompt}" "${i}" )"
-    y=$(( (WIDTH - ${#mes}) / 2 ))
+    short="$( decolorize "${mes}" )"
+    y=$(( (WIDTH - ${#short}) / 2 ))
     [ "${y}" -lt 0 ] && y=0
     tput cup $x $y
     echo -ne "${mes}"
@@ -1500,7 +1537,9 @@ set_rw_pool() {
 
   if grep -q "${pool}" "${BASE}/degraded" >/dev/null 2>&1; then
     zdebug "prohibited: ${BASE}/degraded is set"
-    color=red delay=10 timed_prompt "Operation prohibited" "Pool '${pool}' cannot be imported read-write"
+    timed_prompt -d 10 \
+      -m "$( colorize red "Operation prohibited" )" \
+      -m "Pool '$( colorize cyan "${pool}" )' cannot be imported $( colorize red "read-write" )"
     return 1
   fi
 

@@ -136,8 +136,10 @@ while true; do
   zinfo "unable to import a pool on attempt ${zbm_import_attempt}"
 
   # Just keep retrying after a delay until the user presses ESC
-  if delay="${zbm_import_delay:-5}" prompt="Unable to import ${try_pool:-pool}, retrying in %0.2d seconds" \
-    timed_prompt "[RETURN] to retry immediately" "[ESCAPE] for a recovery shell"; then
+  if timed_prompt -d "${zbm_import_delay:-5}" \
+    -p "Unable to import $( colorize magenta "${try_pool:-pool}" ), retrying in $( colorize yellow "%0.2d" ) seconds" \
+    -r "to retry immediately" \
+    -e "for a recovery shell"; then
       continue
   fi
 
@@ -168,7 +170,8 @@ done <<<"$( zpool get all -H -o name,property )"
 
 if [ "${unsupported}" -ne 0 ]; then
   zerror "Unsupported features detected, Upgrade ZFS modules in ZFSBootMenu with generate-zbm"
-  color=red timed_prompt "Unsupported features detected" "Upgrade ZFS modules in ZFSBootMenu with generate-zbm"
+  timed_prompt -m "$( colorize red 'Unsupported features detected')" \
+    -m "$( colorize red 'Upgrade ZFS modules in ZFSBootMenu with generate-zbm')"
 fi
 
 # Attempt to find the bootfs property
@@ -194,7 +197,10 @@ fi
 if [ "${menu_timeout}" -ge 0 ] && [ -n "${BOOTFS}" ]; then
   # Draw a countdown menu
   # shellcheck disable=SC2154
-  if delay="${menu_timeout}" prompt="Booting ${BOOTFS} in %0.${#menu_timeout}d seconds" timed_prompt "[ENTER] to boot" "[ESC] boot menu" ; then
+  if timed_prompt -d "${menu_timeout}" \
+    -p "Booting $( colorize cyan "${BOOTFS}" ) in $( colorize yellow "%0.${#menu_timeout}d" ) seconds" \
+    -r "boot now " \
+    -e "boot menu" ; then
     # This lock file is present if someone has SSH'd to take control
     # Do not attempt to automatically boot if present
     if [ ! -e "${BASE}/active" ] ; then

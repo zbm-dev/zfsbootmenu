@@ -34,7 +34,7 @@ help_pager() {
     --bind pgup:preview-up,pgdn:preview-down \
     --preview="$0 -s {1}" \
     --preview-window="right:${PREVIEW_SIZE}:wrap" \
-    --header="$( colorize green "[ESC]" ) $( colorize lightblue "back" )" \
+    --header="$( colorize green "[ESCAPE]" ) $( colorize lightblue "back" )" \
     --tac --inline-info --ansi --layout="reverse-list"
 }
 

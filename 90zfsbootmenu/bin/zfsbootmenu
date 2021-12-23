@@ -26,7 +26,9 @@ unset src sources
 mkdir -p "${BASE}"
 
 while [ ! -e "${BASE}/initialized" ]; do
-  if ! delay=5 prompt="Press [ESC] to cancel" timed_prompt "Waiting for ZFSBootMenu initialization"; then
+  if ! timed_prompt -d 5 -e "to cancel" \
+    -p "Waiting for ZFSBootMenu initialization"; then
+
     zdebug "exited while waiting for initialization"
     tput cnorm
     tput clear
@@ -38,7 +40,9 @@ done
 
 # If the takeover fails for some reason, spin until it ends
 while [ -e "${BASE}/active" ]; do
-  if ! delay=1 prompt="Press [ESC] to cancel" timed_prompt "Waiting for other ZFSBootMenu instance to terminate"; then
+  if ! timed_prompt -d 1 -e "to cancel" \
+    -p "Waiting for other ZFSBootMenu instance to terminate"; then
+
     zdebug "exited while waiting to own ${BASE}/active"
     tput cnorm
     tput clear
@@ -101,19 +105,9 @@ if [ ${loglevel:-4} -eq 7 ] ; then
   )
 fi
 
-if command -v fzf >/dev/null 2>&1; then
-  export FUZZYSEL=fzf
-  export PREVIEW_HEIGHT=2
-  export FZF_DEFAULT_OPTS="${fuzzy_default_options[*]}"
-else
-  # The menu needs a fuzzy menu
-  color=red delay=10 timed_prompt \
-    "fzf is not available"
-    "Dropping to an emergency shell"
-  tput clear
-  tput cnorm
-  exit 1
-fi
+export FUZZYSEL=fzf
+export PREVIEW_HEIGHT=2
+export FZF_DEFAULT_OPTS="${fuzzy_default_options[*]}"
 
 # Clear screen before a possible password prompt
 tput clear
@@ -133,9 +127,9 @@ while true; do
 
     if [ "${ret}" -eq 130 ]; then
       # No BEs were found, so print a warning and drop to the emergency shell
-      color=red delay=10 timed_prompt \
-        "No boot environments with kernels found" \
-        "Dropping to an emergency shell to allow recovery attempts"
+      timed_prompt -d 10 \
+        -m "$( colorize red "No boot environments with kernels found" )" \
+        -m "$( colorize red "Dropping to an emergency shell to allow recovery attempts" )"
       tput clear
       tput cnorm
       exit 1
