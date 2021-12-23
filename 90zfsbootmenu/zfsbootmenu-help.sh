@@ -34,9 +34,7 @@ help_pager() {
     --preview="$0 -s {1}" \
     --preview-window="right:${PREVIEW_SIZE}:wrap" \
     --header="$( colorize green "[ESC]" ) $( colorize lightblue "back" )" \
-    --tac \
-    --inline-info \
-    --ansi
+    --tac --inline-info --ansi --layout="reverse-list"
 }
 
 doc_base="/usr/share/docs/help-files"
