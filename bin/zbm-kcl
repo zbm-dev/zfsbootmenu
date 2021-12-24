@@ -1,0 +1,271 @@
+#!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
+
+zbm_load_lib() {
+  lib="${1?no library specified for load}"
+
+  : "${ZBM_MODULEDIR:=/usr/lib/dracut/modules.d/90zfsbootmenu}"
+
+  if [ -r "${ZBM_MODULEDIR}/lib/${lib}" ]; then
+    # shellcheck disable=SC1090
+    source "${ZBM_MODULEDIR}/lib/${lib}"
+  else
+    echo "ERROR: ${ZBM_MODULEDIR}/lib/${lib} not found" >&2
+    echo "Set ZBM_MODULEDIR to the root of the ZBM dracut module" >&2
+    exit 1
+  fi
+}
+
+usage() {
+  cat <<-EOF
+	USAGE: $0 [-a <arg>] [-r <arg>] [-e] [-d] [-v] [bootenv]
+        Review or update kernel command line (KCL) associated with <bootenv>
+        When the boot environment is specified, the current root will be used
+
+	-a <arg>: Append an argument
+	-r <arg>: Remove an argument
+	-e: Open the KCL for editing in \$EDITOR
+	-d: Remove entire command line
+	-v: Enable verbose output
+	EOF
+}
+
+strip_kcl() {
+  awk '
+  BEGIN { first = 1; }
+
+  /^$/ { exit; }
+
+  {
+    gsub("[[:space:]]*#.*", "");
+
+    if (length == 0) next;
+
+    if (first == 1) {
+      first = 0;
+    } else {
+      printf " ";
+    }
+
+    printf "%s", $0;
+  }
+  '
+}
+
+delete() {
+  local bootenv="${1}"
+
+  if ! zfs list -o name -H "${bootenv}" >/dev/null 2>&1; then
+    zerror "no boot environment specified"
+    usage
+    return 1
+  fi
+
+  if ! zfs inherit org.zfsbootmenu:commandline "${bootenv}"; then
+    zerror "failed to remove KCL from ${bootenv}"
+    return 1
+  fi
+}
+
+raw_kcl() {
+  local bootenv="${1}"
+  local kcl
+
+  kcl="$(zfs get -H -o value org.zfsbootmenu:commandline "${bootenv}")" || return 1
+  [ "${kcl}" = "-" ] && return
+
+  echo "${kcl}"
+}
+
+review() {
+  local bootenv="${1}"
+  local kcl
+
+  kcl="$(raw_kcl "${bootenv}")"
+  echo "${kcl}"
+
+  if [[ "${kcl}" =~ "%{parent}" ]]; then
+    echo "# With parent references, KCL expands to"
+    echo "#  $(read_kcl_prop "${bootenv}")"
+  fi
+
+  return 0
+}
+
+edit() {
+  local bootenv kclfile oldsum newkcl newsum
+
+  bootenv="${1}"
+
+  if ! command -v "${EDITOR:=vi}" >/dev/null 2>&1; then
+    zerror "define \$EDITOR to edit"
+    return 1
+  fi
+
+  if ! kclfile="$(mktemp)"; then
+    zerror "failed to create temporary file"
+    return 1
+  fi
+
+  trap 'rm -f "${kclfile}"' RETURN
+
+  if ! review "${bootenv}" > "${kclfile}"; then
+    zerror "unable to read KCL for ${bootenv}"
+    return 1
+  fi
+
+  cat >> "${kclfile}" <<-EOF
+	
+	# KCL processing ends with the first line that contains no text.
+	# Anything starting with # is considered a comment and will be ignored.
+	# Multiple lines will be concatenated with spaces to form a single line.
+	EOF
+
+  if ! oldsum="$(strip_kcl < "${kclfile}" | md5sum | awk '{print $1}')"; then
+    zerror "unable to compute checksum for existing KCL"
+    return 1
+  fi
+
+  if ! "${EDITOR}" "${kclfile}"; then
+    zerror "failed to edit KCL for ${bootenv}"
+    return 1
+  fi
+
+  if ! newkcl="$(strip_kcl < "${kclfile}")"; then
+    zerror "failed to parse new KCL for ${bootenv}"
+    return 1
+  fi
+
+  if ! newsum="$(echo -n "${newkcl}" | md5sum | awk '{print $1}')"; then
+    zerror "failed to compute checksum for new KCL"
+    return 1
+  fi
+
+  if  [ "${newsum}" = "${oldsum}" ]; then
+    znotice "modified KCL appears the same as original, will not change"
+    return 0
+  fi
+
+  if ! zfs set org.zfsbootmenu:commandline="${newkcl}" "${bootenv}"; then
+    zerror "failed to set ZBM KCL"
+    return 1
+  fi
+}
+
+getbootenv() {
+  local dev mntpt fs opts
+
+  # shellcheck disable=SC2034
+  while read -r dev mntpt fs opts; do
+    [ "${mntpt}" = "/" ] || continue
+
+    if [ "${fs}" != "zfs" ]; then
+      return 1
+    fi
+
+    echo "${dev}"
+    return 0
+  done < /proc/mounts
+}
+
+
+delkcl=
+editkcl=
+havemods=
+appends=()
+removes=()
+loglevel=4
+
+while getopts "ha:r:edv" opt; do
+  case "${opt}" in
+    a)
+      appends+=( "${OPTARG}" )
+      ;;
+    r)
+      removes+=( "${OPTARG}" )
+      ;;
+    e)
+      editkcl="yes"
+      ;;
+    d)
+      delkcl="yes"
+      ;;
+    v)
+      loglevel="$((loglevel + 1))"
+      ;;
+    h)
+      usage
+      exit
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+shift $((OPTIND-1))
+
+zbm_load_lib "zfsbootmenu-core.sh"
+zbm_load_lib "echo-log-lib.sh"
+
+bootenv="${1}"
+if [ -z "${bootenv}" ]; then
+  if ! bootenv="$(getbootenv)"; then
+    zerror "root does not appear to be ZFS" >&2
+    exit 1
+  fi
+fi
+
+if ! zfs list -o name -H "${bootenv}" >/dev/null 2>&1; then
+  zerror "boot environment ${bootenv} does not exist"
+  exit 1
+fi
+
+if [ "${editkcl}" = "yes" ]; then
+  edit "${bootenv}"
+  exit
+fi
+
+if (( ${#removes[@]} != 0 || ${#appends[@]} != 0 )); then
+  havemods="yes"
+fi
+
+if [ "${delkcl}" ]; then
+  if [ "${havemods}" = "yes" ]; then
+    zerror "-d is incompatible with -a or -r"
+    exit 1
+  fi
+
+  delete "${bootenv}"
+  exit
+fi
+
+if [ "${havemods}" != "yes" ]; then
+  review "${bootenv}"
+  exit 0
+fi
+
+# Act on raw KCL argument for append/remove operations
+if ! kcl="$(raw_kcl "${bootenv}")"; then
+  zerror "failed to read KCL for ${bootenv}"
+  exit 1
+fi
+
+# Strip all unwanted arguments from the KCL
+for rem in "${removes[@]}"; do
+  kcl="$(suppress_kcl_arg "${rem}" "${kcl}")" || exit 1
+done
+
+for add in "${appends[@]}"; do
+  if [ -z "${kcl}" ]; then
+    kcl="${add}"
+  else
+    kcl+=" ${add}"
+  fi
+done
+
+if ! zfs set org.zfsbootmenu:commandline="${kcl}" "${bootenv}"; then
+  zerror "failed to set ZBM KCL"
+  exit 1
+fi
