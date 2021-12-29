@@ -3,7 +3,7 @@
 
 # shellcheck disable=SC1091
 source /lib/kmsg-log-lib.sh >/dev/null 2>&1 || exit 1
-source /lib/zfsbootmenu-lib.sh >/dev/null 2>&1 || exit 1
+source /lib/zfsbootmenu-core.sh >/dev/null 2>&1 || exit 1
 
 selected="${1}"
 

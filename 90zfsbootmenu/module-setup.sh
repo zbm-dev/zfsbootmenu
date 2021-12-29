@@ -140,6 +140,7 @@ install() {
   # Core ZFSBootMenu functionality
   # shellcheck disable=SC2154
   inst_simple "${moddir}/lib/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh" || _ret=$?
+  inst_simple "${moddir}/lib/zfsbootmenu-core.sh" "/lib/zfsbootmenu-core.sh" || _ret=$?
   inst_simple "${moddir}/lib/kmsg-log-lib.sh" "/lib/kmsg-log-lib.sh" || _ret=$?
   inst_simple "${moddir}/lib/zfsbootmenu-completions.sh" "/lib/zfsbootmenu-completions.sh" || _ret=$?
 
@@ -302,7 +303,7 @@ EOF
   cat << EOF >> "${initdir}/etc/profile"
 [ -f /etc/zfsbootmenu.conf ] && source /etc/zfsbootmenu.conf
 [ -f /lib/kmsg-log-lib.sh ] && source /lib/kmsg-log-lib.sh
-[ -f /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
+[ -f /lib/zfsbootmenu-core.sh ] && source /lib/zfsbootmenu-core.sh
 
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 export TERM=linux

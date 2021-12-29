@@ -1,11 +1,24 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
-# shellcheck disable=SC1091
-if ! source /etc/profile >/dev/null 2>&1 ; then
-  echo -e "\033[0;31mWARNING: /etc/profile was not sourced; unable to proceed\033[0m"
-  exec /bin/bash
-fi
+# Source functional libraries, logging and configuration
+sources=(
+  /etc/zfsbootmenu.conf
+  /lib/zfsbootmenu-core.sh
+  /lib/zfsbootmenu-lib.sh
+  /lib/kmsg-log-lib.sh
+  /etc/profile
+)
+
+for src in "${sources[@]}"; do
+  # shellcheck disable=SC1090
+  if ! source "${src}" >/dev/null 2>&1 ; then
+    echo -e "\033[0;31mWARNING: ${src} was not sourced; unable to proceed\033[0m"
+    exec /bin/bash
+  fi
+done
+
+unset src sources
 
 # Make sure /dev/zfs exists, otherwise drop to a recovery shell
 [ -e /dev/zfs ] || emergency_shell "/dev/zfs missing, check that kernel modules are loaded"
