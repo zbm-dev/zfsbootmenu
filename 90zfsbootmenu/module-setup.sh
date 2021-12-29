@@ -139,24 +139,19 @@ install() {
 
   # Core ZFSBootMenu functionality
   # shellcheck disable=SC2154
-  inst_simple "${moddir}/lib/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh" || _ret=$?
-  inst_simple "${moddir}/lib/zfsbootmenu-core.sh" "/lib/zfsbootmenu-core.sh" || _ret=$?
-  inst_simple "${moddir}/lib/kmsg-log-lib.sh" "/lib/kmsg-log-lib.sh" || _ret=$?
-  inst_simple "${moddir}/lib/zfsbootmenu-completions.sh" "/lib/zfsbootmenu-completions.sh" || _ret=$?
+  for _lib in "${moddir}"/lib/*; do
+    inst_simple "${_lib}" "/lib/$( basename "${_lib}" )" || _ret=$?
+  done
 
   # Helper tools not intended for direct human consumption
-  inst_simple "${moddir}/libexec/zfsbootmenu-init.sh" "/libexec/zfsbootmenu-init" || _ret=$?
-  inst_simple "${moddir}/libexec/zfsbootmenu-preview.sh" "/libexec/zfsbootmenu-preview" || _ret=$?
-  inst_simple "${moddir}/libexec/zfsbootmenu-input.sh" "/libexec/zfsbootmenu-input" || _ret=$?
-  inst_simple "${moddir}/libexec/zfsbootmenu-help.sh" "/libexec/zfsbootmenu-help" || _ret=$?
-  inst_simple "${moddir}/libexec/zfsbootmenu-func-wrapper.sh" "/libexec/zfunc" || _ret=$?
+  for _libexec in "${moddir}"/libexec/*; do
+    inst_simple "${_libexec}" "/libexec/$( basename "${_libexec}" )" || _ret=$?
+  done
 
   # User-facing utilities, useful for running in a recover shell
-  inst_simple "${moddir}/bin/zfs-chroot.sh" "/bin/zfs-chroot" || _ret=$?
-  inst_simple "${moddir}/bin/zfsbootmenu.sh" "/bin/zfsbootmenu" || _ret=$?
-  inst_simple "${moddir}/bin/zlogtail.sh" "/bin/zlogtail" || _ret=$?
-  inst_simple "${moddir}/bin/ztrace.sh" "/bin/ztrace" || _ret=$?
-  inst_simple "${moddir}/bin/zkexec.sh" "/bin/zkexec" || _ret=$?
+  for _bin in "${moddir}"/bin/*; do
+    inst_simple "${_bin}" "/bin/$( basename "${_bin}" )" || _ret=$?
+  done
 
   # Hooks necessary to initialize ZBM
   inst_hook cmdline 95 "${moddir}/hook/zfsbootmenu-parse-commandline.sh" || _ret=$?
