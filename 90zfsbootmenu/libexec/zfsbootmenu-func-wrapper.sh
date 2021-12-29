@@ -2,7 +2,8 @@
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
 # shellcheck disable=SC1091
-[ -r /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
+source /lib/kmsg-log-lib.sh >/dev/null 2>&1 || exit 1
+source /lib/zfsbootmenu-lib.sh >/dev/null 2>&1 || exit 1
 
 # First argument is the function name
 # the rest are positional params

@@ -2,7 +2,8 @@
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
 # shellcheck disable=SC1091
-source /lib/zfsbootmenu-lib.sh
+source /lib/kmsg-log-lib.sh >/dev/null 2>&1 || exit 1
+source /lib/zfsbootmenu-lib.sh >/dev/null 2>&1 || exit 1
 
 # zfsbootmenu-help invokes itself, so the value of $WIDTH depends
 # on if $0 is launching fzf (-L) or is being launched inside

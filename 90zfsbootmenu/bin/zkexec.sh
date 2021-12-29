@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # shellcheck disable=SC1091
-[ -f /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
+source /lib/kmsg-log-lib.sh >/dev/null 2>&1 || exit 1
+source /lib/zfsbootmenu-lib.sh >/dev/null 2>&1 || exit 1
 
 if [ $# -ne 3 ] ; then
  echo "Usage: $0 filesystem kernel initramfs"

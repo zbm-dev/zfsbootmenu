@@ -136,24 +136,35 @@ install() {
   done <<<"$( find "${moddir}/help-files" -type f )"
 
   _ret=0
+
+  # Core ZFSBootMenu functionality
   # shellcheck disable=SC2154
-  inst_simple "${moddir}/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh" || _ret=$?
-  inst_simple "${moddir}/zfsbootmenu-completions.sh" "/lib/zfsbootmenu-completions.sh" || _ret=$?
-  inst_simple "${moddir}/zfsbootmenu-init.sh" "/libexec/zfsbootmenu-init" || _ret=$?
-  inst_simple "${moddir}/zfsbootmenu-preview.sh" "/libexec/zfsbootmenu-preview" || _ret=$?
-  inst_simple "${moddir}/zfsbootmenu-input.sh" "/libexec/zfsbootmenu-input" || _ret=$?
-  inst_simple "${moddir}/zfsbootmenu-help.sh" "/libexec/zfsbootmenu-help" || _ret=$?
-  inst_simple "${moddir}/zfsbootmenu-func-wrapper.sh" "/libexec/zfunc" || _ret=$?
-  inst_simple "${moddir}/zfs-chroot.sh" "/bin/zfs-chroot" || _ret=$?
-  inst_simple "${moddir}/zfsbootmenu.sh" "/bin/zfsbootmenu" || _ret=$?
-  inst_simple "${moddir}/zlogtail.sh" "/bin/zlogtail" || _ret=$?
-  inst_simple "${moddir}/ztrace.sh" "/bin/ztrace" || _ret=$?
-  inst_simple "${moddir}/zkexec.sh" "/bin/zkexec" || _ret=$?
-  inst_hook cmdline 95 "${moddir}/zfsbootmenu-parse-commandline.sh" || _ret=$?
-  inst_hook pre-mount 90 "${moddir}/zfsbootmenu-preinit.sh" || _ret=$?
-  # Add hooks to force the dracut event loop to fire at least once
-  inst_hook initqueue/settled 99 "${moddir}/zfsbootmenu-ready-set.sh" || _ret=$?
-  inst_hook initqueue/finished 99 "${moddir}/zfsbootmenu-ready-chk.sh" || _ret=$?
+  inst_simple "${moddir}/lib/zfsbootmenu-lib.sh" "/lib/zfsbootmenu-lib.sh" || _ret=$?
+  inst_simple "${moddir}/lib/kmsg-log-lib.sh" "/lib/kmsg-log-lib.sh" || _ret=$?
+  inst_simple "${moddir}/lib/zfsbootmenu-completions.sh" "/lib/zfsbootmenu-completions.sh" || _ret=$?
+
+  # Helper tools not intended for direct human consumption
+  inst_simple "${moddir}/libexec/zfsbootmenu-init.sh" "/libexec/zfsbootmenu-init" || _ret=$?
+  inst_simple "${moddir}/libexec/zfsbootmenu-preview.sh" "/libexec/zfsbootmenu-preview" || _ret=$?
+  inst_simple "${moddir}/libexec/zfsbootmenu-input.sh" "/libexec/zfsbootmenu-input" || _ret=$?
+  inst_simple "${moddir}/libexec/zfsbootmenu-help.sh" "/libexec/zfsbootmenu-help" || _ret=$?
+  inst_simple "${moddir}/libexec/zfsbootmenu-func-wrapper.sh" "/libexec/zfunc" || _ret=$?
+
+  # User-facing utilities, useful for running in a recover shell
+  inst_simple "${moddir}/bin/zfs-chroot.sh" "/bin/zfs-chroot" || _ret=$?
+  inst_simple "${moddir}/bin/zfsbootmenu.sh" "/bin/zfsbootmenu" || _ret=$?
+  inst_simple "${moddir}/bin/zlogtail.sh" "/bin/zlogtail" || _ret=$?
+  inst_simple "${moddir}/bin/ztrace.sh" "/bin/ztrace" || _ret=$?
+  inst_simple "${moddir}/bin/zkexec.sh" "/bin/zkexec" || _ret=$?
+
+  # Hooks necessary to initialize ZBM
+  inst_hook cmdline 95 "${moddir}/hook/zfsbootmenu-parse-commandline.sh" || _ret=$?
+  inst_hook pre-mount 90 "${moddir}/hook/zfsbootmenu-preinit.sh" || _ret=$?
+
+  # Hooks to force the dracut event loop to fire at least once
+  # Things like console configuration are done in optional event-loop hooks
+  inst_hook initqueue/settled 99 "${moddir}/hook/zfsbootmenu-ready-set.sh" || _ret=$?
+  inst_hook initqueue/finished 99 "${moddir}/hook/zfsbootmenu-ready-chk.sh" || _ret=$?
 
   # Install "early setup" hooks
   # shellcheck disable=SC2154
@@ -290,6 +301,7 @@ EOF
   # Setup a default environment for all login shells
   cat << EOF >> "${initdir}/etc/profile"
 [ -f /etc/zfsbootmenu.conf ] && source /etc/zfsbootmenu.conf
+[ -f /lib/kmsg-log-lib.sh ] && source /lib/kmsg-log-lib.sh
 [ -f /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
 
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
