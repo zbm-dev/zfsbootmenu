@@ -902,7 +902,7 @@ read_kcl_prop() {
 
   zfsbe="${1}"
   if [ -z "${zfsbe}" ]; then
-    zerror "zfsbe is undefined"
+    zerror "boot environment is undefined"
     return 1
   fi
 
@@ -1072,7 +1072,7 @@ suppress_kcl_arg() {
       for (i=1; i <= NF; i++) {
         if ( quot == 0 ) {
           # If unquoted, determine if output should be suppressed
-          if ( $(i) ~ /^'"${arg}"'=/ ) {
+          if ( $(i) ~ /^'"${arg}"'(=|$)/ ) {
             # Suppress unwanted argument
              supp = 1;
           } else {
@@ -1083,7 +1083,11 @@ suppress_kcl_arg() {
 
         # If output is not suppressed, print the field
         if ( supp == 0 && length($(i)) > 0 ) {
-          print $(i);
+          if ( i < NF ) {
+            print $(i);
+          } else {
+            printf "%s", $(i);
+          }
         }
 
         # If an odd number of quotes are in this field, toggle quoting
