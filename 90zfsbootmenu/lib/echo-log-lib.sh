@@ -9,25 +9,25 @@
 
 zdebug() {
   [ "${loglevel:-4}" -ge 7 ] || return 1
-  echo "DEBUG: $*" 
+  echo "DEBUG: $*" >&2
 }
 
 zinfo() {
   [ "${loglevel:-4}" -ge 6 ] || return 1
-  echo "INFO: $*"
+  echo "INFO: $*" >&2
 }
 
 znotice() {
   [ "${loglevel:-4}" -ge 5 ] || return 1
-  echo "NOTICE: $*"
+  echo "NOTICE: $*" >&2
 }
 
 zwarn() {
   [ "${loglevel:-4}" -ge 4 ] || return 1
-  echo "WARN: $*"
+  echo "WARN: $*" >&2
 }
 
 zerror() {
   [ "${loglevel:-4}" -ge 3 ] || return 1
-  echo "ERROR: $*"
+  echo "ERROR: $*" >&2
 }
