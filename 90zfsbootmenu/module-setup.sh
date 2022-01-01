@@ -304,7 +304,7 @@ export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 export TERM=linux
 export HOME=/root
 
-zdebug "sourced /etc/profile"
+zdebug "sourced /etc/profile" || true
 
 EOF
 
@@ -322,7 +322,7 @@ alias trace="ztrace"
 alias debug="ztrace"
 alias help="/libexec/zfsbootmenu-help -L recovery-shell"
 
-zdebug "sourced /root/.bashrc"
+zdebug "sourced /root/.bashrc" || true
 
 EOF
 
