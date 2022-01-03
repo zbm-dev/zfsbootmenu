@@ -1,8 +1,21 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
-# shellcheck disable=SC1091
-. /lib/dracut-lib.sh
+# Critical functions
+sources=(
+  /lib/kmsg-log-lib.sh
+  /lib/zfsbootmenu-kcl.sh
+)
+
+for src in "${sources[@]}"; do
+  # shellcheck disable=SC1090
+  if ! source "${src}" >/dev/null 2>&1; then
+    echo -e "\033[0;31mWARNING: ${src} was not sourced, unable to proceed\033[0m"
+    exec /bin/bash
+  fi
+done
+
+unset src sources
 
 # Source options detected at build time
 # shellcheck disable=SC1091
@@ -14,15 +27,18 @@ if [ -n "${embedded_kcl}" ]; then
   echo "${embedded_kcl}" > /etc/cmdline.d/zfsbootmenu.conf
 fi
 
+# Make sure a base directory exists
+export BASE="/zfsbootmenu"
+mkdir -p "${BASE}"
+
 if [ -z "${BYTE_ORDER}" ]; then
-  warn "unable to determine platform endianness; assuming little-endian"
+  zwarn "unable to determine platform endianness; assuming little-endian"
   BYTE_ORDER="le"
 fi
 
 # Let the command line override our host id.
 # shellcheck disable=SC2034
-cli_spl_hostid=$( getarg spl.spl_hostid ) || cli_spl_hostid=$( getarg spl_hostid )
-if [ -n "${cli_spl_hostid}" ] ; then
+if cli_spl_hostid=$( get_zbm_arg spl.spl_hostid spl_hostid ) && [ -n "${cli_spl_hostid}" ]; then
   # Start empty so only valid hostids are set for future use
   spl_hostid=
 
@@ -42,27 +58,27 @@ if [ -n "${cli_spl_hostid}" ] ; then
     spl_hostid=0
   # Not valid hex or dec, log
   else
-    warn "ZFSBootMenu: invalid hostid value ${cli_spl_hostid}, ignoring"
+    zwarn "invalid hostid value ${cli_spl_hostid}, ignoring"
   fi
 fi
 
 # Use the last defined console= to control menu output
-control_term=$( getarg console )
+control_term=$( get_zbm_arg console )
 if [ -n "${control_term}" ]; then
   control_term="/dev/${control_term%,*}"
-  info "ZFSBootMenu: setting controlling terminal to: ${control_term}"
+  zinfo "setting controlling terminal to: ${control_term}"
 else
   control_term="/dev/tty1"
-  info "ZFSBootMenu: defaulting controlling terminal to: ${control_term}"
+  zinfo "defaulting controlling terminal to: ${control_term}"
 fi
 
 # Use loglevel to determine logging to /dev/kmsg
 min_logging=4
-loglevel=$( getarg loglevel )
+loglevel=$( get_zbm_arg loglevel )
 if [ -n "${loglevel}" ]; then
   # minimum log level of 4, so we never lose error or warning messages
   [ "${loglevel}" -ge ${min_logging} ] || loglevel=${min_logging}
-  info "ZFSBootMenu: setting log level from command line: ${loglevel}"
+  zinfo "setting log level from command line: ${loglevel}"
 else
   loglevel=${min_logging}
 fi
@@ -71,68 +87,68 @@ fi
 # force  - append -f to zpool import
 # strict - legacy behavior, drop to an emergency shell on failure
 
-import_policy=$( getarg zbm.import_policy )
+import_policy=$( get_zbm_arg zbm.import_policy )
 if [ -n "${import_policy}" ]; then
   case "${import_policy}" in
     hostid)
       if [ "${BYTE_ORDER}" = "be" ]; then
-        info "ZFSBootMenu: invalid option for big endian systems"
-        info "ZFSBootMenu: setting import_policy to strict"
+        zwarn "invalid option for big endian systems"
+        zinfo "setting import_policy to strict"
         import_policy="strict"
       else
-        info "ZFSBootMenu: setting import_policy to hostid matching"
+        zinfo "setting import_policy to hostid matching"
       fi
       ;;
     force)
-      info "ZFSBootMenu: setting import_policy to force"
+      zinfo "setting import_policy to force"
       ;;
     strict)
-      info "ZFSBootMenu: setting import_policy to strict"
+      zinfo "setting import_policy to strict"
       ;;
     *)
-      info "ZFSBootMenu: unknown import policy ${import_policy}, defaulting to hostid"
+      zinfo "unknown import policy ${import_policy}, defaulting to hostid"
       import_policy="hostid"
       ;;
   esac
-elif getargbool 0 zbm.force_import -d force_import ; then
+elif get_zbm_bool 0 zbm.force_import force_import ; then
   import_policy="force"
-  info "ZFSBootMenu: setting import_policy to force"
+  zinfo "setting import_policy to force"
 else
-  info "ZFSBootMenu: defaulting import_policy to hostid"
+  zinfo "defaulting import_policy to hostid"
   import_policy="hostid"
 fi
 
 # zbm.timeout= overrides timeout=
-menu_timeout=$( getarg zbm.timeout -d timeout )
+menu_timeout=$( get_zbm_arg zbm.timeout timeout )
 if [ -n "${menu_timeout}" ]; then
-  info "ZFSBootMenu: setting menu timeout from command line: ${menu_timeout}"
-elif getargbool 0 zbm.show ; then
+  zinfo "setting menu timeout from command line: ${menu_timeout}"
+elif get_zbm_bool 0 zbm.show ; then
   menu_timeout=-1;
-  info "ZFSBootMenu: forcing display of menu"
-elif getargbool 0 zbm.skip ; then
+  zinfo "forcing display of menu"
+elif get_zbm_bool 0 zbm.skip ; then
   menu_timeout=0;
-  info "ZFSBootMenu: skipping display of menu"
+  zinfo "skipping display of menu"
 else
   menu_timeout=10
 fi
 
-zbm_import_delay=$( getarg zbm.import_delay )
+zbm_import_delay=$( get_zbm_arg zbm.import_delay )
 if [ "${zbm_import_delay:-0}" -gt 0 ] 2>/dev/null ; then
   # Again, this validates that zbm_import_delay is numeric in addition to logging
-  info "ZFSBootMenu: import retry delay is ${zbm_import_delay} seconds"
+  zinfo "import retry delay is ${zbm_import_delay} seconds"
 else
   zbm_import_delay=5
 fi
 
 # Allow setting of console size; there are no defaults here
 # shellcheck disable=SC2034
-zbm_lines=$( getarg zbm.lines )
+zbm_lines=$( get_zbm_arg zbm.lines )
 # shellcheck disable=SC2034
-zbm_columns=$( getarg zbm.columns )
+zbm_columns=$( get_zbm_arg zbm.columns )
 
 # Allow sorting based on a key
 zbm_sort=
-sort_key=$( getarg zbm.sort_key )
+sort_key=$( get_zbm_arg zbm.sort_key )
 if [ -n "${sort_key}" ] ; then
   valid_keys=( "name" "creation" "used" )
   for key in "${valid_keys[@]}"; do
@@ -155,26 +171,26 @@ if [ -n "${sort_key}" ] ; then
     fi
   done
 
-  info "ZFSBootMenu: setting sort key order to ${zbm_sort}"
+  zinfo "setting sort key order to ${zbm_sort}"
 else
   zbm_sort="name;creation;used"
-  info "ZFSBootMenu: defaulting sort key order to ${zbm_sort}"
+  zinfo "defaulting sort key order to ${zbm_sort}"
 fi
 
 # shellcheck disable=SC2034
 if [ "${BYTE_ORDER}" = "be" ]; then
   zbm_set_hostid=0
-  info "ZFSBootMenu: big endian detected, disabling automatic replacement of spl_hostid"
-elif getargbool 1 zbm.set_hostid ; then
+  zinfo "big endian detected, disabling automatic replacement of spl_hostid"
+elif get_zbm_bool 1 zbm.set_hostid ; then
   zbm_set_hostid=1
-  info "ZFSBootMenu: enabling automatic replacement of spl_hostid"
+  zinfo "enabling automatic replacement of spl_hostid"
 else
   zbm_set_hostid=0
-  info "ZFSBootMenu: disabling automatic replacement of spl_hostid"
+  zinfo "disabling automatic replacement of spl_hostid"
 fi
 
 # rewrite root=
-prefer=$( getarg zbm.prefer )
+prefer=$( get_zbm_arg zbm.prefer )
 if [ -n "${prefer}" ]; then
   root="zfsbootmenu:POOL=${prefer}"
 fi
@@ -188,7 +204,7 @@ case "${root}" in
     rootok=1
     wait_for_zfs=1
 
-    info "ZFSBootMenu: enabling menu after udev settles"
+    zinfo "enabling menu after udev settles"
     ;;
   zfsbootmenu:POOL=*)
     # Prefer a specific pool for bootfs value, root=zfsbootmenu:POOL=zroot
@@ -197,7 +213,7 @@ case "${root}" in
     rootok=1
     wait_for_zfs=1
 
-    info "ZFSBootMenu: preferring ${root} for bootfs"
+    zinfo "preferring ${root} for bootfs"
     ;;
 esac
 

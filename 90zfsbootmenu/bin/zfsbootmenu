@@ -278,7 +278,7 @@ while true; do
       cmdline="$( /libexec/zfsbootmenu-input "${def_args}" )"
 
       if [ -n "${cmdline}" ] ; then
-        echo "${cmdline}" > "${BASE}/cmdline"
+        kcl_tokenize <<< "${cmdline}" > "${BASE}/cmdline"
       fi
       ;;
     "mod-j")

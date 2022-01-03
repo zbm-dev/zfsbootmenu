@@ -7,6 +7,7 @@ trap '' SIGINT
 # Source functional libraries, logging and configuration
 sources=(
   /etc/zfsbootmenu.conf
+  /lib/zfsbootmenu-kcl.sh
   /lib/zfsbootmenu-core.sh
   /lib/kmsg-log-lib.sh
   /etc/profile
@@ -22,6 +23,7 @@ done
 
 unset src sources
 
+[ -n "${BASE}" ] || export BASE="/zfsbootmenu"
 mkdir -p "${BASE}"
 
 # Attempt to load spl normally

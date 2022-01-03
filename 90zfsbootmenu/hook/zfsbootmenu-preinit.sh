@@ -17,7 +17,6 @@ if ! [[ ${control_term} =~ ${tty_re} ]]; then
 fi
 
 export BASE="/zfsbootmenu"
-mkdir -p "${BASE}"
 
 # shellcheck disable=SC2154
 cat >> "/etc/zfsbootmenu.conf" <<EOF
@@ -37,8 +36,6 @@ export zbm_import_delay="${zbm_import_delay}"
 export control_term="${control_term}"
 # END additions by zfsbootmenu-preinit.sh
 EOF
-
-getcmdline | sed -e 's/^[ \t]*//' > "${BASE}/zbm.cmdline"
 
 # Set a non-empty hostname so we show up in zpool history correctly
 echo "ZFSBootMenu" > /proc/sys/kernel/hostname
