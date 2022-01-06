@@ -5,6 +5,9 @@
 [ -n "${_ZFSBOOTMENU_CORE}" ] && return
 readonly _ZFSBOOTMENU_CORE=1
 
+# shellcheck disable=1091
+source /lib/zfsbootmenu-kcl.sh >/dev/null 2>&1 || exit 1
+
 # arg1: text with color sequences
 # prints: text with color sequences removed
 # returns: nothing
@@ -894,68 +897,6 @@ find_root_prefix() {
 }
 
 # arg1: ZFS filesystem
-# prints: value of org.zfsbootmenu:commandline, with %{parent} recursively expanded
-# returns: 0 on success
-
-read_kcl_prop() {
-  local zfsbe args parfs par_args inherited
-
-  zfsbe="${1}"
-  if [ -z "${zfsbe}" ]; then
-    zerror "boot environment is undefined"
-    return 1
-  fi
-
-  if ! args="$( zfs get -H -o value org.zfsbootmenu:commandline "${zfsbe}" )"; then
-    zerror "unable to read org.zfsbootmenu:commandline on ${zfsbe}"
-    return 1
-  fi
-
-  # KCL is empty, nothing to see
-  if [ "${args}" = "-" ]; then
-    zdebug "org.zfsbootmenu:commandline on ${zfsbe} has no value"
-    echo ""
-    return 0
-  fi
-
-  # KCL does not specify parent inheritance, just return the args
-  if ! [[ "${args}" =~ "%{parent}" ]]; then
-    zdebug "no parent reference in org.zfsbootmenu:commandline on ${zfsbe}"
-    echo "${args}"
-    return 0
-  fi
-
-  # Need to recursively expand "%{parent}"
-
-  parfs="${zfsbe%/*}"
-  if [ -z "${parfs}" ] || [ "${parfs}" = "${zfsbe}" ]; then
-    # There is no parent, par_args is empty
-    par_args=""
-  else
-    # Query the parent for kcl properties
-    if ! par_args="$( read_kcl_prop "${parfs}" )"; then
-      zwarn "failed to invoke read_kcl_prop on parent ${parfs}"
-      par_args=""
-    fi
-
-    # When the KCL property is inherited, recursive expansion fully populates
-    # the KCL at the level of the ancestor that actually defines the property.
-    if inherited="$( zfs get -H -o source -s inherited org.zfsbootmenu:commandline "${zfsbe}" 2>/dev/null )"; then
-      # Inherited property have a source of "inherited from <ancestor>";
-      # non-inherited properties will not be printed with `-s inherited`
-      if [ -n "${inherited}" ]; then
-        zdebug "org.zfsbootmenu:commandline on ${zfsbe} is inherited, using parent expansion verbatim"
-        echo "${par_args}"
-        return 0
-      fi
-    fi
-  fi
-
-  echo "${args//%\{parent\}/${par_args}}"
-  return 0
-}
-
-# arg1: ZFS filesystem
 # prints: nothing
 # returns: 0 on success
 
@@ -973,7 +914,7 @@ preload_be_cmdline() {
 
   if args="$( read_kcl_prop "${fs}" )" && [ -n "${args}" ]; then
     zdebug "using org.zfsbootmenu:commandline"
-    echo "${args}" > "${args_file}"
+    kcl_tokenize <<< "${args}" > "${args_file}"
     return 0
   fi
 
@@ -985,7 +926,7 @@ preload_be_cmdline() {
 
   if [ -r "${mnt}/etc/default/zfsbootmenu" ]; then
     zdebug "using ${mnt}/etc/default/zfsbootmenu"
-    head -1 "${mnt}/etc/default/zfsbootmenu" | tr -d '\n' > "${args_file}"
+    kcl_tokenize < "${mnt}/etc/default/zfsbootmenu" > "${args_file}"
     deprecated="/etc/default/zfsbootmenu"
   elif [ -r "${mnt}/etc/default/grub" ]; then
     zdebug "using ${mnt}/etc/default/grub"
@@ -993,7 +934,7 @@ preload_be_cmdline() {
       # shellcheck disable=SC1090,SC1091
       . "${mnt}/etc/default/grub" ;
       echo "${GRUB_CMDLINE_LINUX_DEFAULT}"
-    )" > "${args_file}"
+    )" | kcl_tokenize > "${args_file}"
     deprecated="/etc/default/grub"
   fi
 
@@ -1033,7 +974,7 @@ preload_be_cmdline() {
     return 1
   fi
 
-  read -r args < "${args_file}"
+  args="$( kcl_assemble < "${args_file}" )"
 
   if ! zsout="$( zfs set org.zfsbootmenu:commandline="${args}" "${fs}" 2>&1 )"; then
     zerror "Unable to migrate ${deprecated} to org.zfsbootmenu:commandline: ${zsout}"
@@ -1047,64 +988,12 @@ preload_be_cmdline() {
   umount "${mnt}"
 }
 
-# arg1: key(and associated value) to suppress from KCL
-# arg2..argN: kernel command line
-# prints: supressed kernel command line with a trailing space
-# returns: 0 on success
-
-suppress_kcl_arg() {
-  arg=$1
-  shift
-
-  if [ -z "${arg}" ]; then
-    echo "$*"
-    return 0
-  fi
-
-  awk <<< "$*" '
-    BEGIN {
-      quot = 0;
-      supp = 0;
-      ORS = " ";
-    }
-
-    {
-      for (i=1; i <= NF; i++) {
-        if ( quot == 0 ) {
-          # If unquoted, determine if output should be suppressed
-          if ( $(i) ~ /^'"${arg}"'(=|$)/ ) {
-            # Suppress unwanted argument
-             supp = 1;
-          } else {
-            # Nothing else is suppressed
-            supp = 0;
-          }
-        }
-
-        # If output is not suppressed, print the field
-        if ( supp == 0 && length($(i)) > 0 ) {
-          if ( i < NF ) {
-            print $(i);
-          } else {
-            printf "%s", $(i);
-          }
-        }
-
-        # If an odd number of quotes are in this field, toggle quoting
-        if ( gsub(/"/, "\"", $(i)) % 2 == 1 ) {
-          quot = (quot + 1) % 2;
-        }
-      }
-    }
-  '
-}
-
 # arg1: ZFS filesystem
 # prints: kernel command line arguments
 # returns: nothing
 
 load_be_cmdline() {
-  local zfsbe_fs zfsbe_args spl_hostid
+  local zfsbe_fs zfsbe_args spl_hostid zfsbe_kcl
 
   zfsbe_fs="${1}"
   if [ -z "${zfsbe_fs}" ]; then
@@ -1113,52 +1002,52 @@ load_be_cmdline() {
   fi
   zdebug "zfsbe_fs set to ${zfsbe_fs}"
 
-  # If a user-entered cmdline is found, it is not modified
+  # Always prefer a user-entered KCL
   if [ -r "${BASE}/cmdline" ]; then
     zdebug "using ${BASE}/cmdline as commandline for ${zfsbe_fs}"
 
     # root= is ALWAYS controlled by ZFSBootMenu
-    suppress_kcl_arg root "$(head -1 "${BASE}/cmdline" | tr -d '\n')"
+    kcl_suppress root < "${BASE}/cmdline" | kcl_assemble
     return
   fi
 
-  # Use BE-specific cmdline if found, fall back to generic default
-  zfsbe_args="quiet loglevel=4"
+  # Default KCL is very basic
+  zfsbe_args="$( kcl_tokenize <<< "quiet loglevel=4" )"
+
+  # Use 
   if [ -r "${BASE}/${zfsbe_fs}/cmdline" ]; then
     zdebug "using ${BASE}/${zfsbe_fs}/cmdline as commandline for ${zfsbe_fs}"
-    zfsbe_args="$(head -1 "${BASE}/${zfsbe_fs}/cmdline" | tr -d '\n')"
+    zfsbe_args="$( kcl_suppress root < "${BASE}/${zfsbe_fs}/cmdline" )"
   fi
 
   if [ -e "${BASE}/noresume" ]; then
     zdebug "${BASE}/noresume set, processing: '${zfsbe_args}'"
     # Must replace resume= arguments and append a noresume
-    zfsbe_args="$( suppress_kcl_arg resume "${zfsbe_args}" )noresume"
+    zfsbe_args="$( kcl_suppress resume <<< "${zfsbe_args}" | kcl_append noresume )" 
   fi
-
-  # root= is ALWAYS controlled by ZFSBootMenu
-  zfsbe_args="$( suppress_kcl_arg root "${zfsbe_args}" )"
 
   # shellcheck disable=SC2154
   if [ "${zbm_set_hostid:-0}" -eq 1 ] && spl_hostid="$( get_spl_hostid )"; then
-    zdebug "overriding spl_hostid and spl.spl_hostid in: '${zfsbe_args}'"
-    zfsbe_args="$( suppress_kcl_arg spl_hostid "${zfsbe_args}" )"
-    zfsbe_args="$( suppress_kcl_arg spl.spl_hostid "${zfsbe_args}" )"
+    zdebug "overriding spl_hostid and spl.spl_hostid for ${zfsbe_fs}"
 
     if [ "${spl_hostid}" = "0x00000000" ]; then
       # spl.spl_hostid=0 is a no-op; imports fall back to /etc/hostid.
       # Dracut writes spl_hostid to /etc/hostid. to yield expected results.
       # Others (initramfs-tools, mkinitcpio) ignore this, but there isn't much
       # else that can be done with those systems.
-      zfsbe_args+="spl_hostid=00000000"
+      spl_hostid="spl_hostid=00000000"
     else
       # Using spl.spl_hostid will set a module parameter which takes precedence
       # over any /etc/hostid and should produce expected behavior in all systems
-      zfsbe_args+="spl.spl_hostid=${spl_hostid}"
+      spl_hostid="spl.spl_hostid=${spl_hostid}"
     fi
+
+    zfsbe_args="$( kcl_suppress spl_hostid spl.spl_hostid <<< "${zfsbe_args}" | kcl_append "${spl_hostid}" )"
   fi
 
-  zdebug "processed commandline: '${zfsbe_args}'"
-  echo "${zfsbe_args}"
+  zfsbe_kcl="$( kcl_assemble <<< "${zfsbe_args}" )"
+  zdebug "assembled commandline: '${zfsbe_kcl}'"
+  echo "${zfsbe_kcl}"
 }
 
 # arg1: pool name, empty to import all
@@ -1966,13 +1855,6 @@ emergency_shell() {
       zdebug "unmounting: ${mp}"
     fi
   done < /proc/self/mounts
-}
-
-# prints: contents of $BASE/zbm.cmdline
-# returns: nothing
-
-zbmcmdline() {
-  [ -f "${BASE}/zbm.cmdline" ] && echo | cat "${BASE}/zbm.cmdline" -
 }
 
 # prints: zpool list and zfs property list

@@ -7,6 +7,7 @@ trap '' SIGINT
 # Source functional libraries, logging and configuration
 sources=(
   /etc/zfsbootmenu.conf
+  /lib/zfsbootmenu-kcl.sh
   /lib/zfsbootmenu-core.sh
   /lib/kmsg-log-lib.sh
   /etc/profile
@@ -23,6 +24,7 @@ done
 unset src sources
 
 mkdir -p "${BASE}"
+getcmdline | kcl_tokenize > "${BASE}/zbm.cmdline"
 
 # Attempt to load spl normally
 if ! _modload="$( modprobe spl 2>&1 )" ; then
