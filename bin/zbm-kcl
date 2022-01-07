@@ -206,7 +206,7 @@ done
 
 shift $((OPTIND-1))
 
-zbm_load_lib "zfsbootmenu-core.sh"
+zbm_load_lib "zfsbootmenu-kcl.sh"
 zbm_load_lib "echo-log-lib.sh"
 
 bootenv="${1}"
@@ -247,23 +247,13 @@ if [ "${havemods}" != "yes" ]; then
 fi
 
 # Act on raw KCL argument for append/remove operations
-if ! kcl="$(raw_kcl "${bootenv}")"; then
+if ! kcl="$(raw_kcl "${bootenv}" | kcl_tokenize )"; then
   zerror "failed to read KCL for ${bootenv}"
   exit 1
 fi
 
-# Strip all unwanted arguments from the KCL
-for rem in "${removes[@]}"; do
-  kcl="$(suppress_kcl_arg "${rem}" "${kcl}")" || exit 1
-done
-
-for add in "${appends[@]}"; do
-  if [ -z "${kcl}" ]; then
-    kcl="${add}"
-  else
-    kcl+=" ${add}"
-  fi
-done
+# Strip and append arguments
+kcl="$( kcl_suppress "${removes[@]}" <<< "${kcl}" | kcl_append "${appends[@]}" | kcl_assemble )"
 
 if ! zfs set org.zfsbootmenu:commandline="${kcl}" "${bootenv}"; then
   zerror "failed to set ZBM KCL"
