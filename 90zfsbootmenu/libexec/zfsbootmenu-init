@@ -23,8 +23,7 @@ done
 
 unset src sources
 
-[ -n "${BASE}" ] || export BASE="/zfsbootmenu"
-mkdir -p "${BASE}"
+mkdir -p "${BASE:=/zfsbootmenu}"
 
 # Attempt to load spl normally
 if ! _modload="$( modprobe spl 2>&1 )" ; then
