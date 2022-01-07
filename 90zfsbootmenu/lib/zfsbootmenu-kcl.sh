@@ -157,9 +157,103 @@ kcl_assemble() {
   '
 }
 
-# prints: contents of $BASE/zbm.cmdline, assembled as KCL
+# args: none
+# prints: tokenized KCL from /etc/cmdline, /etc/cmdline.d/*.conf and /proc/cmdline
+
+get_zbm_kcl() {
+  local f
+
+  [ -r /etc/cmdline ] && kcl_tokenize < /etc/cmdline
+
+  for f in /etc/cmdline.d/*.conf; do
+    [ -r "${f}" ] || continue
+    kcl_tokenize < "${f}"
+  done
+
+  [ -r /proc/cmdline ] && kcl_tokenize < /proc/cmdline
+}
+
+# arg1..argN: argument to extract (multiples are alternatives, ordered by precedence)
+# prints: value associated with the argument (with no value, 1 is printed)
+# returns: 0 if match is found, 1 otherwise
+
+get_zbm_arg() {
+  local kcl karg kkey kval kopt kmatch
+
+  # At least one argument must be specified
+  [ -n "${1}" ] || return 1
+
+  if [ -n "${BASE}" ] && [ -r "${BASE}/zbm.cmdline" ]; then
+    # Read the cached, tokenized KCL
+    kcl="$(<"${BASE}/zbm.cmdline")"
+  else
+    # Assemble the tokenized KCL
+    kcl="$( get_zbm_kcl )"
+
+    # Write a cache if BASE is defined
+    [ -n "${BASE}" ] && echo "${kcl}" > "${BASE}/zbm.cmdline"
+  fi
+
+  for kopt in "$@"; do
+    kmatch=
+    while read -r karg; do
+      # Ignore variables not being tested
+      kkey="${karg%%=*}"
+      [ "${kkey}" = "${kopt}" ] || continue
+
+      kval="${karg#"${kkey}="}"
+      if [ "${kval}" = "${karg}" ]; then
+        # No value term, just echo default 1
+        kmatch=1
+      else
+        # Value provided, echo it
+        kmatch="${kval}"
+      fi
+    done <<< "${kcl}"
+
+    if [ -n "${kmatch}" ]; then
+      [ "${kopt}" = "${1}" ] || zdebug "using arg '${kopt}' when '${1}' is preferred"
+      echo "${kmatch}"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+# arg1: default value (0 or 1)
+# arg2..argN: argument to extract (all after first are alternatives)
+# return: default if no match is found, 0 or 1 based on found value
+
+get_zbm_bool() {
+  local def val
+
+  def="${1}"
+  shift
+
+  case "${def,,}" in
+    ""|no|off|0) def=1;;
+    *) def=0;;
+  esac
+
+  val="$(get_zbm_arg "$@")" || return ${def}
+
+  case "${val,,}" in
+    ""|no|off|0) return 1;;
+    *) ;;
+  esac
+
+  return 0;
+}
+
+# prints: contents of $BASE/zbm.cmdline or get_zbm_kcl, assembled as KCL
 
 zbmcmdline() {
-  [ -r "${BASE}/zbm.cmdline" ] && kcl_assemble < "${BASE}/zbm.cmdline"
-  echo 
+  if [ -r "${BASE}/zbm.cmdline" ]; then
+    kcl_assemble < "${BASE}/zbm.cmdline"
+  else
+    get_zbm_kcl | kcl_assemble
+  fi
+
+  echo
 }

@@ -6,7 +6,10 @@
 readonly _ZFSBOOTMENU_CORE=1
 
 # shellcheck disable=1091
-source /lib/zfsbootmenu-kcl.sh >/dev/null 2>&1 || exit 1
+if ! source /lib/zfsbootmenu-kcl.sh >/dev/null 2>&1; then
+  zerror "failed to load KCL manipulation functions"
+  exit 1
+fi
 
 # arg1: text with color sequences
 # prints: text with color sequences removed
@@ -1014,7 +1017,7 @@ load_be_cmdline() {
   # Default KCL is very basic
   zfsbe_args="$( kcl_tokenize <<< "quiet loglevel=4" )"
 
-  # Use 
+  # Use a BE-specific KCL if one is preovided
   if [ -r "${BASE}/${zfsbe_fs}/cmdline" ]; then
     zdebug "using ${BASE}/${zfsbe_fs}/cmdline as commandline for ${zfsbe_fs}"
     zfsbe_args="$( kcl_suppress root < "${BASE}/${zfsbe_fs}/cmdline" )"
@@ -1022,8 +1025,8 @@ load_be_cmdline() {
 
   if [ -e "${BASE}/noresume" ]; then
     zdebug "${BASE}/noresume set, processing: '${zfsbe_args}'"
-    # Must replace resume= arguments and append a noresume
-    zfsbe_args="$( kcl_suppress resume <<< "${zfsbe_args}" | kcl_append noresume )" 
+    # Must drop resume= arguments and append a noresume
+    zfsbe_args="$( kcl_suppress resume <<< "${zfsbe_args}" | kcl_append noresume )"
   fi
 
   # shellcheck disable=SC2154

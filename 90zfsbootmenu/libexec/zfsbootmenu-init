@@ -23,8 +23,8 @@ done
 
 unset src sources
 
+[ -n "${BASE}" ] || export BASE="/zfsbootmenu"
 mkdir -p "${BASE}"
-getcmdline | kcl_tokenize > "${BASE}/zbm.cmdline"
 
 # Attempt to load spl normally
 if ! _modload="$( modprobe spl 2>&1 )" ; then
