@@ -28,8 +28,7 @@ if [ -n "${embedded_kcl}" ]; then
 fi
 
 # Make sure a base directory exists
-export BASE="/zfsbootmenu"
-mkdir -p "${BASE}"
+mkdir -p "${BASE:=/zfsbootmenu}"
 
 if [ -z "${BYTE_ORDER}" ]; then
   zwarn "unable to determine platform endianness; assuming little-endian"

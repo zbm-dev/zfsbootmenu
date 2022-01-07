@@ -23,7 +23,7 @@ unset src sources
 # Make sure /dev/zfs exists, otherwise drop to a recovery shell
 [ -e /dev/zfs ] || emergency_shell "/dev/zfs missing, check that kernel modules are loaded"
 
-mkdir -p "${BASE}"
+mkdir -p "${BASE:=/zfsbootmenu}"
 
 while [ ! -e "${BASE}/initialized" ]; do
   if ! timed_prompt -d 5 -e "to cancel" \

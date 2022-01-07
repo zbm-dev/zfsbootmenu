@@ -21,7 +21,7 @@ export BASE="/zfsbootmenu"
 # shellcheck disable=SC2154
 cat >> "/etc/zfsbootmenu.conf" <<EOF
 # BEGIN additions by zfsbootmenu-preinit.sh
-export BASE="/zfsbootmenu"
+export BASE="${BASE}"
 export endian="${endian}"
 export spl_hostid="${spl_hostid}"
 export import_policy="${import_policy}"
