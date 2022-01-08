@@ -3,6 +3,9 @@
 
 cleanup() {
   [ -f "${SSH_CONF_DIR}/${TESTHOST}" ] && rm "${SSH_CONF_DIR}/${TESTHOST}"
+  [ -n  "${perf_data_PID}" ] && kill "${perf_data_PID}"
+  [ -n "${FIFO}" ] && [ -e "${FIFO}.out" ] && rm "${FIFO}.out"
+  [ -n "${FIFO}" ] && [ -e "${FIFO}.in" ] && rm "${FIFO}.in"
   exit
 }
 
@@ -26,10 +29,12 @@ Usage: $0 [options]
   -e  Boot the VM with an EFI bundle
   -M  Set the amount of memory for the virtual machine
   -C  Set the number of CPUs for the virtual machine
+  -F  Generate a flamegraph/flamechart using tracing data from ZBM
+  -E  Enable early Dracut tracing
 EOF
 }
 
-CMDOPTS="D:A:a:d:fsv:hineM:C:"
+CMDOPTS="D:A:a:d:fsv:hineM:C:FE"
 
 # First-pass option parsing just looks for test directory
 while getopts "${CMDOPTS}" opt; do
@@ -74,14 +79,14 @@ case "$(uname -m)" in
     KERNEL="${TESTDIR}/vmlinux-bootmenu"
     MACHINE="pseries,accel=kvm,kvm-type=HV,cap-hpt-max-page-size=4096"
     APPEND="loglevel=7 zbm.show"
-    SERDEV="hvc0"
+    SERDEV="hvc"
   ;;
   x86_64)
     BIN="qemu-system-x86_64"
     KERNEL="${TESTDIR}/vmlinuz-bootmenu"
     MACHINE="type=q35,accel=kvm"
     APPEND="loglevel=7 zbm.show"
-    SERDEV="ttyS0"
+    SERDEV="ttyS"
   ;;
   *)
     error "Unknown machine type '$(uname -m)', please add it to run.sh"
@@ -100,6 +105,7 @@ DISPLAY_TYPE=
 SSH_INCLUDE=0
 RESET=1
 EFI=0
+SERDEV_COUNT=0
 
 # Override any default variables
 #shellcheck disable=SC1091
@@ -159,10 +165,20 @@ while getopts "${CMDOPTS}" opt; do
     C)
       SMP="${OPTARG}"
       ;;
+    F)
+      FLAME=1
+      ;;
+    E)
+      EARLY_TRACING=1
+      FLAME=1
+      ;;
     *)
       ;;
   esac
 done
+
+# Zero out any Dracut customizations from the last run
+: > "${TESTDIR}/dracut.conf.d/testing.conf"
 
 # If no drives were specified, glob all -pool.img disks
 if [ "${#DRIVE[@]}" -eq 0 ]; then
@@ -178,16 +194,47 @@ else
   # Suppress graphical display (implies serial mode)
   DISPLAY_ARGS=( "-nographic" )
   SERIAL=1
+  cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
+  omit_dracutmodules+=" i18n "
+EOF
 fi
 
 if ((SERIAL)) ; then
-  AAPPEND+=( "console=tty1" "console=${SERDEV}" )
+  AAPPEND+=( "console=tty1" "console=${SERDEV}${SERDEV_COUNT},115200n8" )
+  ((SERDEV_COUNT++))
   LINES="$( tput lines 2>/dev/null )"
   COLUMNS="$( tput cols 2>/dev/null )"
   [ -n "${LINES}" ] && AAPPEND+=( "zbm.lines=${LINES}" )
   [ -n "${COLUMNS}" ] && AAPPEND+=( "zbm.columns=${COLUMNS}" )
+  SOPTS+=( "-serial" "mon:stdio" )
 else
-  AAPPEND+=("console=${SERDEV}" "console=tty1")
+  AAPPEND+=("console=tty1")
+fi
+
+if ((FLAME)) ; then
+  FIFO="$( realpath -e "${TESTDIR}" )/guest"
+  SOPTS+=( "-serial" "pipe:${FIFO}" )
+  [ -e "${FIFO}.out" ] || mkfifo "${FIFO}.out"
+  [ -e "${FIFO}.in" ] || mkfifo "${FIFO}.in"
+
+  #shellcheck disable=SC2034
+  coproc perf_data ( cat "${FIFO}.out" > "${TESTDIR}/perfdata.log" )
+  trap cleanup EXIT INT TERM
+
+  cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
+zfsbootmenu_trace_enable=yes
+zfsbootmenu_trace_term="/dev/${SERDEV}${SERDEV_COUNT}"
+zfsbootmenu_trace_baud="115200"
+EOF
+
+  if ((EARLY_TRACING)) ; then
+  cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
+dracut_trace_enable=yes
+EOF
+  fi
+
+  ((SERDEV_COUNT++))
+  CREATE=1
 fi
 
 SSH_PORT=2222
@@ -228,7 +275,7 @@ Host ${TESTHOST}
 EOF
   fi
 
-  cat << EOF > "${TESTDIR}/dracut.conf.d/crypt-ssh.conf"
+  cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
 dropbear_acl="${HOME}/.ssh/authorized_keys"
 dropbear_port="22"
 add_dracutmodules+=" crypt-ssh "
@@ -239,10 +286,15 @@ EOF
   chmod 0600 "${SSH_CONF_DIR}/${TESTHOST}"
   trap cleanup EXIT INT TERM
 else
-  cat << EOF > "${TESTDIR}/dracut.conf.d/crypt-ssh.conf"
-omit_dracutmodules+=" crypt-ssh "
+  cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
+omit_dracutmodules+=" crypt-ssh network-legacy "
 EOF
 fi
+
+# These are not needed for our testing setup, and are quite expensive
+cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
+omit_dracutmodules+=" nvdimm fs-lib rootfs-block dm dmraid lunmask "
+EOF
 
 # Creation is required if either kernel or initramfs is missing
 if ((EFI)) ; then
@@ -316,10 +368,33 @@ fi
 	-object rng-random,id=rng0,filename=/dev/urandom \
 	-device virtio-rng-pci,rng=rng0 \
 	"${DISPLAY_ARGS[@]}" \
-	-serial mon:stdio \
+	"${SOPTS[@]}" \
 	-netdev user,id=n1,hostfwd=tcp::${SSH_PORT}-:22 -device virtio-net-pci,netdev=n1 \
 	-append "${APPEND}" || exit 1
 
 if ((SERIAL)) && ((RESET)); then
   reset
+fi
+
+if ((FLAME)) && [ -f "${TESTDIR}/perfdata.log" ] && command -v flamegraph.pl >/dev/null 2>&1 ; then
+  perl rollup.pl < "${TESTDIR}/perfdata.log" | flamegraph.pl \
+    --title "${TESTDIR}: ${APPEND}" \
+    --height 32 \
+    --width 1600 \
+    --countname microseconds \
+    --flamechart > "${TESTDIR}/flamechart.svg" 2>/dev/null
+
+  perl rollup.pl < "${TESTDIR}/perfdata.log" | flamegraph.pl \
+    --title "${TESTDIR}: ${APPEND}" \
+    --height 32 \
+    --width 1600 \
+    --countname microseconds > "${TESTDIR}/flamegraph.svg" 2>/dev/null
+
+  if command -v webify >/dev/null 2>&1 ; then
+    webify -p "${TESTDIR}/flamechart.svg"
+    webify -p "${TESTDIR}/flamegraph.svg"
+  else
+    echo "Created ${TESTDIR}/flamechart.svg"
+    echo "Created ${TESTDIR}/flamegraph.svg"
+  fi
 fi

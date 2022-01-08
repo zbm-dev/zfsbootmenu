@@ -6,6 +6,7 @@ trap '' SIGINT
 
 # Source functional libraries, logging and configuration
 sources=(
+  /lib/profiling-lib.sh
   /etc/zfsbootmenu.conf
   /lib/zfsbootmenu-kcl.sh
   /lib/zfsbootmenu-core.sh

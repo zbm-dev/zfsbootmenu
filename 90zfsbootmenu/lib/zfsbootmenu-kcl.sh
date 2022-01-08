@@ -203,6 +203,10 @@ get_zbm_arg() {
 
   for kopt in "$@"; do
     kmatch=
+
+    # Short-circuit the entire check if the option string isn't in the KCL at all
+    [[ ${kcl} =~ ${kopt} ]] || continue
+
     while read -r karg; do
       # Ignore variables not being tested
       kkey="${karg%%=*}"
@@ -238,12 +242,12 @@ get_zbm_bool() {
   def="${1}"
   shift
 
-  case "${def,,}" in
-    ""|no|off|0) def=1;;
-    *) def=0;;
-  esac
-
-  val="$(get_zbm_arg "$@")" || return ${def}
+  if ! val="$(get_zbm_arg "$@")"; then
+    case "${def,,}" in
+      ""|no|off|0) return 1;;
+      *) return 0;;
+    esac
+  fi
 
   case "${val,,}" in
     ""|no|off|0) return 1;;

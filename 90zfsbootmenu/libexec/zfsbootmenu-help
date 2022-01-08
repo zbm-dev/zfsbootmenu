@@ -2,6 +2,8 @@
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
 # shellcheck disable=SC1091
+source /lib/profiling-lib.sh >/dev/null 2>&1
+source /etc/zfsbootmenu.conf 2>&1 || exit 1
 source /lib/kmsg-log-lib.sh >/dev/null 2>&1 || exit 1
 source /lib/zfsbootmenu-core.sh >/dev/null 2>&1 || exit 1
 

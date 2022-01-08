@@ -162,6 +162,25 @@ install() {
   inst_hook initqueue/settled 99 "${moddir}/hook/zfsbootmenu-ready-set.sh" || _ret=$?
   inst_hook initqueue/finished 99 "${moddir}/hook/zfsbootmenu-ready-chk.sh" || _ret=$?
 
+  # If tracing is enabled, build in the full-weight profiling library
+  if [ -n "${zfsbootmenu_trace_enable}" ]; then
+    inst_simple "${moddir}/profiling/profiling-lib.sh" "/lib/profiling-lib.sh"
+
+    # shellcheck disable=SC2154
+    cat << EOF >> "${initdir}/etc/profiling.conf"
+export zfsbootmenu_trace_term=${zfsbootmenu_trace_term}
+export zfsbootmenu_trace_baud=${zfsbootmenu_trace_baud}
+EOF
+
+    # optionally enable early Dracut profiling
+    if [ -n "${dracut_trace_enable}" ]; then
+      inst_hook cmdline 00 "${moddir}/profiling/profiling-lib.sh"
+    fi
+  else
+    # Install the default profiling library that is a simple `return 0`
+    echo "return 0" > "${initdir}/lib/profiling-lib.sh"
+  fi
+
   # Install "early setup" hooks
   # shellcheck disable=SC2154
   if [ -n "${zfsbootmenu_early_setup}" ]; then
@@ -275,9 +294,16 @@ install() {
     has_refresh=
   fi
 
+  # shellcheck disable=SC2154
+  cat << 'EOF' > "${initdir}/etc/zfsbootmenu.conf"
+# Include guard
+[ -n "${_ETC_ZFSBOOTMENU_CONF}" ] && return
+readonly _ETC_ZFSBOOTMENU_CONF=1
+EOF
+
   # Collect all of our build-time feature flags
   # shellcheck disable=SC2154
-  cat << EOF > "${initdir}/etc/zfsbootmenu.conf"
+  cat << EOF >> "${initdir}/etc/zfsbootmenu.conf"
 export BYTE_ORDER=${endian:-le}
 export HAS_REFRESH=${has_refresh}
 EOF
@@ -296,22 +322,19 @@ EOF
 
   # Setup a default environment for all login shells
   cat << EOF >> "${initdir}/etc/profile"
-[ -f /etc/zfsbootmenu.conf ] && source /etc/zfsbootmenu.conf
-[ -f /lib/kmsg-log-lib.sh ] && source /lib/kmsg-log-lib.sh
-[ -f /lib/zfsbootmenu-core.sh ] && source /lib/zfsbootmenu-core.sh
-
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
 export TERM=linux
 export HOME=/root
-
-zdebug "sourced /etc/profile" || true
-
 EOF
 
   # Setup a default environment for bash -i
   cat << EOF >> "${initdir}/root/.bashrc"
+source /etc/zfsbootmenu.conf >/dev/null 2>&1
+source /lib/kmsg-log-lib.sh >/dev/null 2>&1
+source /lib/zfsbootmenu-core.sh >/dev/null 2>&1
 [ -f /etc/profile ] && source /etc/profile
 [ -f /lib/zfsbootmenu-completions.sh ] && source /lib/zfsbootmenu-completions.sh
+
 export PS1="\033[0;33mzfsbootmenu\033[0m \w > "
 
 alias clear="tput clear"

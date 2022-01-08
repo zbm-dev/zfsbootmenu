@@ -335,9 +335,11 @@ kexec_kernel() {
 
     return 1
   else
-    zdebug "loaded ${mnt}${kernel} and ${mnt}${initramfs} into memory"
-    zdebug "kernel command line: '${root_prefix}${fs} ${cli_args}'"
-    zdebug "${output}"
+    if zdebug ; then
+      zdebug "loaded ${mnt}${kernel} and ${mnt}${initramfs} into memory"
+      zdebug "kernel command line: '${root_prefix}${fs} ${cli_args}'"
+      zdebug "${output}"
+    fi
   fi
 
   umount "${mnt}"
@@ -747,6 +749,7 @@ find_be_kernels() {
       labels+=( "$version" )
     fi
 
+    local ext pfx lbl i
     # Use a mess of loops instead better brace expansions to control priorities
     for ext in {.img,""}{"",.{gz,bz2,xz,lzma,lz4,lzo,zstd}}; do
       for pfx in initramfs initrd; do
@@ -1221,17 +1224,13 @@ has_resume_device() {
 # -m, -r, -e are print in the order they are passed into the function
 
 timed_prompt() {
-  local prompt delay message
+  local prompt delay message opt OPTIND
 
-  delay="30"
-  prompt="Press $( colorize green "[RETURN]") or wait $( colorize yellow "%0.${#delay}d" ) seconds to continue"
-  message=()
-
-  local opt OPTIND
   while getopts "d:p:m:r:e:" opt; do
     case "${opt}" in
       d)
         delay="${OPTARG}"
+        [ "${delay}" -gt 0 ] || return 0
         ;;
       p)
         prompt="${OPTARG}"
@@ -1249,6 +1248,9 @@ timed_prompt() {
         ;;
     esac
   done
+
+  [ -n "${delay}" ] || delay="30"
+  [ -n "${prompt}" ] || prompt="Press $( colorize green "[RETURN]") or wait $( colorize yellow "%0.${#delay}d" ) seconds to continue"
 
   # Add a blank line between any messages and the prompt
   message+=( "" )

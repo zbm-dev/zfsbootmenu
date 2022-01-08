@@ -1,79 +1,86 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
+if [ -n "${_ZFSBOOTMENU_KMSG_LOG_LIB}" ]; then
+  [ -z "${FORCE_RELOAD}" ] && return
+else
+  readonly _ZFSBOOTMENU_KMSG_LOG_LIB=1
+fi
+
 : "${loglevel:=4}"
 
-# arg1: log level
-# arg2: log line
+# arg1..argN: log line
 # prints: nothing
-# returns: nothing
+# returns: 1 if loglevel isn't high enough
 
-zlog() {
+zdebug() {
+  [ ${loglevel:-4} -ge 7 ] || return 1
   local prefix trace last lines line lc i
-  [ -z "${1}" ] && return
-  [ -z "${2}" ] && return
 
   # Remove everything but new lines from the string, count the length
-  lines="${2//[!$'\n']/}"
+  lines="${1//[!$'\n']/}"
   lines="${#lines}"
-  lc=0
 
   while IFS=$'\n' read -r line ; do
-    # Only add script/function tracing to debug messages
-    if [ "${1}" -eq 7 ] && [ "${lc}" -eq "${lines}" ] ; then
+    if [ "${lc:=0}" -eq "${lines}" ] ; then
       trace=
       last=${#BASH_SOURCE[@]}
-      for (( i=2 ; i<last ; i++ )) ; do
+      for (( i=1 ; i<last ; i++ )) ; do
         trace="${FUNCNAME[$i]},${BASH_SOURCE[$i]},${BASH_LINENO[$i-1]}${trace:+;}${trace}"
       done
-      prefix="<${1}>ZBM:[$$]|${trace}|"
-    elif [ "${1}" -eq 7 ] ; then
-      prefix="<${1}>ZBM:[$$]||"
+      prefix="<7>ZBM:[$$]|${trace}|"
     else
-      prefix="<${1}>ZFSBootMenu: "
+      prefix="<7>ZBM:[$$]||"
     fi
     lc=$(( lc + 1 ))
-    echo -e "${prefix}${line}" > /dev/kmsg
-  done <<<"${2}"
+    echo "${prefix}${line}" > /dev/kmsg
+  done <<<"${1}"
+}
+
+if [ ${loglevel:-4} -ge 7 ] ; then
+  # Trap errors and send them to the debug handler
+  traperror() {
+    zdebug "trapped error from: '${BASH_COMMAND}'"
+  }
+
+  trap traperror ERR
+  set -o errtrace
+fi
+
+# arg1: log line
+# prints: nothing
+# returns: 1 if loglevel isn't high enough
+
+zinfo() {
+  [ "${loglevel:-4}" -ge 6 ] || return 1
+  echo "<6>ZFSBootMenu: $1" > /dev/kmsg
 }
 
 # arg1: log line
 # prints: nothing
 # returns: 1 if loglevel isn't high enough
 
-zdebug() {
-  [ "${loglevel:-4}" -ge 7 ] || return 1
-  zlog 7 "$@"
-}
-
-zinfo() {
-  [ "${loglevel:-4}" -ge 6 ] || return 1
-  zlog 6 "$@"
-}
-
 znotice() {
   [ "${loglevel:-4}" -ge 5 ] || return 1
-  zlog 5 "$@"
+  echo "<5>ZFSBootMenu: $1" > /dev/kmsg
 }
+
+# arg1: log line
+# prints: nothing
+# returns: 1 if loglevel isn't high enough
 
 zwarn() {
   [ "${loglevel:-4}" -ge 4 ] || return 1
   : > "${BASE}/have_warnings"
-  zlog 4 "$@"
+  echo "<4>ZFSBootMenu: $1" > /dev/kmsg
 }
+
+# arg1: log line
+# prints: nothing
+# returns: 1 if loglevel isn't high enough
 
 zerror() {
   [ "${loglevel:-4}" -ge 3 ] || return 1
   : > "${BASE}/have_errors"
-  zlog 3 "$@"
+  echo "<3>ZFSBootMenu: $1" > /dev/kmsg
 }
-
-traperror() {
-  zdebug "trapped error from: '${BASH_COMMAND}'"
-}
-
-if [ "${loglevel:-4}" -eq 7 ] ; then
-  set -o errtrace
-  set -o functrace
-  trap traperror ERR
-fi

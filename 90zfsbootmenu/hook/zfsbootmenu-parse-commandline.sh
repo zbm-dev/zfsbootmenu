@@ -3,6 +3,8 @@
 
 # Critical functions
 sources=(
+  /lib/profiling-lib.sh
+  /etc/zfsbootmenu.conf
   /lib/kmsg-log-lib.sh
   /lib/zfsbootmenu-kcl.sh
 )
@@ -17,9 +19,10 @@ done
 
 unset src sources
 
-# Source options detected at build time
-# shellcheck disable=SC1091
-[ -r /etc/zfsbootmenu.conf ] && source /etc/zfsbootmenu.conf
+if [ -z "${BYTE_ORDER}" ]; then
+  zwarn "unable to determine platform endianness; assuming little-endian"
+  BYTE_ORDER="le"
+fi
 
 # shellcheck disable=SC2154
 if [ -n "${embedded_kcl}" ]; then
@@ -30,9 +33,20 @@ fi
 # Make sure a base directory exists
 mkdir -p "${BASE:=/zfsbootmenu}"
 
-if [ -z "${BYTE_ORDER}" ]; then
-  zwarn "unable to determine platform endianness; assuming little-endian"
-  BYTE_ORDER="le"
+# Only zwarn/zerror will log prior to loglevel being updated by a KCL argument
+min_logging=4
+loglevel=$( get_zbm_arg loglevel )
+if [ -n "${loglevel}" ]; then
+  # minimum log level of 4, so we never lose error or warning messages
+  if [ "${loglevel}" -ge ${min_logging} ] >/dev/null 2>&1; then
+    # shellcheck disable=1091
+    FORCE_RELOAD=1 source /lib/kmsg-log-lib.sh >/dev/null 2>&1
+    zinfo "setting log level from command line: ${loglevel}"
+  else
+    loglevel=${min_logging}
+  fi
+else
+  loglevel=${min_logging}
 fi
 
 # Let the command line override our host id.
@@ -64,22 +78,12 @@ fi
 # Use the last defined console= to control menu output
 control_term=$( get_zbm_arg console )
 if [ -n "${control_term}" ]; then
+  #shellcheck disable=SC2034
   control_term="/dev/${control_term%,*}"
   zinfo "setting controlling terminal to: ${control_term}"
 else
   control_term="/dev/tty1"
   zinfo "defaulting controlling terminal to: ${control_term}"
-fi
-
-# Use loglevel to determine logging to /dev/kmsg
-min_logging=4
-loglevel=$( get_zbm_arg loglevel )
-if [ -n "${loglevel}" ]; then
-  # minimum log level of 4, so we never lose error or warning messages
-  [ "${loglevel}" -ge ${min_logging} ] || loglevel=${min_logging}
-  zinfo "setting log level from command line: ${loglevel}"
-else
-  loglevel=${min_logging}
 fi
 
 # hostid - discover the hostid used to import a pool on failure, assume it
@@ -119,8 +123,14 @@ fi
 
 # zbm.timeout= overrides timeout=
 menu_timeout=$( get_zbm_arg zbm.timeout timeout )
-if [ -n "${menu_timeout}" ]; then
-  zinfo "setting menu timeout from command line: ${menu_timeout}"
+if [ -n "${menu_timeout}" ] ; then
+  # Ensure that menu_timeout is an integer
+  if ! [ "${menu_timeout}" -eq "${menu_timeout}" ] >/dev/null 2>&1; then
+    menu_timeout=10
+    zinfo "invalid menu timeout, defaulting to ${menu_timeout}"
+  else
+    zinfo "setting menu timeout from command line: ${menu_timeout}"
+  fi
 elif get_zbm_bool 0 zbm.show ; then
   menu_timeout=-1;
   zinfo "forcing display of menu"
@@ -129,6 +139,7 @@ elif get_zbm_bool 0 zbm.skip ; then
   zinfo "skipping display of menu"
 else
   menu_timeout=10
+  zinfo "defaulting menu timeout to ${menu_timeout}"
 fi
 
 zbm_import_delay=$( get_zbm_arg zbm.import_delay )
