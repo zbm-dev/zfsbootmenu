@@ -3,6 +3,7 @@
 
 # Source functional libraries, logging and configuration
 sources=(
+  /lib/profiling-lib.sh
   /etc/zfsbootmenu.conf
   /lib/zfsbootmenu-core.sh
   /lib/zfsbootmenu-lib.sh

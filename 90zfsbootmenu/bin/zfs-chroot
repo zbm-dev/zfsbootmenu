@@ -2,6 +2,8 @@
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
 # shellcheck disable=SC1091
+source /lib/profiling-lib.sh >/dev/null 2>&1
+source /etc/zfsbootmenu.conf 2>&1 || exit 1
 source /lib/kmsg-log-lib.sh >/dev/null 2>&1 || exit 1
 source /lib/zfsbootmenu-core.sh >/dev/null 2>&1 || exit 1
 
@@ -12,7 +14,7 @@ zdebug "started with ${selected}"
 [ -n "${selected}" ] || exit 0
 
 if mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
-  zdebug "Mounted ${selected} to ${mountpoint}"
+  zdebug "mounted ${selected} to ${mountpoint}"
   mount -t proc proc "${mountpoint}/proc"
   mount -t sysfs sys "${mountpoint}/sys"
   mount -B /dev "${mountpoint}/dev"
