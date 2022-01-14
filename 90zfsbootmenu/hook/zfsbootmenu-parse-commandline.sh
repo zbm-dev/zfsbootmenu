@@ -35,8 +35,7 @@ mkdir -p "${BASE:=/zfsbootmenu}"
 
 # Only zwarn/zerror will log prior to loglevel being updated by a KCL argument
 min_logging=4
-loglevel=$( get_zbm_arg loglevel )
-if [ -n "${loglevel}" ]; then
+if loglevel=$( get_zbm_arg loglevel ) ; then
   # minimum log level of 4, so we never lose error or warning messages
   if [ "${loglevel}" -ge ${min_logging} ] >/dev/null 2>&1; then
     # shellcheck disable=1091
@@ -51,7 +50,7 @@ fi
 
 # Let the command line override our host id.
 # shellcheck disable=SC2034
-if cli_spl_hostid=$( get_zbm_arg spl.spl_hostid spl_hostid ) && [ -n "${cli_spl_hostid}" ]; then
+if cli_spl_hostid=$( get_zbm_arg spl.spl_hostid spl_hostid ) ; then
   # Start empty so only valid hostids are set for future use
   spl_hostid=
 
@@ -76,8 +75,7 @@ if cli_spl_hostid=$( get_zbm_arg spl.spl_hostid spl_hostid ) && [ -n "${cli_spl_
 fi
 
 # Use the last defined console= to control menu output
-control_term=$( get_zbm_arg console )
-if [ -n "${control_term}" ]; then
+if control_term=$( get_zbm_arg console ) ; then
   #shellcheck disable=SC2034
   control_term="/dev/${control_term%,*}"
   zinfo "setting controlling terminal to: ${control_term}"
@@ -90,8 +88,7 @@ fi
 # force  - append -f to zpool import
 # strict - legacy behavior, drop to an emergency shell on failure
 
-import_policy=$( get_zbm_arg zbm.import_policy )
-if [ -n "${import_policy}" ]; then
+if import_policy=$( get_zbm_arg zbm.import_policy ) ; then
   case "${import_policy}" in
     hostid)
       if [ "${BYTE_ORDER}" = "be" ]; then
@@ -122,8 +119,7 @@ else
 fi
 
 # zbm.timeout= overrides timeout=
-menu_timeout=$( get_zbm_arg zbm.timeout timeout )
-if [ -n "${menu_timeout}" ] ; then
+if menu_timeout=$( get_zbm_arg zbm.timeout timeout ) ; then
   # Ensure that menu_timeout is an integer
   if ! [ "${menu_timeout}" -eq "${menu_timeout}" ] >/dev/null 2>&1; then
     menu_timeout=10
@@ -142,8 +138,7 @@ else
   zinfo "defaulting menu timeout to ${menu_timeout}"
 fi
 
-zbm_import_delay=$( get_zbm_arg zbm.import_delay )
-if [ "${zbm_import_delay:-0}" -gt 0 ] 2>/dev/null ; then
+if zbm_import_delay=$( get_zbm_arg zbm.import_delay ) && [ "${zbm_import_delay:-0}" -gt 0 ] 2>/dev/null ; then
   # Again, this validates that zbm_import_delay is numeric in addition to logging
   zinfo "import retry delay is ${zbm_import_delay} seconds"
 else
@@ -158,8 +153,7 @@ zbm_columns=$( get_zbm_arg zbm.columns )
 
 # Allow sorting based on a key
 zbm_sort=
-sort_key=$( get_zbm_arg zbm.sort_key )
-if [ -n "${sort_key}" ] ; then
+if sort_key=$( get_zbm_arg zbm.sort_key ) ; then
   valid_keys=( "name" "creation" "used" )
   for key in "${valid_keys[@]}"; do
     if [ "${key}" == "${sort_key}" ]; then
@@ -200,8 +194,7 @@ else
 fi
 
 # rewrite root=
-prefer=$( get_zbm_arg zbm.prefer )
-if [ -n "${prefer}" ]; then
+if prefer=$( get_zbm_arg zbm.prefer ) ; then
   root="zfsbootmenu:POOL=${prefer}"
 fi
 

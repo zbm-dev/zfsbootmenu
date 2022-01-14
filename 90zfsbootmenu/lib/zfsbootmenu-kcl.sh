@@ -189,42 +189,36 @@ get_zbm_kcl() {
   echo "${kcl}"
 }
 
-# arg1..argN: argument to extract (multiples are alternatives, ordered by precedence)
+# args: none
+# prints: nothing
+# returns: nothing
+
+make_cmdline_dir() {
+  mkdir -p "${BASE}/cmdline.d"
+
+  while read -r karg; do
+    kkey="${karg%%=*}"
+    if [ "${kkey}" = "${karg}" ]; then
+      echo 1 > "${BASE}/cmdline.d/${kkey}"
+    else
+      echo "${karg#"${kkey}="}" > "${BASE}/cmdline.d/${kkey}"
+    fi
+  done <<< "$( _build_zbm_kcl )"
+}
+
+# arg1..argN: argument to lookup (multiples are alternatives, ordered by precedence)
 # prints: value associated with the argument (with no value, 1 is printed)
 # returns: 0 if match is found, 1 otherwise
 
 get_zbm_arg() {
-  local kcl karg kkey kval kopt kmatch
-
-  # At least one argument must be specified
   [ -n "${1}" ] || return 1
+  [ -d "${BASE}/cmdline.d" ] || make_cmdline_dir
 
-  kcl="$( get_zbm_kcl )"
-
+  local kopt
   for kopt in "$@"; do
-    kmatch=
-
-    # Short-circuit the entire check if the option string isn't in the KCL at all
-    [[ ${kcl} =~ ${kopt} ]] || continue
-
-    while read -r karg; do
-      # Ignore variables not being tested
-      kkey="${karg%%=*}"
-      [ "${kkey}" = "${kopt}" ] || continue
-
-      kval="${karg#"${kkey}="}"
-      if [ "${kval}" = "${karg}" ]; then
-        # No value term, just echo default 1
-        kmatch=1
-      else
-        # Value provided, echo it
-        kmatch="${kval}"
-      fi
-    done <<< "${kcl}"
-
-    if [ -n "${kmatch}" ]; then
+    if [ -f "${BASE}/cmdline.d/${kopt}" ] ; then
+      head -1 < "${BASE}/cmdline.d/${kopt}"
       [ "${kopt}" = "${1}" ] || zdebug "using arg '${kopt}' when '${1}' is preferred"
-      echo "${kmatch}"
       return 0
     fi
   done

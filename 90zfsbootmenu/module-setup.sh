@@ -332,6 +332,7 @@ EOF
 source /etc/zfsbootmenu.conf >/dev/null 2>&1
 source /lib/kmsg-log-lib.sh >/dev/null 2>&1
 source /lib/zfsbootmenu-core.sh >/dev/null 2>&1
+source /lib/zfsbootmenu-kcl.sh >/dev/null 2>&1
 [ -f /etc/profile ] && source /etc/profile
 [ -f /lib/zfsbootmenu-completions.sh ] && source /lib/zfsbootmenu-completions.sh
 
