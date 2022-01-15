@@ -218,7 +218,7 @@ get_zbm_arg() {
   for kopt in "$@"; do
     if [ -f "${BASE}/cmdline.d/${kopt}" ] ; then
       head -1 < "${BASE}/cmdline.d/${kopt}"
-      [ "${kopt}" = "${1}" ] || zdebug "using arg '${kopt}' when '${1}' is preferred"
+      [ "${kopt}" = "${1}" ] || zwarn "using deprecated arg '${kopt}' when '${1}' is preferred"
       return 0
     fi
   done
