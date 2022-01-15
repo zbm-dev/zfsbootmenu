@@ -106,7 +106,7 @@ if import_policy=$( get_zbm_arg zbm.import_policy ) ; then
       zinfo "setting import_policy to strict"
       ;;
     *)
-      zinfo "unknown import policy ${import_policy}, defaulting to hostid"
+      zwarn "unknown import policy '${import_policy}', defaulting to hostid"
       import_policy="hostid"
       ;;
   esac
@@ -122,8 +122,8 @@ fi
 if menu_timeout=$( get_zbm_arg zbm.timeout timeout ) ; then
   # Ensure that menu_timeout is an integer
   if ! [ "${menu_timeout}" -eq "${menu_timeout}" ] >/dev/null 2>&1; then
+    zwarn "invalid menu timeout: '${menu_timeout}', defaulting to 10 seconds"
     menu_timeout=10
-    zinfo "invalid menu timeout, defaulting to ${menu_timeout}"
   else
     zinfo "setting menu timeout from command line: ${menu_timeout}"
   fi
@@ -150,7 +150,7 @@ fi
 # shellcheck disable=SC2034
 if zbm_lines=$( get_zbm_arg zbm.lines ) ; then
   if ! [ "${zbm_lines}" -gt 0 ] >/dev/null 2>&1 ; then
-    zinfo "invalid zbm_lines size, defaulting to 25 lines"
+    zwarn "invalid zbm.lines: '${zbm_lines}', defaulting to 25 lines"
     zbm_lines=25
   fi
 fi
@@ -158,7 +158,7 @@ fi
 # shellcheck disable=SC2034
 if zbm_columns=$( get_zbm_arg zbm.columns ) ; then
   if ! [ "${zbm_columns}" -gt 0 ] >/dev/null 2>&1 ; then
-    zinfo "invalid zbm_columns size, defaulting to 80 columns"
+    zwarn "invalid zbm.columns: '${zbm_columns}', defaulting to 80 columns"
     zbm_columns=80
   fi
 fi
