@@ -195,7 +195,7 @@ else
   DISPLAY_ARGS=( "-nographic" )
   SERIAL=1
   cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
-  omit_dracutmodules+=" i18n "
+omit_dracutmodules+=" i18n "
 EOF
 fi
 
