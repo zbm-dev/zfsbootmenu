@@ -145,11 +145,23 @@ else
   zbm_import_delay=5
 fi
 
-# Allow setting of console size; there are no defaults here
+# Allow setting of console size; ensure lines/columns are integers > 0
+
 # shellcheck disable=SC2034
-zbm_lines=$( get_zbm_arg zbm.lines )
+if zbm_lines=$( get_zbm_arg zbm.lines ) ; then
+  if ! [ "${zbm_lines}" -gt 0 ] >/dev/null 2>&1 ; then
+    zinfo "invalid zbm_lines size, defaulting to 25 lines"
+    zbm_lines=25
+  fi
+fi
+
 # shellcheck disable=SC2034
-zbm_columns=$( get_zbm_arg zbm.columns )
+if zbm_columns=$( get_zbm_arg zbm.columns ) ; then
+  if ! [ "${zbm_columns}" -gt 0 ] >/dev/null 2>&1 ; then
+    zinfo "invalid zbm_columns size, defaulting to 80 columns"
+    zbm_columns=80
+  fi
+fi
 
 # Allow sorting based on a key
 zbm_sort=
