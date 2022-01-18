@@ -35,6 +35,10 @@ This tool makes uses of the following additional software:
 
  ZFSBootMenu has been tested successfully with Kernel 5.8.14, Dracut 050 and OpenZFS 2.0.0-rc4.
 
+# ZFS boot environments
+
+From the perspective of ZFSBootMenu, a "boot environment" is simply a ZFS filesystem that contains a Linux kernel and initramfs in its `/boot` subdirectory. More thorough consideration of the concept is presented in the [boot environment primer](BOOTENVS.md).
+
 # System prereqs
 
 To ensure the boot menu can find your kernels, you'll need to ensure `/boot` resides on your ZFS filesystem. An example filesystem layout is as follows:
