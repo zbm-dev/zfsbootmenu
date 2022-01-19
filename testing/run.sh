@@ -31,10 +31,11 @@ Usage: $0 [options]
   -C  Set the number of CPUs for the virtual machine
   -F  Generate a flamegraph/flamechart using tracing data from ZBM
   -E  Enable early Dracut tracing
+  -G  Enable debug output for generate-zbm
 EOF
 }
 
-CMDOPTS="D:A:a:d:fsv:hineM:C:FE"
+CMDOPTS="D:A:a:d:fsv:hineM:C:FEG"
 
 # First-pass option parsing just looks for test directory
 while getopts "${CMDOPTS}" opt; do
@@ -106,6 +107,7 @@ SSH_INCLUDE=0
 RESET=1
 EFI=0
 SERDEV_COUNT=0
+GENZBM_DEBUG=
 
 # Override any default variables
 #shellcheck disable=SC1091
@@ -171,6 +173,9 @@ while getopts "${CMDOPTS}" opt; do
     E)
       EARLY_TRACING=1
       FLAME=1
+      ;;
+    G)
+      GENZBM_DEBUG=1
       ;;
     *)
       ;;
@@ -324,7 +329,7 @@ if ((CREATE)) ; then
   fi
 
   # Try to find the local dracut and generate-zbm first
-  if ! ( cd "${TESTDIR}" && PATH=./dracut:${PATH} ./generate-zbm -c ./local.yaml ); then
+  if ! ( cd "${TESTDIR}" && PATH=./dracut:${PATH} ./generate-zbm -c ./local.yaml ${GENZBM_DEBUG:+-d} ); then
     error "unable to create ZFSBootMenu images"
   fi
 
