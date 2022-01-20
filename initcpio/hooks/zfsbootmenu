@@ -1,0 +1,6 @@
+#!/bin/sh
+
+run_hook() {
+    # This hook is run in busybox ash; just jump into the bash entrypoint
+    exec bash /libexec/zfsbootmenu-initcpio
+}

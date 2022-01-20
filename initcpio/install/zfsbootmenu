@@ -1,0 +1,283 @@
+#!/bin/bash
+
+add_terminfo() {
+    # Populate some basic terminfo databases
+    # Shamelessly ripped from dracut
+
+    local tt troot
+
+    # Find the first path that contains a linux terminfo
+    for tt in /etc /usr/share /lib; do
+        if [[ -r "${tt}/terminfo/l/linux" ]]; then
+            troot="${tt}/terminfo"
+            break
+        fi
+    done
+
+    [[ -d "${troot}" ]] || return
+
+    # At this point, at least l/linux is guaranteed to exist
+    for tt in "l/linux" "v/vt100" "v/vt102" "v/vt220"; do
+        [[ -r "${troot}/${tt}" ]] || continue
+        add_file "${troot}/${tt}" "/usr/share/terminfo/${tt}"
+    done
+}
+
+add_optional_module() {
+    # Add a kernel module to the initcpio image only if the module
+    # actually exists as a loadable file. Otherwise, ignore the module.
+
+    # Without a version, no module is added
+    [[ $KERNELVERSION == none ]] && return 0
+
+    # Strip any extension, normalize name
+    local target="${1%.ko*}"
+    target="${target//-/_}"
+
+    # Try to determine path to module, if there is one
+    local kfile
+    kfile="$( modinfo -k "${KERNELVERSION}" -n "${target}" 2>/dev/null )" || return 0
+
+    # If module has a valid path, try to add it properly
+    case "${kfile}" in
+        /*) add_module "${target}" ;;
+        *) return 0 ;;
+    esac
+}
+
+add_zbm_binaries() {
+    local binaries mustcopy
+
+    binaries=(
+        zfs zpool zdb mount.zfs
+        kexec hostid od mount lsblk blkid dmesg
+        mkdir mktemp chmod ps env stty tput
+        less head tail cat tac sort sed grep tr awk fold
+        insmod modinfo depmod lsmod fzf bash setsid
+    )
+
+    # Optional mbuffer binary
+    command -v mbuffer >/dev/null 2>&1 && add_binary mbuffer
+
+    # Hard requirements
+    case "${zfsbootmenu_miser}" in
+        1|[Yy]|[Yy][Ee][Ss]|[Oo][Nn])
+            # Try to figure out what busybox provides
+            ;;
+        *)
+            # Don't be a miser, use system versions
+            map add_binary "${binaries[@]}"
+            return
+            ;;
+    esac
+
+    # Figure out which binaries busybox does *not* provide
+    readarray -t mustcopy < <(comm -23 \
+        <(printf "%s\n" "${binaries[@]}" | sort) \
+        <(/usr/lib/initcpio/busybox --list | sort))
+
+    # Copy the missing
+    map add_binary "${mustcopy[@]}"
+}
+
+create_zbm_conf() {
+    # Create core ZBM configuration file
+
+    local endian
+    local ival="$( echo -n 3 | od -tx2 -N2 -An | tr -d '[:space:]' )"
+    if [ "${ival}" = "3300" ]; then
+        endian="be"
+    else
+        if [ "${ival}" != "0033" ]; then
+            warning "unable to determine platform endianness; assuming little-endian"
+        fi
+        endian="le"
+    fi
+
+    local has_refresh
+    if echo "abc" | fzf -f "abc" --bind "alt-l:refresh-preview" --exit-0 >/dev/null 2>&1; then
+        has_refresh=1
+    fi
+
+    cat > "${BUILDROOT}/etc/zfsbootmenu.conf" <<-'EOF'
+	# Include guard
+	[ -n "${_ETC_ZFSBOOTMENU_CONF}" ] && return
+	readonly _ETC_ZFSBOOTMENU_CONF=1
+	EOF
+
+    cat >> "${BUILDROOT}/etc/zfsbootmenu.conf" <<-EOF
+	export BYTE_ORDER="${endian:-le}"
+	export HAS_REFRESH="${has_refresh}"
+	EOF
+}
+
+create_zbm_profiles() {
+    # Create shell profiles for ZBM
+
+    cat > "${BUILDROOT}/etc/profile" <<-EOF
+	export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+	export TERM=linux
+	export HOME=/root
+	EOF
+
+    mkdir -p "${BUILDROOT}/root"
+    cat > "${BUILDROOT}/root/.bashrc" <<-EOF
+	source /etc/zfsbootmenu.conf >/dev/null 2>&1
+	source /lib/kmsg-log-lib.sh >/dev/null 2>&1
+	source /lib/zfsbootmenu-core.sh >/dev/null 2>&1
+	source /lib/zfsbootmenu-kcl.sh >/dev/null 2>&1
+	[ -f /etc/profile ] && source /etc/profile
+	[ -f /lib/zfsbootmenu-completions.sh ] && source /lib/zfsbootmenu-completions.sh
+
+	export PS1="\033[0;33mzfsbootmenu\033[0m \w > "
+
+	alias clear="tput clear"
+	alias reset="tput reset"
+	alias zbm="zfsbootmenu"
+	alias logs="ztrace"
+	alias trace="ztrace"
+	alias debug="ztrace"
+	alias help="/libexec/zfsbootmenu-help -L recovery-shell"
+
+	zdebug "sourced /root/.bashrc" || true
+	EOF
+}
+
+create_zbm_entrypoint() {
+    # Create an entrypoint to initialize the ZBM environment
+
+    mkdir -p "${BUILDROOT}/libexec"
+    cat > "${BUILDROOT}/libexec/zfsbootmenu-initcpio" <<-'EOF'
+	#!/bin/bash
+	hooks=(
+	    /lib/zfsbootmenu-parse-commandline.sh
+	    /lib/zfsbootmenu-preinit.sh
+	)
+
+	for hook in "${hooks[@]}"; do
+	    [ -r "${hook}" ] && source "${hook}" && continue
+
+	    echo "ERROR: failed to load hook "${hook}"; good luck..."
+	    exec /bin/bash
+	done
+	EOF
+
+    chmod 755 "${BUILDROOT}/libexec/zfsbootmenu-initcpio"
+}
+
+create_zbm_traceconf() {
+    local zbm_prof_lib
+
+    # Enable performance profiling if configured and available
+    case "${zfsbootmenu_trace_enable}" in
+        1|[Yy]|[Yy][Ee][Ss]|[Oo][Nn])
+            zbm_prof_lib="${zfsbootmenu_module_root}/profiling/profiling-lib.sh"
+            ;;
+        *)
+            ;;
+    esac
+
+    if ! [ -r "${zbm_prof_lib}" ]; then
+        echo "return 0" > "${BUILDROOT}/lib/profiling-lib.sh"
+        return
+    fi
+
+    add_file "${zbm_prof_lib}" "/lib/profiling-lib.sh"
+
+    cat > "${BUILDROOT}/etc/profiling.conf" <<-EOF
+	export zfsbootmenu_trace_term=${zfsbootmenu_trace_term}
+	export zfsbootmenu_trace_baud=${zfsbootmenu_trace_baud}
+	EOF
+}
+
+# TODO: confirm proper return code on installation failures
+build() {
+    local hooks relative _file
+
+    # TODO: fix dracut-specific path
+    : ${zfsbootmenu_module_root:=/usr/lib/dracut/modules.d/90zfsbootmenu}
+
+    # Modules required for ZBM operation
+    map add_module zfs zcommon znvpair zavl zunicode zlua icp spl
+
+    # Optional modules
+    map add_optional_module zlib_deflate zlib_inflate
+
+    # Binaries required for ZBM operation
+    add_zbm_binaries
+
+    # Necessary udev rules
+    map add_file \
+        /usr/lib/udev/rules.d/60-zvol.rules \
+        /usr/lib/udev/rules.d/69-vdev.rules \
+        /usr/lib/udev/rules.d/90-zfs.rules
+
+    # This helper tends to be used by the udev rules
+    [[ -f /usr/lib/udev/vdev_id ]] && add_file /usr/lib/udev/vdev_id
+
+    # TODO: figure out if libgcc_s.so.1 is necessary and add it
+
+    # On-line documentation
+    while read -r doc; do
+        relative="${doc#"${zfsbootmenu_module_root}/"}"
+        [ "${relative}" = "${doc}" ] && continue
+        add_file "${doc}" "/usr/share/docs/${relative}"
+    done <<< "$( find "${zfsbootmenu_module_root}/help-files" -type f )"
+
+    # Install core ZBM functionality
+    for _file in "${zfsbootmenu_module_root}"/lib/*; do
+        add_file "${_file}" "/lib/${_file##*/}"
+    done
+
+    for _file in "${zfsbootmenu_module_root}"/libexec/*; do
+        add_file "${_file}" "/libexec/${_file##*/}"
+    done
+
+    for _file in "${zfsbootmenu_module_root}"/bin/*; do
+        add_file "${_file}" "/bin/${_file##*/}"
+    done
+
+    hooks=( zfsbootmenu-{parse-commandline,preinit}.sh )
+    for _file in "${hooks[@]}"; do
+        add_file "${zfsbootmenu_module_root}/hook/${_file}" "/lib/${_file}"
+    done
+
+    # allow mount(8) to "autodetect" ZFS
+    echo 'zfs' >>"${BUILDROOT}/etc/filesystems"
+
+    for _file in "${zfsbootmenu_early_setup[@]}"; do
+        [ -x "${_file}" ] || continue
+        add_file "${_file}" "/libexec/early-setup.d/${_file##*/}"
+    done
+
+    for _file in "${zfsbootmenu_setup[@]}"; do
+        [ -x "${_file}" ] || continue
+        add_file "${_file}" "/libexec/setup.d/${_file##*/}"
+    done
+
+    for _file in "${zfsbootmenu_teardown[@]}"; do
+        [ -x "${_file}" ] || continue
+        add_file "${_file}" "/libexec/teardown.d/${_file##*/}"
+    done
+
+    # Copy host-specific ZFS configs
+    [[ -f /etc/hostid ]] && add_file "/etc/hostid"
+    [[ -f /etc/zfs/zpool.cache ]] && add_file "/etc/zfs/zpool.cache"
+    [[ -f /etc/zfs/vdev_id.conf ]] && add_file "/etc/zfs/vdev_id.conf"
+    [[ -f /etc/modprobe.d/zfs.conf ]] && add_file "/etc/modprobe.d/zfs.conf"
+
+    add_terminfo
+
+    create_zbm_conf
+    create_zbm_profiles
+    create_zbm_traceconf
+    create_zbm_entrypoint
+
+    add_runscript
+}
+
+help() {
+    echo "This hook turns the initramfs into a ZFSBootMenu image"
+}
+
+# vim: set ts=4 sw=4 ft=sh et:
