@@ -198,6 +198,8 @@ make_cmdline_dir() {
 
   while read -r karg; do
     kkey="${karg%%=*}"
+    [ -n "${kkey}" ] || continue
+
     if [ "${kkey}" = "${karg}" ]; then
       echo 1 > "${BASE}/cmdline.d/${kkey}"
     else
