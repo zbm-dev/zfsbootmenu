@@ -10,5 +10,10 @@ fuzzy_default_options+=(
 
 export FZF_DEFAULT_OPTS="${fuzzy_default_options[*]}"
 
-# shellcheck disable=SC2086
-dmesg --notime -f user,daemon -l err,warn | ${FUZZYSEL}
+# Try to use feature flags found on dmesg from util-linux
+if output="$( dmesg --notime -f user -l err,warn 2>/dev/null )" ; then
+  echo "${output}" | ${FUZZYSEL}
+else
+  # fall back to manually parsing dmesg output; will show all ZBM generated logs up to zinfo level
+  dmesg | awk '/ZFSBootMenu:/{ for (i=3; i<=NF; i++){ printf("%s ", $i)}; printf "\n" }' | ${FUZZYSEL}
+fi

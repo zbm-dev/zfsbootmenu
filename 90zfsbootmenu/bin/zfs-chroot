@@ -1,10 +1,24 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
+_mnt=()
+
+cleanup() {
+  for _fs in "${_mnt[@]}"; do
+    umount "${_fs}" || zerror "unable to unmount ${_fs}"
+  done
+
+  _mnt=()
+  trap - HUP INT QUIT ABRT EXIT
+}
+
 # shellcheck disable=SC1091
 source /lib/profiling-lib.sh >/dev/null 2>&1
+# shellcheck disable=SC1091
 source /etc/zfsbootmenu.conf 2>&1 || exit 1
+# shellcheck disable=SC1091
 source /lib/kmsg-log-lib.sh >/dev/null 2>&1 || exit 1
+# shellcheck disable=SC1091
 source /lib/zfsbootmenu-core.sh >/dev/null 2>&1 || exit 1
 
 selected="${1}"
@@ -13,45 +27,61 @@ zdebug "started with ${selected}"
 
 [ -n "${selected}" ] || exit 0
 
-if mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
-  zdebug "mounted ${selected} to ${mountpoint}"
-  mount -t proc proc "${mountpoint}/proc"
-  mount -t sysfs sys "${mountpoint}/sys"
-  mount -B /dev "${mountpoint}/dev"
-  mount -B /tmp "${mountpoint}/tmp"
-  mount -t devpts pts "${mountpoint}/dev/pts"
+if ! mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
+  zerror "failed to mount ${selected}"
+  exit 1
+fi
 
-  pool="${selected%%/*}"
+# Track submounts so we know how to clean up on exit
+trap cleanup HUP INT QUIT ABRT EXIT
+_mnt=( "${mountpoint}" )
 
-  # Snapshots and read-only pools always produce read-only mounts
-  if is_snapshot "${selected}" || ! is_writable "${pool}"; then
-    writemode="$( colorize green "read-only")"
-  else
-    writemode="$( colorize red "read/write")"
-  fi
+zdebug "mounted ${selected} to ${mountpoint}"
 
-  _SHELL=
-  if [ -x "${mountpoint}/bin/bash" ] \
+mount -B /tmp "${mountpoint}/tmp" \
+  && _mnt=( "${mountpoint}/tmp" "${_mnt[@]}" )
+
+mount -t proc proc "${mountpoint}/proc" \
+  && _mnt=( "${mountpoint}/proc" "${_mnt[@]}" )
+
+mount -t sysfs sys "${mountpoint}/sys" \
+  && _mnt=( "${mountpoint}/sys" "${_mnt[@]}" )
+
+mount -B /dev "${mountpoint}/dev" \
+  && _mnt=( "${mountpoint}/dev" "${_mnt[@]}" )
+
+# Not all /dev filesystems have /dev/pts
+[ -d "${mountpoint}/dev/pts" ] \
+  && mount -t devpts pts "${mountpoint}/dev/pts" \
+  && _mnt=( "${mountpoint}/dev/pts" "${_mnt[@]}" )
+
+pool="${selected%%/*}"
+
+# Snapshots and read-only pools always produce read-only mounts
+if is_snapshot "${selected}" || ! is_writable "${pool}"; then
+  writemode="$( colorize green "read-only")"
+else
+  writemode="$( colorize red "read/write")"
+fi
+
+_SHELL=
+if [ -x "${mountpoint}/bin/bash" ] \
     && chroot "${mountpoint}" /bin/bash -c "exit 0" >/dev/null 2>&1 ; then
-    _SHELL="/bin/bash"
-    chroot_extra="--norc"
-  elif [ -x "${mountpoint}/bin/sh" ] \
+  _SHELL="/bin/bash"
+  chroot_extra="--norc"
+elif [ -x "${mountpoint}/bin/sh" ] \
     && chroot "${mountpoint}" /bin/sh -c "exit 0" >/dev/null 2>&1 ; then
-    _SHELL="/bin/sh"
-  else
-    zerror "unable to test execute a shell in ${selected}"
-  fi
+  _SHELL="/bin/sh"
+fi
 
-  if [ -n "${_SHELL}" ]; then
-    echo -e "$( colorize orange "${selected}") is mounted ${writemode}, /tmp is shared and read/write\n"
+if [ -z "${_SHELL}" ]; then
+  zerror "unable to test execute a shell in ${selected}"
+  exit 1
+fi
 
-    # regardless of shell, set PS1
-    if ! env "PS1=$( colorize orange "${selected}") \w > " chroot "${mountpoint}" "${_SHELL}" "${chroot_extra}" ; then
-      zdebug "chroot ${selected}:${_SHELL} returned code $?"
-    fi
-  fi
+echo -e "$( colorize orange "${selected}") is mounted ${writemode}, /tmp is shared and read/write\n"
 
-  if ! umount -R "${mountpoint}"; then
-    zerror "unable to unmount ${mountpoint}"
-  fi
+# regardless of shell, set PS1
+if ! env "PS1=$( colorize orange "${selected}") \w > " chroot "${mountpoint}" "${_SHELL}" "${chroot_extra}" ; then
+  zdebug "chroot ${selected}:${_SHELL} returned code $?"
 fi
