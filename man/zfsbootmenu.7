@@ -282,8 +282,8 @@ If specified, this provides the name of the \s-1ZFS\s0 filesystem from which key
 Normally, when ZFSBootMenu attempts to load encryption keys for a boot environment, it will attempt to look for a key file at the path specified by the \fIkeylocation\fR property on the \fIencryptionroot\fR for that boot environment. If that file does not exist, and \fIkeyformat=passphrase\fR is set for the \fIencryptionroot\fR (or \fIkeylocation=prompt\fR), ZFSBootMenu will prompt for a passphrase to unlock the boot environment. These passphrases entered are not cached by default.
 .Sp
 When \fBorg.zfsbootmenu:keysource\fR is a mountable \s-1ZFS\s0 filesystem, before prompting for a passphrase when \fIkeylocation\fR is not set to \fIprompt\fR, ZFSBootMenu will attempt to mount \fB<filesystem>\fR (unlocking that, if necessary) and search for the key file within \fB<filesystem>\fR. When \fB<filesystem>\fR specifies a \fImountpoint\fR property that is not \fInone\fR or \fIlegacy\fR, the specified mount point will be stripped (if possible) from the beginning of any \fIkeylocation\fR property to attempt to identify a key at the point where it would normally be mounted. If no file exists at the stripped path (or the \fImountpoint\fR specifies \fInone\fR or \fIlegacy\fR), keys will be sought at the full path of \fIkeylocation\fR relative to \fB<filesystem>\fR. If a key is found at either location, it will be copied to the initramfs. The copy in the initramfs will be used to decrypt the original boot environment. Copied keys are retained until ZFSBootMenu boots an environment, so a single password prompt can be sufficient to unlock several pools with the same \fIkeysource\fR or prevent prompts from reappearing when the pool must be exported and reimported (for example, to alter boot parameters from within ZFSBootMenu).
-.SH "Dracut Options"
-.IX Header "Dracut Options"
+.SH "Options for dracut"
+.IX Header "Options for dracut"
 In addition to standard dracut configuration options, the ZFSBootMenu dracut module supports addtional options to customize boot behavior.
 .IP "\fBzfsbootmenu_early_setup=<executable\-list>\fR" 4
 .IX Item "zfsbootmenu_early_setup=<executable-list>"
@@ -323,9 +323,20 @@ The hook \fImust not\fR assume that the filesystem \fB\s-1ZBM_SELECTED_BE\s0\fR 
 .Sp
 should be sufficient to return to the main menu. Likewise, the hook may construct and execute its own \fIkexec\fR command to alter boot-time parameters. This may be useful, for example, to allow ZFSBootMenu to select a boot environment and then restructure the boot process to launch a Xen kernel with the selected environment configured as dom0.
 .RE
+.SH "Options for mkinitcpio"
+.IX Header "Options for mkinitcpio"
+The \fBdracut\fR options specified above may also be specified in a mkinitcpio configuration file when \fBgenerate-zbm\fR is configured to create images using \fBmkinitcpio\fR. However, whereas the \fB<executable\-list>\fR values in the dracut configuration should be specified as a single, space-separated string; in the mkinitcpio configuration, each \fB<executable\-list>\fR value must be specified as a Bash array like the standard mkinitcpio arguments.
+.PP
+The following additional arguments may be provided in the mkinitcpio configuration file to further control the creation of ZFSBootMenu images:
+.IP "\fBzfsbootmenu_module_root=<path>\fR" 4
+.IX Item "zfsbootmenu_module_root=<path>"
+Set this variable to override the default \fB<path>\fR where the mkinitcpio hook looks for the components of ZFSBootMenu that must be installed in the created image.
+.IP "\fBzfsbootmenu_miser=yes\fR" 4
+.IX Item "zfsbootmenu_miser=yes"
+By default, \fBmkinitcpio\fR uses busybox to populate initramfs images. However, the \fIzfsbootmenu\fR hook will install system versions of several utilities that it requires to operate. On most systems, these versions will be provided by util-linux rather than busybox. To prefer busybox for these utilities when possible, set \fBzfsbootmenu_miser=yes\fR. Synonyms for \fIyes\fR are \fI1\fR, \fIy\fR or \fIon\fR, without regard to letter case.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-\&\fBgenerate-zbm\fR(5) \fBgenerate-zbm\fR(8) \fBdracut.conf\fR(5)
+\&\fBgenerate-zbm\fR(5) \fBgenerate-zbm\fR(8) \fBdracut.conf\fR(5) \fBmkinitcpio.conf\fR(5)
 .SH "AUTHOR"
 .IX Header "AUTHOR"
 ZFSBootMenu Team <https://github.com/zbm\-dev/zfsbootmenu>

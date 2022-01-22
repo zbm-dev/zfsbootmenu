@@ -154,9 +154,18 @@ The configuration is divided into several logical sections as keys of a \s-1YAML
 .IP "\fBManageImages\fR" 4
 .IX Item "ManageImages"
 This must be set to \fItrue\fR before \fBgenerate-zbm\fR will attempt to perform any action (e.g., image creation or pruning old files).
+.IP "\fBInitCPIO\fR" 4
+.IX Item "InitCPIO"
+Set to \fItrue\fR to use \fBmkinitcpio\fR instead of \fBdracut\fR to create ZFSBootMenu images.
 .IP "\fBDracutConfDir\fR" 4
 .IX Item "DracutConfDir"
-The path of the dracut configuration directory for ZFSBootMenu. This \fB\s-1MUST NOT\s0\fR be the same location as the system \fIdracut.conf.d\fR, as the configuration files there interfere with the creation of the ZFSBootMenu initramfs. If unspecified, a default value of \fI/etc/zfsbootmenu/dracut.conf.d\fR is assumed.
+The path of the dracut configuration directory for ZFSBootMenu. This \fB\s-1MUST NOT\s0\fR be the same location as the system \fIdracut.conf.d\fR, as the configuration files there interfere with the creation of the ZFSBootMenu initramfs. If unspecified, a default value of \fI/etc/zfsbootmenu/dracut.conf.d\fR is assumed. This value is ignored when \fIGlobal.InitCPIO\fR is \fItrue\fR.
+.IP "\fBInitCPIOConfig\fR" 4
+.IX Item "InitCPIOConfig"
+The path to a mkinitcpio configuration file for ZFSBootMenu. The \fIzfsbootmenu\fR hook will be forcefully added when \fBgenerate-zbm\fR invokes \fBmkinitcpio\fR using a command-line argument and does not need to be specified in the \fI\s-1HOOKS\s0\fR array in the configuration file. This value is ignored when \fIGlobal.InitCPIO\fR is not \fItrue\fR.
+.IP "\fBInitCPIOHookDirs\fR" 4
+.IX Item "InitCPIOHookDirs"
+A single path or an array of paths to \fBmkinitcpio\fR hook directories. When specifying a custom directory for the \fIzfsbootmenu\fR hook, it is generally required to also specify the default location as well. This option is ignored when \fIGlobal.InitCPIO\fR is not \fItrue\fR.
 .IP "\fBBootMountPoint\fR" 4
 .IX Item "BootMountPoint"
 In general, this should be the location of your \s-1EFI\s0 System Partition. \fBgenerate-zbm\fR will ensure that this is mounted when images are created and, if \fBgenerate-zbm\fR does the mounting, will unmount this filesystem on exit. When this parameter is not specified, \fBgenerate-zbm\fR will not verify or attempt to mount any filesystems.
@@ -165,7 +174,10 @@ In general, this should be the location of your \s-1EFI\s0 System Partition. \fB
 A specific ZFSBootMenu version string to use in producing images. In the string, the value \fI%{current}\fR will be replaced with the release version of ZFSBootMenu. The default value is simply \fI%{current}\fR.
 .IP "\fBDracutFlags\fR" 4
 .IX Item "DracutFlags"
-An array of additional arguments that will be passed to \fBdracut\fR when generating an initramfs.
+An array of additional arguments that will be passed to \fBdracut\fR when generating an initramfs. This option is ignored when \fIGlobal.InitCPIO\fR is \fItrue\fR.
+.IP "\fBInitCPIOFlags\fR" 4
+.IX Item "InitCPIOFlags"
+An array of additional arguments that will be passed to \fBmkinitcpio\fR when generating an initramfs. This option is ignored when \fIGlobal.InitCPIO\fR is not \fItrue\fR.
 .IP "\fBPreHooksDir\fR" 4
 .IX Item "PreHooksDir"
 The path of the directory containing executables that should be executed after \fIBootMountPoint\fR has been mounted. Files in this directory should be \fB+x\fR, and are executed in the order returned by a shell glob. The exit code of each hook is ignored.

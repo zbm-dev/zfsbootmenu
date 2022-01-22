@@ -182,7 +182,7 @@ When B<org.zfsbootmenu:keysource> is a mountable ZFS filesystem, before promptin
 
 =back
 
-=head1 Dracut Options
+=head1 Options for dracut
 
 In addition to standard dracut configuration options, the ZFSBootMenu dracut module supports addtional options to customize boot behavior.
 
@@ -232,9 +232,27 @@ should be sufficient to return to the main menu. Likewise, the hook may construc
 
 =back
 
+=head1 Options for mkinitcpio
+
+The B<dracut> options specified above may also be specified in a mkinitcpio configuration file when B<generate-zbm> is configured to create images using B<mkinitcpio>. However, whereas the B<E<lt>executable-listE<gt>> values in the dracut configuration should be specified as a single, space-separated string; in the mkinitcpio configuration, each B<E<lt>executable-listE<gt>> value must be specified as a Bash array like the standard mkinitcpio arguments.
+
+The following additional arguments may be provided in the mkinitcpio configuration file to further control the creation of ZFSBootMenu images:
+
+=over 4
+
+=item B<zfsbootmenu_module_root=E<lt>pathE<gt>>
+
+Set this variable to override the default B<E<lt>pathE<gt>> where the mkinitcpio hook looks for the components of ZFSBootMenu that must be installed in the created image.
+
+=item B<zfsbootmenu_miser=yes>
+
+By default, B<mkinitcpio> uses busybox to populate initramfs images. However, the I<zfsbootmenu> hook will install system versions of several utilities that it requires to operate. On most systems, these versions will be provided by util-linux rather than busybox. To prefer busybox for these utilities when possible, set B<zfsbootmenu_miser=yes>. Synonyms for I<yes> are I<1>, I<y> or I<on>, without regard to letter case.
+
+=back
+
 =head1 SEE ALSO
 
-B<generate-zbm>(5) B<generate-zbm>(8) B<dracut.conf>(5)
+B<generate-zbm>(5) B<generate-zbm>(8) B<dracut.conf>(5) B<mkinitcpio.conf>(5)
 
 =head1 AUTHOR
 

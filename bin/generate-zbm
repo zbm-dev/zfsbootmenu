@@ -35,6 +35,7 @@ use constant REFARRAY => ref [];
 sub versionedKernel;
 sub latestKernel;
 sub createInitramfs;
+sub createUEFIBundle;
 sub execute;
 sub safeCopy;
 sub nonempty;
@@ -57,7 +58,7 @@ my ( %runConf, %config );
 my $default_config = "/etc/zfsbootmenu/config.yaml";
 
 $runConf{bootdir} = "/boot";
-$runConf{confd}   = "/etc/zfsbootmenu/dracut.conf.d";
+$runConf{usecpio} = false;
 
 GetOptions(
   "version|v=s" => \$runConf{version},
@@ -71,6 +72,8 @@ GetOptions(
   "config|c=s"  => \$runConf{config},
   "enable"      => \$runConf{enable},
   "disable"     => \$runConf{disable},
+  "initcpio|i"  => \$runConf{usecpio},
+  "hookd|H=s@"  => \$runConf{cpio_hookd},
   "debug|d"     => \$runConf{debug},
   "help|h"      => sub {
     pod2usage( -verbose => 2 );
@@ -166,9 +169,52 @@ unless ( $config{Global}{ManageImages} ) {
   exit;
 }
 
-# Override the location of our specific dracut.conf.d directory
-if ( nonempty $config{Global}{DracutConfDir} ) {
-  $runConf{confd} = $config{Global}{DracutConfDir};
+unless ( $runConf{usecpio} ) {
+
+  # If usecpio wasn't set by cmdline, load from the config
+  if ( defined $config{Global}{InitCPIO} ) {
+    $runConf{usecpio} = $config{Global}{InitCPIO};
+  } else {
+    $runConf{usecpio} = false;
+  }
+}
+
+unless ( defined $runConf{confd} ) {
+
+  # Set initramfs configuration from defaults or config file
+
+  # Defaults and config key depend on initramfs generator
+  my $ckey;
+  if ( $runConf{usecpio} ) {
+    $runConf{confd} = "/etc/zfsbootmenu/mkinitcpio.conf";
+    $ckey = "InitCPIOConfig";
+  } else {
+    $runConf{confd} = "/etc/zfsbootmenu/dracut.conf.d";
+    $ckey = "DracutConfDir";
+  }
+
+  # Replace the default if a configuration option exists
+  if ( defined $config{Global}{$ckey} ) {
+    $runConf{confd} = $config{Global}{$ckey};
+  }
+}
+
+if ( $runConf{usecpio} and not defined $runConf{cpio_hookd} ) {
+
+  # With initcpio mode, load hookdirs from config when not specified on cmdline
+  my @hooks;
+
+  if ( defined $config{Global}{InitCPIOHookDirs} ) {
+    if ( ref $config{Global}{InitCPIOHookDirs} eq REFARRAY ) {
+      foreach my $hookd ( @{ $config{Global}{InitCPIOHookDirs} } ) {
+        push( @hooks, $hookd );
+      }
+    } else {
+      push( @hooks, $config{Global}{InitCPIOHookDirs} );
+    }
+  }
+
+  $runConf{cpio_hookd} = \@hooks;
 }
 
 # Ensure our bootloader partition is mounted
@@ -195,7 +241,7 @@ if ( nonempty $config{Global}{BootMountPoint} ) {
 }
 
 if ( nonempty $config{Global}{PreHooksDir} and -d $config{Global}{PreHooksDir} ) {
-  while (my $hook = <$config{Global}{PreHooksDir}/*> ){
+  while ( my $hook = <$config{Global}{PreHooksDir}/*> ) {
     next unless -x $hook;
     Log("Processing hook: $hook");
     my @output = execute(qq($hook));
@@ -302,7 +348,7 @@ printf "Creating ZFSBootMenu %s from kernel %s\n", $runConf{version}, $runConf{k
 my $spl_hostid = "/sys/module/spl/parameters/spl_hostid";
 if ( -f $spl_hostid ) {
   open PROC, $spl_hostid;
-  $runConf{hostid}{module} = sprintf("%08x", <PROC>);
+  $runConf{hostid}{module} = sprintf( "%08x", <PROC> );
   close PROC;
 } else {
   $runConf{hostid}{module} = "00000000";
@@ -315,21 +361,29 @@ if ( $runConf{hostid}{module} ne "00000000" and -f $etc_hostid ) {
   close SPL;
 
   if ( unpack( 'c', pack( 's', 1 ) ) eq 1 ) {
+
     # little endian
-    $runConf{hostid}{etc} = sprintf("%08x", unpack('L<4', $hostid));
+    $runConf{hostid}{etc} = sprintf( "%08x", unpack( 'L<4', $hostid ) );
   } else {
+
     # big endian
-    $runConf{hostid}{etc} = sprintf("%08x", unpack('L>4', $hostid));
+    $runConf{hostid}{etc} = sprintf( "%08x", unpack( 'L>4', $hostid ) );
   }
 
-  if ($runConf{hostid}{module} ne $runConf{hostid}{etc}) {
+  if ( $runConf{hostid}{module} ne $runConf{hostid}{etc} ) {
     print "SPL ($runConf{hostid}{module}) and system ($runConf{hostid}{etc}) hostids do not match!\n";
   }
 }
 
+# Create the initramfs as long as some output will consume it
+my $initramfs;
+if ( enabled $config{EFI} or enabled $config{Components} ) {
+  $initramfs = createInitramfs( $tempdir, $runConf{kernel_version} );
+}
+
 # Create a unified kernel/initramfs/command line EFI file
 if ( enabled $config{EFI} ) {
-  my $unified_efi = createInitramfs( $tempdir, $runConf{kernel_version}, $runConf{kernel} );
+  my $unified_efi = createUEFIBundle( $tempdir, $runConf{kernel}, $initramfs );
 
   my $efi_target;
 
@@ -390,8 +444,6 @@ if ( enabled $config{EFI} ) {
 
 # Create a separate kernel / initramfs. Used by syslinux/extlinux/grub.
 if ( enabled $config{Components} ) {
-  my $initramfs = createInitramfs( $tempdir, $runConf{kernel_version} );
-
   my ( $kernel_target, $initramfs_target );
 
   my $component_prefix   = sprintf( "%s/%s", $config{Components}{ImageDir}, $runConf{kernel_prefix} );
@@ -546,7 +598,7 @@ EOF
 }
 
 if ( nonempty $config{Global}{PostHooksDir} and -d $config{Global}{PostHooksDir} ) {
-  while (my $hook = <$config{Global}{PostHooksDir}/*> ){
+  while ( my $hook = <$config{Global}{PostHooksDir}/*> ) {
     next unless -x $hook;
     Log("Processing hook: $hook");
     my @output = execute(qq($hook));
@@ -674,41 +726,140 @@ EOF
   return $namever;
 }
 
-# Returns the path to an initramfs, or dies with an error
+# Creates a UEFI bundle from an initramfs and kernel
+# Returns the path to the bundle or dies with an error
+sub createUEFIBundle {
+  my ( $imagedir, $kernel, $initramfs ) = @_;
+
+  my $output_file = join( '/', $imagedir, "zfsbootmenu.EFI" );
+
+  unless ( -f $kernel and -f $initramfs ) {
+    print "Cannot find kernel or initramfs to create UEFI bundle\n";
+    exit 1;
+  }
+
+  my $uefi_stub;
+
+  if ( nonempty $config{EFI}{Stub} ) {
+    $uefi_stub = $config{EFI}{Stub};
+  } else {
+    # For now, default stub locations are x86_64 only
+    my @uefi_stub_defaults = qw(
+      /usr/lib/gummiboot/linuxx64.efi.stub
+      /usr/lib/systemd/boot/efi/linuxx64.efi.stub
+    );
+
+    foreach my $stubloc (@uefi_stub_defaults) {
+      if ( -f $stubloc ) {
+        $uefi_stub = $stubloc;
+        last;
+      }
+    }
+  }
+
+  unless ( -f $uefi_stub ) {
+    print "Cannot find kernel or initramfs to create UEFI bundle\n";
+    exit 1;
+  }
+
+  my @cmd = qw(objcopy);
+
+  # Add os-release, if it exists
+  if ( -f "/etc/os-release" ) {
+    push( @cmd,
+      qw(--add-section .osrel=/etc/os-release),
+      qw(--change-section-vma .osrel=0x20000)
+    );
+  }
+
+  # Add cmdline, if it exists
+  if ( nonempty $runConf{cmdline} ) {
+    my $cmdline = join( '/', $imagedir, "cmdline.txt" );
+
+    open( my $fh, '>', $cmdline );
+    print $fh $runConf{cmdline};
+    close($fh);
+
+    push( @cmd,
+      ( "--add-section", ".cmdline=\"$cmdline\"" ),
+      qw(--change-section-vma .cmdline=0x30000)
+    );
+  }
+
+  # Mandatory kernel and initramfs images
+  push( @cmd, (
+    ( "--add-section", ".linux=\"$kernel\"" ),
+    qw(--change-section-vma .linux=0x2000000),
+    ( "--add-section", ".initrd=\"$initramfs\"" ),
+    qw(--change-section-vma .initrd=0x3000000)
+  ));
+
+  push( @cmd, ( $uefi_stub, $output_file ) );
+
+  my $command = join( ' ', @cmd );
+  Log("Executing: $command");
+
+  my @output = execute(@cmd);
+  my $status = pop(@output);
+  if ( $status eq 0 ) {
+    foreach my $line (@output) {
+      Log($line);
+    }
+    return $output_file;
+  } else {
+    foreach my $line (@output) {
+      print $line;
+    }
+    print "Failed to create $output_file\n";
+    exit $status;
+  }
+}
+
+# Creates an initramfs and returns its path, or dies with an error
 sub createInitramfs {
-  my ( $imagedir, $kver, $kernfile ) = @_;
+  my ( $imagedir, $kver ) = @_;
 
   my $output_file = join( '/', $imagedir, "zfsbootmenu.img" );
 
-  my @cmd = ( qw(dracut -f --confdir), $runConf{confd} );
-  push(@cmd, qw(-q)) unless $runConf{debug};
+  my @cmd;
+  my $flagsKey;
 
-  if ( defined $config{Global}{DracutFlags} ) {
-    if ( ref $config{Global}{DracutFlags} eq REFARRAY ) {
-      foreach my $flag ( @{ $config{Global}{DracutFlags} } ) {
+  if ( $runConf{usecpio} ) {
+    push( @cmd, ( qw(mkinitcpio --config), $runConf{confd} ) );
+    push( @cmd, qw(-v) ) if $runConf{debug};
+
+    # Add hook directories as appropriate
+    if ( defined $runConf{cpio_hookd} ) {
+      foreach my $hookd ( @{ $runConf{cpio_hookd} } ) {
+        push( @cmd, ( "--hookdir", $hookd ) );
+      }
+    }
+
+    $flagsKey = "InitCPIOFlags";
+  } else {
+    push( @cmd, ( qw(dracut -f --confdir), $runConf{confd} ) );
+    push( @cmd, qw(-q) ) unless $runConf{debug};
+
+    $flagsKey = "DracutFlags";
+  }
+
+  # Load custom flag additions from configuration file
+  if ( defined $config{Global}{$flagsKey} ) {
+    if ( ref $config{Global}{$flagsKey} eq REFARRAY ) {
+      foreach my $flag ( @{ $config{Global}{$flagsKey} } ) {
         push( @cmd, $flag );
       }
     } else {
-      push( @cmd, $config{Global}{DracutFlags} );
+      push( @cmd, $config{Global}{$flagsKey} );
     }
   }
 
-  # If $kernfile is provided, make a unified EFI image with the named kernel
-  if ( defined $kernfile ) {
-    if ( nonempty $config{EFI}{Stub} ) {
-      push( @cmd, ( qq(--uefi-stub), $config{EFI}{Stub} ) );
-    }
-
-    push( @cmd, ( qw(--uefi --kernel-image), $kernfile ) );
-
-    if ( nonempty $runConf{cmdline} ) {
-      push( @cmd, qq(--kernel-cmdline=\"$runConf{cmdline}\") );
-    }
-
-    $output_file = join( '/', $imagedir, "zfsbootmenu.efi" );
+  # Specify kernel version and ouptut location
+  if ( $runConf{usecpio} ) {
+    push( @cmd, ( qw(-A zfsbootmenu), "--generate", $output_file, "--kernel", $kver ) );
+  } else {
+    push( @cmd, ( $output_file, $kver ) );
   }
-
-  push( @cmd, ( $output_file, $kver ) );
 
   my $command = join( ' ', @cmd );
   Log("Executing: $command");
@@ -947,7 +1098,7 @@ sub Log {
   unless ( ref($entry) ) {
     print STDERR "## $entry\n";
   } elsif ( ref $entry eq REFARRAY ) {
-    foreach my $line ( @{ $entry } ) {
+    foreach my $line ( @{$entry} ) {
       chomp $line;
       print STDERR "## $line\n";
     }
@@ -988,9 +1139,27 @@ Manually specify a specific kernel version; supersedes I<Kernel.Version>
 
 Manually specify the output image prefix; supersedes I<Kernel.Prefix>
 
-=item B<--confd|-C> I<confd-path>
+=item B<--initcpio|-i>
 
-Specify the dracut configuration directory; supersedes I<Global.DracutConfDir>
+Use mkinitcpio instead of dracut.
+
+=item B<--confd|-C> I<config-path>
+
+Specify initramfs configuration path
+
+=over 4
+
+=item For dracut: supersedes I<Global.DracutConfDir>
+
+=item For mkinitcpio: supersedes I<Global.InitCPIOConfig>
+
+=back
+
+=item B<--hookd|-H> I<hookd-path>
+
+Specify mkinitcpio hook directory; supersedes I<Global.InitCPIOHookDirs>
+
+May be specified more than once. Ignored when using dracut.
 
 =item B<--cmdline|-l> I<options>
 

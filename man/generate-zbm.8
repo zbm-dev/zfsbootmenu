@@ -158,9 +158,27 @@ Manually specify a specific kernel version; supersedes \fIKernel.Version\fR
 .IP "\fB\-\-prefix|\-p\fR \fIimage-prefix\fR" 4
 .IX Item "--prefix|-p image-prefix"
 Manually specify the output image prefix; supersedes \fIKernel.Prefix\fR
-.IP "\fB\-\-confd|\-C\fR \fIconfd-path\fR" 4
-.IX Item "--confd|-C confd-path"
-Specify the dracut configuration directory; supersedes \fIGlobal.DracutConfDir\fR
+.IP "\fB\-\-initcpio|\-i\fR" 4
+.IX Item "--initcpio|-i"
+Use mkinitcpio instead of dracut.
+.IP "\fB\-\-confd|\-C\fR \fIconfig-path\fR" 4
+.IX Item "--confd|-C config-path"
+Specify initramfs configuration path
+.RS 4
+.IP "For dracut: supersedes \fIGlobal.DracutConfDir\fR" 4
+.IX Item "For dracut: supersedes Global.DracutConfDir"
+.PD 0
+.IP "For mkinitcpio: supersedes \fIGlobal.InitCPIOConfig\fR" 4
+.IX Item "For mkinitcpio: supersedes Global.InitCPIOConfig"
+.RE
+.RS 4
+.RE
+.IP "\fB\-\-hookd|\-H\fR \fIhookd-path\fR" 4
+.IX Item "--hookd|-H hookd-path"
+.PD
+Specify mkinitcpio hook directory; supersedes \fIGlobal.InitCPIOHookDirs\fR
+.Sp
+May be specified more than once. Ignored when using dracut.
 .IP "\fB\-\-cmdline|\-l\fR \fIoptions\fR" 4
 .IX Item "--cmdline|-l options"
 Override the kernel command line; supersedes \fIKernel.CommandLine\fR

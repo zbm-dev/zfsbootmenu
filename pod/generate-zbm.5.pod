@@ -22,9 +22,21 @@ The configuration is divided into several logical sections as keys of a YAML map
 
 This must be set to I<true> before B<generate-zbm> will attempt to perform any action (e.g., image creation or pruning old files).
 
+=item B<InitCPIO>
+
+Set to I<true> to use B<mkinitcpio> instead of B<dracut> to create ZFSBootMenu images.
+
 =item B<DracutConfDir>
 
-The path of the dracut configuration directory for ZFSBootMenu. This B<MUST NOT> be the same location as the system I<dracut.conf.d>, as the configuration files there interfere with the creation of the ZFSBootMenu initramfs. If unspecified, a default value of I</etc/zfsbootmenu/dracut.conf.d> is assumed.
+The path of the dracut configuration directory for ZFSBootMenu. This B<MUST NOT> be the same location as the system I<dracut.conf.d>, as the configuration files there interfere with the creation of the ZFSBootMenu initramfs. If unspecified, a default value of I</etc/zfsbootmenu/dracut.conf.d> is assumed. This value is ignored when I<Global.InitCPIO> is I<true>.
+
+=item B<InitCPIOConfig>
+
+The path to a mkinitcpio configuration file for ZFSBootMenu. The I<zfsbootmenu> hook will be forcefully added when B<generate-zbm> invokes B<mkinitcpio> using a command-line argument and does not need to be specified in the I<HOOKS> array in the configuration file. This value is ignored when I<Global.InitCPIO> is not I<true>.
+
+=item B<InitCPIOHookDirs>
+
+A single path or an array of paths to B<mkinitcpio> hook directories. When specifying a custom directory for the I<zfsbootmenu> hook, it is generally required to also specify the default location as well. This option is ignored when I<Global.InitCPIO> is not I<true>.
 
 =item B<BootMountPoint>
 
@@ -36,7 +48,11 @@ A specific ZFSBootMenu version string to use in producing images. In the string,
 
 =item B<DracutFlags>
 
-An array of additional arguments that will be passed to B<dracut> when generating an initramfs.
+An array of additional arguments that will be passed to B<dracut> when generating an initramfs. This option is ignored when I<Global.InitCPIO> is I<true>.
+
+=item B<InitCPIOFlags>
+
+An array of additional arguments that will be passed to B<mkinitcpio> when generating an initramfs. This option is ignored when I<Global.InitCPIO> is not I<true>.
 
 =item B<PreHooksDir>
 
