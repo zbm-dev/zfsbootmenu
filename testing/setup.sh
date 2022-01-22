@@ -6,6 +6,7 @@ GENZBM=0
 IMAGE=0
 CONFD=0
 DRACUT=0
+MKINITCPIO=0
 SIZE="5G"
 POOL_PREFIX="ztest"
 
@@ -21,6 +22,7 @@ Usage: $0 [options]
   -g  Create a generate-zbm symlink
   -c  Create dracut.conf.d
   -d  Create a local dracut tree for local mode
+  -m  Create mkinitcpio.conf
   -i  Create a test VM image
   -a  Perform all setup options
   -D  Specify a test directory to use
@@ -51,7 +53,7 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "heycgdaiD:s:o:lp:rxk" opt; do
+while getopts "heycgdaiD:s:o:lp:rxkm" opt; do
   case "${opt}" in
     e)
       ENCRYPT=1
@@ -71,12 +73,16 @@ while getopts "heycgdaiD:s:o:lp:rxk" opt; do
     g)
       GENZBM=1
       ;;
+    m)
+      MKINITCPIO=1
+      ;;
     a)
       YAML=1
       CONFD=1
       IMAGE=1
       DRACUT=1
       GENZBM=1
+      MKINITCPIO=1
       ;;
     D)
       TESTDIR="${OPTARG}"
@@ -127,6 +133,7 @@ mkdir -p "${TESTDIR}" || exit 1
 if ((CONFD)) && [ ! -d "${TESTDIR}/dracut.conf.d" ]; then
   echo "Creating dracut.conf.d"
   cp -Rp ../etc/zfsbootmenu/dracut.conf.d "${TESTDIR}"
+  echo "zfsbootmenu_module_root=\"$( realpath -e ../zfsbootmenu )\"" >> "${TESTDIR}/dracut.conf.d/zfsbootmenu.conf"
 fi
 
 if ((DRACUT)) ; then
@@ -150,7 +157,15 @@ if ((DRACUT)) ; then
   # Make sure the zfsbootmenu module is a link to the repo version
   _dracut_mods="${TESTDIR}/dracut/modules.d"
   test -d "${_dracut_mods}" && rm -rf "${_dracut_mods}/90zfsbootmenu"
-  ln -s "$(realpath -e ../90zfsbootmenu)" "${_dracut_mods}"
+  ln -s "$(realpath -e ../dracut)" "${_dracut_mods}/90zfsbootmenu"
+fi
+
+if ((MKINITCPIO)) ; then
+  cp -Rp ../etc/zfsbootmenu/mkinitcpio.conf "${TESTDIR}"
+  cat << EOF >> "${TESTDIR}/mkinitcpio.conf"
+zfsbootmenu_module_root="$( realpath -e ../zfsbootmenu )"
+COMPRESSION="cat"
+EOF
 fi
 
 if ((GENZBM)) ; then
@@ -173,6 +188,8 @@ if ((YAML)) ; then
   yq-go eval ".Global.DracutConfDir = \"${TESTDIR}/dracut.conf.d\"" -i "${yamlconf}"
   yq-go eval ".Global.PreHooksDir = \"${TESTDIR}/generate-zbm.pre.d\"" -i "${yamlconf}"
   yq-go eval ".Global.PostHooksDir = \"${TESTDIR}/generate-zbm.post.d\"" -i "${yamlconf}"
+  yq-go eval ".Global.InitCPIOConfig = \"${TESTDIR}/mkinitcpio.conf\"" -i "${yamlconf}"
+  yq-go eval ".Global.InitCPIOHookDirs = [ \"$( realpath -e ../initcpio )\",\"/usr/lib/initcpio\" ]" -i "${yamlconf}"
   yq-go eval ".Global.DracutFlags = [ \"--local\" ]" -i "${yamlconf}"
   yq-go eval "del(.Global.BootMountPoint)" -i "${yamlconf}"
   yq-go eval -P -C "${yamlconf}"

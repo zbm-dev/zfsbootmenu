@@ -127,7 +127,8 @@ if [ ! -d /zbm ] || ! ls -Aq /zbm 2>/dev/null | grep -q . >/dev/null 2>&1; then
 fi
 
 # Make sure major ZBM components exist
-[ -d /zbm/90zfsbootmenu ] || error "missing path /zbm/90zfsbootmenu"
+[ -d /zbm/dracut ] || error "missing path /zbm/dracut"
+[ -d /zbm/zfsbootmenu ] || error "missing path /zbm/zfsbootmenu"
 [ -x /zbm/bin/generate-zbm ] || error "missing executable /zbm/bin/generate-zbm"
 
 # Default BUILDROOT is in ZBM tree
@@ -201,7 +202,14 @@ fi
 
 # Make sure that dracut can find the ZFSBootMenu module
 [ -d /usr/lib/dracut/modules.d ] || error "dracut does not appear to be installed"
-ln -sf /zbm/90zfsbootmenu /usr/lib/dracut/modules.d || error "unable to link dracut module"
+if ! [ -d /usr/lib/dracut/modules.d/90zfsbootmenu ]; then
+  ln -sf /zbm/dracut /usr/lib/dracut/modules.d/90zfsbootmenu || error "unable to link dracut module"
+fi
+
+# Make sure that the core library is available in its default location
+if ! [ -d /usr/share/zfsbootmenu ]; then
+  ln -sf /zbm/zfsbootmenu /usr/share || error "unable to link core ZFSBootMenu library"
+fi
 
 /zbm/bin/generate-zbm "${GENARGS[@]}" || error "failed to build images"
 

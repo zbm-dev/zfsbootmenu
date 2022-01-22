@@ -33,8 +33,8 @@ the test directory:
 * Create a local dracut.conf.d configuration directory (`dracut.conf.d`) with a
   default configuration file
 * Create a local dracut modules directory (`modules.d`) with symlinks to all of
-  the system modules, and a symlink to the `90zfsbootmenu` directory in the
-  current git checkout.
+  the system modules, and a symlink to the `dracut` directory in the
+  current git checkout as the `90zfsbootmenu` module.
 
 These options can be individually executed if you need to reset any single
 portion of your testing environment.

@@ -14,6 +14,7 @@ jobs:
         run: |
           ln -s "$(pwd)" /zbm
           cp /zbm/etc/zfsbootmenu/release.conf.d/release.conf /zbm/etc/zfsbootmenu/dracut.conf.d/
+          echo "zfsbootmenu_module_root='/zbm/zfsbootmenu'" >> /zbm/etc/zfsbootmenu/dracut.conf.d/release.conf
           /zbm/releng/docker/zbm-build.sh -e '.Global.DracutFlags += ["--no-early-microcode"]' -- --debug
 
       - name: Archive EFI

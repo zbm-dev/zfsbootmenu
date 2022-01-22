@@ -43,6 +43,20 @@ installkernel() {
 }
 
 install() {
+  : "${zfsbootmenu_module_root:=/usr/share/zfsbootmenu}"
+
+  # shellcheck disable=SC1091
+  if ! source "${zfsbootmenu_module_root}/install-helpers.sh" ; then
+    dfatal "Unable to source ${zfsbootmenu_module_root}/install-helpers.sh"
+    exit 1
+  fi
+
+  # BUILDROOT is an initcpio-ism
+  # shellcheck disable=SC2154,2034
+  BUILDROOT="${initdir}"
+  # shellcheck disable=SC2034
+  BUILDSTYLE="dracut"
+
   local _rule _exec _ret
 
   local udev_rules=(
@@ -58,50 +72,13 @@ install() {
     fi
   done
 
-  local essential_execs=(
-    "zfs"
-    "zpool"
-    "zdb"
-    "lsblk"
-    "hostid"
-    "mount"
-    "mount.zfs"
-    "kexec"
-    "mkdir"
-    "tput"
-    "head"
-    "mktemp"
-    "sort"
-    "sed"
-    "grep"
-    "tail"
-    "tr"
-    "tac"
-    "blkid"
-    "awk"
-    "fold"
-    "ps"
-    "env"
-    "chmod"
-    "od"
-    "stty"
-    "insmod"
-    "modinfo"
-    "lsmod"
-    "depmod"
-  )
-
-  for _exec in "${essential_execs[@]}"; do
+  # shellcheck disable=SC2154
+  for _exec in "${zfsbootmenu_essential_binaries[@]}"; do
     if ! dracut_install "${_exec}"; then
       dfatal "failed to install essential executable '${_exec}'"
       exit 1
     fi
   done
-
-  if ! dracut_install fzf; then
-    dfatal "failed to install fzf"
-    exit 1
-  fi
 
   # BE clones will work (silently and less efficiently) without mbuffer
   if ! dracut_install mbuffer; then
@@ -131,54 +108,40 @@ install() {
 
   # shellcheck disable=SC2154
   while read -r doc ; do
-    relative="${doc//${moddir}\//}"
+    relative="${doc//${zfsbootmenu_module_root}\//}"
     inst_simple "${doc}" "/usr/share/docs/${relative}"
-  done <<<"$( find "${moddir}/help-files" -type f )"
+  done <<<"$( find "${zfsbootmenu_module_root}/help-files" -type f )"
 
   _ret=0
 
   # Core ZFSBootMenu functionality
   # shellcheck disable=SC2154
-  for _lib in "${moddir}"/lib/*; do
+  for _lib in "${zfsbootmenu_module_root}"/lib/*; do
     inst_simple "${_lib}" "/lib/$( basename "${_lib}" )" || _ret=$?
   done
 
   # Helper tools not intended for direct human consumption
-  for _libexec in "${moddir}"/libexec/*; do
+  for _libexec in "${zfsbootmenu_module_root}"/libexec/*; do
     inst_simple "${_libexec}" "/libexec/$( basename "${_libexec}" )" || _ret=$?
   done
 
   # User-facing utilities, useful for running in a recover shell
-  for _bin in "${moddir}"/bin/*; do
+  for _bin in "${zfsbootmenu_module_root}"/bin/*; do
     inst_simple "${_bin}" "/bin/$( basename "${_bin}" )" || _ret=$?
   done
 
   # Hooks necessary to initialize ZBM
-  inst_hook cmdline 95 "${moddir}/hook/zfsbootmenu-parse-commandline.sh" || _ret=$?
-  inst_hook pre-mount 90 "${moddir}/hook/zfsbootmenu-preinit.sh" || _ret=$?
+  inst_hook cmdline 95 "${zfsbootmenu_module_root}/hook/zfsbootmenu-parse-commandline.sh" || _ret=$?
+  inst_hook pre-mount 90 "${zfsbootmenu_module_root}/hook/zfsbootmenu-preinit.sh" || _ret=$?
 
   # Hooks to force the dracut event loop to fire at least once
   # Things like console configuration are done in optional event-loop hooks
-  inst_hook initqueue/settled 99 "${moddir}/hook/zfsbootmenu-ready-set.sh" || _ret=$?
-  inst_hook initqueue/finished 99 "${moddir}/hook/zfsbootmenu-ready-chk.sh" || _ret=$?
+  inst_hook initqueue/settled 99 "${zfsbootmenu_module_root}/hook/zfsbootmenu-ready-set.sh" || _ret=$?
+  inst_hook initqueue/finished 99 "${zfsbootmenu_module_root}/hook/zfsbootmenu-ready-chk.sh" || _ret=$?
 
-  # If tracing is enabled, build in the full-weight profiling library
-  if [ -n "${zfsbootmenu_trace_enable}" ]; then
-    inst_simple "${moddir}/profiling/profiling-lib.sh" "/lib/profiling-lib.sh"
-
-    # shellcheck disable=SC2154
-    cat << EOF >> "${initdir}/etc/profiling.conf"
-export zfsbootmenu_trace_term=${zfsbootmenu_trace_term}
-export zfsbootmenu_trace_baud=${zfsbootmenu_trace_baud}
-EOF
-
-    # optionally enable early Dracut profiling
-    if [ -n "${dracut_trace_enable}" ]; then
-      inst_hook cmdline 00 "${moddir}/profiling/profiling-lib.sh"
-    fi
-  else
-    # Install the default profiling library that is a simple `return 0`
-    echo "return 0" > "${initdir}/lib/profiling-lib.sh"
+  # optionally enable early Dracut profiling
+  if [ -n "${dracut_trace_enable}" ]; then
+    inst_hook cmdline 00 "${zfsbootmenu_module_root}/profiling/profiling-lib.sh"
   fi
 
   # Install "early setup" hooks
@@ -284,30 +247,6 @@ EOF
     mark_hostonly /etc/hostid
   fi
 
-  # Check if fuzzy finder supports the refresh-preview flag
-  # Added in fzf 0.22.0
-  if command -v fzf >/dev/null 2>&1 && \
-    echo "abc" | fzf -f "abc" --bind "alt-l:refresh-preview" --exit-0 >/dev/null 2>&1
-  then
-    has_refresh=1
-  else
-    has_refresh=
-  fi
-
-  # shellcheck disable=SC2154
-  cat << 'EOF' > "${initdir}/etc/zfsbootmenu.conf"
-# Include guard
-[ -n "${_ETC_ZFSBOOTMENU_CONF}" ] && return
-readonly _ETC_ZFSBOOTMENU_CONF=1
-EOF
-
-  # Collect all of our build-time feature flags
-  # shellcheck disable=SC2154
-  cat << EOF >> "${initdir}/etc/zfsbootmenu.conf"
-export BYTE_ORDER=${endian:-le}
-export HAS_REFRESH=${has_refresh}
-EOF
-
   # Embed a kernel command line in the initramfs
   # shellcheck disable=SC2154
   if [ -n "${embedded_kcl}" ]; then
@@ -320,36 +259,7 @@ EOF
     echo "rd.hostonly=0" > "${initdir}/etc/cmdline.d/hostonly.conf"
   fi
 
-  # Setup a default environment for all login shells
-  cat << EOF >> "${initdir}/etc/profile"
-export PATH=/usr/sbin:/usr/bin:/sbin:/bin
-export TERM=linux
-export HOME=/root
-EOF
-
-  # Setup a default environment for bash -i
-  cat << EOF >> "${initdir}/root/.bashrc"
-source /etc/zfsbootmenu.conf >/dev/null 2>&1
-source /lib/kmsg-log-lib.sh >/dev/null 2>&1
-source /lib/zfsbootmenu-core.sh >/dev/null 2>&1
-source /lib/zfsbootmenu-kcl.sh >/dev/null 2>&1
-[ -f /etc/profile ] && source /etc/profile
-[ -f /lib/zfsbootmenu-completions.sh ] && source /lib/zfsbootmenu-completions.sh
-
-export PS1="\033[0;33mzfsbootmenu\033[0m \w > "
-
-alias clear="tput clear"
-alias reset="tput reset"
-alias zbm="zfsbootmenu"
-alias logs="ztrace"
-alias trace="ztrace"
-alias debug="ztrace"
-alias help="/libexec/zfsbootmenu-help -L recovery-shell"
-
-zdebug "sourced /root/.bashrc" || true
-
-EOF
-
-  # symlink to .profile for /bin/sh - launched by dropbear
-  ln -s "/root/.bashrc" "${initdir}/root/.profile"
+  create_zbm_conf
+  create_zbm_profiles
+  create_zbm_traceconf
 }

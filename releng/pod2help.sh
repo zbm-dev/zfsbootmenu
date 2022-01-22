@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-td="90zfsbootmenu/help-files"
+td="zfsbootmenu/help-files"
 for size in 54 94 134 ; do
   rm "${td}/${size}"/*
   for pod in pod/online/*.pod pod/zfsbootmenu.7.pod; do

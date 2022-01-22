@@ -22,4 +22,4 @@ rm -f /usr/bin/generate-zbm
 ln -s /zfsbootmenu/bin/generate-zbm /usr/bin/
 
 rm -rf /usr/lib/dracut/modules.d/90zfsbootmenu
-ln -s /zfsbootmenu/90zfsbootmenu /usr/lib/dracut/modules.d/
+ln -s /zfsbootmenu/dracut /usr/lib/dracut/modules.d/90zfsbootmenu

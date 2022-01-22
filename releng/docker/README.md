@@ -68,7 +68,10 @@ may either be empty or contain a pre-existing ZFSBootMenu source tree.
 Specifically, if the volume is not empty, it must contain the following
 components of the ZFSBootMenu repository:
 
-- `90zfsbootmenu`, the Dracut module encapsulating ZFSBootMenu functionality;
+- `dracut`, the Dracut module that populates an image with ZFSBootMenu;
+
+- `zfsbootmenu`, the core ZFSBootMenu components;
+
 - `bin/generate-zbm`, the executable script that creates ZFSBootMenu images;
 
 If the build script finds the volume mounted at `/zbm` empty, it will fetch an

@@ -4,7 +4,7 @@
 zbm_load_lib() {
   lib="${1?no library specified for load}"
 
-  : "${ZBM_MODULEDIR:=/usr/lib/dracut/modules.d/90zfsbootmenu}"
+  : "${ZBM_MODULEDIR:=/usr/share/zfsbootmenu}"
 
   if [ -r "${ZBM_MODULEDIR}/lib/${lib}" ]; then
     # shellcheck disable=SC1090

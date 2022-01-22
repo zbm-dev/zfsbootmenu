@@ -24,7 +24,7 @@ Usage: $0 [options]
   -s  Enable serial console on stdio
   -v  Set type of qemu display to use
   -D  Set test directory
-  -i  Enable dropbear remote access via crypt-ssh
+  -c  Enable dropbear remote access via crypt-ssh
   -n  Do not reset the controlling terminal after the VM exits
   -e  Boot the VM with an EFI bundle
   -M  Set the amount of memory for the virtual machine
@@ -32,10 +32,11 @@ Usage: $0 [options]
   -F  Generate a flamegraph/flamechart using tracing data from ZBM
   -E  Enable early Dracut tracing
   -G  Enable debug output for generate-zbm
+  -i  Use mkinitcpio to generate the image, instead of Dracut
 EOF
 }
 
-CMDOPTS="D:A:a:d:fsv:hineM:C:FEG"
+CMDOPTS="D:A:a:d:fsv:hineM:C:FEGc"
 
 # First-pass option parsing just looks for test directory
 while getopts "${CMDOPTS}" opt; do
@@ -107,7 +108,7 @@ SSH_INCLUDE=0
 RESET=1
 EFI=0
 SERDEV_COUNT=0
-GENZBM_DEBUG=
+GENZBM_FLAGS=()
 
 # Override any default variables
 #shellcheck disable=SC1091
@@ -142,7 +143,7 @@ while getopts "${CMDOPTS}" opt; do
     v)
       DISPLAY_TYPE="${OPTARG}"
       ;;
-    i)
+    c)
       SSH_INCLUDE=1
       ;;
     n)
@@ -175,7 +176,11 @@ while getopts "${CMDOPTS}" opt; do
       FLAME=1
       ;;
     G)
-      GENZBM_DEBUG=1
+      GENZBM_FLAGS+=( "-d" )
+      ;;
+    i)
+      CREATE=1
+      GENZBM_FLAGS+=( "-i" )
       ;;
     *)
       ;;
@@ -329,7 +334,7 @@ if ((CREATE)) ; then
   fi
 
   # Try to find the local dracut and generate-zbm first
-  if ! ( cd "${TESTDIR}" && PATH=./dracut:${PATH} ./generate-zbm -c ./local.yaml ${GENZBM_DEBUG:+-d} ); then
+  if ! ( cd "${TESTDIR}" && PATH=./dracut:${PATH} ./generate-zbm -c ./local.yaml "${GENZBM_FLAGS[@]}" ); then
     error "unable to create ZFSBootMenu images"
   fi
 
