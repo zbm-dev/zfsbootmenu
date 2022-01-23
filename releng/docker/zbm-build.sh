@@ -22,7 +22,7 @@ Usage: $0 [options]
 
   -b <buildroot>
      Specify path for build root
-     (Default: /zbm/releng/docker)
+     (Default: /build)
 
   -c <configuration>
      Specify path to generate-zbm(5) configuration
@@ -126,14 +126,52 @@ if [ ! -d /zbm ] || ! ls -Aq /zbm 2>/dev/null | grep -q . >/dev/null 2>&1; then
   tar -xv --strip-components=1 -f "${ZBMWORKDIR}/zbm.tar.gz" -C /zbm
 fi
 
-# Make sure major ZBM components exist
-[ -d /zbm/dracut ] || error "missing path /zbm/dracut"
-[ -d /zbm/zfsbootmenu ] || error "missing path /zbm/zfsbootmenu"
+## Make sure major ZBM components exist at /zbm
+
 [ -x /zbm/bin/generate-zbm ] || error "missing executable /zbm/bin/generate-zbm"
 
-# Default BUILDROOT is in ZBM tree
-: "${BUILDROOT:=/zbm/releng/docker}"
-[ -d "${BUILDROOT}" ] || error "Build root does not appear to exist"
+if [ -d /zbm/zfsbootmenu ]; then
+  # With new structure, core library must be in /usr/share
+  mkdir -p /usr/share
+  ln -Tsf /zbm/zfsbootmenu /usr/share/zfsbootmenu \
+    || error "unable to link core ZFSBootMenu libraries"
+
+  # Link to initcpio hook components
+  for cdir in initcpio/hooks initcpio/install; do
+    mkdir -p "/usr/lib/${cdir}"
+    ln -Tsf /zbm/${cdir}/zfsbootmenu /usr/lib/${cdir}/zfsbootmenu \
+      || error "unable to link mkinitcpio script ${cdir}/zfsbootmenu"
+  done
+
+  # dracut module is in "dracut"
+  dracutmod=/zbm/dracut
+elif [ -d /zbm/90zfsbootmenu ]; then
+  # dracut module is in "90zfsbootmenu" and contains everything
+  dracutmod=/zbm/90zfsbootmenu
+else
+  error "/zbm does not appear to be a valid ZFSBootMenu tree"
+fi
+
+# Link to dracut module
+mkdir -p /usr/lib/dracut/modules.d
+ln -Tsf "${dracutmod}" /usr/lib/dracut/modules.d/90zfsbootmenu \
+  || error "unable to link dracut module"
+
+# generate-zbm configures dracut to look in /etc/zfsbootmenu/dracut.conf.d.
+# Rather than override the default, just link to the in-repo defaults
+dconfd="/etc/zfsbootmenu/dracut.conf.d"
+if [ ! -d "${dconfd}" ]; then
+  mkdir -p "${dconfd}" || error "unable to create dracut configuration directory"
+
+  for cfile in /zbm/etc/zfsbootmenu/dracut.conf.d/*; do
+    [ -e "${cfile}" ] || continue
+    ln -Tsf "${cfile}" "${dconfd}/${cfile##*/}" || error "unable to link ${cfile}"
+  done
+fi
+
+# Make sure the build root exists
+: "${BUILDROOT:=/build}"
+mkdir -p "${BUILDROOT}" || error "unable to create directory '${BUILDROOT}'"
 
 # Make sure that the output directory exists
 : "${ZBMOUTPUT:=${BUILDROOT}/build}"
@@ -200,15 +238,12 @@ else
   rm -f /etc/zfs/zpool.cache
 fi
 
-# Make sure that dracut can find the ZFSBootMenu module
-[ -d /usr/lib/dracut/modules.d ] || error "dracut does not appear to be installed"
-if ! [ -d /usr/lib/dracut/modules.d/90zfsbootmenu ]; then
-  ln -sf /zbm/dracut /usr/lib/dracut/modules.d/90zfsbootmenu || error "unable to link dracut module"
-fi
-
-# Make sure that the core library is available in its default location
-if ! [ -d /usr/share/zfsbootmenu ]; then
-  ln -sf /zbm/zfsbootmenu /usr/share || error "unable to link core ZFSBootMenu library"
+# If a custom dracut.conf.d exists, link to its contents in the default location
+if [ -d "${BUILDROOT}/dracut.conf.d" ]; then
+  for cfile in "${BUILDROOT}"/dracut.conf.d/*; do
+    [ -e "${cfile}" ] || continue
+    ln -Tsf "${cfile}" "${dconfd}/${cfile##*/}" || error "unable to link ${cfile}"
+  done
 fi
 
 /zbm/bin/generate-zbm "${GENARGS[@]}" || error "failed to build images"

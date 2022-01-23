@@ -45,13 +45,14 @@ esac
 
 buildtmp="$( mktemp -d )" || error "cannot create build directory"
 mkdir -p "${buildtmp}/out" || error "cannot create output directory"
-mkdir -p "${buildtmp}/etc/dracut.conf.d" || error "cannot create config tree"
 
-# Volume mounts for the container; make sure stock config tree, with release
-# addendum, is available in-container at /etc/zfsbootmenu
+# Volume mounts for the container:
+# - Current repo is the tree from which builds will be made
+# - A read-only "build" directory (to be made) will contain configuration
+# - Output directory will receive build products
 volmounts=(
   "-v" ".:/zbm:ro"
-  "-v" "${buildtmp}/etc:/etc/zfsbootmenu:ro"
+  "-v" "${buildtmp}/build:/build:ro"
   "-v" "${buildtmp}/out:/out"
 )
 
@@ -67,18 +68,19 @@ fi
 
 for style in release recovery; do
   echo "Building style: ${style}"
-  # Copy configuration components in place
-  cp "./etc/zfsbootmenu/${style}.yaml" "${buildtmp}/etc"
-  cp ./etc/zfsbootmenu/dracut.conf.d/*.conf "${buildtmp}/etc/dracut.conf.d"
 
-  # Files in release.conf.d are allowed to shadow regular defaults
-  cp ./etc/zfsbootmenu/"${style}".conf.d/*.conf "${buildtmp}/etc/dracut.conf.d"
+  # Always start with a fresh configuration tree
+  mkdir -p "${buildtmp}/build/dracut.conf.d" || error "cannot create config tree"
+
+  # Copy style-specific configuration components in place;
+  # zbm-build.sh sets up standard configuration elements
+  cp "./etc/zfsbootmenu/${style}.yaml" "${buildtmp}/build/config.yaml"
+  cp "./etc/zfsbootmenu/${style}.conf.d/"*.conf "${buildtmp}/build/dracut.conf.d"
 
   # Specify options for the build st
   buildopts=(
     "-o" "/out"
     "-e" ".EFI.Enabled = ${BUILD_EFI}"
-    "-c" "/etc/zfsbootmenu/${style}.yaml"
   )
 
   # For the containerized build, use current repo by mounting at /zbm
@@ -105,6 +107,6 @@ for style in release recovery; do
     tar czvf "${assets}/${zbmtriplet}.tar.gz" "${zbmtriplet}"
   ) || error "failed to pack components"
 
-  rm "${buildtmp}"/etc/*.yaml
-  rm "${buildtmp}"/etc/dracut.conf.d/*.conf
+  # Clean up the style-specific build components
+  rm -rf "${buildtmp}/build"
 done

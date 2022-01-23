@@ -20,7 +20,7 @@ RUN echo "ignorepkg=linux" > /etc/xbps.d/10-nolinux.conf \
 # Install components necessary to build the image
 RUN xbps-query -Rp run_depends zfsbootmenu | xargs xbps-install -y
 RUN xbps-install -y linux5.10 linux5.10-headers \
-	zfs gummiboot-efistub curl yq-go bash kbd terminus-font
+	zfs gummiboot-efistub curl yq-go bash kbd terminus-font dracut mkinitcpio
 
 # Remove headers and massive dkms development toolchain; binutils
 # provides objcopy, which is necessary for UEFI bundle creation
