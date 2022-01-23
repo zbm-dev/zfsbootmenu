@@ -1,0 +1,1444 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="1600" height="358" onload="init(evt)" viewBox="0 0 1600 358" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples. -->
+<!-- NOTES:  -->
+<defs>
+	<linearGradient id="background" y1="0" y2="1" x1="0" x2="0" >
+		<stop stop-color="#eeeeee" offset="5%" />
+		<stop stop-color="#eeeeb0" offset="95%" />
+	</linearGradient>
+</defs>
+<style type="text/css">
+	text { font-family:Verdana; font-size:12px; fill:rgb(0,0,0); }
+	#search, #ignorecase { opacity:0.1; cursor:pointer; }
+	#search:hover, #search.show, #ignorecase:hover, #ignorecase.show { opacity:1; }
+	#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+	#title { text-anchor:middle; font-size:17px}
+	#unzoom { cursor:pointer; }
+	#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+	.hide { display:none; }
+	.parent { opacity:0.5; }
+</style>
+<script type="text/ecmascript">
+<![CDATA[
+	"use strict";
+	var details, searchbtn, unzoombtn, matchedtxt, svg, searching, currentSearchTerm, ignorecase, ignorecaseBtn;
+	function init(evt) {
+		details = document.getElementById("details").firstChild;
+		searchbtn = document.getElementById("search");
+		ignorecaseBtn = document.getElementById("ignorecase");
+		unzoombtn = document.getElementById("unzoom");
+		matchedtxt = document.getElementById("matched");
+		svg = document.getElementsByTagName("svg")[0];
+		searching = 0;
+		currentSearchTerm = null;
+
+		// use GET parameters to restore a flamegraphs state.
+		var params = get_params();
+		if (params.x && params.y)
+			zoom(find_group(document.querySelector('[x="' + params.x + '"][y="' + params.y + '"]')));
+                if (params.s) search(params.s);
+	}
+
+	// event listeners
+	window.addEventListener("click", function(e) {
+		var target = find_group(e.target);
+		if (target) {
+			if (target.nodeName == "a") {
+				if (e.ctrlKey === false) return;
+				e.preventDefault();
+			}
+			if (target.classList.contains("parent")) unzoom();
+			zoom(target);
+			if (!document.querySelector('.parent')) {
+				clearzoom();
+				return;
+			}
+
+			// set parameters for zoom state
+			var el = target.querySelector("rect");
+			if (el && el.attributes && el.attributes.y && el.attributes._orig_x) {
+				var params = get_params()
+				params.x = el.attributes._orig_x.value;
+				params.y = el.attributes.y.value;
+				history.replaceState(null, null, parse_params(params));
+			}
+		}
+		else if (e.target.id == "unzoom") clearzoom();
+		else if (e.target.id == "search") search_prompt();
+		else if (e.target.id == "ignorecase") toggle_ignorecase();
+	}, false)
+
+	// mouse-over for info
+	// show
+	window.addEventListener("mouseover", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = "Function: " + g_to_text(target);
+	}, false)
+
+	// clear
+	window.addEventListener("mouseout", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = ' ';
+	}, false)
+
+	// ctrl-F for search
+	// ctrl-I to toggle case-sensitive search
+	window.addEventListener("keydown",function (e) {
+		if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) {
+			e.preventDefault();
+			search_prompt();
+		}
+		else if (e.ctrlKey && e.keyCode === 73) {
+			e.preventDefault();
+			toggle_ignorecase();
+		}
+	}, false)
+
+	// functions
+	function get_params() {
+		var params = {};
+		var paramsarr = window.location.search.substr(1).split('&');
+		for (var i = 0; i < paramsarr.length; ++i) {
+			var tmp = paramsarr[i].split("=");
+			if (!tmp[0] || !tmp[1]) continue;
+			params[tmp[0]]  = decodeURIComponent(tmp[1]);
+		}
+		return params;
+	}
+	function parse_params(params) {
+		var uri = "?";
+		for (var key in params) {
+			uri += key + '=' + encodeURIComponent(params[key]) + '&';
+		}
+		if (uri.slice(-1) == "&")
+			uri = uri.substring(0, uri.length - 1);
+		if (uri == '?')
+			uri = window.location.href.split('?')[0];
+		return uri;
+	}
+	function find_child(node, selector) {
+		var children = node.querySelectorAll(selector);
+		if (children.length) return children[0];
+	}
+	function find_group(node) {
+		var parent = node.parentElement;
+		if (!parent) return;
+		if (parent.id == "frames") return node;
+		return find_group(parent);
+	}
+	function orig_save(e, attr, val) {
+		if (e.attributes["_orig_" + attr] != undefined) return;
+		if (e.attributes[attr] == undefined) return;
+		if (val == undefined) val = e.attributes[attr].value;
+		e.setAttribute("_orig_" + attr, val);
+	}
+	function orig_load(e, attr) {
+		if (e.attributes["_orig_"+attr] == undefined) return;
+		e.attributes[attr].value = e.attributes["_orig_" + attr].value;
+		e.removeAttribute("_orig_"+attr);
+	}
+	function g_to_text(e) {
+		var text = find_child(e, "title").firstChild.nodeValue;
+		return (text)
+	}
+	function g_to_func(e) {
+		var func = g_to_text(e);
+		// if there's any manipulation we want to do to the function
+		// name before it's searched, do it here before returning.
+		return (func);
+	}
+	function update_text(e) {
+		var r = find_child(e, "rect");
+		var t = find_child(e, "text");
+		var w = parseFloat(r.attributes.width.value) -3;
+		var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+		t.attributes.x.value = parseFloat(r.attributes.x.value) + 3;
+
+		// Smaller than this size won't fit anything
+		if (w < 2 * 12 * 0.59) {
+			t.textContent = "";
+			return;
+		}
+
+		t.textContent = txt;
+		// Fit in full text width
+		if (/^ *$/.test(txt) || t.getSubStringLength(0, txt.length) < w)
+			return;
+
+		for (var x = txt.length - 2; x > 0; x--) {
+			if (t.getSubStringLength(0, x + 2) <= w) {
+				t.textContent = txt.substring(0, x) + "..";
+				return;
+			}
+		}
+		t.textContent = "";
+	}
+
+	// zoom
+	function zoom_reset(e) {
+		if (e.attributes != undefined) {
+			orig_load(e, "x");
+			orig_load(e, "width");
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_reset(c[i]);
+		}
+	}
+	function zoom_child(e, x, ratio) {
+		if (e.attributes != undefined) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = (parseFloat(e.attributes.x.value) - x - 10) * ratio + 10;
+				if (e.tagName == "text")
+					e.attributes.x.value = find_child(e.parentNode, "rect[x]").attributes.x.value + 3;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseFloat(e.attributes.width.value) * ratio;
+			}
+		}
+
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_child(c[i], x - 10, ratio);
+		}
+	}
+	function zoom_parent(e) {
+		if (e.attributes) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = 10;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseInt(svg.width.baseVal.value) - (10 * 2);
+			}
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_parent(c[i]);
+		}
+	}
+	function zoom(node) {
+		var attr = find_child(node, "rect").attributes;
+		var width = parseFloat(attr.width.value);
+		var xmin = parseFloat(attr.x.value);
+		var xmax = parseFloat(xmin + width);
+		var ymin = parseFloat(attr.y.value);
+		var ratio = (svg.width.baseVal.value - 2 * 10) / width;
+
+		// XXX: Workaround for JavaScript float issues (fix me)
+		var fudge = 0.0001;
+
+		unzoombtn.classList.remove("hide");
+
+		var el = document.getElementById("frames").children;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var a = find_child(e, "rect").attributes;
+			var ex = parseFloat(a.x.value);
+			var ew = parseFloat(a.width.value);
+			var upstack;
+			// Is it an ancestor
+			if (0 == 0) {
+				upstack = parseFloat(a.y.value) > ymin;
+			} else {
+				upstack = parseFloat(a.y.value) < ymin;
+			}
+			if (upstack) {
+				// Direct ancestor
+				if (ex <= xmin && (ex+ew+fudge) >= xmax) {
+					e.classList.add("parent");
+					zoom_parent(e);
+					update_text(e);
+				}
+				// not in current path
+				else
+					e.classList.add("hide");
+			}
+			// Children maybe
+			else {
+				// no common path
+				if (ex < xmin || ex + fudge >= xmax) {
+					e.classList.add("hide");
+				}
+				else {
+					zoom_child(e, xmin, ratio);
+					update_text(e);
+				}
+			}
+		}
+		search();
+	}
+	function unzoom() {
+		unzoombtn.classList.add("hide");
+		var el = document.getElementById("frames").children;
+		for(var i = 0; i < el.length; i++) {
+			el[i].classList.remove("parent");
+			el[i].classList.remove("hide");
+			zoom_reset(el[i]);
+			update_text(el[i]);
+		}
+		search();
+	}
+	function clearzoom() {
+		unzoom();
+
+		// remove zoom state
+		var params = get_params();
+		if (params.x) delete params.x;
+		if (params.y) delete params.y;
+		history.replaceState(null, null, parse_params(params));
+	}
+
+	// search
+	function toggle_ignorecase() {
+		ignorecase = !ignorecase;
+		if (ignorecase) {
+			ignorecaseBtn.classList.add("show");
+		} else {
+			ignorecaseBtn.classList.remove("show");
+		}
+		reset_search();
+		search();
+	}
+	function reset_search() {
+		var el = document.querySelectorAll("#frames rect");
+		for (var i = 0; i < el.length; i++) {
+			orig_load(el[i], "fill")
+		}
+		var params = get_params();
+		delete params.s;
+		history.replaceState(null, null, parse_params(params));
+	}
+	function search_prompt() {
+		if (!searching) {
+			var term = prompt("Enter a search term (regexp " +
+			    "allowed, eg: ^ext4_)"
+			    + (ignorecase ? ", ignoring case" : "")
+			    + "\nPress Ctrl-i to toggle case sensitivity", "");
+			if (term != null) search(term);
+		} else {
+			reset_search();
+			searching = 0;
+			currentSearchTerm = null;
+			searchbtn.classList.remove("show");
+			searchbtn.firstChild.nodeValue = "Search"
+			matchedtxt.classList.add("hide");
+			matchedtxt.firstChild.nodeValue = ""
+		}
+	}
+	function search(term) {
+		if (term) currentSearchTerm = term;
+
+		var re = new RegExp(currentSearchTerm, ignorecase ? 'i' : '');
+		var el = document.getElementById("frames").children;
+		var matches = new Object();
+		var maxwidth = 0;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var func = g_to_func(e);
+			var rect = find_child(e, "rect");
+			if (func == null || rect == null)
+				continue;
+
+			// Save max width. Only works as we have a root frame
+			var w = parseFloat(rect.attributes.width.value);
+			if (w > maxwidth)
+				maxwidth = w;
+
+			if (func.match(re)) {
+				// highlight
+				var x = parseFloat(rect.attributes.x.value);
+				orig_save(rect, "fill");
+				rect.attributes.fill.value = "rgb(230,0,230)";
+
+				// remember matches
+				if (matches[x] == undefined) {
+					matches[x] = w;
+				} else {
+					if (w > matches[x]) {
+						// overwrite with parent
+						matches[x] = w;
+					}
+				}
+				searching = 1;
+			}
+		}
+		if (!searching)
+			return;
+		var params = get_params();
+		params.s = currentSearchTerm;
+		history.replaceState(null, null, parse_params(params));
+
+		searchbtn.classList.add("show");
+		searchbtn.firstChild.nodeValue = "Reset Search";
+
+		// calculate percent matched, excluding vertical overlap
+		var count = 0;
+		var lastx = -1;
+		var lastw = 0;
+		var keys = Array();
+		for (k in matches) {
+			if (matches.hasOwnProperty(k))
+				keys.push(k);
+		}
+		// sort the matched frames by their x location
+		// ascending, then width descending
+		keys.sort(function(a, b){
+			return a - b;
+		});
+		// Step through frames saving only the biggest bottom-up frames
+		// thanks to the sort order. This relies on the tree property
+		// where children are always smaller than their parents.
+		var fudge = 0.0001;	// JavaScript floating point
+		for (var k in keys) {
+			var x = parseFloat(keys[k]);
+			var w = matches[keys[k]];
+			if (x >= lastx + lastw - fudge) {
+				count += w;
+				lastx = x;
+				lastw = w;
+			}
+		}
+		// display matched percent
+		matchedtxt.classList.remove("hide");
+		var pct = 100 * count / maxwidth;
+		if (pct != 100) pct = pct.toFixed(1)
+		matchedtxt.firstChild.nodeValue = "Matched: " + pct + "%";
+	}
+]]>
+</script>
+<rect x="0.0" y="0" width="1600.0" height="358.0" fill="url(#background)"  />
+<text id="title" x="800.00" y="24" >environments/test.void-noenc: zbm.skip console=tty1 console=ttyS0,115200n8 zbm.lines=57 zbm.columns=212</text>
+<text id="details" x="10.00" y="341" > </text>
+<text id="unzoom" x="10.00" y="24" class="hide">Reset Zoom</text>
+<text id="search" x="1490.00" y="24" >Search</text>
+<text id="ignorecase" x="1574.00" y="24" >ic</text>
+<text id="matched" x="1490.00" y="341" > </text>
+<g id="frames">
+<g >
+<title>colorize@/lib/zfsbootmenu-core.sh (6,499 microseconds, 0.14%)</title><rect x="1212.3" y="229" width="2.2" height="31.0" fill="rgb(211,146,17)" rx="2" ry="2" />
+<text  x="1215.32" y="247.5" ></text>
+</g>
+<g >
+<title>make_trace_mem@/lib/dracut-lib.sh (9,480 microseconds, 0.20%)</title><rect x="684.1" y="229" width="3.1" height="31.0" fill="rgb(235,10,27)" rx="2" ry="2" />
+<text  x="687.10" y="247.5" ></text>
+</g>
+<g >
+<title>source@/lib/zfsbootmenu-kcl.sh (2,463 microseconds, 0.05%)</title><rect x="411.3" y="133" width="0.8" height="31.0" fill="rgb(224,116,49)" rx="2" ry="2" />
+<text  x="414.26" y="151.5" ></text>
+</g>
+<g >
+<title>load_be_cmdline@/lib/zfsbootmenu-core.sh (210,048 microseconds, 4.37%)</title><rect x="1386.0" y="197" width="69.1" height="31.0" fill="rgb(208,195,5)" rx="2" ry="2" />
+<text  x="1389.01" y="215.5" >load_be..</text>
+</g>
+<g >
+<title>getarg@/lib/dracut-lib.sh (109,732 microseconds, 2.28%)</title><rect x="552.9" y="229" width="36.0" height="31.0" fill="rgb(240,30,22)" rx="2" ry="2" />
+<text  x="555.86" y="247.5" >get..</text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (3,076 microseconds, 0.06%)</title><rect x="339.5" y="69" width="1.0" height="31.0" fill="rgb(232,30,16)" rx="2" ry="2" />
+<text  x="342.50" y="87.5" ></text>
+</g>
+<g >
+<title>make_trace_mem@/lib/dracut-lib.sh (9,327 microseconds, 0.19%)</title><rect x="549.5" y="229" width="3.0" height="31.0" fill="rgb(245,225,8)" rx="2" ry="2" />
+<text  x="552.47" y="247.5" ></text>
+</g>
+<g >
+<title>be_has_encroot@/lib/zfsbootmenu-core.sh (28,738 microseconds, 0.60%)</title><rect x="1360.3" y="133" width="9.5" height="31.0" fill="rgb(249,163,5)" rx="2" ry="2" />
+<text  x="1363.31" y="151.5" ></text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (3,690 microseconds, 0.08%)</title><rect x="367.7" y="69" width="1.2" height="31.0" fill="rgb(254,81,37)" rx="2" ry="2" />
+<text  x="370.69" y="87.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (3,277 microseconds, 0.07%)</title><rect x="130.9" y="69" width="1.1" height="31.0" fill="rgb(227,44,28)" rx="2" ry="2" />
+<text  x="133.91" y="87.5" ></text>
+</g>
+<g >
+<title>getarg@/lib/dracut-lib.sh (87,922 microseconds, 1.83%)</title><rect x="776.8" y="229" width="28.9" height="31.0" fill="rgb(248,83,54)" rx="2" ry="2" />
+<text  x="779.83" y="247.5" >ge..</text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (21,645 microseconds, 0.45%)</title><rect x="558.4" y="165" width="7.2" height="31.0" fill="rgb(249,100,33)" rx="2" ry="2" />
+<text  x="561.44" y="183.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (29,040 microseconds, 0.60%)</title><rect x="383.1" y="69" width="9.6" height="31.0" fill="rgb(240,4,18)" rx="2" ry="2" />
+<text  x="386.11" y="87.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (18,133 microseconds, 0.38%)</title><rect x="781.2" y="165" width="6.0" height="31.0" fill="rgb(236,162,18)" rx="2" ry="2" />
+<text  x="784.20" y="183.5" ></text>
+</g>
+<g >
+<title>getargbool@/lib/dracut-lib.sh (118,221 microseconds, 2.46%)</title><rect x="639.1" y="229" width="38.9" height="31.0" fill="rgb(207,222,40)" rx="2" ry="2" />
+<text  x="642.09" y="247.5" >get..</text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (44,466 microseconds, 0.93%)</title><rect x="1027.5" y="197" width="14.7" height="31.0" fill="rgb(229,136,44)" rx="2" ry="2" />
+<text  x="1030.54" y="215.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (2,784 microseconds, 0.06%)</title><rect x="1238.5" y="197" width="0.9" height="31.0" fill="rgb(231,148,9)" rx="2" ry="2" />
+<text  x="1241.51" y="215.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,566 microseconds, 0.07%)</title><rect x="1278.7" y="197" width="1.1" height="31.0" fill="rgb(207,167,10)" rx="2" ry="2" />
+<text  x="1281.65" y="215.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (3,262 microseconds, 0.07%)</title><rect x="169.5" y="69" width="1.0" height="31.0" fill="rgb(219,103,48)" rx="2" ry="2" />
+<text  x="172.47" y="87.5" ></text>
+</g>
+<g >
+<title>source_all@/lib/dracut-lib.sh (9,820 microseconds, 0.20%)</title><rect x="590.7" y="197" width="3.2" height="31.0" fill="rgb(236,11,34)" rx="2" ry="2" />
+<text  x="593.72" y="215.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (2,974 microseconds, 0.06%)</title><rect x="162.3" y="101" width="1.0" height="31.0" fill="rgb(216,158,11)" rx="2" ry="2" />
+<text  x="165.28" y="119.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,404 microseconds, 0.09%)</title><rect x="1357.9" y="133" width="1.4" height="31.0" fill="rgb(233,174,7)" rx="2" ry="2" />
+<text  x="1360.85" y="151.5" ></text>
+</g>
+<g >
+<title>be_has_encroot@/lib/zfsbootmenu-core.sh (27,406 microseconds, 0.57%)</title><rect x="1226.1" y="165" width="9.1" height="31.0" fill="rgb(225,147,29)" rx="2" ry="2" />
+<text  x="1229.14" y="183.5" ></text>
+</g>
+<g >
+<title>get_zbm_arg@/lib/zfsbootmenu-kcl.sh (14,354 microseconds, 0.30%)</title><rect x="442.6" y="133" width="4.7" height="31.0" fill="rgb(242,67,38)" rx="2" ry="2" />
+<text  x="445.56" y="151.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (1,502 microseconds, 0.03%)</title><rect x="739.2" y="197" width="0.5" height="31.0" fill="rgb(208,139,31)" rx="2" ry="2" />
+<text  x="742.21" y="215.5" ></text>
+</g>
+<g >
+<title>is_snapshot@/lib/zfsbootmenu-core.sh (7,109 microseconds, 0.15%)</title><rect x="1260.3" y="165" width="2.3" height="31.0" fill="rgb(228,141,22)" rx="2" ry="2" />
+<text  x="1263.26" y="183.5" ></text>
+</g>
+<g >
+<title>_dogetargs@/lib/dracut-lib.sh (79,356 microseconds, 1.65%)</title><rect x="200.7" y="101" width="26.1" height="31.0" fill="rgb(233,15,30)" rx="2" ry="2" />
+<text  x="203.74" y="119.5" >_..</text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (3,352 microseconds, 0.07%)</title><rect x="262.6" y="101" width="1.1" height="31.0" fill="rgb(236,165,39)" rx="2" ry="2" />
+<text  x="265.65" y="119.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (2,699 microseconds, 0.06%)</title><rect x="1093.0" y="197" width="0.9" height="31.0" fill="rgb(224,61,42)" rx="2" ry="2" />
+<text  x="1096.05" y="215.5" ></text>
+</g>
+<g >
+<title>get_zbm_bool@/lib/zfsbootmenu-kcl.sh (29,077 microseconds, 0.61%)</title><rect x="460.6" y="133" width="9.6" height="31.0" fill="rgb(223,4,27)" rx="2" ry="2" />
+<text  x="463.63" y="151.5" ></text>
+</g>
+<g >
+<title>get_zbm_arg@/lib/zfsbootmenu-kcl.sh (16,525 microseconds, 0.34%)</title><rect x="490.5" y="101" width="5.4" height="31.0" fill="rgb(224,208,19)" rx="2" ry="2" />
+<text  x="493.49" y="119.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,347 microseconds, 0.07%)</title><rect x="1270.5" y="165" width="1.1" height="31.0" fill="rgb(226,96,31)" rx="2" ry="2" />
+<text  x="1273.49" y="183.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (31,962 microseconds, 0.67%)</title><rect x="743.2" y="165" width="10.5" height="31.0" fill="rgb(237,53,24)" rx="2" ry="2" />
+<text  x="746.21" y="183.5" ></text>
+</g>
+<g >
+<title>get_zbm_arg@/lib/zfsbootmenu-kcl.sh (14,802 microseconds, 0.31%)</title><rect x="448.4" y="133" width="4.8" height="31.0" fill="rgb(214,143,47)" rx="2" ry="2" />
+<text  x="451.36" y="151.5" ></text>
+</g>
+<g >
+<title>zinfo@/lib/kmsg-log-lib.sh (4,603 microseconds, 0.10%)</title><rect x="498.2" y="133" width="1.5" height="31.0" fill="rgb(228,193,42)" rx="2" ry="2" />
+<text  x="501.17" y="151.5" ></text>
+</g>
+<g >
+<title>get_zbm_arg@/lib/zfsbootmenu-kcl.sh (11,249 microseconds, 0.23%)</title><rect x="456.3" y="133" width="3.7" height="31.0" fill="rgb(211,15,4)" rx="2" ry="2" />
+<text  x="459.35" y="151.5" ></text>
+</g>
+<g >
+<title>kexec_kernel@/lib/zfsbootmenu-core.sh (797,716 microseconds, 16.60%)</title><rect x="1327.7" y="229" width="262.3" height="31.0" fill="rgb(229,94,49)" rx="2" ry="2" />
+<text  x="1330.68" y="247.5" >kexec_kernel@/lib/zfsbootmenu-core.sh</text>
+</g>
+<g >
+<title>kcl_suppress@/lib/zfsbootmenu-kcl.sh (52,097 microseconds, 1.08%)</title><rect x="1394.0" y="165" width="17.2" height="31.0" fill="rgb(245,118,3)" rx="2" ry="2" />
+<text  x="1397.04" y="183.5" ></text>
+</g>
+<g >
+<title>get_zbm_arg@/lib/zfsbootmenu-kcl.sh (11,167 microseconds, 0.23%)</title><rect x="518.9" y="133" width="3.6" height="31.0" fill="rgb(228,70,12)" rx="2" ry="2" />
+<text  x="521.88" y="151.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (1,945 microseconds, 0.04%)</title><rect x="688.1" y="197" width="0.6" height="31.0" fill="rgb(236,176,36)" rx="2" ry="2" />
+<text  x="691.09" y="215.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,268 microseconds, 0.09%)</title><rect x="1460.8" y="165" width="1.4" height="31.0" fill="rgb(223,75,18)" rx="2" ry="2" />
+<text  x="1463.83" y="183.5" ></text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (1,992 microseconds, 0.04%)</title><rect x="723.1" y="197" width="0.7" height="31.0" fill="rgb(225,7,34)" rx="2" ry="2" />
+<text  x="726.12" y="215.5" ></text>
+</g>
+<g >
+<title>select_kernel@/lib/zfsbootmenu-core.sh (24,703 microseconds, 0.51%)</title><rect x="1319.6" y="229" width="8.1" height="31.0" fill="rgb(240,198,34)" rx="2" ry="2" />
+<text  x="1322.56" y="247.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (1,470 microseconds, 0.03%)</title><rect x="777.3" y="197" width="0.4" height="31.0" fill="rgb(232,46,7)" rx="2" ry="2" />
+<text  x="780.27" y="215.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,403 microseconds, 0.07%)</title><rect x="1387.7" y="165" width="1.1" height="31.0" fill="rgb(254,39,31)" rx="2" ry="2" />
+<text  x="1390.69" y="183.5" ></text>
+</g>
+<g >
+<title>all (4,804,854 microseconds, 100%)</title><rect x="10.0" y="293" width="1580.0" height="31.0" fill="rgb(240,71,53)" rx="2" ry="2" />
+<text  x="13.00" y="311.5" ></text>
+</g>
+<g >
+<title>preload_be_cmdline@/lib/zfsbootmenu-core.sh (52,238 microseconds, 1.09%)</title><rect x="1300.9" y="197" width="17.1" height="31.0" fill="rgb(253,43,33)" rx="2" ry="2" />
+<text  x="1303.85" y="215.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,664 microseconds, 0.08%)</title><rect x="1576.7" y="197" width="1.2" height="31.0" fill="rgb(225,197,52)" rx="2" ry="2" />
+<text  x="1579.73" y="215.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (62,414 microseconds, 1.30%)</title><rect x="240.0" y="101" width="20.5" height="31.0" fill="rgb(254,203,20)" rx="2" ry="2" />
+<text  x="242.97" y="119.5" ></text>
+</g>
+<g >
+<title>get_zbm_arg@/lib/zfsbootmenu-kcl.sh (14,818 microseconds, 0.31%)</title><rect x="506.1" y="133" width="4.8" height="31.0" fill="rgb(209,147,31)" rx="2" ry="2" />
+<text  x="509.06" y="151.5" ></text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (2,237 microseconds, 0.05%)</title><rect x="675.2" y="165" width="0.7" height="31.0" fill="rgb(219,66,2)" rx="2" ry="2" />
+<text  x="678.16" y="183.5" ></text>
+</g>
+<g >
+<title>getarg@/lib/dracut-lib.sh (121,288 microseconds, 2.52%)</title><rect x="597.2" y="197" width="39.9" height="31.0" fill="rgb(248,93,45)" rx="2" ry="2" />
+<text  x="600.19" y="215.5" >get..</text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (1,478 microseconds, 0.03%)</title><rect x="805.0" y="197" width="0.5" height="31.0" fill="rgb(253,217,31)" rx="2" ry="2" />
+<text  x="807.99" y="215.5" ></text>
+</g>
+<g >
+<title>kcl_tokenize@/lib/zfsbootmenu-kcl.sh (2,530 microseconds, 0.05%)</title><rect x="1389.9" y="165" width="0.9" height="31.0" fill="rgb(234,137,44)" rx="2" ry="2" />
+<text  x="1392.95" y="183.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,285 microseconds, 0.07%)</title><rect x="1383.7" y="165" width="1.1" height="31.0" fill="rgb(250,44,33)" rx="2" ry="2" />
+<text  x="1386.72" y="183.5" ></text>
+</g>
+<g >
+<title>get_zbm_arg@/lib/zfsbootmenu-kcl.sh (15,953 microseconds, 0.33%)</title><rect x="463.8" y="101" width="5.2" height="31.0" fill="rgb(219,28,0)" rx="2" ry="2" />
+<text  x="466.78" y="119.5" ></text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (3,327 microseconds, 0.07%)</title><rect x="229.5" y="101" width="1.1" height="31.0" fill="rgb(229,107,23)" rx="2" ry="2" />
+<text  x="232.51" y="119.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (21,213 microseconds, 0.44%)</title><rect x="575.4" y="165" width="6.9" height="31.0" fill="rgb(218,181,27)" rx="2" ry="2" />
+<text  x="578.36" y="183.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (35,421 microseconds, 0.74%)</title><rect x="173.3" y="69" width="11.6" height="31.0" fill="rgb(209,166,25)" rx="2" ry="2" />
+<text  x="176.25" y="87.5" ></text>
+</g>
+<g >
+<title>udevsettle@/lib/dracut-lib.sh (2,788 microseconds, 0.06%)</title><rect x="809.6" y="229" width="0.9" height="31.0" fill="rgb(217,25,3)" rx="2" ry="2" />
+<text  x="812.62" y="247.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (3,484 microseconds, 0.07%)</title><rect x="299.9" y="69" width="1.2" height="31.0" fill="rgb(214,228,9)" rx="2" ry="2" />
+<text  x="302.92" y="87.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (35,574 microseconds, 0.74%)</title><rect x="134.8" y="69" width="11.7" height="31.0" fill="rgb(245,168,51)" rx="2" ry="2" />
+<text  x="137.78" y="87.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (3,446 microseconds, 0.07%)</title><rect x="21.9" y="69" width="1.1" height="31.0" fill="rgb(218,203,41)" rx="2" ry="2" />
+<text  x="24.86" y="87.5" ></text>
+</g>
+<g >
+<title>be_has_encroot@/lib/zfsbootmenu-core.sh (29,226 microseconds, 0.61%)</title><rect x="1245.9" y="133" width="9.6" height="31.0" fill="rgb(214,155,49)" rx="2" ry="2" />
+<text  x="1248.89" y="151.5" ></text>
+</g>
+<g >
+<title>make_trace_mem@/lib/dracut-lib.sh (14,009 microseconds, 0.29%)</title><rect x="1017.9" y="229" width="4.6" height="31.0" fill="rgb(206,39,52)" rx="2" ry="2" />
+<text  x="1020.89" y="247.5" ></text>
+</g>
+<g >
+<title>kcl_tokenize@/lib/zfsbootmenu-kcl.sh (4,002 microseconds, 0.08%)</title><rect x="423.8" y="37" width="1.4" height="31.0" fill="rgb(250,43,31)" rx="2" ry="2" />
+<text  x="426.84" y="55.5" ></text>
+</g>
+<g >
+<title>getargbool@/lib/dracut-lib.sh (134,401 microseconds, 2.80%)</title><rect x="594.6" y="229" width="44.2" height="31.0" fill="rgb(231,201,41)" rx="2" ry="2" />
+<text  x="597.57" y="247.5" >geta..</text>
+</g>
+<g >
+<title>get_zbm_arg@/lib/zfsbootmenu-kcl.sh (78,491 microseconds, 1.63%)</title><rect x="415.1" y="133" width="25.8" height="31.0" fill="rgb(244,190,35)" rx="2" ry="2" />
+<text  x="418.14" y="151.5" >g..</text>
+</g>
+<g >
+<title>is_writable@/lib/zfsbootmenu-core.sh (23,236 microseconds, 0.48%)</title><rect x="1580.8" y="197" width="7.6" height="31.0" fill="rgb(210,91,0)" rx="2" ry="2" />
+<text  x="1583.78" y="215.5" ></text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (1,543 microseconds, 0.03%)</title><rect x="775.5" y="197" width="0.6" height="31.0" fill="rgb(219,142,27)" rx="2" ry="2" />
+<text  x="778.55" y="215.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,569 microseconds, 0.10%)</title><rect x="1347.4" y="101" width="1.5" height="31.0" fill="rgb(230,16,48)" rx="2" ry="2" />
+<text  x="1350.39" y="119.5" ></text>
+</g>
+<g >
+<title>source_hook@/lib/dracut-lib.sh (14,363 microseconds, 0.30%)</title><rect x="724.4" y="229" width="4.8" height="31.0" fill="rgb(232,52,28)" rx="2" ry="2" />
+<text  x="727.44" y="247.5" ></text>
+</g>
+<g >
+<title>mount_zfs@/lib/zfsbootmenu-core.sh (95,837 microseconds, 1.99%)</title><rect x="1353.7" y="197" width="31.5" height="31.0" fill="rgb(229,108,1)" rx="2" ry="2" />
+<text  x="1356.66" y="215.5" >mo..</text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,606 microseconds, 0.08%)</title><rect x="1453.5" y="165" width="1.2" height="31.0" fill="rgb(235,33,37)" rx="2" ry="2" />
+<text  x="1456.48" y="183.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (3,351 microseconds, 0.07%)</title><rect x="14.2" y="101" width="1.2" height="31.0" fill="rgb(242,18,46)" rx="2" ry="2" />
+<text  x="17.25" y="119.5" ></text>
+</g>
+<g >
+<title>zinfo@/lib/kmsg-log-lib.sh (4,499 microseconds, 0.09%)</title><rect x="544.7" y="133" width="1.4" height="31.0" fill="rgb(252,150,29)" rx="2" ry="2" />
+<text  x="547.67" y="151.5" ></text>
+</g>
+<g >
+<title>get_zbm_arg@/lib/zfsbootmenu-kcl.sh (11,137 microseconds, 0.23%)</title><rect x="500.8" y="133" width="3.6" height="31.0" fill="rgb(207,90,8)" rx="2" ry="2" />
+<text  x="503.77" y="151.5" ></text>
+</g>
+<g >
+<title>find_be_kernels@/lib/zfsbootmenu-core.sh (248,795 microseconds, 5.18%)</title><rect x="1236.7" y="229" width="81.8" height="31.0" fill="rgb(242,185,40)" rx="2" ry="2" />
+<text  x="1239.67" y="247.5" >find_be_k..</text>
+</g>
+<g >
+<title>getarg@/lib/dracut-lib.sh (97,825 microseconds, 2.04%)</title><rect x="298.8" y="101" width="32.2" height="31.0" fill="rgb(241,126,54)" rx="2" ry="2" />
+<text  x="301.79" y="119.5" >ge..</text>
+</g>
+<g >
+<title>get_zbm_bool@/lib/zfsbootmenu-kcl.sh (25,542 microseconds, 0.53%)</title><rect x="526.1" y="133" width="8.4" height="31.0" fill="rgb(221,89,48)" rx="2" ry="2" />
+<text  x="529.13" y="151.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (3,011 microseconds, 0.06%)</title><rect x="91.6" y="101" width="1.0" height="31.0" fill="rgb(215,186,47)" rx="2" ry="2" />
+<text  x="94.59" y="119.5" ></text>
+</g>
+<g >
+<title>getarg@/lib/dracut-lib.sh (114,782 microseconds, 2.39%)</title><rect x="738.6" y="229" width="37.7" height="31.0" fill="rgb(226,218,42)" rx="2" ry="2" />
+<text  x="741.59" y="247.5" >get..</text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (2,005 microseconds, 0.04%)</title><rect x="553.4" y="197" width="0.7" height="31.0" fill="rgb(222,96,30)" rx="2" ry="2" />
+<text  x="556.43" y="215.5" ></text>
+</g>
+<g >
+<title>kcl_suppress@/lib/zfsbootmenu-kcl.sh (7,628 microseconds, 0.16%)</title><rect x="1423.9" y="165" width="2.6" height="31.0" fill="rgb(206,204,18)" rx="2" ry="2" />
+<text  x="1426.95" y="183.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,243 microseconds, 0.07%)</title><rect x="1379.8" y="165" width="1.0" height="31.0" fill="rgb(234,135,45)" rx="2" ry="2" />
+<text  x="1382.76" y="183.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (19,867 microseconds, 0.41%)</title><rect x="663.5" y="133" width="6.5" height="31.0" fill="rgb(221,115,33)" rx="2" ry="2" />
+<text  x="666.50" y="151.5" ></text>
+</g>
+<g >
+<title>source@/lib/dracut/hooks/initqueue/settled/99-zfsbootmenu-ready-set.sh (3,593 microseconds, 0.07%)</title><rect x="1009.7" y="229" width="1.2" height="31.0" fill="rgb(211,187,8)" rx="2" ry="2" />
+<text  x="1012.74" y="247.5" ></text>
+</g>
+<g >
+<title>source@/lib/zfsbootmenu-kcl.sh (1,760 microseconds, 0.04%)</title><rect x="1078.5" y="197" width="0.6" height="31.0" fill="rgb(227,187,16)" rx="2" ry="2" />
+<text  x="1081.51" y="215.5" ></text>
+</g>
+<g >
+<title>read_kcl_prop@/lib/zfsbootmenu-kcl.sh (22,654 microseconds, 0.47%)</title><rect x="1305.7" y="165" width="7.5" height="31.0" fill="rgb(223,216,2)" rx="2" ry="2" />
+<text  x="1308.74" y="183.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (42,782 microseconds, 0.89%)</title><rect x="707.7" y="197" width="14.0" height="31.0" fill="rgb(244,65,34)" rx="2" ry="2" />
+<text  x="710.68" y="215.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,053 microseconds, 0.08%)</title><rect x="1582.8" y="165" width="1.3" height="31.0" fill="rgb(236,13,23)" rx="2" ry="2" />
+<text  x="1585.81" y="183.5" ></text>
+</g>
+<g >
+<title>load_key@/lib/zfsbootmenu-core.sh (50,472 microseconds, 1.05%)</title><rect x="1219.8" y="229" width="16.6" height="31.0" fill="rgb(214,3,27)" rx="2" ry="2" />
+<text  x="1222.79" y="247.5" ></text>
+</g>
+<g >
+<title>_dogetargs@/lib/dracut-lib.sh (96,075 microseconds, 2.00%)</title><rect x="20.7" y="101" width="31.6" height="31.0" fill="rgb(240,22,7)" rx="2" ry="2" />
+<text  x="23.74" y="119.5" >_d..</text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (3,437 microseconds, 0.07%)</title><rect x="87.1" y="101" width="1.1" height="31.0" fill="rgb(206,214,37)" rx="2" ry="2" />
+<text  x="90.08" y="119.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (5,399 microseconds, 0.11%)</title><rect x="1158.6" y="197" width="1.8" height="31.0" fill="rgb(254,45,32)" rx="2" ry="2" />
+<text  x="1161.62" y="215.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (19,006 microseconds, 0.40%)</title><rect x="764.9" y="165" width="6.2" height="31.0" fill="rgb(230,49,47)" rx="2" ry="2" />
+<text  x="767.86" y="183.5" ></text>
+</g>
+<g >
+<title>main@/init (3,223,453 microseconds, 67.09%)</title><rect x="10.0" y="261" width="1060.0" height="31.0" fill="rgb(251,218,32)" rx="2" ry="2" />
+<text  x="13.00" y="279.5" >main@/init</text>
+</g>
+<g >
+<title>_dogetargs@/lib/dracut-lib.sh (80,464 microseconds, 1.67%)</title><rect x="168.5" y="101" width="26.4" height="31.0" fill="rgb(241,179,33)" rx="2" ry="2" />
+<text  x="171.47" y="119.5" >_..</text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (1,970 microseconds, 0.04%)</title><rect x="1059.2" y="197" width="0.6" height="31.0" fill="rgb(218,152,38)" rx="2" ry="2" />
+<text  x="1062.16" y="215.5" ></text>
+</g>
+<g >
+<title>source@//lib/dracut/hooks/cmdline/10-parse-root-opts.sh (515,708 microseconds, 10.73%)</title><rect x="233.6" y="165" width="169.6" height="31.0" fill="rgb(218,180,33)" rx="2" ry="2" />
+<text  x="236.63" y="183.5" >source@//lib/dracut/h..</text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (2,295 microseconds, 0.05%)</title><rect x="597.9" y="165" width="0.8" height="31.0" fill="rgb(213,196,41)" rx="2" ry="2" />
+<text  x="600.91" y="183.5" ></text>
+</g>
+<g >
+<title>source@/etc/zfsbootmenu.conf (5,119 microseconds, 0.11%)</title><rect x="406.2" y="133" width="1.7" height="31.0" fill="rgb(211,119,2)" rx="2" ry="2" />
+<text  x="409.23" y="151.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (29,079 microseconds, 0.61%)</title><rect x="273.5" y="69" width="9.6" height="31.0" fill="rgb(212,185,21)" rx="2" ry="2" />
+<text  x="276.50" y="87.5" ></text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (3,371 microseconds, 0.07%)</title><rect x="292.1" y="101" width="1.1" height="31.0" fill="rgb(233,219,45)" rx="2" ry="2" />
+<text  x="295.09" y="119.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,520 microseconds, 0.09%)</title><rect x="1228.5" y="133" width="1.5" height="31.0" fill="rgb(215,150,51)" rx="2" ry="2" />
+<text  x="1231.48" y="151.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (2,690 microseconds, 0.06%)</title><rect x="1094.5" y="197" width="0.9" height="31.0" fill="rgb(235,25,3)" rx="2" ry="2" />
+<text  x="1097.51" y="215.5" ></text>
+</g>
+<g >
+<title>_build_zbm_kcl@/lib/zfsbootmenu-kcl.sh (19,871 microseconds, 0.41%)</title><rect x="418.6" y="69" width="6.6" height="31.0" fill="rgb(245,100,28)" rx="2" ry="2" />
+<text  x="421.62" y="87.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (42,154 microseconds, 0.88%)</title><rect x="572.8" y="197" width="13.9" height="31.0" fill="rgb(208,135,28)" rx="2" ry="2" />
+<text  x="575.81" y="215.5" ></text>
+</g>
+<g >
+<title>get_zbm_arg@/lib/zfsbootmenu-kcl.sh (10,984 microseconds, 0.23%)</title><rect x="538.1" y="133" width="3.6" height="31.0" fill="rgb(211,25,34)" rx="2" ry="2" />
+<text  x="541.10" y="151.5" ></text>
+</g>
+<g >
+<title>load_key@/lib/zfsbootmenu-core.sh (60,682 microseconds, 1.26%)</title><rect x="1331.5" y="197" width="20.0" height="31.0" fill="rgb(229,153,36)" rx="2" ry="2" />
+<text  x="1334.51" y="215.5" ></text>
+</g>
+<g >
+<title>be_is_locked@/lib/zfsbootmenu-core.sh (44,589 microseconds, 0.93%)</title><rect x="1241.7" y="165" width="14.7" height="31.0" fill="rgb(213,108,45)" rx="2" ry="2" />
+<text  x="1244.75" y="183.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (60,501 microseconds, 1.26%)</title><rect x="270.0" y="101" width="19.9" height="31.0" fill="rgb(216,59,1)" rx="2" ry="2" />
+<text  x="273.04" y="119.5" ></text>
+</g>
+<g >
+<title>source@//lib/dracut/hooks/pre-mount/90-zfsbootmenu-preinit.sh (14,134 microseconds, 0.29%)</title><rect x="1065.3" y="165" width="4.7" height="31.0" fill="rgb(235,54,53)" rx="2" ry="2" />
+<text  x="1068.33" y="183.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (17,480 microseconds, 0.36%)</title><rect x="795.0" y="165" width="5.7" height="31.0" fill="rgb(249,137,51)" rx="2" ry="2" />
+<text  x="797.97" y="183.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,378 microseconds, 0.07%)</title><rect x="1264.5" y="165" width="1.1" height="31.0" fill="rgb(240,151,32)" rx="2" ry="2" />
+<text  x="1267.49" y="183.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,973 microseconds, 0.08%)</title><rect x="1333.4" y="165" width="1.3" height="31.0" fill="rgb(221,115,3)" rx="2" ry="2" />
+<text  x="1336.42" y="183.5" ></text>
+</g>
+<g >
+<title>source@/lib/zfsbootmenu-kcl.sh (1,435 microseconds, 0.03%)</title><rect x="1076.8" y="229" width="0.4" height="31.0" fill="rgb(214,178,47)" rx="2" ry="2" />
+<text  x="1079.75" y="247.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (2,814 microseconds, 0.06%)</title><rect x="266.4" y="101" width="0.9" height="31.0" fill="rgb(247,68,8)" rx="2" ry="2" />
+<text  x="269.41" y="119.5" ></text>
+</g>
+<g >
+<title>zinfo@/lib/kmsg-log-lib.sh (4,478 microseconds, 0.09%)</title><rect x="470.7" y="133" width="1.5" height="31.0" fill="rgb(235,149,34)" rx="2" ry="2" />
+<text  x="473.72" y="151.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (24,784 microseconds, 0.52%)</title><rect x="603.7" y="133" width="8.2" height="31.0" fill="rgb(247,134,16)" rx="2" ry="2" />
+<text  x="606.73" y="151.5" ></text>
+</g>
+<g >
+<title>source@/zfsbootmenu/ztest/ROOT/void/mnt/etc/os-release (5,277 microseconds, 0.11%)</title><rect x="1468.4" y="165" width="1.7" height="31.0" fill="rgb(215,56,44)" rx="2" ry="2" />
+<text  x="1471.40" y="183.5" ></text>
+</g>
+<g >
+<title>get_zbm_arg@/lib/zfsbootmenu-kcl.sh (12,180 microseconds, 0.25%)</title><rect x="529.3" y="101" width="4.0" height="31.0" fill="rgb(229,146,42)" rx="2" ry="2" />
+<text  x="532.34" y="119.5" ></text>
+</g>
+<g >
+<title>main@/libexec/zfsbootmenu-init (1,581,401 microseconds, 32.91%)</title><rect x="1070.0" y="261" width="520.0" height="31.0" fill="rgb(234,14,54)" rx="2" ry="2" />
+<text  x="1072.98" y="279.5" >main@/libexec/zfsbootmenu-init</text>
+</g>
+<g >
+<title>source_hook@/lib/dracut-lib.sh (28,999 microseconds, 0.60%)</title><rect x="1060.4" y="229" width="9.6" height="31.0" fill="rgb(231,116,31)" rx="2" ry="2" />
+<text  x="1063.45" y="247.5" ></text>
+</g>
+<g >
+<title>timed_prompt@/lib/zfsbootmenu-core.sh (5,964 microseconds, 0.12%)</title><rect x="1216.9" y="229" width="2.0" height="31.0" fill="rgb(246,153,13)" rx="2" ry="2" />
+<text  x="1219.95" y="247.5" ></text>
+</g>
+<g >
+<title>source@/lib/kmsg-log-lib.sh (5,226 microseconds, 0.11%)</title><rect x="408.7" y="133" width="1.7" height="31.0" fill="rgb(206,159,40)" rx="2" ry="2" />
+<text  x="411.73" y="151.5" ></text>
+</g>
+<g >
+<title>kcl_append@/lib/zfsbootmenu-kcl.sh (3,109 microseconds, 0.06%)</title><rect x="1449.5" y="165" width="1.0" height="31.0" fill="rgb(250,31,11)" rx="2" ry="2" />
+<text  x="1452.51" y="183.5" ></text>
+</g>
+<g >
+<title>_dogetargs@/lib/dracut-lib.sh (79,852 microseconds, 1.66%)</title><rect x="58.1" y="101" width="26.2" height="31.0" fill="rgb(235,115,26)" rx="2" ry="2" />
+<text  x="61.07" y="119.5" >_..</text>
+</g>
+<g >
+<title>source_all@/lib/dracut-lib.sh (9,844 microseconds, 0.20%)</title><rect x="725.9" y="197" width="3.3" height="31.0" fill="rgb(232,170,8)" rx="2" ry="2" />
+<text  x="728.93" y="215.5" ></text>
+</g>
+<g >
+<title>make_trace_mem@/lib/dracut-lib.sh (10,032 microseconds, 0.21%)</title><rect x="734.9" y="229" width="3.3" height="31.0" fill="rgb(227,18,46)" rx="2" ry="2" />
+<text  x="737.92" y="247.5" ></text>
+</g>
+<g >
+<title>getargs@/lib/dracut-lib.sh (212,257 microseconds, 4.42%)</title><rect x="161.4" y="133" width="69.8" height="31.0" fill="rgb(210,174,21)" rx="2" ry="2" />
+<text  x="164.38" y="151.5" >getargs..</text>
+</g>
+<g >
+<title>zinfo@/lib/kmsg-log-lib.sh (3,731 microseconds, 0.08%)</title><rect x="454.2" y="133" width="1.3" height="31.0" fill="rgb(209,64,51)" rx="2" ry="2" />
+<text  x="457.23" y="151.5" ></text>
+</g>
+<g >
+<title>source_all@/lib/dracut-lib.sh (24,789 microseconds, 0.52%)</title><rect x="1061.8" y="197" width="8.2" height="31.0" fill="rgb(251,139,35)" rx="2" ry="2" />
+<text  x="1064.83" y="215.5" ></text>
+</g>
+<g >
+<title>getargs@/lib/dracut-lib.sh (213,210 microseconds, 4.44%)</title><rect x="90.7" y="133" width="70.1" height="31.0" fill="rgb(245,180,47)" rx="2" ry="2" />
+<text  x="93.68" y="151.5" >getargs..</text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,643 microseconds, 0.08%)</title><rect x="1276.0" y="197" width="1.2" height="31.0" fill="rgb(249,9,18)" rx="2" ry="2" />
+<text  x="1278.99" y="215.5" ></text>
+</g>
+<g >
+<title>kcl_assemble@/lib/zfsbootmenu-kcl.sh (2,944 microseconds, 0.06%)</title><rect x="1451.5" y="165" width="1.0" height="31.0" fill="rgb(222,165,40)" rx="2" ry="2" />
+<text  x="1454.53" y="183.5" ></text>
+</g>
+<g >
+<title>find_root_prefix@/lib/zfsbootmenu-core.sh (57,418 microseconds, 1.19%)</title><rect x="1455.9" y="197" width="18.8" height="31.0" fill="rgb(231,19,39)" rx="2" ry="2" />
+<text  x="1458.86" y="215.5" ></text>
+</g>
+<g >
+<title>colorize@/lib/zfsbootmenu-core.sh (6,482 microseconds, 0.13%)</title><rect x="1214.8" y="229" width="2.1" height="31.0" fill="rgb(247,30,8)" rx="2" ry="2" />
+<text  x="1217.82" y="247.5" ></text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (2,984 microseconds, 0.06%)</title><rect x="159.3" y="101" width="1.0" height="31.0" fill="rgb(211,193,0)" rx="2" ry="2" />
+<text  x="162.30" y="119.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (35,518 microseconds, 0.74%)</title><rect x="102.6" y="69" width="11.7" height="31.0" fill="rgb(216,160,28)" rx="2" ry="2" />
+<text  x="105.58" y="87.5" ></text>
+</g>
+<g >
+<title>kcl_suppress@/lib/zfsbootmenu-kcl.sh (69,893 microseconds, 1.45%)</title><rect x="1426.5" y="165" width="23.0" height="31.0" fill="rgb(231,43,39)" rx="2" ry="2" />
+<text  x="1429.53" y="183.5" >k..</text>
+</g>
+<g >
+<title>udevproperty@/lib/dracut-lib.sh (4,687 microseconds, 0.10%)</title><rect x="681.8" y="229" width="1.6" height="31.0" fill="rgb(231,143,52)" rx="2" ry="2" />
+<text  x="684.83" y="247.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (2,696 microseconds, 0.06%)</title><rect x="1090.5" y="197" width="0.9" height="31.0" fill="rgb(239,75,4)" rx="2" ry="2" />
+<text  x="1093.52" y="215.5" ></text>
+</g>
+<g >
+<title>getargbool@/lib/dracut-lib.sh (119,450 microseconds, 2.49%)</title><rect x="294.4" y="133" width="39.3" height="31.0" fill="rgb(224,107,52)" rx="2" ry="2" />
+<text  x="297.38" y="151.5" >get..</text>
+</g>
+<g >
+<title>is_snapshot@/lib/zfsbootmenu-core.sh (8,405 microseconds, 0.17%)</title><rect x="1375.0" y="165" width="2.8" height="31.0" fill="rgb(209,181,32)" rx="2" ry="2" />
+<text  x="1378.03" y="183.5" ></text>
+</g>
+<g >
+<title>import_pool@/lib/zfsbootmenu-core.sh (219,056 microseconds, 4.56%)</title><rect x="1089.0" y="229" width="72.0" height="31.0" fill="rgb(209,125,25)" rx="2" ry="2" />
+<text  x="1091.98" y="247.5" >import_p..</text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (2,301 microseconds, 0.05%)</title><rect x="642.4" y="165" width="0.7" height="31.0" fill="rgb(230,218,44)" rx="2" ry="2" />
+<text  x="645.38" y="183.5" ></text>
+</g>
+<g >
+<title>source@/lib/dracut/hooks/initqueue/finished/99-zfsbootmenu-ready-chk.sh (770 microseconds, 0.02%)</title><rect x="808.7" y="197" width="0.3" height="31.0" fill="rgb(227,203,4)" rx="2" ry="2" />
+<text  x="811.72" y="215.5" ></text>
+</g>
+<g >
+<title>get_spl_hostid@/lib/zfsbootmenu-core.sh (24,532 microseconds, 0.51%)</title><rect x="1412.8" y="165" width="8.0" height="31.0" fill="rgb(240,105,50)" rx="2" ry="2" />
+<text  x="1415.78" y="183.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,419 microseconds, 0.07%)</title><rect x="1392.1" y="165" width="1.1" height="31.0" fill="rgb(210,116,33)" rx="2" ry="2" />
+<text  x="1395.11" y="183.5" ></text>
+</g>
+<g >
+<title>source@//lib/dracut/hooks/cmdline/95-zfsbootmenu-parse-commandline.sh (437,371 microseconds, 9.10%)</title><rect x="404.2" y="165" width="143.9" height="31.0" fill="rgb(224,186,39)" rx="2" ry="2" />
+<text  x="407.25" y="183.5" >source@//lib/dracu..</text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (42,018 microseconds, 0.87%)</title><rect x="555.9" y="197" width="13.9" height="31.0" fill="rgb(227,65,3)" rx="2" ry="2" />
+<text  x="558.95" y="215.5" ></text>
+</g>
+<g >
+<title>source_hook@/lib/dracut-lib.sh (1,636,293 microseconds, 34.05%)</title><rect x="10.0" y="229" width="538.1" height="31.0" fill="rgb(239,52,27)" rx="2" ry="2" />
+<text  x="13.00" y="247.5" >source_hook@/lib/dracut-lib.sh</text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (1,967 microseconds, 0.04%)</title><rect x="587.9" y="197" width="0.7" height="31.0" fill="rgb(234,70,17)" rx="2" ry="2" />
+<text  x="590.95" y="215.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,452 microseconds, 0.09%)</title><rect x="1248.3" y="101" width="1.5" height="31.0" fill="rgb(247,153,30)" rx="2" ry="2" />
+<text  x="1251.34" y="119.5" ></text>
+</g>
+<g >
+<title>check_finished@/lib/dracut-lib.sh (6,492 microseconds, 0.14%)</title><rect x="807.2" y="229" width="2.2" height="31.0" fill="rgb(224,227,38)" rx="2" ry="2" />
+<text  x="810.23" y="247.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,466 microseconds, 0.09%)</title><rect x="1253.1" y="101" width="1.4" height="31.0" fill="rgb(235,217,14)" rx="2" ry="2" />
+<text  x="1256.08" y="119.5" ></text>
+</g>
+<g >
+<title>getarg@/lib/dracut-lib.sh (90,380 microseconds, 1.88%)</title><rect x="234.6" y="133" width="29.7" height="31.0" fill="rgb(218,22,54)" rx="2" ry="2" />
+<text  x="237.61" y="151.5" >ge..</text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (20,948 microseconds, 0.44%)</title><rect x="1031.1" y="165" width="6.9" height="31.0" fill="rgb(233,42,31)" rx="2" ry="2" />
+<text  x="1034.14" y="183.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (35,875 microseconds, 0.75%)</title><rect x="205.6" y="69" width="11.8" height="31.0" fill="rgb(229,131,27)" rx="2" ry="2" />
+<text  x="208.57" y="87.5" ></text>
+</g>
+<g >
+<title>source@/lib/dracut/hooks/initqueue/finished/99-zfsbootmenu-ready-chk.sh (1,492 microseconds, 0.03%)</title><rect x="1004.0" y="197" width="0.4" height="31.0" fill="rgb(234,53,53)" rx="2" ry="2" />
+<text  x="1006.95" y="215.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (43,519 microseconds, 0.91%)</title><rect x="620.1" y="165" width="14.3" height="31.0" fill="rgb(242,96,4)" rx="2" ry="2" />
+<text  x="623.12" y="183.5" ></text>
+</g>
+<g >
+<title>select_kernel@/lib/zfsbootmenu-core.sh (26,367 microseconds, 0.55%)</title><rect x="1288.7" y="197" width="8.7" height="31.0" fill="rgb(253,117,6)" rx="2" ry="2" />
+<text  x="1291.69" y="215.5" ></text>
+</g>
+<g >
+<title>source@/lib/zfsbootmenu-core.sh (4,027 microseconds, 0.08%)</title><rect x="1077.8" y="229" width="1.3" height="31.0" fill="rgb(221,57,4)" rx="2" ry="2" />
+<text  x="1080.77" y="247.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,897 microseconds, 0.08%)</title><rect x="1243.7" y="133" width="1.3" height="31.0" fill="rgb(212,92,37)" rx="2" ry="2" />
+<text  x="1246.69" y="151.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,944 microseconds, 0.08%)</title><rect x="1418.7" y="133" width="1.3" height="31.0" fill="rgb(242,154,19)" rx="2" ry="2" />
+<text  x="1421.70" y="151.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,492 microseconds, 0.07%)</title><rect x="1326.1" y="197" width="1.2" height="31.0" fill="rgb(239,80,18)" rx="2" ry="2" />
+<text  x="1329.13" y="215.5" ></text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (3,709 microseconds, 0.08%)</title><rect x="329.2" y="69" width="1.2" height="31.0" fill="rgb(234,193,0)" rx="2" ry="2" />
+<text  x="332.20" y="87.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,335 microseconds, 0.09%)</title><rect x="1458.0" y="165" width="1.5" height="31.0" fill="rgb(242,95,15)" rx="2" ry="2" />
+<text  x="1461.03" y="183.5" ></text>
+</g>
+<g >
+<title>_dogetargs@/lib/dracut-lib.sh (81,857 microseconds, 1.70%)</title><rect x="129.9" y="101" width="26.9" height="31.0" fill="rgb(235,53,44)" rx="2" ry="2" />
+<text  x="132.92" y="119.5" >_..</text>
+</g>
+<g >
+<title>get_zbm_arg@/lib/zfsbootmenu-kcl.sh (10,579 microseconds, 0.22%)</title><rect x="482.2" y="101" width="3.5" height="31.0" fill="rgb(246,199,14)" rx="2" ry="2" />
+<text  x="485.19" y="119.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,415 microseconds, 0.07%)</title><rect x="1290.4" y="165" width="1.1" height="31.0" fill="rgb(254,6,53)" rx="2" ry="2" />
+<text  x="1293.36" y="183.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,032 microseconds, 0.08%)</title><rect x="1311.0" y="133" width="1.3" height="31.0" fill="rgb(227,57,30)" rx="2" ry="2" />
+<text  x="1314.00" y="151.5" ></text>
+</g>
+<g >
+<title>be_is_locked@/lib/zfsbootmenu-core.sh (45,984 microseconds, 0.96%)</title><rect x="1355.6" y="165" width="15.2" height="31.0" fill="rgb(235,189,15)" rx="2" ry="2" />
+<text  x="1358.65" y="183.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (48,601 microseconds, 1.01%)</title><rect x="600.9" y="165" width="16.0" height="31.0" fill="rgb(228,169,9)" rx="2" ry="2" />
+<text  x="603.88" y="183.5" ></text>
+</g>
+<g >
+<title>source@/lib/dracut/hooks/initqueue/finished/99-zfsbootmenu-ready-chk.sh (1,457 microseconds, 0.03%)</title><rect x="1014.3" y="197" width="0.5" height="31.0" fill="rgb(224,123,37)" rx="2" ry="2" />
+<text  x="1017.33" y="215.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (42,207 microseconds, 0.88%)</title><rect x="690.7" y="197" width="13.8" height="31.0" fill="rgb(246,184,40)" rx="2" ry="2" />
+<text  x="693.67" y="215.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (31,593 microseconds, 0.66%)</title><rect x="308.9" y="37" width="10.4" height="31.0" fill="rgb(207,5,21)" rx="2" ry="2" />
+<text  x="311.91" y="55.5" ></text>
+</g>
+<g >
+<title>check_for_pools@/lib/zfsbootmenu-core.sh (14,445 microseconds, 0.30%)</title><rect x="1161.5" y="229" width="4.8" height="31.0" fill="rgb(217,42,40)" rx="2" ry="2" />
+<text  x="1164.55" y="247.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (3,841 microseconds, 0.08%)</title><rect x="98.5" y="69" width="1.3" height="31.0" fill="rgb(229,98,44)" rx="2" ry="2" />
+<text  x="101.52" y="87.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,317 microseconds, 0.07%)</title><rect x="1224.3" y="165" width="1.1" height="31.0" fill="rgb(216,7,4)" rx="2" ry="2" />
+<text  x="1227.27" y="183.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,583 microseconds, 0.07%)</title><rect x="1298.9" y="197" width="1.2" height="31.0" fill="rgb(253,196,3)" rx="2" ry="2" />
+<text  x="1301.90" y="215.5" ></text>
+</g>
+<g >
+<title>source_hook@/lib/dracut-lib.sh (14,330 microseconds, 0.30%)</title><rect x="589.2" y="229" width="4.7" height="31.0" fill="rgb(223,12,23)" rx="2" ry="2" />
+<text  x="592.23" y="247.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (34,766 microseconds, 0.72%)</title><rect x="779.1" y="197" width="11.5" height="31.0" fill="rgb(237,133,44)" rx="2" ry="2" />
+<text  x="782.13" y="215.5" ></text>
+</g>
+<g >
+<title>getarg@/lib/dracut-lib.sh (113,084 microseconds, 2.35%)</title><rect x="1023.0" y="229" width="37.2" height="31.0" fill="rgb(230,115,24)" rx="2" ry="2" />
+<text  x="1025.97" y="247.5" >get..</text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,286 microseconds, 0.09%)</title><rect x="1314.1" y="165" width="1.4" height="31.0" fill="rgb(244,182,53)" rx="2" ry="2" />
+<text  x="1317.12" y="183.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (33,411 microseconds, 0.70%)</title><rect x="793.1" y="197" width="11.0" height="31.0" fill="rgb(228,224,43)" rx="2" ry="2" />
+<text  x="796.07" y="215.5" ></text>
+</g>
+<g >
+<title>get_zbm_bool@/lib/zfsbootmenu-kcl.sh (29,905 microseconds, 0.62%)</title><rect x="487.3" y="133" width="9.8" height="31.0" fill="rgb(220,10,26)" rx="2" ry="2" />
+<text  x="490.31" y="151.5" ></text>
+</g>
+<g >
+<title>getarg@/lib/dracut-lib.sh (94,196 microseconds, 1.96%)</title><rect x="338.6" y="101" width="30.9" height="31.0" fill="rgb(244,74,8)" rx="2" ry="2" />
+<text  x="341.55" y="119.5" >ge..</text>
+</g>
+<g >
+<title>source@/etc/zfsbootmenu.conf (17,013 microseconds, 0.35%)</title><rect x="1070.6" y="229" width="5.6" height="31.0" fill="rgb(228,103,3)" rx="2" ry="2" />
+<text  x="1073.62" y="247.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,474 microseconds, 0.07%)</title><rect x="1421.3" y="165" width="1.1" height="31.0" fill="rgb(245,70,43)" rx="2" ry="2" />
+<text  x="1424.30" y="183.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (19,905 microseconds, 0.41%)</title><rect x="623.0" y="133" width="6.5" height="31.0" fill="rgb(235,94,24)" rx="2" ry="2" />
+<text  x="625.97" y="151.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,371 microseconds, 0.07%)</title><rect x="1321.2" y="197" width="1.1" height="31.0" fill="rgb(207,105,54)" rx="2" ry="2" />
+<text  x="1324.21" y="215.5" ></text>
+</g>
+<g >
+<title>zinfo@/lib/kmsg-log-lib.sh (4,557 microseconds, 0.09%)</title><rect x="523.6" y="133" width="1.5" height="31.0" fill="rgb(242,157,28)" rx="2" ry="2" />
+<text  x="526.63" y="151.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,398 microseconds, 0.09%)</title><rect x="1342.7" y="101" width="1.4" height="31.0" fill="rgb(248,82,19)" rx="2" ry="2" />
+<text  x="1345.67" y="119.5" ></text>
+</g>
+<g >
+<title>get_zbm_arg@/lib/zfsbootmenu-kcl.sh (14,279 microseconds, 0.30%)</title><rect x="473.7" y="133" width="4.7" height="31.0" fill="rgb(251,220,36)" rx="2" ry="2" />
+<text  x="476.72" y="151.5" ></text>
+</g>
+<g >
+<title>source@/etc/profile (2,082 microseconds, 0.04%)</title><rect x="1081.8" y="229" width="0.6" height="31.0" fill="rgb(244,52,32)" rx="2" ry="2" />
+<text  x="1084.75" y="247.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (39,001 microseconds, 0.81%)</title><rect x="1045.2" y="197" width="12.8" height="31.0" fill="rgb(210,87,14)" rx="2" ry="2" />
+<text  x="1048.16" y="215.5" ></text>
+</g>
+<g >
+<title>getarg@/lib/dracut-lib.sh (111,317 microseconds, 2.32%)</title><rect x="687.5" y="229" width="36.6" height="31.0" fill="rgb(210,107,43)" rx="2" ry="2" />
+<text  x="690.53" y="247.5" >get..</text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (2,295 microseconds, 0.05%)</title><rect x="635.9" y="165" width="0.8" height="31.0" fill="rgb(223,70,47)" rx="2" ry="2" />
+<text  x="638.91" y="183.5" ></text>
+</g>
+<g >
+<title>be_is_locked@/lib/zfsbootmenu-core.sh (46,283 microseconds, 0.96%)</title><rect x="1335.7" y="165" width="15.2" height="31.0" fill="rgb(235,181,48)" rx="2" ry="2" />
+<text  x="1338.70" y="183.5" ></text>
+</g>
+<g >
+<title>source@//lib/dracut/hooks/cmdline/01-parse-kernel.sh (672,166 microseconds, 13.99%)</title><rect x="11.3" y="165" width="221.0" height="31.0" fill="rgb(249,170,39)" rx="2" ry="2" />
+<text  x="14.27" y="183.5" >source@//lib/dracut/hooks/cmd..</text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,571 microseconds, 0.07%)</title><rect x="1329.9" y="197" width="1.2" height="31.0" fill="rgb(232,218,50)" rx="2" ry="2" />
+<text  x="1332.94" y="215.5" ></text>
+</g>
+<g >
+<title>source_all@/lib/dracut-lib.sh (1,636,293 microseconds, 34.05%)</title><rect x="10.0" y="197" width="538.1" height="31.0" fill="rgb(218,153,24)" rx="2" ry="2" />
+<text  x="13.00" y="215.5" >source_all@/lib/dracut-lib.sh</text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,061 microseconds, 0.08%)</title><rect x="1586.2" y="165" width="1.3" height="31.0" fill="rgb(223,49,2)" rx="2" ry="2" />
+<text  x="1589.21" y="183.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (22,095 microseconds, 0.46%)</title><rect x="710.2" y="165" width="7.2" height="31.0" fill="rgb(223,114,4)" rx="2" ry="2" />
+<text  x="713.16" y="183.5" ></text>
+</g>
+<g >
+<title>get_zbm_arg@/lib/zfsbootmenu-kcl.sh (12,837 microseconds, 0.27%)</title><rect x="512.6" y="133" width="4.2" height="31.0" fill="rgb(233,156,50)" rx="2" ry="2" />
+<text  x="515.60" y="151.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,273 microseconds, 0.07%)</title><rect x="1378.3" y="165" width="1.1" height="31.0" fill="rgb(242,4,12)" rx="2" ry="2" />
+<text  x="1381.31" y="183.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,383 microseconds, 0.09%)</title><rect x="1337.9" y="133" width="1.4" height="31.0" fill="rgb(243,223,32)" rx="2" ry="2" />
+<text  x="1340.91" y="151.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (29,170 microseconds, 0.61%)</title><rect x="244.0" y="69" width="9.6" height="31.0" fill="rgb(246,94,7)" rx="2" ry="2" />
+<text  x="246.98" y="87.5" ></text>
+</g>
+<g >
+<title>source@/lib/kmsg-log-lib.sh (2,992 microseconds, 0.06%)</title><rect x="1080.3" y="229" width="1.0" height="31.0" fill="rgb(216,211,0)" rx="2" ry="2" />
+<text  x="1083.29" y="247.5" ></text>
+</g>
+<g >
+<title>kcl_tokenize@/lib/zfsbootmenu-kcl.sh (2,869 microseconds, 0.06%)</title><rect x="1316.0" y="165" width="1.0" height="31.0" fill="rgb(205,4,10)" rx="2" ry="2" />
+<text  x="1319.01" y="183.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (29,800 microseconds, 0.62%)</title><rect x="63.5" y="69" width="9.8" height="31.0" fill="rgb(247,30,54)" rx="2" ry="2" />
+<text  x="66.50" y="87.5" ></text>
+</g>
+<g >
+<title>zinfo@/lib/kmsg-log-lib.sh (4,583 microseconds, 0.10%)</title><rect x="535.5" y="133" width="1.5" height="31.0" fill="rgb(250,146,46)" rx="2" ry="2" />
+<text  x="538.54" y="151.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,330 microseconds, 0.09%)</title><rect x="1170.8" y="229" width="1.5" height="31.0" fill="rgb(214,46,0)" rx="2" ry="2" />
+<text  x="1173.83" y="247.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,211 microseconds, 0.09%)</title><rect x="1472.5" y="165" width="1.3" height="31.0" fill="rgb(229,95,45)" rx="2" ry="2" />
+<text  x="1475.46" y="183.5" ></text>
+</g>
+<g >
+<title>make_cmdline_dir@/lib/zfsbootmenu-kcl.sh (67,517 microseconds, 1.41%)</title><rect x="416.9" y="101" width="22.2" height="31.0" fill="rgb(223,43,39)" rx="2" ry="2" />
+<text  x="419.90" y="119.5" >m..</text>
+</g>
+<g >
+<title>getargbool@/lib/dracut-lib.sh (115,934 microseconds, 2.41%)</title><rect x="334.2" y="133" width="38.1" height="31.0" fill="rgb(224,189,13)" rx="2" ry="2" />
+<text  x="337.19" y="151.5" >get..</text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (21,646 microseconds, 0.45%)</title><rect x="693.1" y="165" width="7.1" height="31.0" fill="rgb(234,48,0)" rx="2" ry="2" />
+<text  x="696.12" y="183.5" ></text>
+</g>
+<g >
+<title>getarg@/lib/dracut-lib.sh (105,250 microseconds, 2.19%)</title><rect x="641.7" y="197" width="34.6" height="31.0" fill="rgb(235,78,53)" rx="2" ry="2" />
+<text  x="644.68" y="215.5" >ge..</text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (67,836 microseconds, 1.41%)</title><rect x="304.5" y="69" width="22.3" height="31.0" fill="rgb(252,83,51)" rx="2" ry="2" />
+<text  x="307.53" y="87.5" >_..</text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (2,688 microseconds, 0.06%)</title><rect x="1221.1" y="197" width="0.9" height="31.0" fill="rgb(233,163,5)" rx="2" ry="2" />
+<text  x="1224.12" y="215.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (37,961 microseconds, 0.79%)</title><rect x="762.1" y="197" width="12.5" height="31.0" fill="rgb(242,192,0)" rx="2" ry="2" />
+<text  x="765.09" y="215.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,466 microseconds, 0.09%)</title><rect x="1367.3" y="101" width="1.5" height="31.0" fill="rgb(249,220,25)" rx="2" ry="2" />
+<text  x="1370.34" y="119.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (66,336 microseconds, 1.38%)</title><rect x="343.5" y="69" width="21.8" height="31.0" fill="rgb(209,29,4)" rx="2" ry="2" />
+<text  x="346.50" y="87.5" >_..</text>
+</g>
+<g >
+<title>be_has_encroot@/lib/zfsbootmenu-core.sh (28,589 microseconds, 0.60%)</title><rect x="1340.4" y="133" width="9.4" height="31.0" fill="rgb(212,128,45)" rx="2" ry="2" />
+<text  x="1343.45" y="151.5" ></text>
+</g>
+<g >
+<title>_dogetargs@/lib/dracut-lib.sh (82,610 microseconds, 1.72%)</title><rect x="97.4" y="101" width="27.2" height="31.0" fill="rgb(228,183,48)" rx="2" ry="2" />
+<text  x="100.39" y="119.5" >_..</text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,253 microseconds, 0.09%)</title><rect x="1302.9" y="165" width="1.4" height="31.0" fill="rgb(235,18,3)" rx="2" ry="2" />
+<text  x="1305.91" y="183.5" ></text>
+</g>
+<g >
+<title>mount_zfs@/lib/zfsbootmenu-core.sh (96,997 microseconds, 2.02%)</title><rect x="1240.1" y="197" width="31.9" height="31.0" fill="rgb(247,121,14)" rx="2" ry="2" />
+<text  x="1243.08" y="215.5" >mo..</text>
+</g>
+<g >
+<title>debug_on@/lib/dracut-lib.sh (2,816 microseconds, 0.06%)</title><rect x="400.9" y="101" width="0.9" height="31.0" fill="rgb(252,203,4)" rx="2" ry="2" />
+<text  x="403.85" y="119.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,372 microseconds, 0.07%)</title><rect x="1263.0" y="165" width="1.1" height="31.0" fill="rgb(205,207,24)" rx="2" ry="2" />
+<text  x="1265.99" y="183.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,504 microseconds, 0.09%)</title><rect x="1232.7" y="133" width="1.5" height="31.0" fill="rgb(229,217,45)" rx="2" ry="2" />
+<text  x="1235.72" y="151.5" ></text>
+</g>
+<g >
+<title>check_finished@/lib/dracut-lib.sh (12,339 microseconds, 0.26%)</title><rect x="1001.1" y="229" width="4.1" height="31.0" fill="rgb(221,36,42)" rx="2" ry="2" />
+<text  x="1004.12" y="247.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (3,335 microseconds, 0.07%)</title><rect x="375.0" y="101" width="1.1" height="31.0" fill="rgb(214,110,44)" rx="2" ry="2" />
+<text  x="377.96" y="119.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (4,437 microseconds, 0.09%)</title><rect x="1362.6" y="101" width="1.4" height="31.0" fill="rgb(226,223,25)" rx="2" ry="2" />
+<text  x="1365.55" y="119.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (60,240 microseconds, 1.25%)</title><rect x="379.2" y="101" width="19.8" height="31.0" fill="rgb(224,33,47)" rx="2" ry="2" />
+<text  x="382.24" y="119.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (2,992 microseconds, 0.06%)</title><rect x="1023.8" y="197" width="1.0" height="31.0" fill="rgb(225,162,15)" rx="2" ry="2" />
+<text  x="1026.77" y="215.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (19,040 microseconds, 0.40%)</title><rect x="1047.6" y="165" width="6.3" height="31.0" fill="rgb(249,120,32)" rx="2" ry="2" />
+<text  x="1050.61" y="183.5" ></text>
+</g>
+<g >
+<title>check_finished@/lib/dracut-lib.sh (12,234 microseconds, 0.25%)</title><rect x="1011.5" y="229" width="4.1" height="31.0" fill="rgb(226,12,33)" rx="2" ry="2" />
+<text  x="1014.53" y="247.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (54,191 microseconds, 1.13%)</title><rect x="741.2" y="197" width="17.8" height="31.0" fill="rgb(234,91,47)" rx="2" ry="2" />
+<text  x="744.20" y="215.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (3,711 microseconds, 0.08%)</title><rect x="59.2" y="69" width="1.3" height="31.0" fill="rgb(205,54,28)" rx="2" ry="2" />
+<text  x="62.23" y="87.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (31,649 microseconds, 0.66%)</title><rect x="347.3" y="37" width="10.4" height="31.0" fill="rgb(244,61,29)" rx="2" ry="2" />
+<text  x="350.30" y="55.5" ></text>
+</g>
+<g >
+<title>get_zbm_bool@/lib/zfsbootmenu-kcl.sh (23,657 microseconds, 0.49%)</title><rect x="479.0" y="133" width="7.8" height="31.0" fill="rgb(213,91,39)" rx="2" ry="2" />
+<text  x="482.00" y="151.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (46,875 microseconds, 0.98%)</title><rect x="26.1" y="69" width="15.5" height="31.0" fill="rgb(208,193,25)" rx="2" ry="2" />
+<text  x="29.14" y="87.5" ></text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,425 microseconds, 0.07%)</title><rect x="1295.8" y="165" width="1.2" height="31.0" fill="rgb(227,40,2)" rx="2" ry="2" />
+<text  x="1298.84" y="183.5" ></text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (38,200 microseconds, 0.80%)</title><rect x="661.3" y="165" width="12.6" height="31.0" fill="rgb(207,88,17)" rx="2" ry="2" />
+<text  x="664.31" y="183.5" ></text>
+</g>
+<g >
+<title>getargs@/lib/dracut-lib.sh (229,659 microseconds, 4.78%)</title><rect x="13.3" y="133" width="75.5" height="31.0" fill="rgb(236,183,20)" rx="2" ry="2" />
+<text  x="16.27" y="151.5" >getargs@..</text>
+</g>
+<g >
+<title>_dogetarg@/lib/dracut-lib.sh (41,126 microseconds, 0.86%)</title><rect x="645.3" y="165" width="13.6" height="31.0" fill="rgb(213,65,49)" rx="2" ry="2" />
+<text  x="648.34" y="183.5" ></text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (3,298 microseconds, 0.07%)</title><rect x="201.8" y="69" width="1.0" height="31.0" fill="rgb(210,181,33)" rx="2" ry="2" />
+<text  x="204.75" y="87.5" ></text>
+</g>
+<g >
+<title>getcmdline@/lib/dracut-lib.sh (19,845 microseconds, 0.41%)</title><rect x="648.2" y="133" width="6.5" height="31.0" fill="rgb(225,0,42)" rx="2" ry="2" />
+<text  x="651.20" y="151.5" ></text>
+</g>
+<g >
+<title>be_is_locked@/lib/zfsbootmenu-core.sh (40,670 microseconds, 0.85%)</title><rect x="1222.6" y="197" width="13.4" height="31.0" fill="rgb(208,201,19)" rx="2" ry="2" />
+<text  x="1225.64" y="215.5" ></text>
+</g>
+<g >
+<title>getarg@/lib/dracut-lib.sh (86,247 microseconds, 1.79%)</title><rect x="373.9" y="133" width="28.4" height="31.0" fill="rgb(231,211,28)" rx="2" ry="2" />
+<text  x="376.90" y="151.5" >ge..</text>
+</g>
+<g >
+<title>debug_off@/lib/dracut-lib.sh (3,343 microseconds, 0.07%)</title><rect x="235.7" y="101" width="1.1" height="31.0" fill="rgb(213,96,12)" rx="2" ry="2" />
+<text  x="238.65" y="119.5" ></text>
+</g>
+<g >
+<title>getarg@/lib/dracut-lib.sh (85,798 microseconds, 1.79%)</title><rect x="265.6" y="133" width="28.2" height="31.0" fill="rgb(214,134,47)" rx="2" ry="2" />
+<text  x="268.55" y="151.5" >g..</text>
+</g>
+<g >
+<title>zdebug@/lib/kmsg-log-lib.sh (3,585 microseconds, 0.07%)</title><rect x="1285.3" y="197" width="1.2" height="31.0" fill="rgb(245,127,43)" rx="2" ry="2" />
+<text  x="1288.31" y="215.5" ></text>
+</g>
+</g>
+</svg>

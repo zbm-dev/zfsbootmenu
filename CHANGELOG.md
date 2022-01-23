@@ -1,3 +1,53 @@
+# ZFSBootMenu v1.12.0 (2022-01-25)
+
+This release brings multiple changes to how ZFSBootMenu works at run-time. These changes were introduced in an effort to:
+
+1. Reduce the ZFSBootMenu startup time,
+2. Remove dependencies on Dracut-specific helper functions, and
+3. Make ZFSBootMenu more modular and more easily maintained.
+
+Prior to this release, the only Dracut helper functions in use were those that retrieve command-line arguments to dynamically configure ZFSBootMenu. These have all been replaced by internal functions that are both more correct and roughly an order of magnitude faster.
+
+With the help of the [flamegraph](https://github.com/brendangregg/FlameGraph) visualization tool, multiple unnecessary Dracut modules have been pruned from the binary releases. The net effect of these changes is a large decrease in the time spent booting to either the menu or directly to a boot environment.
+
+ZFSBootMenu v1.12 is expected to be the last release series before ZFSBootMenu v2.0. The internal changes and dramatically reduced dependence on Dracut will allow ZFSBootMenu v2.0 images to be built using either dracut or mkinitcpio.
+
+## Deprecated features
+
+* Support for `skim` has been removed. ZFSBootMenu now requires `fzf` for all menu functionality.
+* Support for using `/etc/default/grub` and `/etc/default/zfsbootmenu` for boot environment kernel command line parameters will be removed in the next release.
+
+## Fixes
+
+* Use `kexec --kexec-syscall-auto` to try multiple different ways to load a kernel
+* Change the release files names to better indicate to rEFInd that they are Linux kernels
+* `root=` is always removed/suppressed when passing a commandline into the boot environment
+* More kernel commandline parameters are validated for correctness
+
+## New feaures
+
+* Add the `zbm-kcl` userland tool to view and edit boot environment kernel command lines
+* `generate-zbm` can now execute user hooks before and after an initramfs or EFI bundle has been created
+* Teardown hooks now have access to variables indicating which boot environment, kernel and initramfs were selected
+* We now provide `recovery` builds that include networking and a few disk-related tools
+* Buildah is now used to create build images
+* Countdown timers now have colored text by default
+
+##  Significant commits in this release
+
+* bd736f1 - Add a shell utility to modify and review KCL properties (Andrew J. Hesford)
+* 466e4d2 - Allow rollbacks from the snapshot menu (Andrew J. Hesford)
+* b9c4ed9 - Add Alpine to the ZBM test suite (Andrew J. Hesford)
+* 2c8eacc - Add support for early/late hooks in generate-zbm (Zach Dykstra)
+* 1ca3cf4 - Define BE selection variables in teardown hook environment (Andrew J. Hesford)
+* 89b6273 - Enable profiling framework in core ZFSBootMenu tools (Zach Dykstra)
+* 46b0eb9 - Completely rewrite KCL handling (Andrew J. Hesford, Zach Dykstra)
+* 4b836f3 - Generate release and recovery image builds (Zach Dykstra)
+* 6789ee2 - Provide, and use, a buildah script to construct zbm-builder images (Andrew J. Hesford)
+* 70bad38 - Add initial boot-environment guide (Andrew J. Hesford)
+* 4b836f3 - Generate release and recovery image builds (Zach Dykstra)
+* 044df51 - Separate core library routines from main UI routines (Andrew J. Hesford)
+
 # ZFSBootMenu v1.11.0 (2021-10-31)
 
 ## Updated defaults
