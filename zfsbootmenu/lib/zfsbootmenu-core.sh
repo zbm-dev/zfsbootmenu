@@ -907,7 +907,7 @@ find_root_prefix() {
 # returns: 0 on success
 
 preload_be_cmdline() {
-  local fs mnt args args_file deprecated need_rw zsout
+  local fs args args_file
 
   fs="${1}"
   if [ -z "${fs}" ]; then
@@ -921,77 +921,9 @@ preload_be_cmdline() {
   if args="$( read_kcl_prop "${fs}" )" && [ -n "${args}" ]; then
     zdebug "using org.zfsbootmenu:commandline"
     kcl_tokenize <<< "${args}" > "${args_file}"
-    return 0
   fi
 
-  # Mount R/O to check for config files
-  if ! mnt="$( mount_zfs "${fs}" )"; then
-    zerror "unable to mount ${fs}"
-    return 1
-  fi
-
-  if [ -r "${mnt}/etc/default/zfsbootmenu" ]; then
-    zdebug "using ${mnt}/etc/default/zfsbootmenu"
-    kcl_tokenize < "${mnt}/etc/default/zfsbootmenu" > "${args_file}"
-    deprecated="/etc/default/zfsbootmenu"
-  elif [ -r "${mnt}/etc/default/grub" ]; then
-    zdebug "using ${mnt}/etc/default/grub"
-    echo "$(
-      # shellcheck disable=SC1090,SC1091
-      . "${mnt}/etc/default/grub" ;
-      echo "${GRUB_CMDLINE_LINUX_DEFAULT}"
-    )" | kcl_tokenize > "${args_file}"
-    deprecated="/etc/default/grub"
-  fi
-
-  # Always unmount, pool must be writable to perform migration
-  umount "${mnt}" || return 1
-
-  if [ "${deprecated}" = "/etc/default/zfsbootmenu" ]; then
-    # Need an R/W mount to remove deprecated config
-    need_rw="yes"
-  elif [ -z "${deprecated}" ] || [ -n "${zbm_ignore_kcl_deprecation}" ]; then
-    # Nothing is deprecated, so there is nothing to do
-    return 0
-  fi
-
-  # It is not an error if user declines automatic migration
-  if ! timed_prompt -d 60 \
-    -p "Will attempt migration in $( colorize yellow "%0.2d" ) seconds" \
-    -m "$( colorize green "Using KCL from ${deprecated} on ${fs}" )" \
-    -m "$( colorize green "This behavior is DEPRECATED and will be removed soon" )" \
-    -m "" \
-    -m "KCL should be migrated to an $( colorize orange "org.zfsbootmenu:commandline" ) property" ; then
-
-    # Suppress repeated messages
-    export zbm_ignore_kcl_deprecation=1
-    echo 'export zbm_ignore_kcl_deprecation="1"' >> /etc/zfsbootmenu.conf
-    return 0
-  fi
-
-  zdebug "migrating ${deprecated} to org.zfsbootmenu:commandline"
-
-  # Pool must be writable to set property and remove config
-  set_rw_pool "${fs%%/*}" || return 1
-  CLEAR_SCREEN=1 load_key "${fs}"
-
-  if ! mnt="$( allow_rw="${need_rw}" mount_zfs "${fs}" )"; then
-    zerror "unable to mount ${fs}"
-    return 1
-  fi
-
-  args="$( kcl_assemble < "${args_file}" )"
-
-  if ! zsout="$( zfs set org.zfsbootmenu:commandline="${args}" "${fs}" 2>&1 )"; then
-    zerror "Unable to migrate ${deprecated} to org.zfsbootmenu:commandline: ${zsout}"
-  elif [ "${deprecated}" = "/etc/default/zfsbootmenu" ] ; then
-    zdebug "removing ${deprecated} from ${fs}"
-    rm "${mnt}${deprecated}" >/dev/null 2>&1
-  else
-    zdebug "not removing ${deprecated} from ${fs}"
-  fi
-
-  umount "${mnt}"
+  return 0
 }
 
 # arg1: ZFS filesystem
