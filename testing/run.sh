@@ -61,9 +61,9 @@ if [ -n "${TESTDIR}" ]; then
 else
   # If a test directory was not specified, try a default
   TESTDIR="."
-  for TESTBED in void void-musl arch debian; do
-    if [ -d "./test.${TESTBED}" ]; then
-      TESTDIR="./test.${TESTBED}"
+  for TESTBED in ./test.*; do
+    if [ -d "${TESTBED}" ]; then
+      TESTDIR="${TESTBED}"
       break
     fi
   done
