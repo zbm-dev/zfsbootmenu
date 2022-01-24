@@ -37,6 +37,36 @@ zfsbootmenu_essential_binaries=(
   "fzf"
 )
 
+# shellcheck disable=SC2034
+zfsbootmenu_optional_binaries=(
+  "mbuffer"
+)
+
+# shellcheck disable=SC2034
+zfsbootmenu_udev_rules=(
+  "90-zfs.rules"
+  "69-vdev.rules"
+  "60-zvol.rules"
+)
+
+# shellcheck disable=SC2034
+zfsbootmenu_essential_modules=(
+  "zfs"
+  "zcommon"
+  "znvpair"
+  "zavl"
+  "zunicode"
+  "zlua"
+  "icp"
+  "spl"
+)
+
+# shellcheck disable=SC2034
+zfsbootmenu_optional_modules=(
+  "zlib_deflate"
+  "zlib_inflate"
+)
+
 create_zbm_conf() {
   # Create core ZBM configuration file
 

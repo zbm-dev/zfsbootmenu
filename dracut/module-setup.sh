@@ -14,30 +14,16 @@ depends() {
 installkernel() {
   local mod
 
-  local required_modules=(
-    "zfs"
-    "zcommon"
-    "znvpair"
-    "zavl"
-    "zunicode"
-    "zlua"
-    "icp"
-    "spl"
-  )
-
-  for mod in "${required_modules[@]}"; do
+  # shellcheck disable=SC2154
+  for mod in "${zfsbootmenu_essential_modules[@]}"; do
     if ! instmods -c "${mod}" ; then
       dfatal "Required kernel module '${mod}' is missing, aborting image creation!"
       exit 1
     fi
   done
 
-  local optional_modules=(
-    "zlib_deflate"
-    "zlib_inflate"
-  )
-
-  for mod in "${optional_modules[@]}"; do
+  # shellcheck disable=SC2154
+  for mod in "${zfsbootmenu_optional_modules[@]}"; do
     instmods "${mod}"
   done
 }
@@ -59,13 +45,8 @@ install() {
 
   local _rule _exec _ret
 
-  local udev_rules=(
-    "90-zfs.rules"
-    "69-vdev.rules"
-    "60-zvol.rules"
-  )
-
-  for _rule in "${udev_rules[@]}"; do
+  # shellcheck disable=SC2154
+  for _rule in "${zfsbootmenu_udev_rules[@]}"; do
     if ! inst_rules "${_rule}"; then
       dfatal "failed to install udev rule '${_rule}'"
       exit 1
@@ -80,10 +61,12 @@ install() {
     fi
   done
 
-  # BE clones will work (silently and less efficiently) without mbuffer
-  if ! dracut_install mbuffer; then
-    dwarning "mbuffer not found; ZFSBootMenu cannot show progress during BE clones"
-  fi
+  # shellcheck disable=SC2154
+  for _exec in "${zfsbootmenu_optional_binaries[@]}"; do
+    if ! dracut_install "${_exec}"; then
+      dwarning "optional component '${_exec}' not found, omitting from image"
+    fi
+  done
 
   # Workaround for zfsonlinux/zfs#4749 by ensuring libgcc_s.so(.1) is included
   _ret=0

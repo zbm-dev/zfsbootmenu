@@ -23,6 +23,16 @@ add_terminfo() {
     done
 }
 
+add_optional_binary() {
+    # This has to be inverted to avoid a RETURN trap that triggers failure
+    if ! command -v "${1}" >/dev/null 2>&1; then
+        warning "optional component '${1}' not found, will omit"
+        return 0
+    fi
+
+    add_binary "${1}"
+}
+
 add_optional_module() {
     # Add a kernel module to the initcpio image only if the module
     # actually exists as a loadable file. Otherwise, ignore the module.
@@ -46,10 +56,7 @@ add_optional_module() {
 }
 
 add_zbm_binaries() {
-    local binaries mustcopy
-
-    # Optional mbuffer binary
-    command -v mbuffer >/dev/null 2>&1 && add_binary mbuffer
+    local mustcopy maycopy
 
     # Hard requirements
     # shellcheck disable=SC2154
@@ -60,6 +67,7 @@ add_zbm_binaries() {
         *)
             # Don't be a miser, use system versions
             map add_binary "${zfsbootmenu_essential_binaries[@]}"
+            map add_optional_binary "${zfsbootmenu_optional_binaries[@]}"
             return
             ;;
     esac
@@ -70,8 +78,16 @@ add_zbm_binaries() {
         <(printf "%s\n" "${zfsbootmenu_essential_binaries[@]}" | sort) \
         <(/usr/lib/initcpio/busybox --list | sort))
 
-    # Copy the missing
+    # Copy the missing required binaries
     map add_binary "${mustcopy[@]}"
+
+    # Do the say for optional binaries
+    # shellcheck disable=SC2154
+    readarray -t maycopy < <(comm -23 \
+        <(printf "%s\n" "${zfsbootmenu_optional_binaries[@]}" | sort) \
+        <(/usr/lib/initcpio/busybox --list | sort))
+
+    map add_optional_binary "${maycopy[@]}"
 }
 
 create_zbm_entrypoint() {
@@ -97,37 +113,30 @@ create_zbm_entrypoint() {
 }
 
 
-# TODO: confirm proper return code on installation failures
 build() {
     local hooks relative _file
 
-    # TODO: fix dracut-specific path
     : "${zfsbootmenu_module_root:=/usr/share/zfsbootmenu}"
+
     # shellcheck disable=SC1091
     source "${zfsbootmenu_module_root}/install-helpers.sh" || exit 1
 
     # shellcheck disable=SC2034
     BUILDSTYLE="initcpio"
 
-    # Modules required for ZBM operation
-    map add_module zfs zcommon znvpair zavl zunicode zlua icp spl
+    # Modules (required and optional) used by ZBM
+    # shellcheck disable=SC2154
+    map add_module "${zfsbootmenu_essential_modules[@]}"
 
-    # Optional modules
-    map add_optional_module zlib_deflate zlib_inflate
+    # shellcheck disable=SC2154
+    map add_optional_module "${zfsbootmenu_optional_modules[@]}"
+
+    # Necessary udev rules (also finds required binaries)
+    # shellcheck disable=SC2154
+    map add_udev_rule "${zfsbootmenu_udev_rules[@]}"
 
     # Binaries required for ZBM operation
     add_zbm_binaries
-
-    # Necessary udev rules
-    map add_file \
-        /usr/lib/udev/rules.d/60-zvol.rules \
-        /usr/lib/udev/rules.d/69-vdev.rules \
-        /usr/lib/udev/rules.d/90-zfs.rules
-
-    # This helper tends to be used by the udev rules
-    [[ -f /usr/lib/udev/vdev_id ]] && add_file /usr/lib/udev/vdev_id
-
-    # TODO: figure out if libgcc_s.so.1 is necessary and add it
 
     # On-line documentation
     while read -r doc; do
