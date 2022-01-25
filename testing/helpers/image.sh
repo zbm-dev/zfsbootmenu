@@ -98,13 +98,10 @@ if [ -z "${EXISTING_POOL}" ]; then
     ENCRYPT_OPTS+=( "-O" "keylocation=file://${ENCRYPT_KEYFILE}" )
   fi
 
-  LEGACY_OPTS=()
   if [ -n "${LEGACY_POOL}" ]; then
-    legacy_features=( zstd_compress bookmark_written livelist log_spacemap )
-    legacy_features+=( redacted_datasets redaction_bookmarks device_rebuild )
-    for feature in "${legacy_features[@]}"; do
-      LEGACY_OPTS+=( "-o" "feature@${feature}=disabled" )
-    done
+    LEGACY_OPTS=( "-o" "compatibility=zol-0.8" )
+  else
+    LEGACY_OPTS=()
   fi
 
   if zpool create -f -m none \
