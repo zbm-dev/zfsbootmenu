@@ -175,6 +175,12 @@ From the main menu, perform the following checks:
     - Entering a non-empty name triggers a new snapshot
     - The new snapshot appears in the list of snapshots
 
+- [ ] Pressing `[CTRl+R]` presents the rollback creation prompt
+    - The selected snapshot is listed, highlighted in red
+    - Entering anything but `ROLLBACK` cancels the operation
+    - Entering `ROLLBACK` rolls the dataset back to the snapshot
+    - The selected snapshot is no longer listed on the Snapshot screen
+
 - [ ] Pressing `[CTRL+O]` cycles through name/creation/used sort order
 
 - [ ] Pressing `[ESCAPE]` returns to the main menu.
