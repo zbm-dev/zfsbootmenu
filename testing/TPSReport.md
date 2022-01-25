@@ -197,6 +197,9 @@ of the kernel list. That BE should be selected when entering the list.
   the main menu with the selected kernel listed in the header. A subsequent
   reboot should use the selected kernel without further user interaction.
 
+- [ ] Pressing `[CTRL+U]` clears the default kernel by inheriting the
+  `org.zfsbootmenu:kernel` parameter from the BE parent.
+
 - [ ] Pressing `[ESCAPE]` returns to the main menu.
 
 ## Common Features
