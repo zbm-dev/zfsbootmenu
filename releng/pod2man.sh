@@ -6,9 +6,10 @@ release="${1?ERROR: no release version specified}"
 # Generate man pages from pod documentation
 zbmconfig="pod/generate-zbm.5.pod"
 zbmsystem="pod/zfsbootmenu.7.pod"
+zbmkcl="pod/zbm-kcl.8.pod"
 genzbm="bin/generate-zbm"
 
-for src in "${zbmconfig}" "${zbmsystem}" "${genzbm}"; do
+for src in "${zbmconfig}" "${zbmsystem}" "${zbmkcl}" "${genzbm}"; do
 	if [ ! -r "${src}" ]; then
 		echo "ERROR: POD source '${src}' does not exist"
 		exit 1
@@ -28,3 +29,6 @@ pod2man "${zbmsystem}" -c "ZFSBootMenu" \
 
 pod2man "${genzbm}" -c "generate-zbm" \
   -r "${release}" -s 8 -n generate-zbm > man/generate-zbm.8
+
+pod2man "${zbmkcl}" -c "zbm-kcl" \
+  -r "${release}" -s 8 -n zbm-kcl > man/zbm-kcl.8
