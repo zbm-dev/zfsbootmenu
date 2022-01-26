@@ -226,7 +226,16 @@ if ((IMAGE)); then
       IMAGE_SCRIPT="./helpers/image.sh"
     fi
 
-    sudo unshare --fork --pid --mount env \
+    if command -v doas >/dev/null 2>&1; then
+      SUDO=doas
+    elif command -v sudo >/dev/null 2>&1; then
+      SUDO=sudo
+    else
+      echo "ERROR: unable to elevate user privileges, install sudo or doas"
+      exit 1
+    fi
+
+    "${SUDO}" unshare --fork --pid --mount env \
       ENCRYPT="${ENCRYPT}" \
       LEGACY_POOL="${LEGACY_POOL}" \
       EXISTING_POOL="${EXISTING_POOL}" \
