@@ -86,6 +86,11 @@
   View logs, as indicated by [33m[!][0m. The indicator will
   be yellow for warning conditions and red for errors.
 
+[33m[MOD+R][0m [1mroll back snapshot[0m
+  Roll back a boot environment to the selected
+  snapshot. This is a destructive operation that will
+  not proceed without affirmative confirmation.
+
 [1mAUTHOR[0m
 
 ZFSBootMenu Team
