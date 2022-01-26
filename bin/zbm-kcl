@@ -20,7 +20,7 @@ usage() {
   cat <<-EOF
 	USAGE: $0 [-a <arg>] [-r <arg>] [-e] [-d] [-v] [bootenv]
         Review or update kernel command line (KCL) associated with <bootenv>
-        When the boot environment is specified, the current root will be used
+        When the boot environment is unspecified, the current root will be used
 
 	-a <arg>: Append an argument
 	-r <arg>: Remove an argument
