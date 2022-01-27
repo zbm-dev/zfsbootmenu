@@ -2,28 +2,29 @@
 
 [![Build check](https://github.com/zbm-dev/zfsbootmenu/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/zbm-dev/zfsbootmenu/actions/workflows/build.yml) [![latest packaged version(s)](https://repology.org/badge/latest-versions/zfsbootmenu.svg)](https://repology.org/project/zfsbootmenu/versions)
 
-ZFSBootMenu is a Dracut module that intends to provide Linux distributions with an experience similar to FreeBSD's bootloader. By taking advantage of ZFS features, it allows a user to have multiple "boot environments" (with different distros, for example), manipulate snapshots before booting, and, for the adventurous user, even bootstrap a system installation via `zfs recv`.
+ZFSBootMenu is a Linux bootloader that attempts to provide an experience similar to FreeBSD's bootloader. By taking advantage of ZFS features, it allows a user to have multiple "boot environments" (with different distros, for example), manipulate snapshots before booting, and, for the adventurous user, even bootstrap a system installation via `zfs recv`.
+
+In essence, ZFSBootMenu is a small, self-contained Linux system that knows how to find other Linux kernels and initramfs images within ZFS filesystems. When a suitable kernel and initramfs are identified (either through an automatic process or direct user selection), ZFSBootMenu launches that kernel using the `kexec` command.
 
 ![screenshot](/media/v1.11.0-multi-be.png?raw=true)
 
 In broad strokes, it works as follows:
 
-* Via direct EFI booting, `rEFInd`, `syslinux`, etc, boot a Linux kernel along with an initramfs containing ZFSBootMenu.
-* Look for `zfsbootmenu` in the kernel command line.
-    * Optionally specify a default pool (if multiple are present).
+* Via direct EFI booting, an EFI boot manager like refind, `rEFInd`, a BIOS bootloader like `syslinux`, or some other means, boot ZFSBootMenu (as either a self-contained UEFI application or a dedicated Linux kernel and initramfs image).
 * Find all healthy ZFS pools and import them.
-* If a specific pool was set, look for the `bootfs` pool value. Prefer this boot environment.
-    * If no pool was defined in the command line, use the `bootfs` value on the first-found pool.
-    * If a `bootfs` value is defined, start a 10 second (by default) countdown to boot that environment with the highest versioned kernel found in `/boot`.
-    * If no `bootfs` value is defined, find every filesystem that mounts to `/` with a `/boot` directory, and find every kernel image. Prompt for boot environment selection via a fuzzy finder.
-        * If needed, prompt for encryption passphrases.
-* Once the countdown has been reached for the bootfs-selected environment, prompt for the encryption passphrase if needed.
-* Mount the filesystem and find the highest versioned kernel in `/boot` in the selected boot environment.
-* Load the selected kernel and initramfs with the kernel command line defined in the `org.zfsbootmenu:commandline` property into memory with `kexec`.
+* If appropriate, select a preferred boot environment:
+    * If the ZFSBootMenu command line specifies no pool preference, prefer the filesystem indicated by the `bootfs` property (if defined) on the first-found pool.
+    * If the ZFSBootMenu command line specifies a pool preference, and that pool has been imported, prefer the filesystem indicated by its `bootfs` property (if defined).
+    * If a `bootfs` value has been identified, start an interruptable countdown (by default, 10 seconds) to automatically boot that environment.
+    * If no `bootfs` value can be identified or the automatic countdown was interrupted, search all imported pools for filesystems that set `mountpoint=/` and contain a `/boot` subdirectory that contains Linux kernels and initramfs images. Present a list of identified environments for user selection via `fzf`.
+* Mount the filesystem representing the selected boot environment and find the highest versioned kernel in `/boot` in the selected boot environment.
+* Using `kexec`, load the selected kernel and initramfs into memory, setting the kernel command line with the contents of the `org.zfsbootmenu:commandline` property for that filesystem.
 * Unmount all ZFS filesystems.
 * Boot the final kernel and initramfs.
 
 At this point, you'll be booting into your usual OS-managed kernel and initramfs, along with any arguments needed to correctly boot your system.
+
+Whenever ZFSBootMenu encounters natively encrypted ZFS filesystems that it intends to scan for boot environments, it will prompt the user to enter a passphrase as necessary.
 
 This tool makes uses of the following additional software:
  * [fzf](https://github.com/junegunn/fzf)
@@ -31,9 +32,31 @@ This tool makes uses of the following additional software:
  * [mbuffer](http://www.maier-komor.de/mbuffer.html)
  * [Linux Kernel](https://www.kernel.org)
  * [ZFS on Linux](https://zfsonlinux.org)
- * [dracut](https://github.com/dracutdevs/dracut)
 
- ZFSBootMenu has been tested successfully with Kernel 5.8.14, Dracut 050 and OpenZFS 2.0.0-rc4.
+The ZFSBootMenu image is created from your regular system utilities using an initramfs generator. Image creation is known to work and explicitly supported with:
+
+ * [dracut](https://github.com/dracutdevs/dracut), and
+ * [mkinitcpio](https://github.com/archlinux/mkinitcpio)
+
+Note that ZFSBootMenu does *not* replace your regular initramfs image. In fact, it is possible to use one of the supported generators to produce a ZFSBootMenu image even on Linux distributions entirely different program to produce their initramfs images (*e.g.*, `initramfs-tools` on Debian or Ubuntu).
+
+ZFSBootMenu is capable of booting just about any Linux distribution. Major distributions that are known to boot without requiring any special configuration include:
+
+* Void
+* Arch
+* Alpine
+* Gentoo
+* Debian and its descendants (Ubuntu, Linux Mint, Devuan, etc.)
+
+Red Hat and its descendants (RHEL, CentOS, Fedora, etc.) are expected to work as well but have never been tested. ZFSBootMenu also provides several configuration options that can be used to fine-tune the boot process for nonstandard configurations.
+
+Each release includes pre-generated images (both a monolithic UEFI applications as well as separate kernel and initramfs components suitable for both UEFI and BIOS systems) based on Void Linux. Building a custom image is known to work in the following configurations:
+
+* With `mkinitcpio` or `dracut` on Void (the `zfsbootmenu` package will make sure all prerequisites are available)
+* With `mkinitcpio` or `dracut` on Arch
+* With `dracut` on Debian or Ubuntu (installed as `dracut-core` to avoid replacing the system `initramfs-tools` setup)
+
+If you run Docker or [podman](https://podman.io/), it is also possible to build custom ZFSBootMenu images in a container. The [zbm-builder.sh](zbm-builder.sh) script provides a simpler wrapper that will use your own configuration in the current directory to produce custom images.
 
 # ZFS boot environments
 
