@@ -27,16 +27,17 @@ Usage: $0 [options]
   -c  Enable dropbear remote access via crypt-ssh
   -n  Do not reset the controlling terminal after the VM exits
   -e  Boot the VM with an EFI bundle
+  -F  Generate a flamegraph/flamechart using tracing data from ZBM
+  -E  Enable early initramfs tracing
+  -i  Use mkinitcpio to generate the testing initramfs
+  -r  Use Dracut to generate the testing initramfs
+  -G  Enable debug output for generate-zbm
   -M  Set the amount of memory for the virtual machine
   -C  Set the number of CPUs for the virtual machine
-  -F  Generate a flamegraph/flamechart using tracing data from ZBM
-  -E  Enable early Dracut tracing
-  -G  Enable debug output for generate-zbm
-  -i  Use mkinitcpio to generate the image, instead of Dracut
 EOF
 }
 
-CMDOPTS="D:A:a:d:fsv:hineM:C:FEGc"
+CMDOPTS="D:A:a:d:fsv:hineM:C:FEGcr"
 
 # First-pass option parsing just looks for test directory
 while getopts "${CMDOPTS}" opt; do
@@ -110,6 +111,10 @@ EFI=0
 SERDEV_COUNT=0
 GENZBM_FLAGS=()
 
+# Internally, default to mkinitcpio
+DRACUT=0
+INITCPIO=1
+
 # Override any default variables
 #shellcheck disable=SC1091
 [ -f .config ] && source .config
@@ -179,16 +184,25 @@ while getopts "${CMDOPTS}" opt; do
       GENZBM_FLAGS+=( "-d" )
       ;;
     i)
-      CREATE=1
-      GENZBM_FLAGS+=( "-i" )
+      DRACUT=0
+      INITCPIO=1
+      ;;
+    r)
+      DRACUT=1
+      INITCPIO=0
       ;;
     *)
       ;;
   esac
 done
 
-# Zero out any Dracut customizations from the last run
+if ((INITCPIO)) ; then
+  GENZBM_FLAGS+=( "-i" )
+fi
+
+# Zero out any customizations from the last run
 : > "${TESTDIR}/dracut.conf.d/testing.conf"
+: > "${TESTDIR}/mkinitcpio.d/testing.conf"
 
 # If no drives were specified, glob all -pool.img disks
 if [ "${#DRIVE[@]}" -eq 0 ]; then
@@ -231,14 +245,21 @@ if ((FLAME)) ; then
   coproc perf_data ( cat "${FIFO}.out" > "${TESTDIR}/perfdata.log" )
   trap cleanup EXIT INT TERM
 
-  cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
+    cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
 zfsbootmenu_trace_enable=yes
 zfsbootmenu_trace_term="/dev/${SERDEV}${SERDEV_COUNT}"
 zfsbootmenu_trace_baud="115200"
 EOF
 
+  cat << EOF >> "${TESTDIR}/mkinitcpio.d/testing.conf"
+zfsbootmenu_trace_enable=yes
+zfsbootmenu_trace_term="/dev/${SERDEV}${SERDEV_COUNT}"
+zfsbootmenu_trace_baud="115200"
+EOF
+
+  # TODO: add support for initcpio
   if ((EARLY_TRACING)) ; then
-  cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
+    cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
 dracut_trace_enable=yes
 EOF
   fi
@@ -290,8 +311,11 @@ dropbear_acl="${HOME}/.ssh/authorized_keys"
 dropbear_port="22"
 add_dracutmodules+=" crypt-ssh "
 EOF
+  # TODO: add support for initcpio
 
-  AAPPEND+=("ip=dhcp" "rd.neednet")
+  if ((DRACUT)) ; then
+    AAPPEND+=("ip=dhcp" "rd.neednet")
+  fi
 
   chmod 0600 "${SSH_CONF_DIR}/${TESTHOST}"
   trap cleanup EXIT INT TERM

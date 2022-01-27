@@ -161,10 +161,25 @@ if ((DRACUT)) ; then
 fi
 
 if ((MKINITCPIO)) ; then
-  cp -Rp ../etc/zfsbootmenu/mkinitcpio.conf "${TESTDIR}"
-  cat << EOF >> "${TESTDIR}/mkinitcpio.conf"
-zfsbootmenu_module_root="$( realpath -e ../zfsbootmenu )"
+  cat << EOF > "${TESTDIR}/mkinitcpio.conf"
+for snippet in $( realpath -e "${TESTDIR}" )/mkinitcpio.d/*.conf ; do
+  source \${snippet}
+done
+EOF
+
+  MKINITCPIOD="${TESTDIR}/mkinitcpio.d"
+  mkdir -p "${MKINITCPIOD}"
+
+  cat << EOF > "${MKINITCPIOD}/base.conf"
+MODULES=()
+BINARIES=()
+FILEs=()
+HOOKS=(base udev autodetect modconf block filesystems keyboard)
 COMPRESSION="cat"
+EOF
+
+  cat << EOF > "${MKINITCPIOD}/modroot.conf"
+zfsbootmenu_module_root="$( realpath -e ../zfsbootmenu )"
 EOF
 fi
 
