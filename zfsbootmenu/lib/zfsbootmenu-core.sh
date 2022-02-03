@@ -57,21 +57,8 @@ colorize() {
 # prints: left-padded text
 # returns: nothing
 
-# Accepted environment variables:
-# WIDTH: pre-calculated screen width
-
 center_string() {
-  local _WIDTH
-  if [ -z "${WIDTH}" ]; then
-    if [ -z "${FZF_PREVIEW_COLUMNS}" ]; then
-      _WIDTH="$( tput cols )"
-    else
-      _WIDTH="${FZF_PREVIEW_COLUMNS}"
-    fi
-  else
-    _WIDTH="${WIDTH}"
-  fi
-  printf "%*s" $(( (${#1} + _WIDTH ) / 2)) "${1}"
+  printf "%*s" $(( ( ${#1} + COLUMNS ) / 2 )) "${1}"
 }
 
 # arg1: text to center
