@@ -23,7 +23,6 @@ $Data::Dumper::Indent   = 1;
 $Data::Dumper::Sortkeys = 1;
 $Data::Dumper::Purity   = 1;
 
-use Config::IniFiles;
 use Sort::Versions;
 use YAML::PP;
 use boolean;
@@ -46,8 +45,6 @@ sub groupKernels;
 sub pruneVersions;
 sub purgeFiles;
 sub verboseUnlink;
-sub convertConfig;
-sub convertImageConfig;
 
 BEGIN {
   $SIG{INT}  = \&cleanupMount;
@@ -55,8 +52,8 @@ BEGIN {
 }
 
 my ( %runConf, %config );
-my $default_config = "/etc/zfsbootmenu/config.yaml";
 
+$runConf{config} = "/etc/zfsbootmenu/config.yaml";
 $runConf{bootdir} = "/boot";
 $runConf{usecpio} = false;
 
@@ -68,7 +65,6 @@ GetOptions(
   "bootdir|b=s" => \$runConf{bootdir},
   "confd|C=s"   => \$runConf{confd},
   "cmdline|l=s" => \$runConf{cmdline},
-  "migrate|m:s" => \$runConf{migrate},
   "config|c=s"  => \$runConf{config},
   "enable"      => \$runConf{enable},
   "disable"     => \$runConf{disable},
@@ -81,37 +77,6 @@ GetOptions(
   },
 );
 
-unless ( nonempty $runConf{config} ) {
-  $runConf{config} = $default_config;
-
-  # Implicitly request migration if default config does not exist
-  unless ( defined $runConf{migrate} or -f $runConf{config} ) {
-    printf "Configuration %s does not exist, attempting to migrate\n", $runConf{config};
-    $runConf{migrate} = "/etc/zfsbootmenu/config.ini";
-  }
-}
-
-# If migration explicitly requested or no config file exists, convert it
-if ( defined $runConf{migrate} ) {
-  my $inifile;
-
-  if ( nonempty $runConf{migrate} ) {
-    $inifile = $runConf{migrate};
-  } else {
-    $inifile = $runConf{config};
-    $inifile =~ s/(\.yaml)?$/.ini/i;
-  }
-
-  # If possible, make a backup of an existing output file
-  my $conf_backup = sprintf( "%s.backup", $runConf{config} );
-  if ( -f $runConf{config} and safeCopy( $runConf{config}, $conf_backup ) ) {
-    printf "Created backup %s -> %s\n", $runConf{config}, $conf_backup;
-  }
-
-  convertConfig( $inifile, $runConf{config} ) or exit 1;
-  exit 0;
-}
-
 if ( -r $runConf{config} ) {
   eval {
     local $SIG{'__DIE__'};
@@ -120,20 +85,6 @@ if ( -r $runConf{config} ) {
   } or do {
     my $error = <<"EOF";
 Unable to parse configuration $runConf{config} as YAML.
-
-If this is a legacy configuration, migrate to the new format by running
-
-  $0 --migrate $runConf{config} [ --config <output> ],
-
-where `<output>` is the desired location of the converted file. If you
-omit the `--config` option, an output location
-
-  $default_config
-
-will be used by default.
-
-----
-
 EOF
     print $error;
 
@@ -1034,62 +985,6 @@ sub verboseUnlink {
   }
 }
 
-sub convertConfig {
-  my ( $inifile, $configfile ) = @_;
-
-  unless ( -r $inifile ) {
-    printf "Unable to read legacy configuration file %s\n", $inifile;
-    exit 1;
-  }
-
-  print "Migrating $inifile to $configfile\n";
-
-  my %ini_config;
-  tie %ini_config, 'Config::IniFiles', ( -file => $inifile );
-
-  my $yaml = YAML::PP->new(
-    boolean => 'boolean',
-    header  => 0,
-  );
-
-  # Force boolean
-  $ini_config{Global}{ManageImages} = boolean( $ini_config{Global}{ManageImages} );
-
-  # Convert the component and EFI image sections to the new format
-  convertImageConfig $ini_config{Components};
-  convertImageConfig $ini_config{EFI};
-
-  # Move syslinux to be a sub section of Components
-  $ini_config{Components}{syslinux} = dclone( $ini_config{syslinux} );
-  $ini_config{Components}{syslinux}{Enabled} = boolean( $ini_config{Components}{syslinux}{CreateConfig} );
-  delete $ini_config{Components}{syslinux}{CreateConfig};
-  delete $ini_config{syslinux};
-
-  $yaml->dump_file( $configfile, \%ini_config );
-
-  printf "Please verify the converted file %s\n", $configfile;
-}
-
-sub convertImageConfig {
-  my $section = shift;
-
-  $section->{Enabled} = boolean( $section->{Copies} > 0 );
-  $section->{Enabled} = boolean( $section->{Copies} > 0 );
-
-  if ( $section->{Versioned} ) {
-    if ( $section->{Copies} > 1 ) {
-      $section->{Versions} = int $section->{Copies};
-    } else {
-      $section->{Versions} = true;
-    }
-  } else {
-    $section->{Versions} = false;
-  }
-
-  delete $section->{Versioned};
-  delete $section->{Copies};
-}
-
 sub Log {
   my $entry = shift;
 
@@ -1172,10 +1067,6 @@ Specify the path to search for kernel files; default: I</boot>
 =item B<--config|-c> I<conf-file>
 
 Specify the path to a configuration file; default: I</etc/zfsbootmenu/config.yaml>
-
-=item B<--migrate|-m> [I<ini-config>]
-
-Migrate a legacy INI file to the new YAML format, writing the converted file to the path specified by B<--config>. If I<ini-config> is not specified, a default path is chosen by removing any I<.yaml> suffix in the B<--config> path and appending a I<.ini> suffix.
 
 =item B<--enable>
 
