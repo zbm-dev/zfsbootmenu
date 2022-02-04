@@ -37,26 +37,22 @@ csv_cat() {
 # returns: nothing
 
 header_wrap() {
-  local hardbreak tokens tok footer nlines allow_breaks maxcols curcols
+  local hardbreak tokens tok footer allow_breaks maxcols curcols _field_width
 
   # Pick a wrap width if none was specified
   if [ -z "${wrap_width}" ]; then
-    wrap_width="$(( $( tput cols 2>/dev/null ) - 4 ))"
+    wrap_width="$(( COLUMNS - 4 ))"
     [ "${wrap_width}" -gt 0 ] || wrap_width=80
   fi
 
-  # Pick a uniform field width
-  if [ -z "${field_width}" ]; then
-    field_width=0
-    for tok in "$@"; do
-      [ "${#tok}" -gt "${field_width}" ] && field_width="${#tok}"
-    done
-  fi
-
-  # Determine maximum number of columns
   maxcols=0
   curcols=0
+  _field_width=0
   for tok in "$@"; do
+    # Figure out the longest field
+    [ "${#tok}" -gt "${_field_width}" ] && _field_width="${#tok}"
+
+    # Determine the maximum number of columns
     if [ -z "${tok}" ]; then
       if [ "${curcols}" -gt "${maxcols}" ]; then
         maxcols="${curcols}"
@@ -67,9 +63,11 @@ header_wrap() {
     fi
   done
 
+  # Only set a field width if none was specified
+  [ -z "${field_width}" ] && field_width="${_field_width}"
+
   # Honor hard breaks only if terminal is sufficiently tall and wide
-  nlines="$( tput lines 2>/dev/null )" || nlines=0
-  if [ "${nlines}" -ge 24 ] && [ "${wrap_width}" -ge "$(( maxcols * field_width ))" ]; then
+  if [ "${LINES}" -ge 24 ] && [ "${wrap_width}" -ge "$(( maxcols * field_width ))" ]; then
     allow_breaks=1
   else
     allow_breaks=0
@@ -84,7 +82,7 @@ header_wrap() {
     while [ $# -gt 0 ]; do
       # Pad fields if a uniform field width was assigned
       if [ "${field_width}" -gt 0 ] && [ -n "$1" ]; then
-        tok="$( printf "%-${field_width}s" "$1" )"
+        printf -v tok "%-${field_width}s" "$1"
         tok="${tok// /_}"
       else
         tok="${1// /_}"
@@ -345,7 +343,7 @@ draw_pool_status() {
   local selected header psize
 
   # size the preview window to leave enough room for headers on the left
-  psize="$(( $( tput cols ) - 34 ))"
+  psize="$(( COLUMNS - 34 ))"
   [ "${psize}" -le 0 ] && psize=10
 
   # Override uniform field width to force once item per line
@@ -440,7 +438,7 @@ snapshot_dispatcher() {
       header="$( center_string "${selected%%@*}" )"
       check_base="${selected%%@*}@"
 
-      pre_populated="$( printf "%(%Y-%m-%d-%H%M%S)T" )"
+      printf -v pre_populated "%(%Y-%m-%d-%H%M%S)T"
       ;;
   esac
 

@@ -21,8 +21,8 @@ while read -r line ; do
   IFS='|' read -r prefix trace log <<<"${suffix}"
   IFS=';' read -ra tokens <<<"${trace}"
 
-  ppref="$( printf "%*s" 11 "${prefix}:" )"
-  tpref="$( printf "%*s" 11 "trace:" )"
+  printf -v ppref "%*s" 11 "${prefix}:"
+  printf -v tpref "%*s" 11 "trace:"
 
   pad=' '
   c="${g}"

@@ -56,7 +56,7 @@ if cli_spl_hostid=$( get_zbm_arg spl.spl_hostid spl_hostid ) ; then
 
   # Test for decimal
   if (( 10#${cli_spl_hostid} )) >/dev/null 2>&1 ; then
-    spl_hostid="$( printf "%08x" "${cli_spl_hostid}" )"
+    printf -v spl_hostid "%08x" "${cli_spl_hostid}"
   # Test for hex. Requires 0x, if present, to be stripped
   # The change to cli_spl_hostid isn't saved outside of the test
   elif (( 16#${cli_spl_hostid#0x} )) >/dev/null 2>&1 ; then
@@ -64,7 +64,7 @@ if cli_spl_hostid=$( get_zbm_arg spl.spl_hostid spl_hostid ) ; then
     # printf will strip leading 0s if there are more than 8 hex digits
     # normalize to a maximum of 8, then run through printf to fill in
     # if there are fewer than 8 digits.
-    spl_hostid="$( printf "%08x" "0x${spl_hostid:0:8}" )"
+    printf -v spl_hostid "%08x" "0x${spl_hostid:0:8}"
   # base 10 / base 16 tests fail on 0
   elif [ "${cli_spl_hostid#0x}" -eq "0" ] >/dev/null 2>&1 ; then
     spl_hostid=0

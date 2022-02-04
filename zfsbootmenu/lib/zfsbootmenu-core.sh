@@ -74,7 +74,7 @@ write_hostid() {
   splmod="/sys/module/spl/parameters/spl_hostid"
 
   # Normalize the hostid
-  if ! hostid="$( printf "%08x" "0x${1:-0}" 2>/dev/null )"; then
+  if ! printf -v hostid "%08x" "0x${1:-0}" 2>/dev/null ; then
     zerror "invalid hostid $1"
     return 1
   fi
@@ -177,7 +177,7 @@ match_hostid() {
     zdebug "trying to import: ${pool}"
 
     if [[ $( zpool import -o readonly=on -N "${pool}" 2>&1 ) =~ $hostid_re ]] ; then
-      hostid="$( printf "%08x" "0x${BASH_REMATCH[1]}" )"
+      printf -v hostid "%08x" "0x${BASH_REMATCH[1]}"
       zdebug "discovered pool owner hostid: ${hostid}"
     else
       zdebug "unable to scrape hostid for ${pool}, skipping"
@@ -1181,16 +1181,14 @@ timed_prompt() {
   [ "${lines}" -gt 0 ] || return 1
 
   tput civis
-  HEIGHT=$( tput lines )
-  WIDTH=$( tput cols )
   tput clear
 
-  x=$(( ( (HEIGHT - 0 ) / 2 ) - lines ))
+  x=$(( ( ( LINES - 0 ) / 2 ) - lines ))
   [ "${x}" -lt 0 ] && x=0
 
   for line in "${message[@]}"; do
     short="$( decolorize "${line}" )"
-    y=$(( (WIDTH - ${#short}) / 2 ))
+    y=$(( ( COLUMNS - ${#short}) / 2 ))
     [ "${y}" -lt 0 ] && y=0
     tput cup $x $y
     echo -n -e "${line}"
@@ -1200,9 +1198,9 @@ timed_prompt() {
 
   for (( i=delay; i>0; i-- )); do
     # shellcheck disable=SC2059
-    mes="$( printf "${prompt}" "${i}" )"
+    printf -v mes "${prompt}" "${i}"
     short="$( decolorize "${mes}" )"
-    y=$(( (WIDTH - ${#short}) / 2 ))
+    y=$(( ( COLUMNS - ${#short}) / 2 ))
     [ "${y}" -lt 0 ] && y=0
     tput cup $x $y
     echo -ne "${mes}"
