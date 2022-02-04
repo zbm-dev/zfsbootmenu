@@ -186,6 +186,7 @@ while getopts "${CMDOPTS}" opt; do
     i)
       DRACUT=0
       INITCPIO=1
+      AAPPEND+=( "rd.log=kmsg" )
       ;;
     r)
       DRACUT=1
