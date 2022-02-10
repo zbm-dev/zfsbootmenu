@@ -34,6 +34,8 @@ zfsbootmenu_essential_binaries=(
   "modinfo"
   "lsmod"
   "depmod"
+  "dmesg"
+  "less"
   "fzf"
 )
 
