@@ -24,7 +24,6 @@ zfsbootmenu_essential_binaries=(
   "tac"
   "blkid"
   "awk"
-  "fold"
   "ps"
   "env"
   "chmod"
@@ -42,6 +41,7 @@ zfsbootmenu_essential_binaries=(
 # shellcheck disable=SC2034
 zfsbootmenu_optional_binaries=(
   "mbuffer"
+  "column"
 )
 
 # shellcheck disable=SC2034
@@ -90,6 +90,11 @@ create_zbm_conf() {
     has_refresh=1
   fi
 
+  local has_column
+  if command -v column >/dev/null 2>&1 ; then
+    has_column=1
+  fi
+
   cat > "${BUILDROOT}/etc/zfsbootmenu.conf" <<-'EOF'
 	# Include guard
 	[ -n "${_ETC_ZFSBOOTMENU_CONF}" ] && return
@@ -99,6 +104,7 @@ create_zbm_conf() {
   cat >> "${BUILDROOT}/etc/zfsbootmenu.conf" <<-EOF
 	export BYTE_ORDER="${endian:-le}"
 	export HAS_REFRESH="${has_refresh}"
+	export HAS_COLUMN="${has_column}"
 	EOF
 }
 
