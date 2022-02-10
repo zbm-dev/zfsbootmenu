@@ -32,99 +32,30 @@ csv_cat() {
   (IFS=',' ; printf '%s' "${CSV[*]}")
 }
 
-# arg1...argN: tokens to wrap
-# prints: string, wrapped to width without breaking tokens
+# arg1: colon-delimited string
+# arg2: short string used when column is missing / display is small
+# prints: string, columnized
 # returns: nothing
 
-header_wrap() {
-  local hardbreak tokens tok footer nlines allow_breaks maxcols curcols
+column_wrap() {
+  local footer
+  footer="${1}"
 
-  # Pick a wrap width if none was specified
-  if [ -z "${wrap_width}" ]; then
-    wrap_width="$(( $( tput cols 2>/dev/null ) - 4 ))"
-    [ "${wrap_width}" -gt 0 ] || wrap_width=80
+  if [ "${COLUMNS}" -lt 80 ] || [ -z "${HAS_COLUMN}" ] ; then
+    # Use shorter footer text, if it exists
+    [ -n "${2}" ] && footer="${2}"
+    shopt -s extglob
+    # Collapse repeated colons into a single
+    footer="${footer//+([:])/:}"
+    footer="${footer//:/$'\n'}"
+    shopt -u extglob
+  else 
+    footer="$( echo -e "${footer}" | column -t -s ':' )"
   fi
 
-  # Pick a uniform field width
-  if [ -z "${field_width}" ]; then
-    field_width=0
-    for tok in "$@"; do
-      [ "${#tok}" -gt "${field_width}" ] && field_width="${#tok}"
-    done
-  fi
-
-  # Determine maximum number of columns
-  maxcols=0
-  curcols=0
-  for tok in "$@"; do
-    if [ -z "${tok}" ]; then
-      if [ "${curcols}" -gt "${maxcols}" ]; then
-        maxcols="${curcols}"
-      fi
-      curcols=0
-    else
-      (( curcols=curcols+1 ))
-    fi
-  done
-
-  # Honor hard breaks only if terminal is sufficiently tall and wide
-  nlines="$( tput lines 2>/dev/null )" || nlines=0
-  if [ "${nlines}" -ge 24 ] && [ "${wrap_width}" -ge "$(( maxcols * field_width ))" ]; then
-    allow_breaks=1
-  else
-    allow_breaks=0
-  fi
-
-  # Processing is done line-by-line
-  while [ $# -gt 0 ]; do
-    hardbreak=0
-    tokens=()
-
-    # Process up to the first empty string, which is a hard break
-    while [ $# -gt 0 ]; do
-      # Pad fields if a uniform field width was assigned
-      if [ "${field_width}" -gt 0 ] && [ -n "$1" ]; then
-        tok="$( printf "%-${field_width}s" "$1" )"
-        tok="${tok// /_}"
-      else
-        tok="${1// /_}"
-      fi
-
-      shift
-
-      if [ -n "${tok}" ]; then
-        # If breaks are disallowed, also suppress all-empty tokens
-        [ "${allow_breaks}" -eq 1 ] || [ -n "${tok//_/}" ] || continue;
-        tokens+=( "${tok}" )
-      elif [ "${allow_breaks}" -eq 1 ]; then
-        # Hard wrap on empty tokens only with sufficient space
-        hardbreak=1
-        break
-      fi
-    done
-
-    # Print the header if there were tokens
-    if [ "${#tokens[@]}" -gt 0 ]; then
-      # Only try to wrap if the width is long enough
-      if [ "${wrap_width}" -gt 0 ]; then
-        [ "$(( field_width + 4 ))" -ge "${wrap_width}" ] && footer="${footer//_/ }"
-        footer="$( echo -n -e "${tokens[@]}" | fold -s -w "${wrap_width}" )"
-      else
-        footer="$( echo -n -e "${tokens[@]}" )"
-      fi
-
-      # Add some color for emphasis
-      footer="${footer//\[/\\033\[0;32m\[}"
-      footer="${footer//\]/\]\\033\[0m}"
-
-      echo -n -e "${footer//_/ }"
-    fi
-
-    # Add a hard break if an empty token was provided
-    if [ "${hardbreak}" -ne 0 ]; then
-      echo ""
-    fi
-  done
+  footer="${footer//\[/\\033\[0;32m\[}"
+  footer="${footer//\]/\]\\033\[0m}"
+  echo -e "${footer}"
 }
 
 # arg1: Path to file with detected boot environments, 1 per line
@@ -147,11 +78,15 @@ draw_be() {
 
   zdebug "using environment file: ${env}"
 
-  header="$( header_wrap \
-    "[RETURN] boot" "[ESCAPE] refresh view" "[CTRL+P] pool status" "" \
-    "[CTRL+D] set bootfs" "[CTRL+S] snapshots" "[CTRL+K] kernels" "" \
-    "[CTRL+E] edit kcl" "[CTRL+J] jump into chroot" "[CTRL+R] recovery shell" "" \
-    "[CTRL+L] view logs" " " "[CTRL+H] help" )"
+  header="$( column_wrap "\
+[RETURN] boot:[ESCAPE] refresh view:[CTRL+P] pool status
+[CTRL+D] set bootfs:[CTRL+S] snapshots:[CTRL+K] kernels
+[CTRL+E] edit kcl:[CTRL+J] jump into chroot:[CTRL+R] recovery shell
+[CTRL+L] view logs::[CTRL+H] help" \
+"\
+[RETURN] boot
+[CTRL+R] recovery shell
+[CTRL+H] help" )"
 
   expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-j,alt-o"
 
@@ -191,9 +126,14 @@ draw_kernel() {
 
   zdebug "using kernels file: ${_kernels}"
 
-  header="$( header_wrap "[RETURN] boot" "[ESCAPE] back" "" \
-    "[CTRL+D] set default" "[CTRL+U] unset default" "" \
-    "[CTRL+L] view logs" "[CTRL+H] help" )"
+  header="$( column_wrap "\
+[RETURN] boot:[ESCAPE] back
+[CTRL+D] set default:[CTRL+U] unset default
+[CTRL+L] view logs:[CTRL+H] help" \
+"\
+[RETURN] boot
+[CTRL+D] set default
+[CTRL+H] help" )"
 
   expects="--expect=alt-d,alt-u"
 
@@ -229,9 +169,16 @@ draw_snapshots() {
 
   sort_key="$( get_sort_key )"
 
-  header="$( header_wrap "[RETURN] duplicate" "[CTRL+C] clone only" "[CTRL+X] clone and promote" "" \
-    "[CTRL+N] create new snapshot" "[CTRL+J] jump into chroot" "[CTRL+D] show diff" "" \
-    "[CTRL+L] view logs" " " "[CTRL+H] help" "" "[ESCAPE] back" " " "[CTRL+R] rollback" )"
+  header="$( column_wrap "\
+[RETURN] duplicate:[CTRL+C] clone only:[CTRL+X] clone and promote
+[CTRL+D] show diff:[CTRL+R] rollback:[CTRL+N] create new snapshot
+[CTRL+L] view logs::[CTRL+J] jump into chroot
+[CTRL+H] help::[ESCAPE] back" \
+"\
+[RETURN] duplicate
+[CTRL+D] show diff
+[CTRL+H] help" )"
+
   context="Note: for diff viewer, use tab to select/deselect up to two items"
 
   expects="--expect=alt-x,alt-c,alt-j,alt-o,alt-n,alt-r"
@@ -349,8 +296,11 @@ draw_pool_status() {
   [ "${psize}" -le 0 ] && psize=10
 
   # Override uniform field width to force once item per line
-  header="$( field_width=0 header_wrap "[ESCAPE] back" "" \
-    "[CTRL+R] rewind checkpoint" "" "[CTRL+L] view logs" "" "[CTRL+H] help" )"
+  header="$( column_wrap "\
+[ESCAPE] back
+[CTRL+R] rewind checkpoint
+[CTRL+L] view logs
+[CTRL+H] help" )"
 
   if ! selected="$( zpool list -H -o name |
       HELP_SECTION=zpool-health ${FUZZYSEL} \
