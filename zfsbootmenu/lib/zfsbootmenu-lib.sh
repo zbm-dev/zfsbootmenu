@@ -33,6 +33,7 @@ csv_cat() {
 }
 
 # arg1: colon-delimited string
+# arg2: short string used when column is missing / display is small
 # prints: string, columnized
 # returns: nothing
 
@@ -41,7 +42,10 @@ column_wrap() {
   footer="${1}"
 
   if [ "${COLUMNS}" -lt 80 ] || [ -z "${HAS_COLUMN}" ] ; then
+    # Use shorter footer text, if it exists
+    [ -n "${2}" ] && footer="${2}"
     shopt -s extglob
+    # Collapse repeated colons into a single
     footer="${footer//+([:])/:}"
     footer="${footer//:/$'\n'}"
     shopt -u extglob
@@ -78,7 +82,11 @@ draw_be() {
 [RETURN] boot:[ESCAPE] refresh view:[CTRL+P] pool status
 [CTRL+D] set bootfs:[CTRL+S] snapshots:[CTRL+K] kernels
 [CTRL+E] edit kcl:[CTRL+J] jump into chroot:[CTRL+R] recovery shell
-[CTRL+L] view logs::[CTRL+H] help" )"
+[CTRL+L] view logs::[CTRL+H] help" \
+"\
+[RETURN] boot
+[CTRL+R] recovery shell
+[CTRL+H] help" )"
 
   expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-j,alt-o"
 
@@ -121,7 +129,11 @@ draw_kernel() {
   header="$( column_wrap "\
 [RETURN] boot:[ESCAPE] back
 [CTRL+D] set default:[CTRL+U] unset default
-[CTRL+L] view logs:[CTRL+H] help" )"
+[CTRL+L] view logs:[CTRL+H] help" \
+"\
+[RETURN] boot
+[CTRL+D] set default
+[CTRL+H] help" )"
 
   expects="--expect=alt-d,alt-u"
 
@@ -159,9 +171,13 @@ draw_snapshots() {
 
   header="$( column_wrap "\
 [RETURN] duplicate:[CTRL+C] clone only:[CTRL+X] clone and promote
-[CTRL+N] create new snapshot:[CTRL+J] jump into chroot:[CTRL+D] show diff
-[CTRL+L] view logs::[CTRL+H] help
-[ESCAPE] back::[CTRL+R] rollback" )"
+[CTRL+D] show diff:[CTRL+R] rollback:[CTRL+N] create new snapshot
+[CTRL+L] view logs::[CTRL+J] jump into chroot
+[CTRL+H] help::[ESCAPE] back" \
+"\
+[RETURN] duplicate
+[CTRL+D] show diff
+[CTRL+H] help" )"
 
   context="Note: for diff viewer, use tab to select/deselect up to two items"
 
