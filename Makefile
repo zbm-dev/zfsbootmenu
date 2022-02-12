@@ -13,7 +13,7 @@ EXAMPLES=$(PREFIX)/share/examples/zfsbootmenu
 install: core dracut initcpio
 
 core:
-	./install-tree.sh zfsbootmenu "$(DESTDIR)$(MODDIR)"
+	./install-tree.sh zfsbootmenu "$(DESTDIR)$(MODDIR)/zfsbootmenu"
 	install -m 0644 -t "$(DESTDIR)$(CONFDIR)" -D etc/zfsbootmenu/config.yaml
 	install -m 0755 -t "$(DESTDIR)$(BINDIR)" -D bin/*
 	install -m 0644 -t "$(DESTDIR)$(MANDIR)/man5" -D man/*.5
