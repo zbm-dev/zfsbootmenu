@@ -154,13 +154,14 @@ install() {
   done
 
   # Hooks necessary to initialize ZBM
+  inst_hook cmdline 15 "${moddir}/hook/zfsbootmenu-make-finished.sh" || _ret=$?
   inst_hook cmdline 95 "${moddir}/hook/zfsbootmenu-parse-commandline.sh" || _ret=$?
   inst_hook pre-mount 90 "${moddir}/hook/zfsbootmenu-preinit.sh" || _ret=$?
 
   # Hooks to force the dracut event loop to fire at least once
   # Things like console configuration are done in optional event-loop hooks
   inst_hook initqueue/settled 99 "${moddir}/hook/zfsbootmenu-ready-set.sh" || _ret=$?
-  inst_hook initqueue/finished 99 "${moddir}/hook/zfsbootmenu-ready-chk.sh" || _ret=$?
+  # The initqueue/finished hook is now created at run-time via zfsbootmenu-make-finished.sh
 
   # If tracing is enabled, build in the full-weight profiling library
   if [ -n "${zfsbootmenu_trace_enable}" ]; then
