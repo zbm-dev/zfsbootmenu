@@ -93,7 +93,7 @@ Because ZFS properties are inherited by default, it is possible to set the `org.
 As a special accommodation, the substitution keyword `%{parent}` in the KCL property will be recursively expanded to whatever the value of `org.zfsbootmenu:commandline` would be on the parent dataset. This allows, for example, mixing options common to multiple environments with those specific to each:
 
 ```sh
-zfs set org.zfsbootmenu:commandline="zfs.zfs_arc_max=8589934592 elevator=noop" zroot/ROOT
+zfs set org.zfsbootmenu:commandline=""zfs.zfs_arc_max=8589934592"" zroot/ROOT
 zfs set org.zfsbootmenu:commandline="%{parent} loglevel=4" zroot/ROOT/void.2019.11.01
 zfs set org.zfsbootmenu:commandline="loglevel=7 %{parent}" zroot/ROOT/void.2019.10.04
 ```
@@ -101,13 +101,13 @@ zfs set org.zfsbootmenu:commandline="loglevel=7 %{parent}" zroot/ROOT/void.2019.
 will cause ZFSBootMenu to interpret the KCL for `zroot/ROOT/void.2019.11.01` as
 
 ```
-zfs.zfs_arc_max=8589934592 elevator=noop loglevel=4
+zfs.zfs_arc_max=8589934592 loglevel=4
 ```
 
 while the KCL for `zroot/ROOT/void.2019.10.04` would be
 
 ```
-loglevel=7 zfs.zfs_arc_max=8589934592 elevator=noop
+loglevel=7 zfs.zfs_arc_max=8589934592
 ```
 
 
@@ -165,7 +165,7 @@ efibootmgr --disk /dev/sda \
   --create \
   --label "ZFSBootMenu" \
   --loader /vmlinuz-0.7.5 \
-  --unicode 'root=zfsbootmenu:POOL=zroot ro initrd=\EFI\void\initramfs-0.7.5.img quiet spl_hostid=a8c0a2a8' \
+  --unicode 'zbm.prefer=zroot ro initrd=\EFI\void\initramfs-0.7.5.img quiet ' \
   --verbose
 ```
 
@@ -178,11 +178,11 @@ Each time ZFSBootMenu is updated, a new EFI entry will need to be manually added
 `rEFInd` is considerably easier to install and manage. Refer to your distribution's packages for installation. Once rEFInd has been installed, you can create `refind_linux.conf` in the directory holding the ZFSBootMenu files (`/boot/efi/EFI/void` in our example):
 
 ```
-"Boot Default BE" "ro quiet loglevel=0 timeout=0 root=zfsbootmenu:POOL= spl_hostid="
-"Select BE" "ro quiet loglevel=0 timeout=-1 root=zfsbootmenu:POOL= spl_hostid="
+"Boot default"  "zbm.prefer=zroot ro quiet loglevel=0 zbm.skip"
+"Boot to menu"  "zbm.prefer=zroot ro quiet loglevel=0 zbm.show"
 ```
 
-As with the efibootmgr section, the `root=zfsbootmenu:POOL=` and `spl_hostid=` options need to be configured to match your environment.
+As with the efibootmgr section, the `zbm.prefer=` option needs to be configured to match your environment.
 
 This file will configure `rEFInd` to create two entries for each kernel and initramfs pair it finds. The first will directly boot into the environment set via the `bootfs` pool property. The second will force ZFSBootMenu to display an environment / kernel / snapshot selection menu, allowing you to boot alternate environments, kernels and snapshots.
 
