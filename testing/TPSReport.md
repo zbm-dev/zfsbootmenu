@@ -240,6 +240,9 @@ of the kernel list. That BE should be selected when entering the list.
 
 - [ ] Adding `zbm.show` to the KCL causes ZBM to always show the main menu.
 
+- [ ] Adding `rd.vconsole.keymap=fr` causes the ZBM keymap to change when booted in 
+  GTK mode. This can be verified by dropping to the recovery shell and typing qwerty.
+
 ## Recovery shell and SSH access
 
 - [ ] Basic tab completion for some internal functions is available in the recovery
