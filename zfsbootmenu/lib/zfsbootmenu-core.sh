@@ -773,9 +773,6 @@ find_be_kernels() {
 
   zdebug "default kernel set to ${def_kernel}"
   echo "${def_kernel##*/}" > "${def_kernel_file}"
-
-  # Pre-load cmdline arguments, possibly from files in the environment
-  preload_be_cmdline "${fs}"
   return 0
 }
 
@@ -889,28 +886,24 @@ find_root_prefix() {
   echo "root=zfs:"
 }
 
-# arg1: ZFS filesystem
-# prints: nothing
-# returns: 0 on success
+# arg1: ZFS KCL cache to validate
+# returns: 0 if cache is valid, 1 otherwise
 
-preload_be_cmdline() {
-  local fs args args_file
+validate_cmdline_cache() {
+  local cf
+  cf="${1}"
 
-  fs="${1}"
-  if [ -z "${fs}" ]; then
-    zerror "fs is undefined"
-    return 1
-  fi
-  zdebug "fs set to ${fs}"
+  # Cache is trivially invalid when it fails to exist!
+  [ -r "${cf}" ] || return 1
 
-  args_file="${BASE}/${fs}/cmdline"
+  # Otherwise, only the noresume flag can invalidate
+  [ -e "${BASE}/noresume" ] || return 0
 
-  if args="$( read_kcl_prop "${fs}" )" && [ -n "${args}" ]; then
-    zdebug "using org.zfsbootmenu:commandline"
-    kcl_tokenize <<< "${args}" > "${args_file}"
-  fi
+  # Cache is still valid if it was written after noresume flag
+  [ "${cf}" -nt "${BASE}/noresume" ] && return 0
 
-  return 0
+  # By default, cache is invalid
+  return 1
 }
 
 # arg1: ZFS filesystem
@@ -918,61 +911,75 @@ preload_be_cmdline() {
 # returns: nothing
 
 load_be_cmdline() {
-  local zfsbe_fs zfsbe_args spl_hostid zfsbe_kcl
+  local fs args spl_hostid kcl cache rems adds
 
-  zfsbe_fs="${1}"
-  if [ -z "${zfsbe_fs}" ]; then
-    zerror "zfsbe_fs is undefined"
+  fs="${1}"
+  if [ -z "${fs}" ]; then
+    zerror "filesystem is undefined"
     return 1
   fi
-  zdebug "zfsbe_fs set to ${zfsbe_fs}"
+  zdebug "fs set to ${fs}"
 
-  # Always prefer a user-entered KCL
+  cache="${BASE}/${fs}/cmdline"
+
+  # root= is ALWAYS controlled by ZFSBootMenu
+  rems=( "root" )
+
+  # Nothing is added by default
+  adds=()
+
   if [ -r "${BASE}/cmdline" ]; then
-    zdebug "using ${BASE}/cmdline as commandline for ${zfsbe_fs}"
-
-    # root= is ALWAYS controlled by ZFSBootMenu
-    kcl_suppress root < "${BASE}/cmdline" | kcl_assemble
+    # Always prefer a user-entered KCL
+    zdebug "using ${BASE}/cmdline as command line for ${fs}"
+    kcl_suppress "${rems[@]}" < "${BASE}/cmdline" | kcl_assemble
+    return
+  elif validate_cmdline_cache "${cache}"; then
+    # Otherwise, if the BE has a valid KCL cache, just assemble that
+    zdebug "using cached KCL from ${cache} as command line for ${fs}"
+    kcl_assemble < "${cache}"
     return
   fi
 
-  # Default KCL is very basic
-  zfsbe_args="$( kcl_tokenize <<< "quiet loglevel=4" )"
-
-  # Use a BE-specific KCL if one is preovided
-  if [ -r "${BASE}/${zfsbe_fs}/cmdline" ]; then
-    zdebug "using ${BASE}/${zfsbe_fs}/cmdline as commandline for ${zfsbe_fs}"
-    zfsbe_args="$( kcl_suppress root < "${BASE}/${zfsbe_fs}/cmdline" )"
-  fi
+  # In all other cases, build and attempt to cache the KCL
+  args="$(read_kcl_prop "${fs}" | kcl_tokenize && exit "${PIPESTATUS[0]}" )" || args=""
+  # Use a very basic default KCL if none is specified
+  [ -n "${args}" ] || args="quiet loglevel=4"
 
   if [ -e "${BASE}/noresume" ]; then
-    zdebug "${BASE}/noresume set, processing: '${zfsbe_args}'"
-    # Must drop resume= arguments and append a noresume
-    zfsbe_args="$( kcl_suppress resume <<< "${zfsbe_args}" | kcl_append noresume )"
+    # Drop resume= arguments and append a noresume
+    zdebug "${BASE}/noresume set, expunging from ${fs}"
+    rems+=( "resume" )
+    adds+=( "noresume" )
   fi
 
   # shellcheck disable=SC2154
   if [ "${zbm_set_hostid:-0}" -eq 1 ] && spl_hostid="$( get_spl_hostid )"; then
-    zdebug "overriding spl_hostid and spl.spl_hostid for ${zfsbe_fs}"
+    zdebug "overriding spl_hostid and spl.spl_hostid for ${fs}"
 
     if [ "${spl_hostid}" = "0x00000000" ]; then
-      # spl.spl_hostid=0 is a no-op; imports fall back to /etc/hostid.
-      # Dracut writes spl_hostid to /etc/hostid. to yield expected results.
-      # Others (initramfs-tools, mkinitcpio) ignore this, but there isn't much
-      # else that can be done with those systems.
+      # spl.spl_hostid=0 is a no-op; imports fall back to /etc/hostid. Dracut
+      # writes spl_hostid to /etc/hostid to yield expected results. Others
+      # (initramfs-tools, mkinitcpio) ignore this, but there isn't much else
+      # that can be done with those systems.
       spl_hostid="spl_hostid=00000000"
     else
-      # Using spl.spl_hostid will set a module parameter which takes precedence
-      # over any /etc/hostid and should produce expected behavior in all systems
+      # Using spl.spl_hostid sets a module parameter which takes precedence
+      # over any /etc/hostid and should produce expected behavior everywhere
       spl_hostid="spl.spl_hostid=${spl_hostid}"
     fi
 
-    zfsbe_args="$( kcl_suppress spl_hostid spl.spl_hostid <<< "${zfsbe_args}" | kcl_append "${spl_hostid}" )"
+    rems+=( "spl_hostid" "spl.spl_hostid" )
+    adds+=( "${spl_hostid}" )
   fi
 
-  zfsbe_kcl="$( kcl_assemble <<< "${zfsbe_args}" )"
-  zdebug "assembled commandline: '${zfsbe_kcl}'"
-  echo "${zfsbe_kcl}"
+  # Write the cached command line, if possible
+  zdebug "caching KCL for ${fs} at ${cache}"
+  args="$( kcl_suppress "${rems[@]}" <<< "${args}" | kcl_append "${adds[@]}" )"
+  printf "%s\n" "${args}" > "${cache}"
+
+  kcl="$( kcl_assemble <<< "${args}" )"
+  zdebug "assembled commandline: '${kcl}'"
+  echo "${kcl}"
 }
 
 # arg1: pool name, empty to import all
@@ -1237,6 +1244,9 @@ resume_prompt() {
 
   # Try to avoid importing writable when a resume device is found
   if has_resume_device; then
+    # If NORESUME was already provided, never allow it to be taken back
+    [ -r "${BASE}/noresume" ] && return 0
+
     # Make sure the warning is prominent
     tput clear
     tput cnorm

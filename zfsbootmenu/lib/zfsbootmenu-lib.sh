@@ -568,6 +568,9 @@ populate_be_list() {
 
   ret=1
   for fs in "${candidates[@]}"; do
+    # Remove any existing cmdline cache
+    rm -f "${BASE}/${fs}/cmdline"
+
     # Unlock if necessary
     load_key "${fs}" || continue
 
