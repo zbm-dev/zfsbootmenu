@@ -112,7 +112,7 @@ kcl_suppress() {
     sup=0
     for rem in "$@"; do
       # Arguments match entirely or up to first equal
-      if [ "${arg}" = "${rem}" ] || [ "${arg%%=*}" = "${rem}" ]; then
+      if [[ "${arg}" == "${rem}" || "${arg%%=*}" == "${rem}" ]]; then
         sup=1
         break
       fi
@@ -132,9 +132,9 @@ kcl_append() {
   # Carry forward input KCL
   cat
 
-  # Append one line per argument
+  # Append one line per non-trivial argument
   for arg in "$@"; do
-    echo "$arg"
+    [ -n "${arg}" ] && echo "$arg"
   done
 }
 

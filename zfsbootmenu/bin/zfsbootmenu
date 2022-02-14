@@ -275,11 +275,11 @@ while true; do
         def_args="${line}"
       done <<< "${BE_ARGS}"
 
-      echo -e "\nNew kernel command line"
+      echo -e "\nNew kernel command line (root= arguments will be ignored)"
       cmdline="$( /libexec/zfsbootmenu-input "${def_args}" )"
 
       if [ -n "${cmdline}" ] ; then
-        kcl_tokenize <<< "${cmdline}" > "${BASE}/cmdline"
+        kcl_tokenize <<< "${cmdline}" | kcl_suppress root > "${BASE}/cmdline"
       fi
       ;;
     "mod-j")
