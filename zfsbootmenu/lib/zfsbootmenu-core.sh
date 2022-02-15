@@ -922,16 +922,10 @@ load_be_cmdline() {
 
   cache="${BASE}/${fs}/cmdline"
 
-  # root= is ALWAYS controlled by ZFSBootMenu
-  rems=( "root" )
-
-  # Nothing is added by default
-  adds=()
-
   if [ -r "${BASE}/cmdline" ]; then
     # Always prefer a user-entered KCL
     zdebug "using ${BASE}/cmdline as command line for ${fs}"
-    kcl_suppress "${rems[@]}" < "${BASE}/cmdline" | kcl_assemble
+    kcl_assemble < "${BASE}/cmdline"
     return
   elif validate_cmdline_cache "${cache}"; then
     # Otherwise, if the BE has a valid KCL cache, just assemble that
@@ -939,6 +933,12 @@ load_be_cmdline() {
     kcl_assemble < "${cache}"
     return
   fi
+
+  # root= is ALWAYS controlled by ZFSBootMenu
+  rems=( "root" )
+
+  # Nothing is added by default
+  adds=()
 
   # In all other cases, build and attempt to cache the KCL
   args="$(read_kcl_prop "${fs}" | kcl_tokenize && exit "${PIPESTATUS[0]}" )" || args=""
