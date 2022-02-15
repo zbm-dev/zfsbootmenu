@@ -20,7 +20,6 @@ zfsbootmenu_essential_binaries=(
   "sed"
   "grep"
   "tail"
-  "tr"
   "tac"
   "blkid"
   "awk"
@@ -73,7 +72,8 @@ create_zbm_conf() {
   # Create core ZBM configuration file
 
   local endian ival
-  ival="$( echo -n 3 | od -tx2 -N2 -An | tr -d '[:space:]' )"
+  ival="$( echo -n 3 | od -tx2 -N2 -An )"
+  ival="${ival//[[:space:]]/}"
   if [ "${ival}" = "3300" ]; then
     endian="be"
   else

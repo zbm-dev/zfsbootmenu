@@ -118,7 +118,8 @@ get_spl_hostid() {
 
   # Otherwise look to /etc/hostid, if possible
   if [ -r /etc/hostid ] && command -v od >/dev/null 2>&1; then
-    spl_hostid="$( od -tx4 -N4 -An /etc/hostid 2>/dev/null | tr -d '[:space:]' )"
+    spl_hostid="$( od -tx4 -N4 -An /etc/hostid 2>/dev/null )"
+    spl_hostid="${spl_hostid//[[:space:]]/}"
     if [ -n "${spl_hostid}" ]; then
       zdebug "hostid from /etc/hostid: ${spl_hostid}"
       echo -n "0x${spl_hostid}"

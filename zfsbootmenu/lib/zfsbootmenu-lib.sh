@@ -404,7 +404,10 @@ snapshot_dispatcher() {
 
     [ -n "${user_input}" ] || return
 
-    valid_name=$( echo "${user_input}" | tr -c -d 'a-zA-Z0-9-_.:' )
+    shopt -s extglob
+    valid_name="${user_input//+([!a-zA-Z0-9-_.:])/}"
+    shopt -u extglob
+
     if [[ "${user_input}" != "${valid_name}" ]]; then
       echo "${user_input} is invalid, ${valid_name} can be used"
       pre_populated="${valid_name}"
