@@ -29,8 +29,23 @@
 ## in a dracut.conf(5) file inside the directory specified for the option
 ## `Global.DracutConfDir` in the ZFSBootMenu `config.yaml`.
 
-# shellcheck disable=SC1091
-[ -f /lib/zfsbootmenu-lib.sh ] && source /lib/zfsbootmenu-lib.sh
+sources=(
+  /lib/profiling-lib.sh
+  /etc/zfsbootmenu.conf
+  /lib/zfsbootmenu-core.sh
+  /lib/kmsg-log-lib.sh
+  /etc/profile
+)
+
+for src in "${sources[@]}"; do
+  # shellcheck disable=SC1090
+  if ! source "${src}" > /dev/null 2>&1 ; then
+    echo -e "\033[0;31mWARNING: ${src} was not sourced; unable to proceed\033[0m"
+    exit 1
+  fi
+done
+
+unset src sources
 
 luks="/dev/disk/by-partlabel/KEYSTORE"
 dm="/dev/mapper/KEYSTORE"
@@ -78,8 +93,10 @@ while true; do
 
   # failed all password attempts
   if [ "${ret}" -eq 2 ] ; then
-    if prompt="Continuing in %0.2d seconds" timed_prompt "[RETURN] continue unlock attempts" "[ESCAPE] emergency shell" "" ; then
-      continue
+    if timed_prompt -e "emergency shell" \
+      -r "continue unlock attempts" \
+      -p "Continuing in %0.2d seconds" ; then
+        continue
     else
       emergency_shell "Unable to unlock LUKS partition"
     fi
