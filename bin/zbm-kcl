@@ -11,7 +11,7 @@ zbm_load_lib() {
     source "${ZBM_MODULEDIR}/lib/${lib}"
   else
     echo "ERROR: ${ZBM_MODULEDIR}/lib/${lib} not found" >&2
-    echo "Set ZBM_MODULEDIR to the root of the ZBM dracut module" >&2
+    echo "Set ZBM_MODULEDIR to the root of the ZBM module" >&2
     exit 1
   fi
 }
