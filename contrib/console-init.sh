@@ -19,5 +19,9 @@ fi
 # There is nothing to do without a valid control_term device
 [ -c "${control_term}" ] || exit 0
 
+# print an "empty" string to the screen to force it to recalculate
+# with out this, EFI frame buffers will possibly have the wrong size
+echo -e "\033[0;30m ... \033[0m"
+
 # Try to initialize the console
 /lib/udev/console_init "${control_term##*/}" >/dev/null 2>&1
