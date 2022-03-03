@@ -95,7 +95,7 @@ fi
 
 # If no config is specified, use in-tree default
 if ! [ -r ./config.yaml ]; then
-  BUILD_ARGS+=( "-c" "/zbm/etc/zfsbootomenu/config.yaml" )
+  BUILD_ARGS+=( "-c" "/zbm/etc/zfsbootmenu/config.yaml" )
 fi
 
 # Make `/build` the working directory so relative paths in a config file make sense
