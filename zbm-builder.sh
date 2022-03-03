@@ -99,4 +99,4 @@ if ! [ -r ./config.yaml ]; then
 fi
 
 # Make `/build` the working directory so relative paths in a config file make sense
-"${PODMAN}" run --rm -v ".:/build" -w "/build" "${BUILD_TAG}" "${BUILD_ARGS[@]}"
+"${PODMAN}" run --rm -v "$(pwd):/build" -w "/build" "${BUILD_TAG}" "${BUILD_ARGS[@]}"
