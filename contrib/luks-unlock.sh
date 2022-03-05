@@ -98,7 +98,7 @@ while true; do
       -p "Continuing in %0.2d seconds" ; then
         continue
     else
-      emergency_shell "Unable to unlock LUKS partition"
+      emergency_shell "unable to unlock LUKS partition"
     fi
   fi
 done
