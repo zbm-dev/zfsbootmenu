@@ -7,6 +7,9 @@ Usage: $0 [options]
   OPTIONS:
   -h Display help text
 
+  -L Use local './' source tree instead of remote.
+     (Default: upstream master.)
+
   -H Do not copy /etc/hostid into image
      (Has no effect if ./hostid exists)
 
@@ -37,9 +40,13 @@ SKIP_CACHE=
 BUILD_TAG="ghcr.io/zbm-dev/zbm-builder:latest"
 
 BUILD_ARGS=()
+VOLUME_ARGS=("-v" "${PWD}:/build")
 
-while getopts "hHCdt:B:" opt; do
+while getopts "hHLCdt:B:" opt; do
   case "${opt}" in
+    L)
+      VOLUME_ARGS+=("-v" "${PWD}:/zbm")
+     ;;
     H)
       SKIP_HOSTID="yes"
       ;;
@@ -95,8 +102,9 @@ fi
 
 # If no config is specified, use in-tree default
 if ! [ -r ./config.yaml ]; then
-  BUILD_ARGS+=( "-c" "/zbm/etc/zfsbootomenu/config.yaml" )
+  BUILD_ARGS+=( "-c" "/zbm/etc/zfsbootmenu/config.yaml" )
 fi
 
 # Make `/build` the working directory so relative paths in a config file make sense
-"${PODMAN}" run --rm -v ".:/build" -w "/build" "${BUILD_TAG}" "${BUILD_ARGS[@]}"
+"${PODMAN}" run --rm "${VOLUME_ARGS[@]}" -w "/build" "${BUILD_TAG}" "${BUILD_ARGS[@]}"
+
