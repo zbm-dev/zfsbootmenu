@@ -45,7 +45,7 @@ VOLUME_ARGS=()
 while getopts "hHLCdt:B:" opt; do
   case "${opt}" in
     L)
-      VOLUME_ARGS+=("-v" "$(pwd):/zbm")
+      VOLUME_ARGS+=("-v" "${PWD}:/zbm")
      ;;
     H)
       SKIP_HOSTID="yes"
@@ -106,4 +106,4 @@ if ! [ -r ./config.yaml ]; then
 fi
 
 # Make `/build` the working directory so relative paths in a config file make sense
-"${PODMAN}" run --rm "${VOLUME_ARGS[@]}" -v "$(pwd):/build" -w "/build" "${BUILD_TAG}" "${BUILD_ARGS[@]}"
+"${PODMAN}" run --rm "${VOLUME_ARGS[@]}" -v "${PWD}:/build" -w "/build" "${BUILD_TAG}" "${BUILD_ARGS[@]}"
