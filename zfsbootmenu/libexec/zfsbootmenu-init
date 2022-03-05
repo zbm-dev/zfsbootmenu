@@ -209,7 +209,7 @@ if [ "${menu_timeout}" -ge 0 ] && [ -n "${BOOTFS}" ]; then
       # Clear screen before a possible password prompt
       tput clear
       if ! NO_CACHE=1 load_key "${BOOTFS}"; then
-        emergency_shell "unable to load key for ${BOOTFS}; type 'exit' to continue"
+        emergency_shell "unable to load key for $( colorize cyan "${BOOTFS}" )"
       elif find_be_kernels "${BOOTFS}" && [ ! -e "${BASE}/active" ]; then
         # Automatically select a kernel and boot it
         kexec_kernel "$( select_kernel "${BOOTFS}" )"
@@ -221,7 +221,7 @@ fi
 # If the lock file is present, drop to a recovery shell to avoid
 # stealing control back from an SSH session
 if [ -e "${BASE}/active" ] ; then
-  emergency_shell "type 'exit' to return to ZFSBootMenu"
+  emergency_shell "an active instance is already running"
 fi
 
 while true; do
@@ -229,5 +229,5 @@ while true; do
     /bin/zfsbootmenu
   fi
 
-  emergency_shell "type 'exit' to return to ZFSBootMenu"
+  emergency_shell
 done

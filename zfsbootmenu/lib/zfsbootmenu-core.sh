@@ -302,7 +302,7 @@ kexec_kernel() {
   tput clear
 
   if ! mnt=$( mount_zfs "${fs}" ); then
-    emergency_shell "unable to mount ${fs}"
+    emergency_shell "unable to mount $( colorize cyan "${fs}" )"
     return 1
   fi
 
@@ -1770,16 +1770,19 @@ zfs_chroot() {
 # returns: nothing
 
 emergency_shell() {
-  local message skip mp fs
-  message=${1:-unknown reason}
+  local skip mp fs
 
   tput clear
   tput cnorm
   stty echo
 
-  echo -n "Launching emergency shell: "
-  echo -e "${message}\n"
+  cat <<-EOF
+	$( colorize green "emergency shell")${1:+: $1}
 
+	type '$(colorize red "help")' for online documentation
+	type '$( colorize red "exit")' to return to ZFSBootMenu
+
+	EOF
   # -i (interactive) mode will source $HOME/.bashrc
   /bin/bash -i
 
