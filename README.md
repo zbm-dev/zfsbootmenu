@@ -2,7 +2,7 @@
 
 [![Build check](https://github.com/zbm-dev/zfsbootmenu/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/zbm-dev/zfsbootmenu/actions/workflows/build.yml) [![latest packaged version(s)](https://repology.org/badge/latest-versions/zfsbootmenu.svg)](https://repology.org/project/zfsbootmenu/versions)
 
-ZFSBootMenu is a Linux bootloader that attempts to provide an experience similar to FreeBSD's bootloader. By taking advantage of ZFS features, it allows a user to have multiple "boot environments" (with different distros, for example), manipulate snapshots before booting, and, for the adventurous user, even bootstrap a system installation via `zfs recv`.
+ZFSBootMenu is a Linux bootloader that attempts to provide an experience similar to FreeBSD's bootloader. By taking advantage of ZFS features, it allows a user to have multiple "boot environments" (with different distributions, for example), manipulate snapshots before booting, and, for the adventurous user, even bootstrap a system installation via `zfs recv`.
 
 In essence, ZFSBootMenu is a small, self-contained Linux system that knows how to find other Linux kernels and initramfs images within ZFS filesystems. When a suitable kernel and initramfs are identified (either through an automatic process or direct user selection), ZFSBootMenu launches that kernel using the `kexec` command.
 
@@ -33,7 +33,7 @@ This tool makes uses of the following additional software:
  * [Linux Kernel](https://www.kernel.org)
  * [ZFS on Linux](https://zfsonlinux.org)
 
-The ZFSBootMenu image is created from your regular system utilities using an initramfs generator. Image creation is known to work and explicitly supported with:
+The ZFSBootMenu may be created using your your regular system kernel, user-space utilities and initramfs generator. Image creation is known to work and explicitly supported with:
 
  * [dracut](https://github.com/dracutdevs/dracut), and
  * [mkinitcpio](https://github.com/archlinux/mkinitcpio)
@@ -56,15 +56,15 @@ Each release includes pre-generated images (both a monolithic UEFI applications 
 * With `mkinitcpio` or `dracut` on Arch
 * With `dracut` on Debian or Ubuntu (installed as `dracut-core` to avoid replacing the system `initramfs-tools` setup)
 
-If you run Docker or [podman](https://podman.io/), it is also possible to build custom ZFSBootMenu images in a container. The [zbm-builder.sh](zbm-builder.sh) script provides a simpler wrapper that will use your own configuration in the current directory to produce custom images.
+## Containerized builds
+
+If you run Docker or [podman](https://podman.io/), it is also possible to build ZFSBootMenu images in a container. Build containers are based on Void Linux and provide a consistent and well-tested environment for creating images with custom configurations. The [build guide](BUILD.md) provides a brief overview of the [zbm-builder.sh](zbm-builder.sh) script that provides a simple front-end for containerized builds. Advanced users with very specific needs may consult the [container README](docker/releng/README.md) for a more detailed description of ZFSBootMenu build containers.
 
 # ZFS boot environments
 
 From the perspective of ZFSBootMenu, a "boot environment" is simply a ZFS filesystem that contains a Linux kernel and initramfs in its `/boot` subdirectory. More thorough consideration of the concept is presented in the [boot environment primer](BOOTENVS.md).
 
-# System prereqs
-
-To ensure the boot menu can find your kernels, you'll need to ensure `/boot` resides on your ZFS filesystem. An example filesystem layout is as follows:
+The following example filesystem layout defines two boot environments as filesystems which define the property `mountpoint=/`:
 
 ```
 NAME                           USED  AVAIL     REFER  MOUNTPOINT
@@ -75,18 +75,24 @@ zroot/ROOT/void.2019.11.01    10.9G   582G     7.17G  /
 zroot/home                     120G   582G     11.8G  /home
 ```
 
-There are two boot environments created, identified by mounting to /.  The environment that this system will boot into is defined by the `bootfs` value set on the `zroot` zpool.
+> It is generally advisable to set the `canmount=noauto` property on all ZFS root filesystems. Regardless of the value of this property, the initramfs for your environment will always explicitly mount the specified root filesystem. Leaving this property set to the default `canmount=auto` may cause your distribution to attempt to mount multiple conflicting roots at startup, leaving your system in an inconsistent or unbootable state.
+
+If the `zroot` pool defines a `bootfs` property that points to one of the two boot environments, ZFSBootMenu will attempt to boot that environment by default:
 
 ```
 NAME   PROPERTY  VALUE                       SOURCE
 zroot  bootfs    zroot/ROOT/void.2019.11.01  local
 ```
 
-On start, ZFSBootMenu will find the highest versioned kernel in `zroot/ROOT/void.2019.11.01/boot`, confirm that a matching initramfs is present, and default to booting the OS with that.
+Unless the [`org.zfsbootmenu:kernel` property](pod/zfsbootmenu.7.pod#zfs-properties) of a boot environment specifies a version restriction, ZFSBootMenu will find and boot the highest versioned kernel in `zroot/ROOT/void.2019.11.01/boot` that also includes a matching initramfs.
 
-# Installation
+Boot environments may also reside on filesystems that define the property `mountpoint=legacy`. To avoid time-consuming searches for boot environments on arbitrary legacy-mounted filesystems, such boot environments must opt into recognition by defining the custom property [`org.zfsbootmenu:active=on`](pod/zfsbootmenu.7.pod#zfs-properties).
 
-Kernel command-line (KCL) arguments should be configured by setting the `org.zfsbootmenu:commandline` ZFS property for each boot environment.  Do not set any `root=` or any other pool-related options in the kernel command line; these will be filled in automatically when a boot environment is selected.
+> Filesystems which define `mountpoint=/` may define the property `org.zfsbootmenu:active=off` to opt *out* of recognition by ZFSBootMenu.
+
+## Command-line arguments
+
+Kernel command-line (KCL) arguments should be configured by setting the [`org.zfsbootmenu:commandline` property](pod/zfsbootmenu.7.pod#zfs-properties) for each boot environment.  Do not set a `root=` option in this property; ZFSBootMenu will add an appropriate `root=` argument when it boots the environment and will actively suppress any conflicting option.
 
 Because ZFS properties are inherited by default, it is possible to set the `org.zfsbootmenu:commandline` property on a common parent to apply the same KCL arguments to multiple environments. Setting the property locally on individual boot environments will override the common defaults.
 
@@ -110,15 +116,11 @@ while the KCL for `zroot/ROOT/void.2019.10.04` would be
 loglevel=7 zfs.zfs_arc_max=8589934592
 ```
 
+# EFI booting
 
-## EFI
+Although ZFSBootMenu images can be booted on legacy BIOS systems or (on other platforms) alternative firmware, ZFSBootMenu integrates nicely with modern UEFI systems. ZFSBootMenu builds a custom initramfs image around a standard Linux kernel. Most distributions compile the Linux kernel with an EFI stub loader; the ZFSBootMenu kernel and initramfs pair can therefore be booted directly by most UEFI implementations or by EFI boot managers like rEFInd or gummiboot (systemd-boot).
 
-ZFSBootMenu integrates nicely with an EFI system. There will be two key things to configure here.
-
-* The mountpoint of the EFI partition and its contents.
-* The mountpoint of the boot environment `/boot` and its contents.
-
-Each boot environment should have its `/boot` directory in the ZFS filesystem. Using the above example, `zroot/ROOT/void.2019.11.01` would contain `/boot` with kernel/initramfs pairs:
+When generating ZFSBootMenu images from a local host, it is possible to edit `/etc/zfsbootmenu/config.yaml` to copy the ZFSBootMenu kernel and initramfs directly to your EFI system partition. Suppose that the directory listing for your current `/boot` looks like
 
 ```
 # ls /boot
@@ -133,7 +135,7 @@ vmlinuz-5.3.18_1
 vmlinuz-5.4.6_1
 ```
 
-Once `/boot` is contained in a boot environment, it is necessary to install the boot menu files. Typically, EFI partitions (ESP) are mounted to `/boot/efi`, and contain a number of sub-directories. In this example, `/boot/efi/EFI/void` holds the ZFSBootMenu kernel and initramfs.
+Typically, EFI system partitions (ESP) are mounted at `/boot/efi`, as is shown above. An ESP may contain a number of sub-directories, including an `EFI` directory that often contains multiple independent EFI executables. In this example layout, `/boot/efi/EFI/void` may hold ZFSBootMenu kernels and initramfs images. After setting the `ImageDir` property of the `Components` section of `/etc/zfsbootmenu/config.yaml` to `/boot/efi/EFI/void`, running `generate-zbm` will cause ZFSBootMenu kernel and initramfs pairs to be installed in the desired location:
 
 ```
 # lsblk -f /dev/sda
@@ -143,37 +145,31 @@ sdg
 └─sda2 swap         412401b6-4aec-4452-a6bd-6fc20fbdc2a5                [SWAP]
 
 # ls /boot/efi/EFI/void/
-initramfs-0.7.4.img
-initramfs-0.7.5.img
-vmlinuz-0.7.4
-vmlinuz-0.7.5
+initramfs-1.12.0_1.img
+initramfs-1.12.0_2.img
+vmlinuz-1.12.0_1
+vmlinuz-1.12.0_2
 ```
 
-With this layout, you'll now need a way to boot the kernel and initramfs via EFI. This can be done via a manual entry set via [efibootmgr](https://github.com/rhboot/efibootmgr), or it can be done with [rEFInd](http://www.rodsbooks.com/refind/).
+After the kernel and initramfs pairs are made available on the ESP, you'll need a way to boot them on your system. This can be done directly via [efibootmgr](https://github.com/rhboot/efibootmgr) or via a third-party boot manager like [rEFInd](http://www.rodsbooks.com/refind/).
 
-If you do not generate the ZFSBootMenu initramfs locally, you'll need to identify the following additional details:
-
-* Your system's hostid (`hostid`). It's important that this command be executed as root, to ensure that it returns the correct value.
-* Your boot pool name, if you have multiple.
-* The disk path and partition index of your EFI partition. (`/dev/sda`, part 1)
-
-### efibootmgr
+## efibootmgr
 
 ```
 efibootmgr --disk /dev/sda \
   --part 1 \
   --create \
   --label "ZFSBootMenu" \
-  --loader /vmlinuz-0.7.5 \
-  --unicode 'zbm.prefer=zroot ro initrd=\EFI\void\initramfs-0.7.5.img quiet ' \
+  --loader '\EFI\void\vmlinuz-1.12.0_2' \
+  --unicode 'zbm.prefer=zroot ro initrd=\EFI\void\initramfs-1.12.0_2.img quiet' \
   --verbose
 ```
 
-Take note to adjust `root=zfsbootmenu:POOL=`, `spl_hostid=`, `--disk` and `--part` to match your system configuration.
+Take note to adjust the arguments to `--disk` and `--part`, the path to the kernel in `--loader`, and the initramfs path (`initrd=`) and pool preference (`zbm.prefer=`) to match your system configuration.
 
 Each time ZFSBootMenu is updated, a new EFI entry will need to be manually added, unless you disable versioning in the ZFSBootMenu configuration.
 
-### rEFInd
+## rEFInd
 
 `rEFInd` is considerably easier to install and manage. Refer to your distribution's packages for installation. Once rEFInd has been installed, you can create `refind_linux.conf` in the directory holding the ZFSBootMenu files (`/boot/efi/EFI/void` in our example):
 
@@ -184,17 +180,13 @@ Each time ZFSBootMenu is updated, a new EFI entry will need to be manually added
 
 As with the efibootmgr section, the `zbm.prefer=` option needs to be configured to match your environment.
 
-This file will configure `rEFInd` to create two entries for each kernel and initramfs pair it finds. The first will directly boot into the environment set via the `bootfs` pool property. The second will force ZFSBootMenu to display an environment / kernel / snapshot selection menu, allowing you to boot alternate environments, kernels and snapshots.
+This file will configure `rEFInd` to create two entries for each kernel and initramfs pair it finds. The first will directly boot into the environment set via the `bootfs` pool property. The second will force ZFSBootMenu to display its interactive user interface and allow you to boot alternate environments, kernels and snapshots.
 
-# Kernel command line options
+# Run-time configuration of ZFSBootMenu
 
-The [zfsbootmenu(7)](pod/zfsbootmenu.7.pod#cli-parameters) manual page describes command line options for ZFSBootMenu kernels in detail.
+ZFSBootMenu may be configured via a combination of [command-line parameters](pod/zfsbootmenu.7.pod#cli-parameters) and [ZFS properties](pod/zfsbootmenu.7.pod#zfs-properties) that are described in detail in the [zfsbootmenu(7)](pod/zfsbootmenu.7.pod) manual page.
 
-# ZFS properties
-
-The [zfsbootmenu(7)](pod/zfsbootmenu.7.pod#zfs-properties) manual page describes ZFS properties interpreted by ZFSBootMenu.
-
-# initramfs creation
+# Local image creation
 
 `bin/generate-zbm` can be used to create an initramfs on your system. It ships with Void-specific defaults in [etc/zfsbootmenu/config.yaml](etc/zfsbootmenu/config.yaml). To create an initramfs, the following additional tools/libraries will need to be available on your system:
 
@@ -214,25 +206,9 @@ If you want to create a unified EFI executable (which bundles the kernel, initra
 
 Your distribution should have packages for these already.
 
-## config.yaml
+## Image configuration
 
 [config.yaml](pod/generate-zbm.5.pod) is used to control the operation of [generate-zbm](bin/generate-zbm).
-
-## Conversion of legacy configurations
-
-In prior versions of ZFSBootMenu, an INI format was used for configuration. In general, migration to the new format is not automatic, but `generate-zbm` can perform the migration if your distribution package has not done it for you. To migrate an existing configuration, just run
-
-```
-generate-zbm --migrate [ini-config] [--config yaml-config]
-```
-
-By default, the output YAML will be written to `/etc/zfsbootmenu/config.yaml`; use the `--config` argument to customize the output location.
-
-The argument `[ini-config]` to `--migrate` is optional. When it is not provided, `generate-zbm` will derive an input file by replacing the `.yaml` extension from the output file with a `.ini` extension.
-
-If (and only if) `generate-zbm` is run without a `--config` option (*i.e.*, it attempts to load the default `/etc/zfsbootmenu/config.yaml`) and the default configuration does *not* exist, `generate-zbm` will behave as if it had been passed the `--migrate /etc/zfsbootmenu/config.ini` option.
-
-Whenever `generate-zbm` attempts to migrate configuration files, it will exit with a zero exit code on successful conversion and a nonzero exit code if problems were encountered during the conversion. No boot images will be produced in the same invocation as a migration attempt.
 
 ## Dealing with driver conflicts
 
