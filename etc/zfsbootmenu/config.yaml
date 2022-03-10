@@ -16,6 +16,6 @@ Components:
 EFI:
   ImageDir: /boot/efi/EFI/void
   Versions: false
-  Enabled: false
+  Enabled: true
 Kernel:
   CommandLine: ro quiet loglevel=0

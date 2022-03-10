@@ -54,7 +54,7 @@ To build a default image, invoke `zbm-builder.sh` with no arguments. For example
 ./zbm-builder.sh
 ```
 
-to produce a default kernel/initramfs pair in the `./build/components` subdirectory.
+to produce a bootable EFI image in the `./build` directory and kernel/initramfs pair in the `./build/components` subdirectory.
 
 The default behavior of `zbm-builder.sh` will:
 

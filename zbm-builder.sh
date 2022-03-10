@@ -7,8 +7,18 @@ Usage: $0 [options]
   OPTIONS:
   -h Display help text
 
-  -L Use local './' source tree instead of remote.
+  -L <directory>
+     Specify local source tree instead of remote.
      (Default: upstream master.)
+
+  -b <directory>
+     Specify different build working directory.
+     (Output of build will be placed here.)
+
+  -y <file>
+     Specify alternative configuration .yaml file from
+     ./etc/zfsbootmenu/*
+     (Default: config.yaml)
 
   -H Do not copy /etc/hostid into image
      (Has no effect if ./hostid exists)
@@ -39,14 +49,24 @@ SKIP_CACHE=
 
 BUILD_TAG="ghcr.io/zbm-dev/zbm-builder:latest"
 
-BUILD_ARGS=()
-VOLUME_ARGS=("-v" "${PWD}:/build")
+BUILD_DIR="${PWD}"
 
-while getopts "hHLCdt:B:" opt; do
+CONFIG_FILE="config.yaml"
+
+BUILD_ARGS=()
+VOLUME_ARGS=()
+
+while getopts "hHL:bCy:dt:B:" opt; do
   case "${opt}" in
     L)
-      VOLUME_ARGS+=("-v" "${PWD}:/zbm")
-     ;;
+      VOLUME_ARGS+=("-v" "${OPTARG}:/zbm")
+      ;;
+    b)
+      BUILD_DIR="${OPTARG}"
+      ;;
+    y)
+      CONFIG_FILE="${OPTARG}"
+      ;;
     H)
       SKIP_HOSTID="yes"
       ;;
@@ -72,6 +92,8 @@ while getopts "hHLCdt:B:" opt; do
       ;;
   esac
 done
+
+VOLUME_ARGS+=("-v" "${BUILD_DIR}:/build")
 
 if ! command -v "${PODMAN}" >/dev/null 2>&1; then
   echo "ERROR: container front-end ${PODMAN} not found"
@@ -102,7 +124,7 @@ fi
 
 # If no config is specified, use in-tree default
 if ! [ -r ./config.yaml ]; then
-  BUILD_ARGS+=( "-c" "/zbm/etc/zfsbootmenu/config.yaml" )
+  BUILD_ARGS+=( "-c" "/zbm/etc/zfsbootmenu/${CONFIG_FILE}" )
 fi
 
 # Make `/build` the working directory so relative paths in a config file make sense
