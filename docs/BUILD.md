@@ -66,13 +66,25 @@ The default behavior of `zbm-builder.sh` will:
     2. If `./config.yaml` exists, inform the builder to use that custom configuration instead of the default
     3. Run the internal build script to produce output in the `./build` subdirectory
 
-### Customizing Images
+### Custom ZFSBootMenu Hooks
 
-A custom `config.yaml` may be provided in the working directory to override the
-default ZFSBootMenu configuration. The build container runs its build script
-from the working directory on the host. Therefore, relative paths in a custom
-`config.yaml` will be interpreted relative to the working directory when
-`zbm-builder.sh` is invoked.
+ZFSBootMenu supports [custom hooks](pod/zfsbootmenu.7.pod#options-for-dracut) in three stages:
+
+1. `early_setup` hooks run after the `zfs` kernel driver has been loaded, but before ZFSBootMenu attempts to import any pools.
+2. `setup` hooks run after pools are imported, right before ZFSBootMenu will either boot a default environment or present a menu.
+3. `teardown` hooks run immediately before ZFSBootMenu will `kexec` the kernel for the selected environment.
+
+When `zbm-builder.sh` runs, it will identify custom hooks as executable files in the respective subdirectories of its build directory:
+
+1. `hooks.early_setup.d`
+2. `hooks.setup.d`
+3. `hooks.teardown.d`
+
+For each hook directory that contains at least one executable file, `zbm-builder.sh` will write custom configuration snippets for `dracut` and `mkinitcpio` that will include these files in the output images.
+
+### Fully Customizing Images
+
+A custom `config.yaml` may be provided in the working directory to override the default ZFSBootMenu configuration. The build container runs its build script from the working directory on the host. Therefore, relative paths in a custom `config.yaml` will be interpreted relative to the working directory when `zbm-builder.sh` is invoked.
 
 > The internal build script **always** overrides the output paths for ZFSBootMenu components and UEFI executables to ensure that the images will reside in the `./build` subdirectory upon completion. Relative paths are primarily useful for specifying local `dracut` or `mkinitcpio` configuration paths.
 
