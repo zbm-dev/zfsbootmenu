@@ -196,7 +196,7 @@ boot behavior.
     pool must be exported and reimported (for example, to alter boot parameters from within
     ZFSBootMenu).
 
-[1mDracut Options[0m
+[1mOptions for dracut[0m
 
 In addition to standard dracut configuration options, the ZFSBootMenu dracut module supports
 addtional options to customize boot behavior.
@@ -258,9 +258,31 @@ addtional options to customize boot behavior.
     example, to allow ZFSBootMenu to select a boot environment and then restructure the boot
     process to launch a Xen kernel with the selected environment configured as dom0.
 
+[1mOptions for mkinitcpio[0m
+
+The [1mdracut[0m options specified above may also be specified in a mkinitcpio configuration file
+when [1mgenerate-zbm[0m is configured to create images using [1mmkinitcpio[0m. However, whereas the
+[1m<executable-list>[0m values in the dracut configuration should be specified as a single,
+space-separated string; in the mkinitcpio configuration, each [1m<executable-list>[0m value must be
+specified as a Bash array like the standard mkinitcpio arguments.
+
+The following additional arguments may be provided in the mkinitcpio configuration file to
+further control the creation of ZFSBootMenu images:
+
+[1mzfsbootmenu_module_root=<path>[0m
+    Set this variable to override the default [1m<path>[0m where the mkinitcpio hook looks for the
+    components of ZFSBootMenu that must be installed in the created image.
+
+[1mzfsbootmenu_miser=yes[0m
+    By default, [1mmkinitcpio[0m uses busybox to populate initramfs images. However, the [33mzfsbootmenu[0m
+    hook will install system versions of several utilities that it requires to operate. On
+    most systems, these versions will be provided by util-linux rather than busybox. To prefer
+    busybox for these utilities when possible, set [1mzfsbootmenu_miser=yes[0m. Synonyms for [33myes[0m are
+    [33m1[0m, [33my[0m or [33mon[0m, without regard to letter case.
+
 [1mSEE ALSO[0m
 
-[1mgenerate-zbm[0m(5) [1mgenerate-zbm[0m(8) [1mdracut.conf[0m(5)
+[1mgenerate-zbm[0m(5) [1mgenerate-zbm[0m(8) [1mdracut.conf[0m(5) [1mmkinitcpio.conf[0m(5)
 
 [1mAUTHOR[0m
 

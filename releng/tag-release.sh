@@ -19,7 +19,7 @@ if [ -n "$(echo "${release}" | sed 's/[0-9][A-Za-z0-9_.-]*$//')" ]; then
 fi
 
 # Make sure paths make sense
-if [ ! -e bin/generate-zbm ] || [ ! -e CHANGELOG.md ]; then
+if [ ! -e bin/generate-zbm ] || [ ! -e docs/CHANGELOG.md ]; then
   error "ERROR: run this script from the root of the zfsbootmenu tree"
 fi
 
@@ -76,7 +76,7 @@ relnotes=$(mktemp)
 # shellcheck disable=SC2064
 trap "rm -f ${relnotes}" 0
 
-awk < CHANGELOG.md > "${relnotes}" '
+awk < docs/CHANGELOG.md > "${relnotes}" '
   BEGIN{ hdr=0; }
 
   /^# /{
@@ -93,14 +93,14 @@ awk < CHANGELOG.md > "${relnotes}" '
 
 # Make sure release notes refer to this version
 if ! (head -n 1 "${relnotes}" | grep -q "ZFSBootMenu ${tag}\b"); then
-  error "ERROR: Add '# ZFSBootMenu ${tag}' header to CHANGELOG.md"
+  error "ERROR: Add '# ZFSBootMenu ${tag}' header to docs/CHANGELOG.md"
 fi
 
 # Update version in generate-zbm
 sed -i bin/generate-zbm -e "s/our \$VERSION.*/our \$VERSION = '${release}';/"
 
 # Push updates for the release
-git add bin/generate-zbm CHANGELOG.md man/ zfsbootmenu/help-files/
+git add bin/generate-zbm docs/CHANGELOG.md man/ zfsbootmenu/help-files/
 git commit -m "Bump to version ${release}"
 
 # Publish release, as prerelease if version contains alphabetics

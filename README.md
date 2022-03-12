@@ -58,11 +58,11 @@ Each release includes pre-generated images (both a monolithic UEFI applications 
 
 ## Containerized builds
 
-If you run Docker or [podman](https://podman.io/), it is also possible to build ZFSBootMenu images in a container. Build containers are based on Void Linux and provide a consistent and well-tested environment for creating images with custom configurations. The [build guide](BUILD.md) provides a brief overview of the [zbm-builder.sh](zbm-builder.sh) script that provides a simple front-end for containerized builds. Advanced users with very specific needs may consult the [container README](docker/releng/README.md) for a more detailed description of ZFSBootMenu build containers.
+If you run Docker or [podman](https://podman.io/), it is also possible to build ZFSBootMenu images in a container. Build containers are based on Void Linux and provide a consistent and well-tested environment for creating images with custom configurations. The [build guide](docs/BUILD.md) provides a brief overview of the [zbm-builder.sh](zbm-builder.sh) script that provides a simple front-end for containerized builds. Advanced users with very specific needs may consult the [container README](docker/releng/README.md) for a more detailed description of ZFSBootMenu build containers.
 
 # ZFS boot environments
 
-From the perspective of ZFSBootMenu, a "boot environment" is simply a ZFS filesystem that contains a Linux kernel and initramfs in its `/boot` subdirectory. More thorough consideration of the concept is presented in the [boot environment primer](BOOTENVS.md).
+From the perspective of ZFSBootMenu, a "boot environment" is simply a ZFS filesystem that contains a Linux kernel and initramfs in its `/boot` subdirectory. More thorough consideration of the concept is presented in the [boot environment primer](docs/BOOTENVS.md).
 
 The following example filesystem layout defines two boot environments as filesystems which define the property `mountpoint=/`:
 
