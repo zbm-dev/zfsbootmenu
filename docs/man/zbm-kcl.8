@@ -132,77 +132,79 @@
 .rm #[ #] #H #V #F C
 .\" ========================================================================
 .\"
-.IX Title "generate-zbm 8"
-.TH generate-zbm 8 "2022-01-26" "1.12.0" "generate-zbm"
+.IX Title "zbm-kcl 8"
+.TH zbm-kcl 8 "2022-02-16" "1.12.0" "zbm-kcl"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
 .nh
 .SH "NAME"
-generate\-zbm \- ZFSBootMenu initramfs generator
+zbm\-kcl \- manipulate kernel command lines for ZFS boot environments
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
-\&\fBgenerate-zbm\fR [options]
+\&\fBzbm-kcl\fR [\s-1OPTION\s0]... [\s-1FILESYSTEM\s0]
+.SH "DESCRIPTION"
+.IX Header "DESCRIPTION"
+The \fBzbm-kcl\fR utility allows review and manipulation of the \fIorg.zfsbootmenu:commandline\fR property on \s-1ZFS\s0 filesystems. ZFSBootMenu reads this property, as set or inherited on each environment that it recognizes, to set the command line for the kernel that it boots.
+.PP
+When a filesystem is not specified, \fBzbm-kcl\fR will attempt to determine the root filesystem and operate on that.
+.PP
+With no options specified, \fBzbm-kcl\fR will print the current value of \fIorg.zfsbootmenu:commandline\fR on the selected filesystem and exit.
 .SH "OPTIONS"
 .IX Header "OPTIONS"
-Where noted, command-line options supersede options in the \fBgenerate-zbm\fR(5) configuration file.
-.IP "\fB\-\-version|\-v\fR \fIzbm-version\fR" 4
-.IX Item "--version|-v zbm-version"
-Override the ZFSBootMenu version; supersedes \fIGlobal.Version\fR
-.IP "\fB\-\-kernel|\-k\fR \fIkernel-path\fR" 4
-.IX Item "--kernel|-k kernel-path"
-Manually specify a specific kernel; supersedes \fIKernel.Path\fR
-.IP "\fB\-\-kver|\-K\fR \fIkernel-version\fR" 4
-.IX Item "--kver|-K kernel-version"
-Manually specify a specific kernel version; supersedes \fIKernel.Version\fR
-.IP "\fB\-\-prefix|\-p\fR \fIimage-prefix\fR" 4
-.IX Item "--prefix|-p image-prefix"
-Manually specify the output image prefix; supersedes \fIKernel.Prefix\fR
-.IP "\fB\-\-initcpio|\-i\fR" 4
-.IX Item "--initcpio|-i"
-Use mkinitcpio instead of dracut.
-.IP "\fB\-\-confd|\-C\fR \fIconfig-path\fR" 4
-.IX Item "--confd|-C config-path"
-Specify initramfs configuration path
-.RS 4
-.IP "For dracut: supersedes \fIGlobal.DracutConfDir\fR" 4
-.IX Item "For dracut: supersedes Global.DracutConfDir"
-.PD 0
-.IP "For mkinitcpio: supersedes \fIGlobal.InitCPIOConfig\fR" 4
-.IX Item "For mkinitcpio: supersedes Global.InitCPIOConfig"
-.RE
-.RS 4
-.RE
-.IP "\fB\-\-hookd|\-H\fR \fIhookd-path\fR" 4
-.IX Item "--hookd|-H hookd-path"
-.PD
-Specify mkinitcpio hook directory; supersedes \fIGlobal.InitCPIOHookDirs\fR
+.IP "\fB\-a\fR \fIargument\fR" 4
+.IX Item "-a argument"
+Append the value of \fIargument\fR to the kernel command line. The value of \fIargument\fR can be a simple variable name for Boolean arguments or may take the form \fIvar=value\fR to provide a non-Boolean value. If \fIvalue\fR contains spaces, it may be surrounded by double quotes. In that case, surround the argument in single quotes to ensure that the double quotes are recorded in the property:
 .Sp
-May be specified more than once. Ignored when using dracut.
-.IP "\fB\-\-cmdline|\-l\fR \fIoptions\fR" 4
-.IX Item "--cmdline|-l options"
-Override the kernel command line; supersedes \fIKernel.CommandLine\fR
-.IP "\fB\-\-bootdir|\-b\fR \fIboot-path\fR" 4
-.IX Item "--bootdir|-b boot-path"
-Specify the path to search for kernel files; default: \fI/boot\fR
-.IP "\fB\-\-config|\-c\fR \fIconf-file\fR" 4
-.IX Item "--config|-c conf-file"
-Specify the path to a configuration file; default: \fI/etc/zfsbootmenu/config.yaml\fR
-.IP "\fB\-\-migrate|\-m\fR [\fIini-config\fR]" 4
-.IX Item "--migrate|-m [ini-config]"
-Migrate a legacy \s-1INI\s0 file to the new \s-1YAML\s0 format, writing the converted file to the path specified by \fB\-\-config\fR. If \fIini-config\fR is not specified, a default path is chosen by removing any \fI.yaml\fR suffix in the \fB\-\-config\fR path and appending a \fI.ini\fR suffix.
-.IP "\fB\-\-enable\fR" 4
-.IX Item "--enable"
-Set the \fIGlobal.ManageImages\fR option to true, enabling image generation.
-.IP "\fB\-\-disable\fR" 4
-.IX Item "--disable"
-Set the \fIGlobal.ManageImages\fR option to false, disabling image generation.
-.IP "\fB\-\-debug|d\fR" 4
-.IX Item "--debug|d"
-Enable debug output
+.Vb 1
+\&  zbm\-kcl \-a \*(Aqvariable="some argument with spaces"\*(Aq
+.Ve
+.Sp
+This argument may be repeated any number of times.
+.IP "\fB\-r\fR \fIargument\fR" 4
+.IX Item "-r argument"
+Remove \fIargument\fR from the kernel command line. The value of \fIargument\fR can be a simple variable name, in which case all arguments of the form \fIargument\fR or \fIargument=<arbitrary\-value>\fR will be stripped. Alternatively, a specific argument may be selected by specifying \fIargument=<specific\-value>\fR.
+.Sp
+This argument may be repeated any number of times.
+.Sp
+\&\fB\s-1NOTE:\s0\fR All removal options are processed \fIbefore\fR any append options are processed, making it possible to replace an existing argument by combining removal and append options into a single invocation of \fBzbm-kcl\fR.
+.IP "\fB\-e\fR" 4
+.IX Item "-e"
+Open the contents of the command-line property in an interactive editor. If the environment defines \fI\f(CI$EDITOR\fI\fR, that will be used; otherwise, \fBvi\fR will be used by default. After making changes as desired, overwrite the (temporary) file that was opened and quit the editor. If the contents of the command-line property appear to have changed, \fBzbm-kcl\fR will apply those changes.
+.IP "\fB\-d\fR" 4
+.IX Item "-d"
+Delete the command-line property by calling
+.Sp
+.Vb 1
+\&  zfs inherit org.zfsbootmenu:commandline <filesystem>
+.Ve
+.Sp
+This allows the boot environment to inherit any command-line property that may be defined by some parent.
+.IP "\fB\-v\fR" 4
+.IX Item "-v"
+Increase the verbosity of \fBzbm-kcl\fR as it operates. This may be specified up to three times.
+.SH "EXAMPLES"
+.IX Header "EXAMPLES"
+Change the \fIloglevel\fR value on the currently booted environment by removing any existing value from the command line and appending the desired argument:
+.PP
+.Vb 1
+\&  zbm\-kcl \-a loglevel=7 \-r loglevel
+.Ve
+.PP
+Delete the entire command line from the \fIzroot/ROOT/void\fR boot environment, allowing it to inherit a command line set at \fIzroot\fR or \fIzroot/ROOT\fR if either of these defines a value:
+.PP
+.Vb 1
+\&  zbm\-kcl \-d zroot/ROOT/void
+.Ve
+.PP
+Allow interactive editing of the command line on the \fIzroot/ROOT\fR filesystem:
+.PP
+.Vb 1
+\&  zbm\-kcl \-e zroot/ROOT
+.Ve
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-\&\fBgenerate-zbm\fR(5) \fBzfsbootmenu\fR(7)
+\&\fBzfsbootmenu\fR(7)
 .SH "AUTHOR"
 .IX Header "AUTHOR"
 ZFSBootMenu Team <https://github.com/zbm\-dev/zfsbootmenu>

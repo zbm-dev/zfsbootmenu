@@ -3,10 +3,13 @@ set -e
 
 release="${1?ERROR: no release version specified}"
 
+MANDIR="docs/man"
+PODDIR="docs/pod"
+
 # Generate man pages from pod documentation
-zbmconfig="pod/generate-zbm.5.pod"
-zbmsystem="pod/zfsbootmenu.7.pod"
-zbmkcl="pod/zbm-kcl.8.pod"
+zbmconfig="${PODDIR}/generate-zbm.5.pod"
+zbmsystem="${PODDIR}/zfsbootmenu.7.pod"
+zbmkcl="${PODDIR}/zbm-kcl.8.pod"
 genzbm="bin/generate-zbm"
 
 for src in "${zbmconfig}" "${zbmsystem}" "${zbmkcl}" "${genzbm}"; do
@@ -16,19 +19,19 @@ for src in "${zbmconfig}" "${zbmsystem}" "${zbmkcl}" "${genzbm}"; do
 	fi
 done
 
-if [ ! -d man ]; then
-	echo "ERROR: 'man' directory does not exist in CWD"
+if [ ! -d "${MANDIR}" ]; then
+	echo "ERROR: '${MANDIR}' directory does not exist in CWD"
 	exit 1
 fi
 
 pod2man "${zbmconfig}" -c "config.yaml" \
-  -r "${release}" -s 5 -n generate-zbm > man/generate-zbm.5
+  -r "${release}" -s 5 -n generate-zbm > "${MANDIR}/generate-zbm.5"
 
 pod2man "${zbmsystem}" -c "ZFSBootMenu" \
-  -r "${release}" -s 7 -n zfsbootmenu > man/zfsbootmenu.7
+  -r "${release}" -s 7 -n zfsbootmenu > "${MANDIR}/zfsbootmenu.7"
 
 pod2man "${genzbm}" -c "generate-zbm" \
-  -r "${release}" -s 8 -n generate-zbm > man/generate-zbm.8
+  -r "${release}" -s 8 -n generate-zbm > "${MANDIR}/generate-zbm.8"
 
 pod2man "${zbmkcl}" -c "zbm-kcl" \
-  -r "${release}" -s 8 -n zbm-kcl > man/zbm-kcl.8
+  -r "${release}" -s 8 -n zbm-kcl > "${MANDIR}/zbm-kcl.8"
