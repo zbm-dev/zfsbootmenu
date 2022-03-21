@@ -58,7 +58,7 @@ Each release includes pre-generated images (both a monolithic UEFI applications 
 
 ## Containerized builds
 
-If you run Docker or [podman](https://podman.io/), it is also possible to build ZFSBootMenu images in a container. Build containers are based on Void Linux and provide a consistent and well-tested environment for creating images with custom configurations. The [build guide](docs/BUILD.md) provides a brief overview of the [zbm-builder.sh](zbm-builder.sh) script that provides a simple front-end for containerized builds. Advanced users with very specific needs may consult the [container README](docker/releng/README.md) for a more detailed description of ZFSBootMenu build containers.
+If you run Docker or [podman](https://podman.io/), it is also possible to build ZFSBootMenu images in a container. Build containers are based on Void Linux and provide a consistent and well-tested environment for creating images with custom configurations. The [build guide](docs/BUILD.md) provides a brief overview of the [zbm-builder.sh](zbm-builder.sh) script that provides a simple front-end for containerized builds. Advanced users with very specific needs may consult the [container README](releng/docker/README.md) for a more detailed description of ZFSBootMenu build containers.
 
 # ZFS boot environments
 
@@ -84,15 +84,15 @@ NAME   PROPERTY  VALUE                       SOURCE
 zroot  bootfs    zroot/ROOT/void.2019.11.01  local
 ```
 
-Unless the [`org.zfsbootmenu:kernel` property](pod/zfsbootmenu.7.pod#zfs-properties) of a boot environment specifies a version restriction, ZFSBootMenu will find and boot the highest versioned kernel in `zroot/ROOT/void.2019.11.01/boot` that also includes a matching initramfs.
+Unless the [`org.zfsbootmenu:kernel` property](docs/pod/zfsbootmenu.7.pod#zfs-properties) of a boot environment specifies a version restriction, ZFSBootMenu will find and boot the highest versioned kernel in `zroot/ROOT/void.2019.11.01/boot` that also includes a matching initramfs.
 
-Boot environments may also reside on filesystems that define the property `mountpoint=legacy`. To avoid time-consuming searches for boot environments on arbitrary legacy-mounted filesystems, such boot environments must opt into recognition by defining the custom property [`org.zfsbootmenu:active=on`](pod/zfsbootmenu.7.pod#zfs-properties).
+Boot environments may also reside on filesystems that define the property `mountpoint=legacy`. To avoid time-consuming searches for boot environments on arbitrary legacy-mounted filesystems, such boot environments must opt into recognition by defining the custom property [`org.zfsbootmenu:active=on`](docs/pod/zfsbootmenu.7.pod#zfs-properties).
 
 > Filesystems which define `mountpoint=/` may define the property `org.zfsbootmenu:active=off` to opt *out* of recognition by ZFSBootMenu.
 
 ## Command-line arguments
 
-Kernel command-line (KCL) arguments should be configured by setting the [`org.zfsbootmenu:commandline` property](pod/zfsbootmenu.7.pod#zfs-properties) for each boot environment.  Do not set a `root=` option in this property; ZFSBootMenu will add an appropriate `root=` argument when it boots the environment and will actively suppress any conflicting option.
+Kernel command-line (KCL) arguments should be configured by setting the [`org.zfsbootmenu:commandline` property](docs/pod/zfsbootmenu.7.pod#zfs-properties) for each boot environment.  Do not set a `root=` option in this property; ZFSBootMenu will add an appropriate `root=` argument when it boots the environment and will actively suppress any conflicting option.
 
 Because ZFS properties are inherited by default, it is possible to set the `org.zfsbootmenu:commandline` property on a common parent to apply the same KCL arguments to multiple environments. Setting the property locally on individual boot environments will override the common defaults.
 
@@ -184,7 +184,7 @@ This file will configure `rEFInd` to create two entries for each kernel and init
 
 # Run-time configuration of ZFSBootMenu
 
-ZFSBootMenu may be configured via a combination of [command-line parameters](pod/zfsbootmenu.7.pod#cli-parameters) and [ZFS properties](pod/zfsbootmenu.7.pod#zfs-properties) that are described in detail in the [zfsbootmenu(7)](pod/zfsbootmenu.7.pod) manual page.
+ZFSBootMenu may be configured via a combination of [command-line parameters](docs/pod/zfsbootmenu.7.pod#cli-parameters) and [ZFS properties](docs/pod/zfsbootmenu.7.pod#zfs-properties) that are described in detail in the [zfsbootmenu(7)](docs/pod/zfsbootmenu.7.pod) manual page.
 
 # Local image creation
 
@@ -208,7 +208,7 @@ Your distribution should have packages for these already.
 
 ## Image configuration
 
-[config.yaml](pod/generate-zbm.5.pod) is used to control the operation of [generate-zbm](bin/generate-zbm).
+[config.yaml](docs/pod/generate-zbm.5.pod) is used to control the operation of [generate-zbm](bin/generate-zbm).
 
 ## Dealing with driver conflicts
 
