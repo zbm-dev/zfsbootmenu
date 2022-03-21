@@ -66,7 +66,7 @@ Usage: $0 [options]
      (By default, a source archive is pulled by the container from GitHub.)
 
   -t <tag>
-     Build a specific ZFSBootMenu release tag (e.g. v1.12.0, v1.10.1, v1.9.0).
+     Build a specific ZFSBootMenu commit or tag (e.g. v1.12.0, v1.10.1, d5594589).
      (By default, the current upstream master is used.)
 
   -C Do not integrate /etc/zfs/zpool.cache into build image image from host.
