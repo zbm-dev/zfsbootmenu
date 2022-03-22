@@ -19,8 +19,8 @@
 [33m[MOD+X][0m [1mclone and promote[0m
   Creation method: [33mzfs clone , zfs promote[0m
 
-  This creates a boot environment that is not dependent on the origin snapshot, allowing you to destroy the file system that the clone
-  was created from. A cloned and promoted boot environment is commonly used when you've done an upgrade but want to preserve
+  This creates a boot environment that is not dependent on the origin snapshot, allowing you to destroy the file system that the
+  clone was created from. A cloned and promoted boot environment is commonly used when you've done an upgrade but want to preserve
   historical snapshots.
 
   The operation will fail gracefully if the pool can not be set [33mread/write[0m.
@@ -28,8 +28,8 @@
 [33m[MOD+C][0m [1mclone[0m
   Creation method: [33mzfs clone[0m
 
-  This creates a boot environment from a snapshot with out modifying snapshot inheritence. A cloned boot environment is commonly used
-  if you need to boot a previous system state for a short time and then discard the environment.
+  This creates a boot environment from a snapshot with out modifying snapshot inheritence. A cloned boot environment is commonly
+  used if you need to boot a previous system state for a short time and then discard the environment.
 
   The operation will fail gracefully if the pool can not be set [33mread/write[0m.
 

@@ -5,9 +5,9 @@
 [1mKeyboard Shortcuts[0m
 
 [33m[ENTER][0m [1mboot[0m
-  Boot the selected boot environment, with the listed
-  kernel and kernel command line visible at the top of
-  the screen.
+  Boot the selected boot environment, with the
+  listed kernel and kernel command line visible at
+  the top of the screen.
 
 [33m[MOD+K][0m [1mkernels[0m
   Access a list of kernels available in the boot
@@ -19,8 +19,8 @@
   here.
 
 [33m[MOD+D][0m [1mset bootfs[0m
-  Set the selected boot environment as the default for
-  the pool.
+  Set the selected boot environment as the default
+  for the pool.
 
   The operation will fail gracefully if the pool can
   not be set [33mread/write[0m.
@@ -35,13 +35,13 @@
   View the health and status of each imported pool.
 
 [33m[MOD+R][0m [1mrecovery shell[0m
-  Execute a Bash shell with minimal tooling, enabling
-  system maintenance.
+  Execute a Bash shell with minimal tooling,
+  enabling system maintenance.
 
 [33m[MOD+J][0m [1mjump into chroot[0m
-  Enter a chroot of the selected boot environment. The
-  boot environment is mounted [33mread/write[0m if the zpool
-  is imported [33mread/write[0m.
+  Enter a chroot of the selected boot environment.
+  The boot environment is mounted [33mread/write[0m if the
+  zpool is imported [33mread/write[0m.
 
 [33m[MOD+W][0m [1mimport read/write[0m
   If possible, the pool behind the selected boot
@@ -74,7 +74,8 @@
 
 [33m[MOD+L][0m [1mview logs[0m
   View logs, as indicated by [33m[!][0m. The indicator will
-  be yellow for warning conditions and red for errors.
+  be yellow for warning conditions and red for
+  errors.
 
 [1mAUTHOR[0m
 

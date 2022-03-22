@@ -8,8 +8,8 @@
   Launch the interactive boot environment menu.
 
 [33mzfs-chroot[0m [1mfilesystem[0m
-  Enter a chroot of the specified boot environment. The boot environment is mounted [33mread/write[0m
-  if the zpool is imported [33mread/write[0m.
+  Enter a chroot of the specified boot environment. The boot environment is mounted
+  [33mread/write[0m if the zpool is imported [33mread/write[0m.
 
 [33mzkexec[0m [1mfilesystem[0m [1mkernel[0m [1minitramfs[0m
   Directly [33mkexec[0m a kernel and initramfs from a boot environment, allowing any kernel and

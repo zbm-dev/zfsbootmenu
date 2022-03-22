@@ -6,13 +6,14 @@ source /lib/profiling-lib.sh >/dev/null 2>&1
 source /etc/zfsbootmenu.conf 2>&1 || exit 1
 source /lib/kmsg-log-lib.sh >/dev/null 2>&1 || exit 1
 source /lib/zfsbootmenu-core.sh >/dev/null 2>&1 || exit 1
+source /lib/zfsbootmenu-lib.sh >/dev/null 2>&1 || exit 1
 
 # zfsbootmenu-help invokes itself, so the value of $WIDTH depends
 # on if $0 is launching fzf (-L) or is being launched inside
 # fzf (-s).
 
 WIDTH="$( tput cols )"
-PREVIEW_SIZE="$(( WIDTH - 26 ))"
+PREVIEW_SIZE="$(( WIDTH - 28 ))"
 [ ${PREVIEW_SIZE} -lt 10 ] && PREVIEW_SIZE=10
 
 [ -z "${FUZZYSEL}" ] && FUZZYSEL="fzf"
@@ -30,13 +31,19 @@ help_pager() {
     done
   SORTED+=("${FINAL}")
 
+  header="$( column_wrap "\
+[PAGEDN] scroll down
+[PAGEUP] scroll up
+[ESCAPE] back
+")"
+
   printf '%s\n' "${SORTED[@]}" | ${FUZZYSEL} \
     --prompt 'Topic > ' \
     --with-nth=2.. \
     --bind pgup:preview-up,pgdn:preview-down \
     --preview="$0 -s {1}" \
     --preview-window="right:${PREVIEW_SIZE}:wrap" \
-    --header="$( colorize green "[ESCAPE]" ) $( colorize lightblue "back" )" \
+    --header="${header}" \
     --tac --inline-info --ansi --layout="reverse-list"
 }
 

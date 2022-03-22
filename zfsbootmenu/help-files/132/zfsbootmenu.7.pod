@@ -19,27 +19,27 @@ general systems to boot without setting any values.
 [1mzbm.prefer=<pool>[0m
     ZFSBootMenu will attempt to import as many pools as possible to identify boot environments and will, by default, look for the
     [33mbootfs[0m property on the first imported pool (sorted alphabetically) to select the default boot environment. If you have multiple
-    pools, replace [1m<pool>[0m with the name of your preferred pool to override the default. If [1m<pool>[0m is the name of a pool followed by a
-    literal [33m![0m character, ZFSBootMenu will insist on successfully importing the named pool before attempting to import any others.
+    pools, replace [1m<pool>[0m with the name of your preferred pool to override the default. If [1m<pool>[0m is the name of a pool followed by
+    a literal [33m![0m character, ZFSBootMenu will insist on successfully importing the named pool before attempting to import any others.
 
 [1mzbm.import_delay=<time>[0m
     Should ZFSBootMenu fail to successfully import any pool, it will repeat import attempts indefinitely until at least one pool can
-    be imported or the user chooses to drop to a recovery shell. Each subsequent attempt will proceed after a delay of [1m<time>[0m seconds.
-    When [1m<time>[0m is unspecified or is anything other than a positive integer, a default value of 5 seconds will be used.
+    be imported or the user chooses to drop to a recovery shell. Each subsequent attempt will proceed after a delay of [1m<time>[0m
+    seconds. When [1m<time>[0m is unspecified or is anything other than a positive integer, a default value of 5 seconds will be used.
 
 [1mzbm.import_policy[0m
     This option controls how the pool import process should take place.
 
     [1mzbm.import_policy=hostid[0m
-      Set this option to allow run-time reconfiguration of the SPL hostid. If a pool is preferred via [1mzbm.prefer[0m and the pool can not
-      be imported with a preconfigured hostid, the system will attempt to adopt the hostid of the system that last imported the pool.
-      If a preferred pool is not set and no pools can be imported using a preconfigured hostid, the system will adopt the hostid of
-      the first otherwise-importable pool. After adopting a detected hostid, ZFSBootMenu will subsequently attempt to import as many
-      pools as possible. This option is forbidden on big-endian systems. This is the default import policy.
+      Set this option to allow run-time reconfiguration of the SPL hostid. If a pool is preferred via [1mzbm.prefer[0m and the pool can
+      not be imported with a preconfigured hostid, the system will attempt to adopt the hostid of the system that last imported the
+      pool. If a preferred pool is not set and no pools can be imported using a preconfigured hostid, the system will adopt the
+      hostid of the first otherwise-importable pool. After adopting a detected hostid, ZFSBootMenu will subsequently attempt to
+      import as many pools as possible. This option is forbidden on big-endian systems. This is the default import policy.
 
     [1mzbm.import_policy=strict[0m
-      Set this option to only import pools that match the SPL hostid configured in ZFSBootMenu. If none can be imported, an emergency
-      shell will be invoked. The [33mstrict[0m policy is consistent with the behavior of earlier versions of ZFSBootMenu.
+      Set this option to only import pools that match the SPL hostid configured in ZFSBootMenu. If none can be imported, an
+      emergency shell will be invoked. The [33mstrict[0m policy is consistent with the behavior of earlier versions of ZFSBootMenu.
 
     [1mzbm.import_policy=force[0m
       Set this option to attempt to force pool imports. When set, this invokes [33mzpool import -f[0m in place of the regular [33mzpool import[0m
@@ -48,9 +48,9 @@ general systems to boot without setting any values.
 [1mzbm.set_hostid[0m
     On little-endian systems, setting this option will cause ZFSBootMenu to set the [33mspl.spl_hostid[0m command-line parameter for the
     selected boot environment to the hostid used to import its pool. The SPL kernel module will use this value as the hostid of the
-    booted environment regardless of the contents of [33m/etc/hostid[0m. As a special case, if the hostid to be set is zero, ZFSBootMenu will
-    instead set [33mspl_hostid=00000000[0m, which should be used by dracut-based initramfs images to write an all-zero [33m/etc/hostid[0m in the
-    initramfs prior to importing the boot pool. This option is on by default.
+    booted environment regardless of the contents of [33m/etc/hostid[0m. As a special case, if the hostid to be set is zero, ZFSBootMenu
+    will instead set [33mspl_hostid=00000000[0m, which should be used by dracut-based initramfs images to write an all-zero [33m/etc/hostid[0m in
+    the initramfs prior to importing the boot pool. This option is on by default.
 
     This option has no effect on big-endian systems.
 
@@ -102,8 +102,8 @@ general systems to boot without setting any values.
 The following properties can be set at any level of the boot-environment hierarchy to control boot behavior.
 
 [1morg.zfsbootmenu:kernel[0m
-    An identifier used to select which kernel to boot among all kernels found in the [33m/boot[0m directory of the selected boot environment.
-    This can be a partial kernel name (e.g., [33m5.4[0m) or a full filename (e.g., [33mvmlinuz-5.7.11_1[0m).
+    An identifier used to select which kernel to boot among all kernels found in the [33m/boot[0m directory of the selected boot
+    environment. This can be a partial kernel name (e.g., [33m5.4[0m) or a full filename (e.g., [33mvmlinuz-5.7.11_1[0m).
 
     If the identifier does not match any kernels, the latest kernel will be chosen as a fallback.
 
@@ -133,8 +133,8 @@ The following properties can be set at any level of the boot-environment hierarc
     By default, ZFSBootMenu only shows boot environments with the property [33mmountpoint=/[0m.
 
 [1morg.zfsbootmenu:rootprefix[0m
-    This specifies the prefix added to the ZFS filesystem provided as the root filesystem on the kernel command line. For example, the
-    command-line argument [33mroot=zfs:zroot/ROOT/void[0m has root prefix [33mroot=zfs:[0m.
+    This specifies the prefix added to the ZFS filesystem provided as the root filesystem on the kernel command line. For example,
+    the command-line argument [33mroot=zfs:zroot/ROOT/void[0m has root prefix [33mroot=zfs:[0m.
 
     The default prefix is [33mroot=zfs:[0m for most boot environments. Environments that appear to be Arch Linux will use [33mzfs=[0m by default,
     while those that appear to be Gentoo or Alpine will use a default of [33mroot=ZFS=[0m. The root prefix is generally determined by the
@@ -146,10 +146,10 @@ The following properties can be set at any level of the boot-environment hierarc
 [1morg.zfsbootmenu:keysource=<filesystem>[0m
     If specified, this provides the name of the ZFS filesystem from which keys for a particular boot environment will be sourced.
 
-    Normally, when ZFSBootMenu attempts to load encryption keys for a boot environment, it will attempt to look for a key file at the
-    path specified by the [33mkeylocation[0m property on the [33mencryptionroot[0m for that boot environment. If that file does not exist, and
-    [33mkeyformat=passphrase[0m is set for the [33mencryptionroot[0m (or [33mkeylocation=prompt[0m), ZFSBootMenu will prompt for a passphrase to unlock the
-    boot environment. These passphrases entered are not cached by default.
+    Normally, when ZFSBootMenu attempts to load encryption keys for a boot environment, it will attempt to look for a key file at
+    the path specified by the [33mkeylocation[0m property on the [33mencryptionroot[0m for that boot environment. If that file does not exist, and
+    [33mkeyformat=passphrase[0m is set for the [33mencryptionroot[0m (or [33mkeylocation=prompt[0m), ZFSBootMenu will prompt for a passphrase to unlock
+    the boot environment. These passphrases entered are not cached by default.
 
     When [1morg.zfsbootmenu:keysource[0m is a mountable ZFS filesystem, before prompting for a passphrase when [33mkeylocation[0m is not set to
     [33mprompt[0m, ZFSBootMenu will attempt to mount [1m<filesystem>[0m (unlocking that, if necessary) and search for the key file within
@@ -157,9 +157,10 @@ The following properties can be set at any level of the boot-environment hierarc
     stripped (if possible) from the beginning of any [33mkeylocation[0m property to attempt to identify a key at the point where it would
     normally be mounted. If no file exists at the stripped path (or the [33mmountpoint[0m specifies [33mnone[0m or [33mlegacy[0m), keys will be sought at
     the full path of [33mkeylocation[0m relative to [1m<filesystem>[0m. If a key is found at either location, it will be copied to the initramfs.
-    The copy in the initramfs will be used to decrypt the original boot environment. Copied keys are retained until ZFSBootMenu boots
-    an environment, so a single password prompt can be sufficient to unlock several pools with the same [33mkeysource[0m or prevent prompts
-    from reappearing when the pool must be exported and reimported (for example, to alter boot parameters from within ZFSBootMenu).
+    The copy in the initramfs will be used to decrypt the original boot environment. Copied keys are retained until ZFSBootMenu
+    boots an environment, so a single password prompt can be sufficient to unlock several pools with the same [33mkeysource[0m or prevent
+    prompts from reappearing when the pool must be exported and reimported (for example, to alter boot parameters from within
+    ZFSBootMenu).
 
 [1mOptions for dracut[0m
 
@@ -179,17 +180,17 @@ behavior.
 
     Any installed hooks are run right before the ZFSBootMenu menu will be presented; ZFS pools will generally have been imported and
     the default boot environment will be available in the [33mBOOTFS[0m environment variable. Hooks will not be run if the countdown timer
-    expires (or was set to zero) and the default boot environment is automatically selected. [1mNote:[0m The hooks may be run multiple times
-    if the menu is invoked multiple times, e.g., by dropping to an emergency shell and then returning to the menu. If a script should
-    only run once, the script is responsible for keeping track of this.
+    expires (or was set to zero) and the default boot environment is automatically selected. [1mNote:[0m The hooks may be run multiple
+    times if the menu is invoked multiple times, e.g., by dropping to an emergency shell and then returning to the menu. If a script
+    should only run once, the script is responsible for keeping track of this.
 
 [1mzfsbootmenu_teardown=<executable-list>[0m
     An optional variable specifying a space-separated list of paths to teardown hooks that will be installed in the ZFSBootMenu
     initramfs. Any path in the list [1m<executable-list>[0m that exists and is executable will be installed.
 
     Some hardware initialized by the kernel used to boot ZFSBootMenu may not be properly reinitialized when a boot environment is
-    launched. Any teardown hooks installed into the ZFSBootMenu initramfs will be run immediately before [1mkexec[0m is invoked to jump into
-    the selected kernel. This script can be used, for example, to unbind drivers from hardware or remove kernel modules.
+    launched. Any teardown hooks installed into the ZFSBootMenu initramfs will be run immediately before [1mkexec[0m is invoked to jump
+    into the selected kernel. This script can be used, for example, to unbind drivers from hardware or remove kernel modules.
 
     Teardown hooks have access to three environment variables that describe the boot environment that is about to be launched:
 
@@ -209,18 +210,18 @@ behavior.
       kexec --unload
 
     should be sufficient to return to the main menu. Likewise, the hook may construct and execute its own [33mkexec[0m command to alter
-    boot-time parameters. This may be useful, for example, to allow ZFSBootMenu to select a boot environment and then restructure the
-    boot process to launch a Xen kernel with the selected environment configured as dom0.
+    boot-time parameters. This may be useful, for example, to allow ZFSBootMenu to select a boot environment and then restructure
+    the boot process to launch a Xen kernel with the selected environment configured as dom0.
 
 [1mOptions for mkinitcpio[0m
 
-The [1mdracut[0m options specified above may also be specified in a mkinitcpio configuration file when [1mgenerate-zbm[0m is configured to create
-images using [1mmkinitcpio[0m. However, whereas the [1m<executable-list>[0m values in the dracut configuration should be specified as a single,
-space-separated string; in the mkinitcpio configuration, each [1m<executable-list>[0m value must be specified as a Bash array like the
-standard mkinitcpio arguments.
+The [1mdracut[0m options specified above may also be specified in a mkinitcpio configuration file when [1mgenerate-zbm[0m is configured to
+create images using [1mmkinitcpio[0m. However, whereas the [1m<executable-list>[0m values in the dracut configuration should be specified as a
+single, space-separated string; in the mkinitcpio configuration, each [1m<executable-list>[0m value must be specified as a Bash array like
+the standard mkinitcpio arguments.
 
-The following additional arguments may be provided in the mkinitcpio configuration file to further control the creation of ZFSBootMenu
-images:
+The following additional arguments may be provided in the mkinitcpio configuration file to further control the creation of
+ZFSBootMenu images:
 
 [1mzfsbootmenu_module_root=<path>[0m
     Set this variable to override the default [1m<path>[0m where the mkinitcpio hook looks for the components of ZFSBootMenu that must be
@@ -228,9 +229,9 @@ images:
 
 [1mzfsbootmenu_miser=yes[0m
     By default, [1mmkinitcpio[0m uses busybox to populate initramfs images. However, the [33mzfsbootmenu[0m hook will install system versions of
-    several utilities that it requires to operate. On most systems, these versions will be provided by util-linux rather than busybox.
-    To prefer busybox for these utilities when possible, set [1mzfsbootmenu_miser=yes[0m. Synonyms for [33myes[0m are [33m1[0m, [33my[0m or [33mon[0m, without regard to
-    letter case.
+    several utilities that it requires to operate. On most systems, these versions will be provided by util-linux rather than
+    busybox. To prefer busybox for these utilities when possible, set [1mzfsbootmenu_miser=yes[0m. Synonyms for [33myes[0m are [33m1[0m, [33my[0m or [33mon[0m,
+    without regard to letter case.
 
 [1mSEE ALSO[0m
 

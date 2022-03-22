@@ -14,8 +14,8 @@
 
 [33mzkexec[0m [1mfilesystem[0m [1mkernel[0m [1minitramfs[0m
   Directly [33mkexec[0m a kernel and initramfs from a boot
-  environment, allowing any kernel and initramfs to be
-  loaded into memory and immediately booted.
+  environment, allowing any kernel and initramfs to
+  be loaded into memory and immediately booted.
 
 [33mset_rw_pool[0m [1mpool[0m
   Export, then re-import the pool [33mread/write[0m.
@@ -24,8 +24,8 @@
   Export, then re-import the pool [33mread-only[0m.
 
 [33mmount_zfs[0m [1mzfs filesystem[0m
-  Mount the filesystem at a unique location and print
-  the mount point.
+  Mount the filesystem at a unique location and
+  print the mount point.
 
 [33mhelp[0m
   View the online help system.

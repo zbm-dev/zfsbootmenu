@@ -21,8 +21,8 @@
   The operation will fail gracefully if the pool can not be set [33mread/write[0m.
 
 [33m[MOD+E][0m [1medit kcl[0m
-  Temporarily edit the kernel command line that will be used to boot the chosen kernel in the
-  selected boot environment. This change does not persist across reboots.
+  Temporarily edit the kernel command line that will be used to boot the chosen kernel in
+  the selected boot environment. This change does not persist across reboots.
 
 [33m[MOD+P][0m [1mpool status[0m
   View the health and status of each imported pool.
@@ -31,12 +31,12 @@
   Execute a Bash shell with minimal tooling, enabling system maintenance.
 
 [33m[MOD+J][0m [1mjump into chroot[0m
-  Enter a chroot of the selected boot environment. The boot environment is mounted [33mread/write[0m
-  if the zpool is imported [33mread/write[0m.
+  Enter a chroot of the selected boot environment. The boot environment is mounted
+  [33mread/write[0m if the zpool is imported [33mread/write[0m.
 
 [33m[MOD+W][0m [1mimport read/write[0m
-  If possible, the pool behind the selected boot environment is exported and then re-imported
-  in [33mread/write[0m mode.
+  If possible, the pool behind the selected boot environment is exported and then
+  re-imported in [33mread/write[0m mode.
 
   This is not possible if any of the following conditions are met:
 
@@ -58,8 +58,8 @@
   The default sort key is [33mname[0m.
 
 [33m[MOD+L][0m [1mview logs[0m
-  View logs, as indicated by [33m[!][0m. The indicator will be yellow for warning conditions and red
-  for errors.
+  View logs, as indicated by [33m[!][0m. The indicator will be yellow for warning conditions and
+  red for errors.
 
 [1mAUTHOR[0m
 
