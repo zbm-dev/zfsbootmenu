@@ -10,15 +10,6 @@ sanitise_path() {
   fi
 }
 
-sanitise_file() {
-  if [ -x "${OPTARG}" ] && ! [ -d "${OPTARG}" ]; then
-    OPTARG=$(readlink -f "${OPTARG}")
-  else
-    echo "Error: ${OPTARG} is not a valid, executable file."
-    exit 1
-  fi
-}
-
 usage() {
   cat << EOF
 
@@ -35,20 +26,6 @@ Usage: $0 [options]
 
   OPTIONS:
  
-  -1 <file>
-     Fetch inidcated file to build directory and mark for integration as
-     a 'zfsbootmenu_early_setup' hook. This command can be invoked multiple
-     times.
-
-  -2 <file>
-     Fetch inidcated file to build directory and mark for integration as
-     a 'zfsbootmenu_setup' hook. This comand can be invoked multiple times.
-  
-  -3 <file>
-     Fetch inidcated file to build directory and mark for integration as
-     a 'zfsbootmenu_teardown' hook. This command can be invoked multiple
-     times.
-
   -b <path>
      Use an alternate build directory for the container.
      (By default, the directory containing 'zbm-builder.sh' is used.)
@@ -100,20 +77,8 @@ else
   exit 1
 fi
 
-while getopts "1:2:3:b:dhi:l:t:CH" opt; do
+while getopts "b:dhi:l:t:CH" opt; do
   case "${opt}" in
-    1)
-      sanitise_file "${OPTARG}"
-      HOOKS_EARLY_SETUP+=( "${OPTARG}" )
-    ;;
-    2)
-      sanitise_file "${OPTARG}"
-      HOOKS_SETUP+=( "${OPTARG}" )
-    ;;
-    3)
-      sanitise_file "${OPTARG}"
-      HOOKS_TEARDOWN+=( "${OPTARG}" )
-    ;;
     b)
       sanitise_path
       BUILD_DIRECTORY="${OPTARG}"
@@ -184,43 +149,5 @@ if ! [ -r "${BUILD_DIRECTORY}"/config.yaml ]; then
   BUILD_ARGS+=( "-e" ".Components.Enabled=true" )
 fi
 
-# custom dracut.conf.d/*.configs need to go into ./build/dracut.conf.d :)
-if [ -n "${HOOKS_EARLY_SETUP}" ] || [ -n "${HOOKS_SETUP}" ] || [ -n "${HOOKS_TEARDOWN}" ]; then
-  mkdir -p "${BUILD_DIRECTORY}"/dracut.conf.d
-fi
-
-if [ -n "${HOOKS_EARLY_SETUP}" ]; then
-  # copy requested hook scripts in, then convert canonical path to /build
-  for i in "${!HOOKS_EARLY_SETUP[@]}"; do
-    cp "${HOOKS_EARLY_SETUP[$i]}" "${BUILD_DIRECTORY}"
-    HOOKS_EARLY_SETUP[$i]="/build/`basename ${HOOKS_EARLY_SETUP[$i]}`"
-  done
-  # echo collated hook scripts to config file
-  echo "zfsbootmenu_early_setup+=\" "${HOOKS_EARLY_SETUP[@]}" \"" \
-  > "${BUILD_DIRECTORY}"/dracut.conf.d/zfsbootmenu.earlyhooks.conf;
-fi
-
-if [ -n "${HOOKS_SETUP}" ]; then
-  # copy requested hook scripts in, then convert canonical path to /build
-  for i in "${!HOOKS_SETUP[@]}"; do
-    cp "${HOOKS_SETUP[$i]}" "${BUILD_DIRECTORY}"
-    HOOKS_SETUP[$i]="/build/`basename ${HOOKS_SETUP[$i]}`"
-  done
-  # echo collated hook scripts to config file
-  echo "zfsbootmenu_setup+=\" "${HOOKS_SETUP[@]}" \"" \
-  > "${BUILD_DIRECTORY}"/dracut.conf.d/zfsbootmenu.setuphooks.conf;
-fi
-
-if [ -n "${HOOKS_TEARDOWN}" ]; then
-  # copy requested hook scripts in, then convert canonical path to /build
-  for i in "${!HOOKS_TEARDOWN[@]}"; do
-    cp "${HOOKS_TEARDOWN[$i]}" "${BUILD_DIRECTORY}"
-    HOOKS_TEARDOWN[$i]="/build/`basename ${HOOKS_TEARDOWN[$i]}`"
-  done
-  # echo collated hook scripts to config file
-  echo "zfsbootmenu_teardown+=\" "${HOOKS_TEARDOWN[@]}" \"" \
-  > "${BUILD_DIRECTORY}"/dracut.conf.d/zfsbootmenu.teardown.conf;
-fi
-
 # Make `/build` the working directory so relative paths in a config file make sense
-"${PODMAN}" run --rm "${VOLUME_ARGS[@]}" -w "/build" "${BUILD_TAG}" "${BUILD_ARGS[@]}"
+echo "${PODMAN}" run --rm "${VOLUME_ARGS[@]}" -w "/build" "${BUILD_TAG}" "${BUILD_ARGS[@]}"
