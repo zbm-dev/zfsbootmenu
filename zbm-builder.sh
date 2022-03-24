@@ -80,7 +80,6 @@ fi
 while getopts "b:dhi:l:t:CH" opt; do
   case "${opt}" in
     b)
-      sanitise_path
       BUILD_DIRECTORY="${OPTARG}"
       ;;
     d)
@@ -94,7 +93,6 @@ while getopts "b:dhi:l:t:CH" opt; do
       BUILD_TAG="${OPTARG}"
       ;;
     l)
-      sanitise_path 
       VOLUME_ARGS+=( "-v" "${OPTARG}:/zbm" )
      ;;
     t)
@@ -150,4 +148,4 @@ if ! [ -r "${BUILD_DIRECTORY}"/config.yaml ]; then
 fi
 
 # Make `/build` the working directory so relative paths in a config file make sense
-echo "${PODMAN}" run --rm "${VOLUME_ARGS[@]}" -w "/build" "${BUILD_TAG}" "${BUILD_ARGS[@]}"
+"${PODMAN}" run --rm "${VOLUME_ARGS[@]}" -w "/build" "${BUILD_TAG}" "${BUILD_ARGS[@]}"
