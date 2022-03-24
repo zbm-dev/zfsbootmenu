@@ -2,11 +2,11 @@
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
 sanitise_path() {
-  if [ -d "${OPTARG}" ]; then
-    OPTARG=$(readlink -f "${OPTARG}")
+  if PATH=$(readlink -f "${1}") && [ -d ${PATH} ]; then
+    echo "${PATH}"
+    return 0
   else
-    echo "Error: ${OPTARG} is not a valid path."
-    exit 1
+    return 1
   fi
 }
 
@@ -60,6 +60,7 @@ SKIP_CACHE=
 
 BUILD_TAG="ghcr.io/zbm-dev/zbm-builder:latest"
 BUILD_DIRECTORY=
+LOCAL_SOURCE=
 
 BUILD_ARGS=()
 VOLUME_ARGS=()
@@ -93,7 +94,7 @@ while getopts "b:dhi:l:t:CH" opt; do
       BUILD_TAG="${OPTARG}"
       ;;
     l)
-      VOLUME_ARGS+=( "-v" "${OPTARG}:/zbm" )
+      LOCAL_SOURCE="${OPTARG}"
      ;;
     t)
       BUILD_ARGS+=( "-t" "${OPTARG}" )
@@ -111,11 +112,24 @@ while getopts "b:dhi:l:t:CH" opt; do
   esac
 done
 
-if [ -n "${BUILD_DIRECTORY}" ]; then
-  VOLUME_ARGS+=( "-v" "${BUILD_DIRECTORY}:/build" )
-else  
+if [ -z "${BUILD_DIRECTORY}" ]; then
   BUILD_DIRECTORY="${PWD}"
-  VOLUME_ARGS+=( "-v" "${PWD}:/build" )
+fi
+
+if BUILD_DIRECTORY="$(sanitise_path "${BUILD_DIRECTORY}")"; then
+  VOLUME_ARGS+=( "-v" "${BUILD_DIRECTORY}:/build" )
+else
+  echo "Error: Cannot canonicalise specified build directory path."
+  exit 1
+fi
+
+if [ -n "${LOCAL_SOURCE}" ]; then
+  if LOCAL_SOURCE="$(sanitise_path "${LOCAL_SOURCE}")"; then
+    VOLUME_ARGS+=( "-v" "${LOCAL_SOURCE}:/zbm")
+  else
+   echo "Error: Cannot canonicalise specified source directory path."
+   exit 1
+  fi
 fi
 
 # If no local hostid is available, copy the system hostid if desired
