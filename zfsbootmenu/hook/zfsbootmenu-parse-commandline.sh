@@ -212,15 +212,6 @@ fi
 
 wait_for_zfs=0
 case "${root}" in
-  ""|zfsbootmenu|zfsbootmenu:)
-    # We'll take root unset, root=zfsbootmenu, or root=zfsbootmenu:
-    root="zfsbootmenu"
-    # shellcheck disable=SC2034
-    rootok=1
-    wait_for_zfs=1
-
-    zinfo "enabling menu after udev settles"
-    ;;
   zfsbootmenu:POOL=*)
     # Prefer a specific pool for bootfs value, root=zfsbootmenu:POOL=zroot
     root="${root#zfsbootmenu:POOL=}"
@@ -230,6 +221,14 @@ case "${root}" in
 
     zinfo "preferring ${root} for bootfs"
     ;;
+  *)
+    root="zfsbootmenu"
+    # shellcheck disable=SC2034
+    rootok=1
+    wait_for_zfs=1
+
+    zinfo "enabling menu after udev settles"
+  ;;
 esac
 
 # Pool preference ending in ! indicates a hard requirement
