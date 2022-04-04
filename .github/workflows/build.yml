@@ -10,23 +10,45 @@ jobs:
     steps:
       - uses: actions/checkout@master
 
-      - name: Build artifacts
+      - name: Build release artifacts
         run: |
           ln -s "$(pwd)" /zbm
           cp /zbm/etc/zfsbootmenu/release.conf.d/release.conf /zbm/etc/zfsbootmenu/dracut.conf.d/
           echo "zfsbootmenu_module_root='/zbm/zfsbootmenu'" >> /zbm/etc/zfsbootmenu/dracut.conf.d/release.conf
           /zbm/releng/docker/zbm-build.sh -b /zbm/releng/docker -e '.Global.DracutFlags += ["--no-early-microcode"]' -- --debug
 
-      - name: Archive EFI
+      - name: Archive release EFI
         uses: actions/upload-artifact@v2
         with:
-          name: EFI
+          name: Release-EFI
           path: /zbm/releng/docker/build/*.EFI
 
-      - name: Archive components
+      - name: Archive release components
         uses: actions/upload-artifact@v2
         with:
-          name: Components
+          name: Release-Components
+          path: |
+            /zbm/releng/docker/build/*
+            !/zbm/releng/docker/build/*.EFI
+
+      - name: Build recovery artifacts
+        run: |
+          rm /zbm/etc/zfsbootmenu/dracut.conf.d/release.conf
+          rm -rf /zbm/releng/docker/build/*
+          cp /zbm/etc/zfsbootmenu/recovery.conf.d/recovery.conf /zbm/etc/zfsbootmenu/dracut.conf.d/
+          echo "zfsbootmenu_module_root='/zbm/zfsbootmenu'" >> /zbm/etc/zfsbootmenu/dracut.conf.d/recovery.conf
+          /zbm/releng/docker/zbm-build.sh -b /zbm/releng/docker -e '.Global.DracutFlags += ["--no-early-microcode"]' -- --debug
+
+      - name: Archive recovery EFI
+        uses: actions/upload-artifact@v2
+        with:
+          name: Recovery-EFI
+          path: /zbm/releng/docker/build/*.EFI
+
+      - name: Archive recovery components
+        uses: actions/upload-artifact@v2
+        with:
+          name: Recovery-Components
           path: |
             /zbm/releng/docker/build/*
             !/zbm/releng/docker/build/*.EFI
