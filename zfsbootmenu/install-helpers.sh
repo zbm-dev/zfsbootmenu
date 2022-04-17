@@ -127,7 +127,7 @@ create_zbm_profiles() {
 	[ -f /etc/profile ] && source /etc/profile
 	[ -f /lib/zfsbootmenu-completions.sh ] && source /lib/zfsbootmenu-completions.sh
 
-	export PS1="\033[0;33mzfsbootmenu\033[0m \w > "
+	export PS1="\[\033[0;33m\]zfsbootmenu\[\033[0m\] \w > "
 
 	alias clear="tput clear"
 	alias reset="tput reset"

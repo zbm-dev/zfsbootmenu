@@ -12,14 +12,19 @@ cleanup() {
   trap - HUP INT QUIT ABRT EXIT
 }
 
-# shellcheck disable=SC1091
-source /lib/profiling-lib.sh >/dev/null 2>&1
-# shellcheck disable=SC1091
-source /etc/zfsbootmenu.conf 2>&1 || exit 1
-# shellcheck disable=SC1091
-source /lib/kmsg-log-lib.sh >/dev/null 2>&1 || exit 1
-# shellcheck disable=SC1091
-source /lib/zfsbootmenu-core.sh >/dev/null 2>&1 || exit 1
+sources=(
+  /lib/profiling-lib.sh
+  /etc/zfsbootmenu.conf
+  /lib/kmsg-log-lib.sh
+  /lib/zfsbootmenu-core.sh
+)
+
+for src in "${sources[@]}"; do
+  # shellcheck disable=SC1090
+  source "${src}" >/dev/null 2>&1 || exit 1
+done
+
+unset src sources
 
 selected="${1}"
 
@@ -82,6 +87,6 @@ fi
 echo -e "$( colorize orange "${selected}") is mounted ${writemode}, /tmp is shared and read/write\n"
 
 # regardless of shell, set PS1
-if ! env "PS1=$( colorize orange "${selected}") \w > " chroot "${mountpoint}" "${_SHELL}" "${chroot_extra}" ; then
+if ! env "PS1=\[\033[0;33m\]${selected}\[\033[0m\] \w > " chroot "${mountpoint}" "${_SHELL}" "${chroot_extra}" ; then
   zdebug "chroot ${selected}:${_SHELL} returned code $?"
 fi
