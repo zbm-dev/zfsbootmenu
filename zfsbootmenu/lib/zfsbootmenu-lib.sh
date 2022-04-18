@@ -63,7 +63,7 @@ column_wrap() {
 # returns: 0 on successful selection, 1 if Esc was pressed, 130 if BE list is missing
 
 draw_be() {
-  local env selected header expects
+  local env selected header expects kcl_text kcl_bind blank
 
   env="${1}"
   if [ -z "${env}" ]; then
@@ -78,17 +78,25 @@ draw_be() {
 
   zdebug "using environment file: ${env}"
 
+  if [ -f "${BASE}/cmdline" ]; then
+    kcl_text="[CTRL+T] revert kcl"
+    kcl_bind="alt-t"
+    blank=
+  else
+    blank=':'
+  fi
+
   header="$( column_wrap "\
 [RETURN] boot:[ESCAPE] refresh view:[CTRL+P] pool status
 [CTRL+D] set bootfs:[CTRL+S] snapshots:[CTRL+K] kernels
 [CTRL+E] edit kcl:[CTRL+J] jump into chroot:[CTRL+R] recovery shell
-[CTRL+L] view logs::[CTRL+H] help" \
+${kcl_text:+${kcl_text}:}[CTRL+L] view logs:${blank}[CTRL+H] help" \
 "\
 [RETURN] boot
 [CTRL+R] recovery shell
 [CTRL+H] help" )"
 
-  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-j,alt-o"
+  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-j,alt-o${kcl_bind:+,${kcl_bind}}"
 
   if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \

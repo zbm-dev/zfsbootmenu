@@ -282,6 +282,9 @@ while true; do
         kcl_tokenize <<< "${cmdline}" | kcl_suppress root > "${BASE}/cmdline"
       fi
       ;;
+    "mod-t")
+      [ -f "${BASE}/cmdline" ] && rm "${BASE}/cmdline"
+      ;;
     "mod-j")
       zfs_chroot "${selected_be}"
       ;;

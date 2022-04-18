@@ -30,6 +30,10 @@ The operation will fail gracefully if the pool can not be set I<read/write>.
 
 Temporarily edit the kernel command line that will be used to boot the chosen kernel in the selected boot environment. This change does not persist across reboots.
 
+=item I<[MOD+T]> B<revert kcl>
+
+Revert the temporary kernel command line set via I<[MOD+E]>.
+
 =item I<[MOD+P]> B<pool status>
 
 View the health and status of each imported pool.

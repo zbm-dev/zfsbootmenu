@@ -22,6 +22,9 @@
   Temporarily edit the kernel command line that will be used to boot the chosen kernel in the selected boot environment. This change
   does not persist across reboots.
 
+[33m[MOD+T][0m [1mrevert kcl[0m
+  Revert the temporary kernel command line set via [33m[MOD+E][0m.
+
 [33m[MOD+P][0m [1mpool status[0m
   View the health and status of each imported pool.
 
