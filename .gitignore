@@ -3,3 +3,5 @@
 */*.swp
 releases/*
 build
+hostid
+zpool.cache
