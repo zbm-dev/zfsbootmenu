@@ -694,10 +694,12 @@ sub createUEFIBundle {
   if ( nonempty $config{EFI}{Stub} ) {
     $uefi_stub = $config{EFI}{Stub};
   } else {
-    # For now, default stub locations are x86_64 only
+    # For now, default stub locations are x86_64 and aarch64 only
     my @uefi_stub_defaults = qw(
       /usr/lib/gummiboot/linuxx64.efi.stub
-      /usr/lib/systemd/boot/efi/linuxx64.efi.stub
+      /usr/lib/systemd/boot/efi/linuxx64.efi.stub     
+      /usr/lib/gummiboot/linuxaa64.efi.stub
+      /usr/lib/systemd/boot/efi/linuxaa64.efi.stub
     );
 
     foreach my $stubloc (@uefi_stub_defaults) {
