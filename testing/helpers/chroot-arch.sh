@@ -68,7 +68,7 @@ mkinitcpio -p linux
 
 if [ -x /root/zbm-populate.sh ]; then
   # Arch installs cpanm in the vendor_perl subdirectory
-  PATH="${PATH}:/usr/bin/site_perl:/usr/bin/vendor_perl" /root/zbm-populate.sh
+  PATH="${PATH}:/usr/bin/site_perl:/usr/bin/vendor_perl" INITCPIO=yes /root/zbm-populate.sh
   rm /root/zbm-populate.sh
 fi
 
