@@ -10,9 +10,10 @@ PODDIR="docs/pod"
 zbmconfig="${PODDIR}/generate-zbm.5.pod"
 zbmsystem="${PODDIR}/zfsbootmenu.7.pod"
 zbmkcl="${PODDIR}/zbm-kcl.8.pod"
+zbmefikcl="${PODDIR}/zbm-efi-kcl.8.pod"
 genzbm="bin/generate-zbm"
 
-for src in "${zbmconfig}" "${zbmsystem}" "${zbmkcl}" "${genzbm}"; do
+for src in "${zbmconfig}" "${zbmsystem}" "${zbmkcl}" "${zbmefikcl}" "${genzbm}"; do
 	if [ ! -r "${src}" ]; then
 		echo "ERROR: POD source '${src}' does not exist"
 		exit 1
@@ -35,3 +36,6 @@ pod2man "${genzbm}" -c "generate-zbm" \
 
 pod2man "${zbmkcl}" -c "zbm-kcl" \
   -r "${release}" -s 8 -n zbm-kcl > "${MANDIR}/zbm-kcl.8"
+
+pod2man "${zbmefikcl}" -c "zbm-efi-kcl" \
+  -r "${release}" -s 8 -n zbm-efi-kcl > "${MANDIR}/zbm-efi-kcl.8"
