@@ -29,7 +29,7 @@ if [ ! -r "${ZBM_BUILDER}" ]; then
 fi
 
 maintainer="ZFSBootMenu Team, https://zfsbootmenu.org"
-container="$(buildah from voidlinux/voidlinux:latest)"
+container="$(buildah from ghcr.io/void-linux/void-linux:latest-full-x86_64)"
 
 buildah config --label author="${maintainer}" "${container}"
 
@@ -50,6 +50,14 @@ buildah run "${container}" xbps-install -y \
   linux5.10 linux5.10-headers gummiboot-efistub curl yq-go bash kbd terminus-font \
   dracut mkinitcpio dracut-network gptfdisk iproute2 iputils parted curl \
   dosfstools e2fsprogs efibootmgr cryptsetup
+
+# SSH related dependencies
+buildah run "${container}" xbps-install -y \
+  dracut-crypt-ssh dropbear
+
+# Enable networking
+buildah run "${container}" mkdir -p /etc/cmdline.d
+buildah run "${container}" sh -c 'echo "ip=dhcp rd.neednet=1" > /etc/cmdline.d/dracut-network.conf'
 
 # Remove headers and development toolchain, but keep binutils for objcopy
 buildah run "${container}" sh -c 'echo "ignorepkg=dkms" > /etc/xbps.d/10-nodkms.conf'

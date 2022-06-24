@@ -246,6 +246,9 @@ if [ -d "${BUILDROOT}/dracut.conf.d" ]; then
   done
 fi
 
+# Copy dropbear related files
+cp -rv ${BUILDROOT}/etc/dropbear /etc/ || error "unable to copy dropbear directory"
+
 /zbm/bin/generate-zbm "${GENARGS[@]}" || error "failed to build images"
 
 for f in "${ZBMWORKDIR}"/build/*; do

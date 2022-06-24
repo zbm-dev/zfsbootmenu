@@ -157,6 +157,27 @@ if ! [ -r "${BUILD_DIRECTORY}"/zpool.cache ]; then
   fi
 fi
 
+# SSH Key Files
+
+# If no local ssh host keys are available, create them
+# WARNING: These private keys will be part of the final image!
+DROPBEAR_DIR="${BUILD_DIRECTORY}"/etc/dropbear
+mkdir -p "${DROPBEAR_DIR}"
+
+if [ ! -f "${DROPBEAR_DIR}"/ssh_host_rsa_key ]; then
+  ssh-keygen -t rsa -m PEM -N '' -f "${DROPBEAR_DIR}"/ssh_host_rsa_key
+fi
+if [ ! -f "${DROPBEAR_DIR}"/ssh_host_ecdsa_key ]; then
+  ssh-keygen -t ecdsa -m PEM -N '' -f "${DROPBEAR_DIR}"/ssh_host_ecdsa_key
+fi
+
+# SSH authorized Keys
+if [ ! -f "${DROPBEAR_DIR}"/authorized_keys ]; then
+  echo "ERROR: cannot find file \"${DROPBEAR_DIR}/authorized_keys\""
+  echo "Copy an authorized_keys file to ${DROPBEAR_DIR}"
+  exit 1
+fi
+
 # If no config is specified, use in-tree default but force EFI and components
 if ! [ -r "${BUILD_DIRECTORY}"/config.yaml ]; then
   BUILD_ARGS+=( "-c" "/zbm/etc/zfsbootmenu/config.yaml" )
