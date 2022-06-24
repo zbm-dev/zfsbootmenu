@@ -35,7 +35,7 @@ buildah config --label author="${maintainer}" "${container}"
 
 # Make sure image is up to date
 buildah run "${container}" xbps-install -Syu xbps
-buildah run "${container}" xbps-install -yu
+buildah run "${container}" xbps-install -Syu
 
 # Prefer an LTS version over whatever Void thinks is current
 buildah run "${container}" sh -c "cat > /etc/xbps.d/10-nolinux.conf" <<-EOF
