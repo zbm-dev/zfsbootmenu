@@ -41,7 +41,7 @@ column_wrap() {
   local footer
   footer="${1}"
 
-  if [ "${COLUMNS}" -lt 80 ] || [ -z "${HAS_COLUMN}" ] ; then
+  if [ "${COLUMNS:-0}" -lt 80 ] || [ -z "${HAS_COLUMN}" ] ; then
     # Use shorter footer text, if it exists
     [ -n "${2}" ] && footer="${2}"
     shopt -s extglob
