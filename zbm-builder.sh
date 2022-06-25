@@ -39,6 +39,8 @@ OPTIONS:
      Build specific ZFSBootMenu commit or tag (e.g. v1.12.0, d5594589)
      (Default: current upstream master)
 
+  -s Enable SSH support in the image
+
   -C Do not include host /etc/zfs/zpool.cache in image
      (If ./zpool.cache exists, this switch will be ignored)
 
@@ -52,6 +54,7 @@ For more information, see documentation at
 EOF
 }
 
+ENABLE_SSH=
 SKIP_HOSTID=
 SKIP_CACHE=
 
@@ -71,7 +74,7 @@ else
   PODMAN="docker"
 fi
 
-while getopts "b:dhi:l:t:CH" opt; do
+while getopts "b:dhi:l:t:sCH" opt; do
   case "${opt}" in
     b)
       BUILD_DIRECTORY="${OPTARG}"
@@ -91,6 +94,9 @@ while getopts "b:dhi:l:t:CH" opt; do
       ;;
     t)
       BUILD_TAG="${OPTARG}"
+      ;;
+    s)
+      ENABLE_SSH="yes"
       ;;
     C)
       SKIP_CACHE="yes"
@@ -157,25 +163,29 @@ if ! [ -r "${BUILD_DIRECTORY}"/zpool.cache ]; then
   fi
 fi
 
-# SSH Key Files
 
-# If no local ssh host keys are available, create them
-# WARNING: These private keys will be part of the final image!
-DROPBEAR_DIR="${BUILD_DIRECTORY}"/etc/dropbear
-mkdir -p "${DROPBEAR_DIR}"
+if [ "${ENABLE_SSH}" == "yes" ] ; then
+  # SSH Key Files
 
-if [ ! -f "${DROPBEAR_DIR}"/ssh_host_rsa_key ]; then
-  ssh-keygen -t rsa -m PEM -N '' -f "${DROPBEAR_DIR}"/ssh_host_rsa_key
-fi
-if [ ! -f "${DROPBEAR_DIR}"/ssh_host_ecdsa_key ]; then
-  ssh-keygen -t ecdsa -m PEM -N '' -f "${DROPBEAR_DIR}"/ssh_host_ecdsa_key
-fi
+  # If no local ssh host keys are available, create them
+  # WARNING: These private keys will be part of the final image!
+  DROPBEAR_DIR="${BUILD_DIRECTORY}"/etc/dropbear
+  mkdir -p "${DROPBEAR_DIR}"
 
-# SSH authorized Keys
-if [ ! -f "${DROPBEAR_DIR}"/authorized_keys ]; then
-  echo "ERROR: cannot find file \"${DROPBEAR_DIR}/authorized_keys\""
-  echo "Copy an authorized_keys file to ${DROPBEAR_DIR}"
-  exit 1
+  if [ ! -f "${DROPBEAR_DIR}"/ssh_host_rsa_key ]; then
+    ssh-keygen -t rsa -m PEM -N '' -f "${DROPBEAR_DIR}"/ssh_host_rsa_key
+  fi
+  if [ ! -f "${DROPBEAR_DIR}"/ssh_host_ecdsa_key ]; then
+    ssh-keygen -t ecdsa -m PEM -N '' -f "${DROPBEAR_DIR}"/ssh_host_ecdsa_key
+  fi
+
+  # SSH authorized Keys
+  if [ ! -f "${DROPBEAR_DIR}"/authorized_keys ]; then
+    echo "ERROR: cannot find file \"${DROPBEAR_DIR}/authorized_keys\""
+    echo "Copy an authorized_keys file to ${DROPBEAR_DIR}"
+    exit 1
+  fi
+  BUILD_ARGS+=( "-s" )
 fi
 
 # If no config is specified, use in-tree default but force EFI and components

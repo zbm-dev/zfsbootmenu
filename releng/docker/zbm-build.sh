@@ -52,6 +52,8 @@ Usage: $0 [options]
      to modify the configuration used for image building.
      May be specified more than once to chain modifications.
 
+  -s Enable SSH support in the image
+
   -- <arguments>
       Additional arguments to the generate-zbm binary
 EOF
@@ -59,7 +61,8 @@ EOF
 
 CONFIGEVALS=()
 GENARGS=()
-while getopts "hc:b:o:H:C:t:e:" opt; do
+ENABLE_SSH=
+while getopts "hc:b:o:H:C:t:e:s" opt; do
   case "${opt}" in
     c)
       ZBMCONF="${OPTARG}"
@@ -81,6 +84,9 @@ while getopts "hc:b:o:H:C:t:e:" opt; do
       ;;
     e)
       CONFIGEVALS+=( "${OPTARG}" )
+      ;;
+    s)
+      ENABLE_SSH="yes"
       ;;
     h)
       usage
@@ -238,6 +244,16 @@ else
   rm -f /etc/zfs/zpool.cache
 fi
 
+# Copy dropbear related files
+if [ "${ENABLE_SSH}" == "yes" ] ; then
+  dropsrc=${BUILDROOT}/etc/dropbear
+  dropdst=/etc/dropbear/
+  mkdir -p "${dropdst}" || error "unable to create dir ${dropdst}"
+  cp "${dropsrc}/ssh_host"* ${dropdst} || error "unable to copy host keys"
+  cp "${dropsrc}/authorized_keys" ${dropdst} || error "unable to copy authorized keys"
+  ln -Tsf "${dropsrc}/dracut.conf.d/dropbear.conf" "${dconfd}/dropbear.conf" || error "unable to link dropbear dracut config"
+fi
+
 # If a custom dracut.conf.d exists, link to its contents in the default location
 if [ -d "${BUILDROOT}/dracut.conf.d" ]; then
   for cfile in "${BUILDROOT}"/dracut.conf.d/*; do
@@ -245,9 +261,6 @@ if [ -d "${BUILDROOT}/dracut.conf.d" ]; then
     ln -Tsf "${cfile}" "${dconfd}/${cfile##*/}" || error "unable to link ${cfile}"
   done
 fi
-
-# Copy dropbear related files
-cp -rv ${BUILDROOT}/etc/dropbear /etc/ || error "unable to copy dropbear directory"
 
 /zbm/bin/generate-zbm "${GENARGS[@]}" || error "failed to build images"
 
