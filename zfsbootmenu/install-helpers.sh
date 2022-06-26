@@ -91,6 +91,13 @@ create_zbm_conf() {
     has_refresh=1
   fi
 
+  # Check if fuzzy finder supports the disabled flag
+  # Added in fzf 0.25.0
+  local has_disabled
+  if echo "abc" | fzf -f "abc" --disabled --exit-0 >/dev/null 2>&1; then
+    has_disabled=1
+  fi
+
   local has_column
   if command -v column >/dev/null 2>&1 ; then
     has_column=1
@@ -105,6 +112,7 @@ create_zbm_conf() {
   cat >> "${BUILDROOT}/etc/zfsbootmenu.conf" <<-EOF
 	export BYTE_ORDER="${endian:-le}"
 	export HAS_REFRESH="${has_refresh}"
+	export HAS_DISABLED="${has_disabled}"
 	export HAS_COLUMN="${has_column}"
 	EOF
 }

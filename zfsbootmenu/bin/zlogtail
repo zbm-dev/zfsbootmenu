@@ -3,10 +3,18 @@
 [ -f "${BASE}/have_errors" ] && rm "${BASE}/have_errors"
 [ -f "${BASE}/have_warnings" ] && rm "${BASE}/have_warnings"
 
+[ -z "${FUZZYSEL}" ] && FUZZYSEL=fzf
+
 fuzzy_default_options+=(
- "--no-sort" "--ansi" "--tac" "--no-mouse"
- "--info=hidden" "--disabled"
+  "--no-sort" "--ansi" "--tac" "--no-mouse"
+  "--info=hidden"
 )
+
+if [ -n "${HAS_DISABLED}" ]; then
+  fuzzy_default_options+=(
+    "--disabled"
+  )
+fi
 
 export FZF_DEFAULT_OPTS="${fuzzy_default_options[*]}"
 
