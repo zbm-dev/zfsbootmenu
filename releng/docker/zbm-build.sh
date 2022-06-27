@@ -40,6 +40,12 @@ Usage: $0 [options]
      Specify path to zpool.cache file
      (Default: \${BUILDROOT}/zpool.cache)
 
+  -p <package>
+     Install the named Void Linux package in the container
+     before building. May be specified more than once to
+     install more than one package. (This triggers a full
+     XBPS package upgrade before installation.)
+
   -t <tag>
      Specify specific tag or commit hash to fetch
      (Ignored if /zbm already contains a ZFSBootMenu tree)
@@ -57,9 +63,10 @@ Usage: $0 [options]
 EOF
 }
 
+PACKAGES=()
 CONFIGEVALS=()
 GENARGS=()
-while getopts "hc:b:o:H:C:t:e:" opt; do
+while getopts "hc:b:o:H:C:t:e:p:" opt; do
   case "${opt}" in
     c)
       ZBMCONF="${OPTARG}"
@@ -78,6 +85,9 @@ while getopts "hc:b:o:H:C:t:e:" opt; do
       ;;
     t)
       ZBMTAG="${OPTARG}"
+      ;;
+    p)
+      PACKAGES+=( "${OPTARG}" )
       ;;
     e)
       CONFIGEVALS+=( "${OPTARG}" )
@@ -110,6 +120,15 @@ if [ -z "${ZBMTAG}" ]; then
   else
     ZBMTAG="master"
   fi
+fi
+
+if [ "${#PACKAGES[@]}" -gt 0 ]; then
+  # Trigger an upgrade to make sure the package is installable
+  xbps-install -Syu xbps
+  xbps-install -Syu
+
+  # Install all requested packages
+  xbps-install -y "${PACKAGES[@]}"
 fi
 
 # shellcheck disable=SC2010

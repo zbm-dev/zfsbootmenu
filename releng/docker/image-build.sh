@@ -1,12 +1,51 @@
 #!/bin/sh
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
+usage() {
+  cat <<-EOF
+	USAGE: $0 [-h] [-p <pkg>] <tag> [zbm-commit-like]
+	Create a container image for building ZFSBootMenu
+	
+	-h: Display this message and exit
+	
+	-p <pkg>:
+	   Include the specified Void Linux package in the image
+	   (One package per argument; may be repeated as needed)
+	
+	<tag>:
+	   Tag assigned to container image
+	
+	[zbm-commit-like]:
+	   ZFSBootMenu commit hash, tag or branch name used by
+	   default to build ZFSBootMenu images (default: master)
+	EOF
+}
+
 set -o errexit
+
+extra_pkgs=""
+while getopts "hp:" opt; do
+  case "${opt}" in
+    p)
+      extra_pkgs="${extra_pkgs} ${OPTARG}"
+      ;;
+    h)
+      usage
+      exit
+      ;;
+    *)
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+shift $((OPTIND-1))
 
 # A tag for the image is required
 tag="${1}"
 if [ -z "${tag}" ]; then
-  echo "USAGE: $0 <tag> [zbm-commit-like]"
+  usage
   exit 1
 fi
 
@@ -29,13 +68,20 @@ if [ ! -r "${ZBM_BUILDER}" ]; then
 fi
 
 maintainer="ZFSBootMenu Team, https://zfsbootmenu.org"
-container="$(buildah from voidlinux/voidlinux:latest)"
+container="$(buildah from ghcr.io/void-linux/void-linux:latest-full-x86_64)"
 
 buildah config --label author="${maintainer}" "${container}"
 
 # Make sure image is up to date
 buildah run "${container}" xbps-install -Syu xbps
 buildah run "${container}" xbps-install -Syu
+
+# Add extra packages, as desired
+if [ -n "${extra_pkgs}" ]; then
+  echo "INFO: adding extra Void packages: ${extra_pkgs}"
+  # shellcheck disable=SC2086
+  buildah run "${container}" xbps-install -y ${extra_pkgs}
+fi
 
 # Prefer an LTS version over whatever Void thinks is current
 buildah run "${container}" sh -c "cat > /etc/xbps.d/10-nolinux.conf" <<-EOF
