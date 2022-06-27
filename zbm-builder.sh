@@ -45,6 +45,15 @@ OPTIONS:
   -H Do not include host /etc/hostid in image
      (If ./hostid exists, this switch will be ignored)
 
+  -p <pkg>
+     Include the named Void Linux package in the build container
+     (May be specified multiple times to add multiple packages)
+
+  -v <src-path>:<container-path>[:opts]
+     Bind-mount the source path <src-path> at <container-path>
+     inside the container, using Docker-stype volume syntax
+     (May be specified multiple times for multiple mounts)
+
 For more information, see documentation at
 
   https://github.com/zbm-dev/zfsbootmenu/blob/master/README.md
@@ -65,13 +74,19 @@ BUILD_DIRECTORY="${PWD}"
 BUILD_REPO=
 BUILD_TAG=
 
+# Arguments to the build script
+BUILD_ARGS=()
+
+# Volume mounts for the container manager
+VOLUME_ARGS=()
+
 if command -v podman >/dev/null 2>&1; then
   PODMAN="podman"
 else
   PODMAN="docker"
 fi
 
-while getopts "b:dhi:l:t:CH" opt; do
+while getopts "b:dhi:l:t:p:v:CH" opt; do
   case "${opt}" in
     b)
       BUILD_DIRECTORY="${OPTARG}"
@@ -98,6 +113,12 @@ while getopts "b:dhi:l:t:CH" opt; do
     H)
       SKIP_HOSTID="yes"
       ;;
+    p)
+      BUILD_ARGS+=( "-p" "${OPTARG}" )
+      ;;
+    v)
+      VOLUME_ARGS+=( "-v" "${OPTARG}" )
+      ;;
     *)
       usage
       exit 1
@@ -116,7 +137,7 @@ if ! BUILD_DIRECTORY="$( sanitise_path "${BUILD_DIRECTORY}" )"; then
   exit 1
 fi
 
-VOLUME_ARGS=( "-v" "${BUILD_DIRECTORY}:/build" )
+VOLUME_ARGS+=( "-v" "${BUILD_DIRECTORY}:/build" )
 
 # Only mount a local repo at /zbm if specified
 if [ -n "${BUILD_REPO}" ]; then
@@ -130,9 +151,7 @@ fi
 
 # If a tag was specified for building, pass to the container
 if [ -n "${BUILD_TAG}" ]; then
-  BUILD_ARGS=( "-t" "${BUILD_TAG}" )
-else
-  BUILD_ARGS=()
+  BUILD_ARGS+=( "-t" "${BUILD_TAG}" )
 fi
 
 # If no local hostid is available, copy the system hostid if desired
