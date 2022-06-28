@@ -10,12 +10,18 @@ jobs:
     steps:
       - uses: actions/checkout@master
 
+      - name: Prepare repository for build
+        run: |
+          rm -rf /zbm
+          ln -s "$(pwd)" /zbm
+          echo "zfsbootmenu_module_root='/zbm/zfsbootmenu'" > /zbm/etc/zfsbootmenu/dracut.conf.d/zbm_modroot.conf
+          yq-go e '.Global.DracutFlags += ["--no-early-microcode"]' /zbm/releng/docker/config.yaml.default > /zbm/releng/docker/config.yaml
+
       - name: Build release artifacts
         run: |
-          ln -s "$(pwd)" /zbm
-          cp /zbm/etc/zfsbootmenu/release.conf.d/release.conf /zbm/etc/zfsbootmenu/dracut.conf.d/
-          echo "zfsbootmenu_module_root='/zbm/zfsbootmenu'" >> /zbm/etc/zfsbootmenu/dracut.conf.d/release.conf
-          /zbm/releng/docker/zbm-build.sh -b /zbm/releng/docker -e '.Global.DracutFlags += ["--no-early-microcode"]' -- --debug
+          cp /zbm/etc/zfsbootmenu/dracut.conf.d/*.conf /zbm/etc/zfsbootmenu/release.conf.d/
+          yq-go e '.Global.DracutConfDir = "/zbm/etc/zfsbootmenu/release.conf.d"' -i /zbm/releng/docker/config.yaml
+          /zbm/releng/docker/zbm-build.sh -b /zbm/releng/docker -- --debug
 
       - name: Archive release EFI
         uses: actions/upload-artifact@v2
@@ -31,13 +37,15 @@ jobs:
             /zbm/releng/docker/build/*
             !/zbm/releng/docker/build/*.EFI
 
+      - name: Prune release artifacts
+        run: |
+          rm -rf /zbm/releng/docker/build/*
+
       - name: Build recovery artifacts
         run: |
-          rm /zbm/etc/zfsbootmenu/dracut.conf.d/release.conf
-          rm -rf /zbm/releng/docker/build/*
-          cp /zbm/etc/zfsbootmenu/recovery.conf.d/recovery.conf /zbm/etc/zfsbootmenu/dracut.conf.d/
-          echo "zfsbootmenu_module_root='/zbm/zfsbootmenu'" >> /zbm/etc/zfsbootmenu/dracut.conf.d/recovery.conf
-          /zbm/releng/docker/zbm-build.sh -b /zbm/releng/docker -e '.Global.DracutFlags += ["--no-early-microcode"]' -- --debug
+          cp /zbm/etc/zfsbootmenu/dracut.conf.d/*.conf /zbm/etc/zfsbootmenu/recovery.conf.d/
+          yq-go e '.Global.DracutConfDir = "/zbm/etc/zfsbootmenu/recovery.conf.d"' -i /zbm/releng/docker/config.yaml
+          /zbm/releng/docker/zbm-build.sh -b /zbm/releng/docker -- --debug
 
       - name: Archive recovery EFI
         uses: actions/upload-artifact@v2
