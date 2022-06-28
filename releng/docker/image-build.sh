@@ -72,6 +72,11 @@ container="$(buildah from ghcr.io/void-linux/void-linux:latest-full-x86_64)"
 
 buildah config --label author="${maintainer}" "${container}"
 
+# Use servercentral.com by default
+buildah run "${container}" sh -c "cat > /etc/xbps.d/00-repository-main.conf" <<-EOF
+	repository=https://mirrors.servercentral.com/voidlinux/current
+EOF
+
 # Make sure image is up to date
 buildah run "${container}" xbps-install -Syu xbps
 buildah run "${container}" xbps-install -Syu
