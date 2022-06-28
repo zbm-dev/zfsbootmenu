@@ -30,7 +30,7 @@ fi
 
 # Only allow changes to CHANGELOG.md when tagging releases
 # shellcheck disable=SC2143
-if [ -n "$(git status --porcelain=v1 | grep -v '.. CHANGELOG.md$')" ]; then
+if [ -n "$(git status --porcelain=v1 | grep -v '.. docs/CHANGELOG.md$')" ]; then
   error "ERROR: will not tag release with non-changelog changes in tree"
 fi
 
