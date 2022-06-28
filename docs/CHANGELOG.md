@@ -1,3 +1,59 @@
+# ZFSBootMenu v2.0.0 (2022-06-28)
+
+ZFSBootMenu 2.0.0 introduces a major internal reorganization that allows images to be built with initramfs generators other than dracut and includes some helpful command-line utilities. This release is based on Linux 5.10.125 and ZFS 2.1.5.
+
+## New features
+
+* Dracut is now optional; ZFSBootMenu images may currently be built with mkinitcpio
+* Generalizations to support mkinitcpio should also apply to, *e.g.*, initramfs-tools, although installation hooks for initramfs-tools have not (yet) been written
+* A new utility, `zbm-efi-kcl`, provides the ability to edit the kernel command-line embedded in a ZBM EFI bundle rather than requiring regeneration of the bundle
+* A new utility, `zbm-builder.sh`, provides a simple interface for creating custom, local images using the official ZBM build container; it is now possible to build local images without installing ZBM or its Perl dependencies
+
+## Fixes
+
+* Video drivers are now omitted from images by default to avoid GPU initialization issues in the final boot environment
+* General fixes to shell functions were made in support of using busybox in mkinitcpio images
+* The online command-line editor now provides an option to revert to the default
+
+## Significant commits in this release
+
+* 8933a57 - Basic EFI KCL editor (Zach Dykstra)
+* ada36c8 - Include cryptsetup in recovery images (Zach Dykstra)
+* f1b0270 - Include cryptsetup in containarized builds (Grzegorz Uriasz)
+* fd52d7c - Omit video drivers by default (Zach Dykstra)
+* 65dd0cd - Add option to revert to default KCL via ctrl-t in draw_be (Zach Dykstra)
+* 632b24f - Add special escape sequences to PS1 (Zach Dykstra)
+* 3d9f57b - Build recovery images in CI/CD (Zach Dykstra)
+* 9368171 - Accept any root= value as valid (Zach Dykstra)
+* 7982971 - zbm-builder.sh: support custom build/source paths and hooks (James R. Todd)
+* fc83894 - Document scrolling keys in help viewer (Zach Dykstra)
+* 6f09d39 - Fix broken links (Jip de Beer)
+* 64936f3 - Add minimal documentation to ESP sync hook (Zach Dykstra)
+* d559458 - Add BUILD.md, a quick-start containerized build guide (James Todd)
+* 1aca5d1 - Bug fixes and use local repository option for zbm-builder.sh (James Todd)
+* 8b1aade - Make the emergency shell slightly fancy (Zach Dykstra)
+* 5a5ab0b - Write data to console to recalculate size (Zach Dykstra)
+* eac0547 - install-helpers.sh: explicitly require setsid (Andrew J. Hesford)
+* dbd9642 - Replace 'tr' with bash string manipulation (Zach Dykstra)
+* 8916a10 - Update luks-unlock.sh to work with current libraries (Zach Dykstra)
+* 33883e5 - zfsbootmenu-core.sh: drop preload_be_cmdline, improve KCL caching (Andrew J. Hesford)
+* 7548af5 - zbm-kcl: remove dracut from ZBM_MODULEDIR warning (Andrew J. Hesford)
+* 306f36b - Fix install location for common module files (Zach Dykstra)
+* 644b0f1 - Use an early-setup hook to force console init in release images (Andrew J. Hesford)
+* ec89a7c - Use column to layout footer (Zach Dykstra)
+* 2bd6757 - generate-zbm: remove INI migration support (Zach Dykstra)
+* 65167e6 - Define all ZBM requirements in install-helpers.sh (Andrew J. Hesford)
+* 812f9b4 - Remove support for deprecated KCL sources (Andrew J. Hesford)
+* 3dcaa88 - Improve container-based builds and support mkinitcpio images (Andrew J. Hesford)
+* f93687f - Annotate mkinitcpio.conf to explain ZBM specifics (Andrew J. Hesford)
+* 91b4b3b - De-prioritize Dracut as the primary generator (Zach Dykstra)
+* af34fa9 - Support building mkinitcpio images in generate-zbm (Andrew J. Hesford)
+* 50a2da4 - General fixes to support busybox in mkinitcpio images (Andrew J. Hesford)
+* 1fe8c4c - Add support for mkinitcpio (Andrew J. Hesford)
+* e1bd708 - zbm-builder.sh: add script to build custom images using GHCR container (Andrew J. Hesford)
+* 20a8ac7 - Add manual page for zbm-kcl (Andrew J. Hesford)
+
+
 # ZFSBootMenu v1.12.0 (2022-01-25)
 
 This release brings multiple changes to how ZFSBootMenu works at run-time. These changes were introduced in an effort to:
@@ -744,4 +800,3 @@ Booting from a snapshot has been fixed - the snapshot is now correctly unmounted
 Initial release!
 
 The dracut module has been built into an initramfs for both x86_64 and ppc64le (POWER8+) - with Linux 5.3.7. A sample grub.cfg is provided, demonstrating how to enter the boot menu. Update your pool name, and set spl_hostid based on the output of 'hostid' on your machine.
-
