@@ -7,7 +7,7 @@ if [ -z "${CHROOT_MNT}" ] || [ ! -d "${CHROOT_MNT}" ]; then
 fi
 
 if [[ "$0" =~ "ubuntu" ]]; then
-  SUITE="focal"
+  SUITE="jammy"
   MIRROR="http://us.archive.ubuntu.com/ubuntu/"
   CONFIGURATOR="configure-ubuntu.sh"
 else
