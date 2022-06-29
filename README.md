@@ -56,6 +56,12 @@ Each release includes pre-generated images (both a monolithic UEFI applications 
 * With `mkinitcpio` or `dracut` on Arch
 * With `dracut` on Debian or Ubuntu (installed as `dracut-core` to avoid replacing the system `initramfs-tools` setup)
 
+## Community documentation
+
+The [ZFSBootMenu wiki](https://github.com/zbm-dev/zfsbootmenu/wiki) contains additional documentation, provided both by the ZFSBootMenu development team and by community members.
+
+Installation and integration guides are available, along with other live documents.
+
 ## Containerized builds
 
 If you run Docker or [podman](https://podman.io/), it is also possible to build ZFSBootMenu images in a container. Build containers are based on Void Linux and provide a consistent and well-tested environment for creating images with custom configurations. The [build guide](docs/BUILD.md) provides a brief overview of the [zbm-builder.sh](zbm-builder.sh) script that provides a simple front-end for containerized builds. Advanced users with very specific needs may consult the [container README](releng/docker/README.md) for a more detailed description of ZFSBootMenu build containers.
