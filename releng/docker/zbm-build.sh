@@ -123,12 +123,11 @@ if [ -z "${ZBMTAG}" ]; then
 fi
 
 if [ "${#PACKAGES[@]}" -gt 0 ]; then
-  # Trigger an upgrade to make sure the package is installable
+  # Trigger a sync and upgrade to make sure the package is installable
   xbps-install -Syu xbps
-  xbps-install -Syu
 
   # Install all requested packages
-  xbps-install -y "${PACKAGES[@]}"
+  xbps-install -Sy "${PACKAGES[@]}"
 fi
 
 # shellcheck disable=SC2010
