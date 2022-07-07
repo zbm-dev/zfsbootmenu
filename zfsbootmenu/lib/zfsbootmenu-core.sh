@@ -1799,6 +1799,11 @@ emergency_shell() {
 # returns: nothing
 
 zreport() {
+  local ZBMTAG
+  if [ -r "/etc/zbm-commit-hash" ]; then
+    read -r ZBMTAG < /etc/zbm-commit-hash
+    echo -e "ZFSBootMenu version: ${ZBMTAG}\n"
+  fi
   uname -a
   echo -e "\n# modinfo"
   echo "$( modinfo -F filename spl ): $( modinfo -F version spl )"
