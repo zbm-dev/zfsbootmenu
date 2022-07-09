@@ -38,10 +38,27 @@ done
 
 ## PREPARE AUTHORIZED KEYS
 
+# Attempt to find the authorized_keys file of the original user, instead of
+# root, since this script will likely be invoked via sudo. Otherwise, fall
+# back to the current user.
+if [ -n "${SUDO_USER}" ]; then
+  SUDO_HOME=$(eval echo ~${SUDO_USER})
+fi
+if [ -r "${SUDO_HOME}/.ssh/authorized_keys"  ]; then
+  RS_AUTH_SRC="${SUDO_HOME}/.ssh/authorized_keys"
+else
+  RS_AUTH_SRC="${HOME}/.ssh/authorized_keys"
+fi
+
 RS_AUTH="${RS_KEYDIR}/authorized_keys"
 if [ ! -f "${RS_AUTH}" ]; then
-  echo "Cannot find ${RS_AUTH}, copying from current user"
-  cp -v ~/.ssh/authorized_keys "${RS_AUTH}"
+  if [ -r "${RS_AUTH_SRC}" ]; then
+    echo "Cannot find ${RS_AUTH}, copying from ${RS_AUTH_SRC}"
+    cp -v "${RS_AUTH_SRC}" "${RS_AUTH}"
+  else
+    echo "ERROR: Cannot find ${RS_AUTH}, and ${RS_AUTH_SRC} is not available, please provide it manually"
+    exit 1
+  fi
 fi
 
 
