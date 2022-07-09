@@ -27,15 +27,13 @@ mkdir -p "${RS_KEYDIR}"
 
 # If no local ssh host keys are available, create them
 # WARNING: These private keys will be part of the final image!
-RS_PK_RSA="${RS_KEYDIR}"/ssh_host_rsa_key
-RS_PK_ECDSA="${RS_KEYDIR}"/ssh_host_ecdsa_key
+RS_SSH_KEYTYPES=(rsa ecdsa)
 RS_KEYGEN_OPT=(-m PEM -N '' -C "zbm-server-key")
-if [ ! -f "${RS_PK_RSA}" ]; then
-  ssh-keygen -t rsa "${RS_KEYGEN_OPT[@]}" -f "${RS_PK_RSA}"
-fi
-if [ ! -f "${RS_PK_ECDSA}" ]; then
-  ssh-keygen -t ecdsa "${RS_KEYGEN_OPT[@]}" -f "${RS_PK_ECDSA}"
-fi
+for keytype in "${RS_SSH_KEYTYPES[@]}"; do
+  RS_PK_FILE="${RS_KEYDIR}/ssh_host_${keytype}_key"
+  [ -f "${RS_PK_FILE}" ] && continue
+  ssh-keygen -t "${keytype}" "${RS_KEYGEN_OPT[@]}" -f "${RS_PK_FILE}"
+done
 
 
 ## PREPARE AUTHORIZED KEYS
