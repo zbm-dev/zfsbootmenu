@@ -7,8 +7,8 @@
 # efi executable will contain private host keys and public keys used for
 # mutual authentication.
 
-# All keys / settings are placed into ${RS_DIR} ('ssh-data' in the current
-# working directory by default). Its contents can be customized as needed.
+# All keys / settings are placed into ${BUILD_DIR} (the current working
+# directory by default). Its contents can be customized as needed.
 # They are regenerated if missing.
 
 # Server private keys are generated automatically as needed. It is
@@ -16,18 +16,19 @@
 # User authentication for the root account is done via 'authorized_keys'.
 # The current users' authorized keys are copied if it is not present.
 
-RS_DIR=$(realpath "${RS_DIR:-ssh-data}")
-RS_KEYDIR="${RS_DIR}/keys"
+BUILD_DIR=$(realpath "${BUILD_DIR:-${PWD}}")
 
-mkdir -p "${RS_DIR}"
-mkdir -p "${RS_KEYDIR}"
+mkdir -p "${BUILD_DIR}"
 
 
 ## PREPARE SERVER PRIVATE KEYS
 
 # If no local ssh host keys are available, create them
 # WARNING: These private keys will be part of the final image!
-RS_SSH_KEYTYPES=(rsa ecdsa)
+RS_SSH_KEYTYPES=(rsa ecdsa ed25519)
+RS_KEYDIR="${BUILD_DIR}/dropbear"
+mkdir -p "${RS_KEYDIR}"
+
 RS_KEYGEN_OPT=(-m PEM -N '' -C "zbm-server-key")
 for keytype in "${RS_SSH_KEYTYPES[@]}"; do
   RS_PK_FILE="${RS_KEYDIR}/ssh_host_${keytype}_key"
@@ -64,7 +65,8 @@ fi
 
 ## PREPARE SETTINGS
 
-RS_DNC="${RS_DIR}/dracut-network.conf"
+mkdir -p "${BUILD_DIR}/cmdline.d"
+RS_DNC="${BUILD_DIR}/cmdline.d/dracut-network.conf"
 if [ ! -f "${RS_DNC}" ]; then
   # ip=dhcp tries to bring up all interfaces
   # ip=single-dhcp stops after bringing up the first
@@ -72,34 +74,24 @@ if [ ! -f "${RS_DNC}" ]; then
   echo "ip=single-dhcp rd.neednet=1" > "${RS_DNC}"
 fi
 
-RS_DDC="${RS_DIR}/dracut-dropbear.conf"
-if [ ! -f "${RS_DDC}" ]; then
-  cat >> "${RS_DDC}" <<EOF
-# Enable dropbear ssh server and pull in network configuration args
-add_dracutmodules+=" crypt-ssh "
-install_optional_items+=" /etc/cmdline.d/dracut-network.conf "
-dropbear_rsa_key=/etc/dropbear/ssh_host_rsa_key
-dropbear_ecdsa_key=/etc/dropbear/ssh_host_ecdsa_key
-dropbear_acl=/etc/dropbear/authorized_keys
+# Generated config file, not user customizable
+mkdir -p "${BUILD_DIR}/dracut.conf.d"
+RS_DDC="${BUILD_DIR}/dracut.conf.d/dracut-dropbear.conf"
+cat > "${RS_DDC}" <<-EOF
+	# Enable dropbear ssh server and pull in network configuration args
+	add_dracutmodules+=" crypt-ssh "
+	install_optional_items+=" /etc/cmdline.d/dracut-network.conf "
+	dropbear_acl=/build/dropbear/authorized_keys
 EOF
-fi
-
-# zbm-build.sh will copy this into the right place since mounting it into
-# /etc/zfsbootmenu/dracut.conf.d breaks the build process
-mkdir -p "dracut.conf.d"
-cp -f "${RS_DDC}" "dracut.conf.d/"
+for keytype in "${RS_SSH_KEYTYPES[@]}"; do
+  echo "dropbear_${keytype}_key=/build/dropbear/ssh_host_${keytype}_key" >> "${RS_DDC}"
+done
 
 
 ## ZBM BUILDING
 
 ./zbm-builder.sh \
+  -b ${BUILD_DIR} \
   -p dracut-crypt-ssh -p dropbear \
-  -v "${RS_KEYDIR}":/etc/dropbear \
-  -v "${RS_DNC}":/etc/cmdline.d/dracut-network.conf \
+  -v "${BUILD_DIR}/cmdline.d":/etc/cmdline.d:ro \
   "${@}"
-
-
-# CLEANUP
-
-rm -f "dracut.conf.d/dracut-dropbear.conf"
-rmdir --ignore-fail-on-non-empty "dracut.conf.d"
