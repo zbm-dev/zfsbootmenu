@@ -5,7 +5,8 @@
 
 # This script builds a zbm with remote access support via ssh. The image and
 # efi executable will contain private host keys and public keys used for
-# mutual authentication.
+# mutual authentication. It is based on
+# https://github.com/zbm-dev/zfsbootmenu/wiki/Remote-Access-to-ZBM
 
 # All keys / settings are placed into ${BUILD_DIR} (the current working
 # directory by default). Its contents can be customized as needed.
@@ -15,6 +16,38 @@
 # recommended to not reuse existing private keys.
 # User authentication for the root account is done via 'authorized_keys'.
 # The current users' authorized keys are copied if it is not present.
+
+## ROOT FILESYSTEM
+
+# The root filesystem needs to be unlockable by the primary initrd (the one that
+# is started by ZBM), otherwise, the operating system itself will block booting
+# and ask for the key again.
+# This can be done by using a key file stored in that initrd.
+# (Instructions below for ubuntu, but can be adapted to various platforms.)
+
+# This key file will be stored unencrypted in the initramfs, so make sure access
+# to it is protected.
+
+# ```
+# mkdir -p -m 700 /etc/zfs/keys
+# cp passwordfile /etc/zfs/keys/rpool.key
+# zfs change-key \
+#     -o keylocation=file:///etc/zfs/keys/rpool.key \
+#     -o keyformat=passphrase rpool
+# update-initramfs -u
+# chmod go= /boot
+# ```
+
+## USAGE
+
+# To unlock the pool remotely, log in via ssh, then start zfsbootmenu, enter the
+# key and continue as usual.
+
+# ```
+# ssh root@host -p 222
+# zfsbootmenu
+# ```
+
 
 BUILD_DIR=$(realpath "${BUILD_DIR:-${PWD}}")
 
