@@ -100,7 +100,7 @@ buildah run "${container}" \
 buildah run "${container}" xbps-install -y \
   linux5.10 linux5.10-headers gummiboot-efistub curl yq-go bash kbd terminus-font \
   dracut mkinitcpio dracut-network gptfdisk iproute2 iputils parted curl \
-  dosfstools e2fsprogs efibootmgr cryptsetup
+  dosfstools e2fsprogs efibootmgr cryptsetup openssh
 
 # Remove headers and development toolchain, but keep binutils for objcopy
 buildah run "${container}" sh -c 'echo "ignorepkg=dkms" > /etc/xbps.d/10-nodkms.conf'
