@@ -7,14 +7,14 @@ Global:
   InitCPIO: false
   InitCPIOConfig: /etc/zfsbootmenu/mkinitcpio.conf
 Components:
-  ImageDir: /boot/efi/EFI/void
+  ImageDir: /boot/efi/EFI/zbm
   Versions: 3
   Enabled: true
   syslinux:
     Config: /boot/syslinux/syslinux.cfg
     Enabled: false
 EFI:
-  ImageDir: /boot/efi/EFI/void
+  ImageDir: /boot/efi/EFI/zbm
   Versions: false
   Enabled: false
 Kernel:

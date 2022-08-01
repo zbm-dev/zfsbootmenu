@@ -144,7 +144,7 @@ The path to the EFI stub loader used to boot the unified bundle. If not set, a d
 
 =head1 EXAMPLE
 
-The following example will write separate, unversioned ZFSBootMenu kernel and initramfs images to I</boot/efi/EFI/void>, keeping a backup for each file that would be overwritten when creating the new images. In addition, a versioned UEFI bundle will be stored in the same directory, where two prior revisions of the current version and the highest revision of each of the two most recent prior versions will be retained.
+The following example will write separate, unversioned ZFSBootMenu kernel and initramfs images to I</boot/efi/EFI/zbm>, keeping a backup for each file that would be overwritten when creating the new images. In addition, a versioned UEFI bundle will be stored in the same directory, where two prior revisions of the current version and the highest revision of each of the two most recent prior versions will be retained.
 
 =over 4
 
@@ -153,14 +153,14 @@ The following example will write separate, unversioned ZFSBootMenu kernel and in
     BootMountPoint: /boot/efi
     DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
   Components:
-    ImageDir: /boot/efi/EFI/void
+    ImageDir: /boot/efi/EFI/zbm
     Versions: false
     Enabled: true
     syslinux:
       Config: /boot/syslinux/syslinux.cfg
       Enabled: false
   EFI:
-    ImageDir: /boot/efi/EFI/void
+    ImageDir: /boot/efi/EFI/zbm
     Versions: 2
     Enabled: true
   Kernel:

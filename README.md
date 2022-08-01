@@ -141,7 +141,7 @@ vmlinuz-5.3.18_1
 vmlinuz-5.4.6_1
 ```
 
-Typically, EFI system partitions (ESP) are mounted at `/boot/efi`, as is shown above. An ESP may contain a number of sub-directories, including an `EFI` directory that often contains multiple independent EFI executables. In this example layout, `/boot/efi/EFI/void` may hold ZFSBootMenu kernels and initramfs images. After setting the `ImageDir` property of the `Components` section of `/etc/zfsbootmenu/config.yaml` to `/boot/efi/EFI/void`, running `generate-zbm` will cause ZFSBootMenu kernel and initramfs pairs to be installed in the desired location:
+Typically, EFI system partitions (ESP) are mounted at `/boot/efi`, as is shown above. An ESP may contain a number of sub-directories, including an `EFI` directory that often contains multiple independent EFI executables. In this example layout, `/boot/efi/EFI/zbm` may hold ZFSBootMenu kernels and initramfs images. After setting the `ImageDir` property of the `Components` section of `/etc/zfsbootmenu/config.yaml` to `/boot/efi/EFI/zbm`, running `generate-zbm` will cause ZFSBootMenu kernel and initramfs pairs to be installed in the desired location:
 
 ```
 # lsblk -f /dev/sda
@@ -150,7 +150,7 @@ sdg
 ├─sda1 vfat         AFC2-35EE                               7.9G     1% /boot/efi
 └─sda2 swap         412401b6-4aec-4452-a6bd-6fc20fbdc2a5                [SWAP]
 
-# ls /boot/efi/EFI/void/
+# ls /boot/efi/EFI/zbm/
 initramfs-1.12.0_1.img
 initramfs-1.12.0_2.img
 vmlinuz-1.12.0_1
@@ -166,8 +166,8 @@ efibootmgr --disk /dev/sda \
   --part 1 \
   --create \
   --label "ZFSBootMenu" \
-  --loader '\EFI\void\vmlinuz-1.12.0_2' \
-  --unicode 'zbm.prefer=zroot ro initrd=\EFI\void\initramfs-1.12.0_2.img quiet' \
+  --loader '\EFI\zbm\vmlinuz-1.12.0_2' \
+  --unicode 'zbm.prefer=zroot ro initrd=\EFI\zbm\initramfs-1.12.0_2.img quiet' \
   --verbose
 ```
 
@@ -177,7 +177,7 @@ Each time ZFSBootMenu is updated, a new EFI entry will need to be manually added
 
 ## rEFInd
 
-`rEFInd` is considerably easier to install and manage. Refer to your distribution's packages for installation. Once rEFInd has been installed, you can create `refind_linux.conf` in the directory holding the ZFSBootMenu files (`/boot/efi/EFI/void` in our example):
+`rEFInd` is considerably easier to install and manage. Refer to your distribution's packages for installation. Once rEFInd has been installed, you can create `refind_linux.conf` in the directory holding the ZFSBootMenu files (`/boot/efi/EFI/zbm` in our example):
 
 ```
 "Boot default"  "zbm.prefer=zroot ro quiet loglevel=0 zbm.skip"
