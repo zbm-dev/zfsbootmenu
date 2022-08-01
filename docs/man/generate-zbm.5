@@ -235,7 +235,7 @@ Behaves similarly to \fIComponents.Versions\fR, but acts on files matching the \
 The path to the \s-1EFI\s0 stub loader used to boot the unified bundle. If not set, a default of \fI/usr/lib/gummiboot/linuxx64.efi.stub\fR is assumed.
 .SH "EXAMPLE"
 .IX Header "EXAMPLE"
-The following example will write separate, unversioned ZFSBootMenu kernel and initramfs images to \fI/boot/efi/EFI/void\fR, keeping a backup for each file that would be overwritten when creating the new images. In addition, a versioned \s-1UEFI\s0 bundle will be stored in the same directory, where two prior revisions of the current version and the highest revision of each of the two most recent prior versions will be retained.
+The following example will write separate, unversioned ZFSBootMenu kernel and initramfs images to \fI/boot/efi/EFI/zbm\fR, keeping a backup for each file that would be overwritten when creating the new images. In addition, a versioned \s-1UEFI\s0 bundle will be stored in the same directory, where two prior revisions of the current version and the highest revision of each of the two most recent prior versions will be retained.
 .Sp
 .Vb 10
 \&  Global:
@@ -243,14 +243,14 @@ The following example will write separate, unversioned ZFSBootMenu kernel and in
 \&    BootMountPoint: /boot/efi
 \&    DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
 \&  Components:
-\&    ImageDir: /boot/efi/EFI/void
+\&    ImageDir: /boot/efi/EFI/zbm
 \&    Versions: false
 \&    Enabled: true
 \&    syslinux:
 \&      Config: /boot/syslinux/syslinux.cfg
 \&      Enabled: false
 \&  EFI:
-\&    ImageDir: /boot/efi/EFI/void
+\&    ImageDir: /boot/efi/EFI/zbm
 \&    Versions: 2
 \&    Enabled: true
 \&  Kernel:
