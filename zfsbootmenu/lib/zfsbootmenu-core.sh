@@ -634,7 +634,7 @@ set_default_kernel() {
   zdebug "pool set to ${pool}"
 
   # Strip /boot/ to list only the file
-  kernel="${2#/boot/}"
+  kernel="${2#/boot/}$"
   zdebug "kernel set to ${kernel}"
 
   # Make sure the pool is writable
