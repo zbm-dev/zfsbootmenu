@@ -708,7 +708,7 @@ sub createUEFIBundle {
     }
   }
 
-  unless ( -f $uefi_stub ) {
+  unless ( defined $uefi_stub and -f $uefi_stub ) {
     print "Cannot find kernel or initramfs to create UEFI bundle\n";
     exit 1;
   }
