@@ -77,6 +77,10 @@ if [ -x "${mountpoint}/bin/bash" ] \
 elif [ -x "${mountpoint}/bin/sh" ] \
     && chroot "${mountpoint}" /bin/sh -c "exit 0" >/dev/null 2>&1 ; then
   _SHELL="/bin/sh"
+elif [ -x "${mountpoint}/bin/busybox" ] \
+    && chroot "${mountpoint}" /bin/busybox sh -c "exit 0" >/dev/null 2>&1 ; then
+  _SHELL="/bin/busybox"
+  chroot_extra="sh"
 fi
 
 if [ -z "${_SHELL}" ]; then
@@ -87,6 +91,7 @@ fi
 echo -e "$( colorize orange "${selected}") is mounted ${writemode}, /tmp is shared and read/write\n"
 
 # regardless of shell, set PS1
-if ! env "PS1=\[\033[0;33m\]${selected}\[\033[0m\] \w > " chroot "${mountpoint}" "${_SHELL}" "${chroot_extra}" ; then
+# shellcheck disable=SC2086
+if ! env "PS1=\[\033[0;33m\]${selected}\[\033[0m\] \w > " chroot ${mountpoint} ${_SHELL} ${chroot_extra} ; then
   zdebug "chroot ${selected}:${_SHELL} returned code $?"
 fi
