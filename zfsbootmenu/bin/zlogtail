@@ -40,3 +40,4 @@ log_tail() {
 }
 
 log_tail
+tput clear

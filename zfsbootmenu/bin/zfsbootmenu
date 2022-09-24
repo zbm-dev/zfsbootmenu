@@ -125,6 +125,7 @@ while true; do
 
     bootenv="$( draw_be "${BASE}/bootenvs" )"
     ret=$?
+    tput clear
 
     if [ "${ret}" -eq 130 ]; then
       # No BEs were found, so print a warning and drop to the emergency shell
@@ -158,7 +159,12 @@ while true; do
       exit
       ;;
     "mod-k")
-      selection="$( draw_kernel "${selected_be}" )" || continue
+      if ! selection="$( draw_kernel "${selected_be}" )"; then
+        tput clear
+        continue
+      else
+        tput clear
+      fi
 
       # shellcheck disable=SC2162
       IFS=, read subkey selected_kernel <<< "${selection}"
@@ -184,7 +190,12 @@ while true; do
       esac
       ;;
     "mod-p")
-      selection="$( draw_pool_status )" || continue
+      if ! selection="$( draw_pool_status )"; then
+        tput clear
+        continue
+      else
+        tput clear
+      fi
 
       # shellcheck disable=SC2162
       IFS=, read subkey selected_pool <<< "${selection}"
@@ -204,7 +215,12 @@ while true; do
       echo "${BOOTFS}" > "${BASE}/bootfs"
       ;;
     "mod-s")
-      selection="$( draw_snapshots "${selected_be}" )" || continue
+      if ! selection="$( draw_snapshots "${selected_be}" )" ; then
+        tput clear
+        continue
+      else
+        tput clear
+      fi
 
       # shellcheck disable=SC2162
       IFS=, read subkey selected_snap <<< "${selection}"

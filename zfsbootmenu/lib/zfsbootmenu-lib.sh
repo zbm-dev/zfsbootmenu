@@ -159,7 +159,9 @@ draw_kernel() {
       --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS}"  \
       --preview-window="up:${PREVIEW_HEIGHT}" < "${_kernels}" )"; then
     return 1
+    tput clear
   fi
+  tput clear
 
   # shellcheck disable=SC2119
   selected="$( csv_cat <<< "${selected}" )"
@@ -215,7 +217,9 @@ draw_snapshots() {
         --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS} '${context}'" \
         --preview-window="up:$(( PREVIEW_HEIGHT + 1 ))" <<<"${snapshots}" )"; then
     return 1
+    tput clear
   fi
+  tput clear
 
   # shellcheck disable=SC2119
   selected="$( csv_cat <<< "${selected}" )"
@@ -327,6 +331,7 @@ draw_pool_status() {
       --preview="zpool status -v {}" --header="${header}" )"; then
     return 1
   fi
+  tput clear
 
   # shellcheck disable=SC2119
   selected="$( csv_cat <<< "${selected}" )"

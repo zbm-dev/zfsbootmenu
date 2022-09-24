@@ -55,7 +55,6 @@ colorize() {
 
 draw_page() {
   local header tab
-
   zdebug "Called from function: ${BASH_SOURCE[1]} ${FUNCNAME[1]}"
   header="$( center_string "Boot Environments | Snapshots | Kernels | Pool Status | Logs | Help" )"
 
