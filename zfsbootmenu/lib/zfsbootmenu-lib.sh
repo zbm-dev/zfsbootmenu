@@ -52,9 +52,14 @@ column_wrap() {
   else 
     footer="$( echo -e "${footer}" | column -t -s ':' )"
   fi
+  
+  local max pad
+  max="$( echo -e "${footer}" | awk -v l=0 'length>l {l=length}; END{print l}' )"
+  printf -v pad "%*s" $(( ( COLUMNS - max - 3 ) / 2 )) ''
 
   footer="${footer//\[/\\033\[0;32m\[}"
   footer="${footer//\]/\]\\033\[0m}"
+  footer="${footer//pad/${pad}}"
   echo -e "${footer}"
 }
 
@@ -86,11 +91,12 @@ draw_be() {
     blank=':'
   fi
 
+  empty="                         "
   header="$( column_wrap "\
-[RETURN] boot:[ESCAPE] refresh view:[CTRL+P] pool status
-[CTRL+D] set bootfs:[CTRL+S] snapshots:[CTRL+K] kernels
-[CTRL+E] edit kcl:[CTRL+J] jump into chroot:[CTRL+R] recovery shell
-${kcl_text:+${kcl_text}:}[CTRL+L] view logs:${blank}[CTRL+H] help" \
+pad[RETURN] boot:[ESCAPE] refresh view:[CTRL+P] pool status
+pad[CTRL+D] set bootfs:[CTRL+S] snapshots:[CTRL+K] kernels
+pad[CTRL+E] edit kcl:[CTRL+J] jump into chroot:[CTRL+R] recovery shell
+pad${kcl_text:+${kcl_text}:}[CTRL+L] view logs:${blank}[CTRL+H] help" \
 "\
 [RETURN] boot
 [CTRL+R] recovery shell
@@ -98,7 +104,7 @@ ${kcl_text:+${kcl_text}:}[CTRL+L] view logs:${blank}[CTRL+H] help" \
 
   expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-j,alt-o${kcl_bind:+,${kcl_bind}}"
 
-  if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
+  if ! selected="$( draw_page ; ${FUZZYSEL} --height=$(( LINES - 1 )) -0 --prompt "BE > " \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
       --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}" \
       --preview="/libexec/zfsbootmenu-preview {} ${BOOTFS}" < "${env}" )"; then
@@ -145,7 +151,8 @@ draw_kernel() {
 
   expects="--expect=alt-d,alt-u"
 
-  if ! selected="$( HELP_SECTION=kernel-management ${FUZZYSEL} \
+  if ! selected="$( draw_page ; HELP_SECTION=kernel-management ${FUZZYSEL} \
+      --height=$(( LINES - 1 )) \
       --prompt "${benv} > " --tac --with-nth=2 --header="${header}" \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
       --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS}"  \
@@ -197,7 +204,8 @@ draw_snapshots() {
 
   zdebug "snapshots: ${snapshots[*]}"
 
-  if ! selected="$( HELP_SECTION=snapshot-management ${FUZZYSEL} \
+  if ! selected="$( draw_page ; HELP_SECTION=snapshot-management ${FUZZYSEL} \
+        --height=$(( LINES - 1 )) \
         --prompt "Snapshot > " --header="${header}" --tac --multi 2 \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
         --bind='alt-d:execute[ /libexec/zfunc draw_diff {+} ]' \
@@ -310,8 +318,9 @@ draw_pool_status() {
 [CTRL+L] view logs
 [CTRL+H] help" )"
 
-  if ! selected="$( zpool list -H -o name |
+  if ! selected="$( draw_page ; zpool list -H -o name |
       HELP_SECTION=zpool-health ${FUZZYSEL} \
+      --height=$(( LINES - 1 )) \
       --prompt "Pool > " --tac --expect=alt-r,ctrl-r,ctrl-alt-r \
       --preview-window="right:${psize}" \
       --preview="zpool status -v {}" --header="${header}" )"; then

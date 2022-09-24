@@ -53,6 +53,37 @@ colorize() {
   echo -e -n '\033[0m'
 }
 
+draw_page() {
+  local header tab
+
+  zdebug "Called from function: ${FUNCNAME[1]}"
+  header="$( center_string "Boot Environments | Snapshots | Kernels | Pool Status | Logs | Help" )"
+
+  case "${FUNCNAME[1]}" in
+    draw_be)
+      tab="$( colorize red "Boot Environments" )"
+      header="${header/Boot Environments/${tab}}"
+      ;;
+    draw_kernel)
+      tab="$( colorize red "Kernels" )"
+      header="${header/Kernels/${tab}}"
+      ;;
+    draw_snapshots)
+      tab="$( colorize red "Snapshots" )"
+      header="${header/Snapshots/${tab}}"
+      ;;
+    draw_pool_status)
+      tab="$( colorize red "Pool Status" )"
+      header="${header/Pool Status/${tab}}"
+      ;;
+    *)
+      ;;
+  esac
+
+  # shellcheck disable=SC2154
+  echo -e "${header}" > "${control_term}"
+}
+
 # arg1: text to center
 # prints: left-padded text
 # returns: nothing
