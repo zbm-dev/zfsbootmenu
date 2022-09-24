@@ -85,8 +85,6 @@ fi
 # Double quote the zlogtail lines so that they expand immediately
 
 # shellcheck disable=SC2016
-  #"--ansi" "--no-clear" "--cycle" "--color=16"
-  #"--layout=default" "--inline-info" "--tac"
 fuzzy_default_options=(
   "--ansi" "--cycle" "--color=16"
   "--layout=reverse-list" "--inline-info" "--tac"

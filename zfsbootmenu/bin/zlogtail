@@ -1,27 +1,42 @@
 #!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
 
-[ -f "${BASE}/have_errors" ] && rm "${BASE}/have_errors"
-[ -f "${BASE}/have_warnings" ] && rm "${BASE}/have_warnings"
+# shellcheck disable=SC1091
+source /lib/zfsbootmenu-core.sh >/dev/null 2>&1 || exit 1
+source /lib/zfsbootmenu-lib.sh >/dev/null 2>&1 || exit 1
 
-[ -z "${FUZZYSEL}" ] && FUZZYSEL=fzf
+log_tail() {
+  [ -f "${BASE}/have_errors" ] && rm "${BASE}/have_errors"
+  [ -f "${BASE}/have_warnings" ] && rm "${BASE}/have_warnings"
 
-fuzzy_default_options+=(
-  "--no-sort" "--ansi" "--tac" "--no-mouse"
-  "--info=hidden"
-)
+  [ -z "${FUZZYSEL}" ] && FUZZYSEL=fzf
 
-if [ -n "${HAS_DISABLED}" ]; then
+  HEIGHT="$( tput lines )"
+
   fuzzy_default_options+=(
-    "--disabled"
+    "--no-sort" "--ansi" "--tac" "--no-mouse"
+    "--inline-info" "--height $(( HEIGHT - 1 ))"
   )
-fi
 
-export FZF_DEFAULT_OPTS="${fuzzy_default_options[*]}"
+  if [ -n "${HAS_DISABLED}" ]; then
+    fuzzy_default_options+=(
+      "--disabled"
+    )
+  fi
 
-# Try to use feature flags found on dmesg from util-linux
-if output="$( dmesg --notime -f user -l err,warn 2>/dev/null )" ; then
-  echo "${output}" | ${FUZZYSEL}
-else
-  # fall back to manually parsing dmesg output; will show all ZBM generated logs up to zinfo level
-  dmesg | awk '/ZFSBootMenu:/{ for (i=3; i<=NF; i++){ printf("%s ", $i)}; printf "\n" }' | ${FUZZYSEL}
-fi
+  export FZF_DEFAULT_OPTS="${fuzzy_default_options[*]}"
+
+  source /lib/zfsbootmenu-core.sh >/dev/null 2>&1 || exit 1
+  source /lib/zfsbootmenu-lib.sh >/dev/null 2>&1 || exit 1
+  draw_page
+
+  # Try to use feature flags found on dmesg from util-linux
+  if output="$( dmesg --notime -f user -l err,warn 2>/dev/null )" ; then
+    echo "${output}" | ${FUZZYSEL}
+  else
+    # fall back to manually parsing dmesg output; will show all ZBM generated logs up to zinfo level
+    dmesg | awk '/ZFSBootMenu:/{ for (i=3; i<=NF; i++){ printf("%s ", $i)}; printf "\n" }' | ${FUZZYSEL}
+  fi
+}
+
+log_tail

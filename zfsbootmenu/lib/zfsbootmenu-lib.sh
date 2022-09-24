@@ -55,7 +55,8 @@ column_wrap() {
   
   local max pad
   max="$( echo -e "${footer}" | awk -v l=0 'length>l {l=length}; END{print l}' )"
-  printf -v pad "%*s" $(( ( COLUMNS - max - 3 ) / 2 )) ''
+  # remove an extra 5 - 3 for 'pad', 2 for the fzf gutter
+  printf -v pad "%*s" $(( ( COLUMNS - max - 5 ) / 2 )) ''
 
   footer="${footer//\[/\\033\[0;32m\[}"
   footer="${footer//\]/\]\\033\[0m}"

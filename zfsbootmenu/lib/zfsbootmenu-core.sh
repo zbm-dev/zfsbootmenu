@@ -56,7 +56,7 @@ colorize() {
 draw_page() {
   local header tab
 
-  zdebug "Called from function: ${FUNCNAME[1]}"
+  zdebug "Called from function: ${BASH_SOURCE[1]} ${FUNCNAME[1]}"
   header="$( center_string "Boot Environments | Snapshots | Kernels | Pool Status | Logs | Help" )"
 
   case "${FUNCNAME[1]}" in
@@ -76,6 +76,14 @@ draw_page() {
       tab="$( colorize red "Pool Status" )"
       header="${header/Pool Status/${tab}}"
       ;;
+    help_pager)
+      tab="$( colorize red "Help" )"
+      header="${header/Help/${tab}}"
+      ;;
+    log_tail)
+      tab="$( colorize red "Logs" )"
+      header="${header/Logs/${tab}}"
+      ;;
     *)
       ;;
   esac
@@ -89,6 +97,7 @@ draw_page() {
 # returns: nothing
 
 center_string() {
+  [ -z "${COLUMNS}" ] && COLUMNS="$( tput cols )"
   printf "%*s" $(( ( ${#1} + COLUMNS ) / 2 )) "${1}"
 }
 
