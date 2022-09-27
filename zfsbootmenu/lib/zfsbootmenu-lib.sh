@@ -38,7 +38,7 @@ csv_cat() {
 # returns: nothing
 
 column_wrap() {
-  local footer
+  local footer max pad
   footer="${1}"
 
   if [ "${COLUMNS:-0}" -lt 80 ] || [ -z "${HAS_COLUMN}" ] ; then
@@ -53,15 +53,75 @@ column_wrap() {
     footer="$( echo -e "${footer}" | column -t -s ':' )"
   fi
   
-  local max pad
+  # Determine the longest line of help text, for alignment purposes
   max="$( echo -e "${footer}" | awk -v l=0 'length>l {l=length}; END{print l}' )"
-  # remove an extra 5 - 3 for 'pad', 2 for the fzf gutter
-  printf -v pad "%*s" $(( ( COLUMNS - max - 5 ) / 2 )) ''
+  # remove an extra 3 - 1 for '^', 2 for the fzf gutter
+  printf -v pad "%*s" $(( ( COLUMNS - max - 3 ) / 2 )) ''
 
+  # colorize [KEY] text
   footer="${footer//\[/\\033\[0;32m\[}"
   footer="${footer//\]/\]\\033\[0m}"
-  footer="${footer//pad/${pad}}"
-  echo -e "${footer}"
+
+  # swap out '^' for a padded string, print
+  echo -e "${footer//^/${pad}}"
+}
+
+
+# args: optional page to mark as active
+# prints: writes a string directly to the controlling terminal
+# returns: nothing
+
+# shellcheck disable=SC2120
+draw_page() {
+  local header hlen page tab
+
+  if [ -z "${1}" ]; then
+    page="${FUNCNAME[1]}"
+  else
+    # Optionally use the help page text to indicate what to highlight
+    page="${1}"
+  fi
+
+  header="Boot Environments | Snapshots | Kernels | Pool Status | Logs | Help"
+  hlen="${#header}"
+
+  case "${page}" in
+    draw_be|main-screen)
+      tab="$( colorize red "Boot Environments" )"
+      header="${header/Boot Environments/${tab}}"
+      ;;
+    draw_kernel|kernel-management)
+      tab="$( colorize red "Kernels" )"
+      header="${header/Kernels/${tab}}"
+      ;;
+    draw_snapshots|snapshot-management)
+      tab="$( colorize red "Snapshots" )"
+      header="${header/Snapshots/${tab}}"
+      ;;
+    draw_pool_status|zpool-health)
+      tab="$( colorize red "Pool Status" )"
+      header="${header/Pool Status/${tab}}"
+      ;;
+    help_pager)
+      tab="$( colorize red "Help" )"
+      header="${header/Help/${tab}}"
+      ;;
+    log_tail)
+      tab="$( colorize red "Logs" )"
+      header="${header/Logs/${tab}}"
+      ;;
+    *)
+      zdebug "Called from unknown function: ${page}"
+      ;;
+  esac
+
+  # Write directly to the row (0), column (whatever centers us) on the controlling terminal
+  # This function can't write to stdout, because it's called from inside draw_kernel/draw_be/etc,
+  # and doing so will break the return text from those functions
+
+  [ -z "${COLUMNS}" ] && COLUMNS="$( tput cols )"
+  # shellcheck disable=SC2154
+  echo -n -e "\033[50D\033[$(( ( COLUMNS - hlen ) / 2 ))C${header}" > "${control_term}"
 }
 
 # arg1: Path to file with detected boot environments, 1 per line
@@ -94,14 +154,14 @@ draw_be() {
 
   empty="                         "
   header="$( column_wrap "\
-pad[RETURN] boot:[ESCAPE] refresh view:[CTRL+P] pool status
-pad[CTRL+D] set bootfs:[CTRL+S] snapshots:[CTRL+K] kernels
-pad[CTRL+E] edit kcl:[CTRL+J] jump into chroot:[CTRL+R] recovery shell
-pad${kcl_text:+${kcl_text}:}[CTRL+L] view logs:${blank}[CTRL+H] help" \
+^[RETURN] boot:[ESCAPE] refresh view:[CTRL+P] pool status
+^[CTRL+D] set bootfs:[CTRL+S] snapshots:[CTRL+K] kernels
+^[CTRL+E] edit kcl:[CTRL+J] jump into chroot:[CTRL+R] recovery shell
+^${kcl_text:+${kcl_text}:}[CTRL+L] view logs:${blank}[CTRL+H] help" \
 "\
-[RETURN] boot
-[CTRL+R] recovery shell
-[CTRL+H] help" )"
+^[RETURN] boot
+^[CTRL+R] recovery shell
+^[CTRL+H] help" )"
 
   expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-j,alt-o${kcl_bind:+,${kcl_bind}}"
 
@@ -142,13 +202,13 @@ draw_kernel() {
   zdebug "using kernels file: ${_kernels}"
 
   header="$( column_wrap "\
-[RETURN] boot:[ESCAPE] back
-[CTRL+D] set default:[CTRL+U] unset default
-[CTRL+L] view logs:[CTRL+H] help" \
+^[RETURN] boot:[ESCAPE] back
+^[CTRL+D] set default:[CTRL+U] unset default
+^[CTRL+L] view logs:[CTRL+H] help" \
 "\
-[RETURN] boot
-[CTRL+D] set default
-[CTRL+H] help" )"
+^[RETURN] boot
+^[CTRL+D] set default
+^[CTRL+H] help" )"
 
   expects="--expect=alt-d,alt-u"
 
@@ -188,14 +248,14 @@ draw_snapshots() {
   sort_key="$( get_sort_key )"
 
   header="$( column_wrap "\
-[RETURN] duplicate:[CTRL+C] clone only:[CTRL+X] clone and promote
-[CTRL+D] show diff:[CTRL+R] rollback:[CTRL+N] create new snapshot
-[CTRL+L] view logs::[CTRL+J] jump into chroot
-[CTRL+H] help::[ESCAPE] back" \
+^[RETURN] duplicate:[CTRL+C] clone only:[CTRL+X] clone and promote
+^[CTRL+D] show diff:[CTRL+R] rollback:[CTRL+N] create new snapshot
+^[CTRL+L] view logs::[CTRL+J] jump into chroot
+^[CTRL+H] help::[ESCAPE] back" \
 "\
-[RETURN] duplicate
-[CTRL+D] show diff
-[CTRL+H] help" )"
+^[RETURN] duplicate
+^[CTRL+D] show diff
+^[CTRL+H] help" )"
 
   context="Note: for diff viewer, use tab to select/deselect up to two items"
 

@@ -125,7 +125,6 @@ while true; do
 
     bootenv="$( draw_be "${BASE}/bootenvs" )"
     ret=$?
-    tput clear
 
     if [ "${ret}" -eq 130 ]; then
       # No BEs were found, so print a warning and drop to the emergency shell
@@ -160,10 +159,7 @@ while true; do
       ;;
     "mod-k")
       if ! selection="$( draw_kernel "${selected_be}" )"; then
-        tput clear
         continue
-      else
-        tput clear
       fi
 
       # shellcheck disable=SC2162
@@ -191,10 +187,7 @@ while true; do
       ;;
     "mod-p")
       if ! selection="$( draw_pool_status )"; then
-        tput clear
         continue
-      else
-        tput clear
       fi
 
       # shellcheck disable=SC2162
@@ -216,10 +209,7 @@ while true; do
       ;;
     "mod-s")
       if ! selection="$( draw_snapshots "${selected_be}" )" ; then
-        tput clear
         continue
-      else
-        tput clear
       fi
 
       # shellcheck disable=SC2162

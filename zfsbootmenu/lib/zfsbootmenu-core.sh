@@ -53,44 +53,6 @@ colorize() {
   echo -e -n '\033[0m'
 }
 
-draw_page() {
-  local header tab
-  zdebug "Called from function: ${BASH_SOURCE[1]} ${FUNCNAME[1]}"
-  header="$( center_string "Boot Environments | Snapshots | Kernels | Pool Status | Logs | Help" )"
-
-  case "${FUNCNAME[1]}" in
-    draw_be)
-      tab="$( colorize red "Boot Environments" )"
-      header="${header/Boot Environments/${tab}}"
-      ;;
-    draw_kernel)
-      tab="$( colorize red "Kernels" )"
-      header="${header/Kernels/${tab}}"
-      ;;
-    draw_snapshots)
-      tab="$( colorize red "Snapshots" )"
-      header="${header/Snapshots/${tab}}"
-      ;;
-    draw_pool_status)
-      tab="$( colorize red "Pool Status" )"
-      header="${header/Pool Status/${tab}}"
-      ;;
-    help_pager)
-      tab="$( colorize red "Help" )"
-      header="${header/Help/${tab}}"
-      ;;
-    log_tail)
-      tab="$( colorize red "Logs" )"
-      header="${header/Logs/${tab}}"
-      ;;
-    *)
-      ;;
-  esac
-
-  # shellcheck disable=SC2154
-  echo -e "${header}" > "${control_term}"
-}
-
 # arg1: text to center
 # prints: left-padded text
 # returns: nothing
@@ -99,10 +61,6 @@ center_string() {
   [ -z "${COLUMNS}" ] && COLUMNS="$( tput cols )"
   printf "%*s" $(( ( ${#1} + COLUMNS ) / 2 )) "${1}"
 }
-
-# arg1: text to center
-# prints: left-padded text
-# returns: nothing
 
 # arg1: hostid, as hex number without leading "0x"
 # prints: nothing

@@ -48,6 +48,9 @@ help_pager() {
     --preview-window="right:${PREVIEW_SIZE}:wrap" \
     --header="${header}" \
     --tac --inline-info --ansi --layout="reverse-list"
+
+  # re-draw the header for the page that called us, otherwise it might be missing
+  draw_page "${WANTED}"
 }
 
 doc_base="/usr/share/docs/help-files"
