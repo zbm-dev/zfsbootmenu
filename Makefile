@@ -7,6 +7,7 @@ INITCPIODIR=$(PREFIX)/lib/initcpio
 MANDIR=$(PREFIX)/share/man
 BINDIR=$(PREFIX)/bin
 EXAMPLES=$(PREFIX)/share/examples/zfsbootmenu
+RECURSIVE_FLAG=-R
 
 .PHONY: install core dracut initcpio
 
