@@ -38,7 +38,7 @@ csv_cat() {
 # returns: nothing
 
 column_wrap() {
-  local footer
+  local footer max lpad pad
   footer="${1}"
 
   if [ "${COLUMNS:-0}" -lt 80 ] || [ -z "${HAS_COLUMN}" ] ; then
@@ -53,9 +53,18 @@ column_wrap() {
     footer="$( echo -e "${footer}" | column -t -s ':' )"
   fi
 
+  # Find the number of characters in the longest line
+  max="$( echo -e "${footer}" | awk 'BEGIN{l=0} length>l {l=length}; END{print l}' )"
+
+  # remove an extra 3 - 1 for '^', 2 for the fzf gutter
+  lpad="$(( (COLUMNS - max - 3) / 2 ))"
+
+  [[ ${lpad} -gt 0 ]] && printf -v pad "%*s" "${lpad}" ''
+
   footer="${footer//\[/\\033\[0;32m\[}"
   footer="${footer//\]/\]\\033\[0m}"
-  echo -e "${footer}"
+
+  echo -e "${footer//^/${pad}}"
 }
 
 # arg1: Path to file with detected boot environments, 1 per line
@@ -87,14 +96,14 @@ draw_be() {
   fi
 
   header="$( column_wrap "\
-[RETURN] boot:[ESCAPE] refresh view:[CTRL+P] pool status
-[CTRL+D] set bootfs:[CTRL+S] snapshots:[CTRL+K] kernels
-[CTRL+E] edit kcl:[CTRL+J] jump into chroot:[CTRL+R] recovery shell
-${kcl_text:+${kcl_text}:}[CTRL+L] view logs:${blank}[CTRL+H] help" \
+^[RETURN] boot:[ESCAPE] refresh view:[CTRL+P] pool status
+^[CTRL+D] set bootfs:[CTRL+S] snapshots:[CTRL+K] kernels
+^[CTRL+E] edit kcl:[CTRL+J] jump into chroot:[CTRL+R] recovery shell
+^${kcl_text:+${kcl_text}:}[CTRL+L] view logs:${blank}[CTRL+H] help" \
 "\
-[RETURN] boot
-[CTRL+R] recovery shell
-[CTRL+H] help" )"
+^[RETURN] boot
+^[CTRL+R] recovery shell
+^[CTRL+H] help" )"
 
   expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-j,alt-o${kcl_bind:+,${kcl_bind}}"
 
@@ -135,13 +144,13 @@ draw_kernel() {
   zdebug "using kernels file: ${_kernels}"
 
   header="$( column_wrap "\
-[RETURN] boot:[ESCAPE] back
-[CTRL+D] set default:[CTRL+U] unset default
-[CTRL+L] view logs:[CTRL+H] help" \
+^[RETURN] boot:[ESCAPE] back
+^[CTRL+D] set default:[CTRL+U] unset default
+^[CTRL+L] view logs:[CTRL+H] help" \
 "\
-[RETURN] boot
-[CTRL+D] set default
-[CTRL+H] help" )"
+^[RETURN] boot
+^[CTRL+D] set default
+^[CTRL+H] help" )"
 
   expects="--expect=alt-d,alt-u"
 
@@ -178,14 +187,14 @@ draw_snapshots() {
   sort_key="$( get_sort_key )"
 
   header="$( column_wrap "\
-[RETURN] duplicate:[CTRL+C] clone only:[CTRL+X] clone and promote
-[CTRL+D] show diff:[CTRL+R] rollback:[CTRL+N] create new snapshot
-[CTRL+L] view logs::[CTRL+J] jump into chroot
-[CTRL+H] help::[ESCAPE] back" \
+^[RETURN] duplicate:[CTRL+C] clone only:[CTRL+X] clone and promote
+^[CTRL+D] show diff:[CTRL+R] rollback:[CTRL+N] create new snapshot
+^[CTRL+L] view logs::[CTRL+J] jump into chroot
+^[CTRL+H] help::[ESCAPE] back" \
 "\
-[RETURN] duplicate
-[CTRL+D] show diff
-[CTRL+H] help" )"
+^[RETURN] duplicate
+^[CTRL+D] show diff
+^[CTRL+H] help" )"
 
   context="Note: for diff viewer, use tab to select/deselect up to two items"
 
