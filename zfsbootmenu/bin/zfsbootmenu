@@ -88,8 +88,8 @@ fi
 fuzzy_default_options=(
   "--ansi" "--cycle" "--color=16"
   "--layout=reverse-list" "--inline-info" "--tac"
-  "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]"'
-  "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]"'
+  "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]+execute-silent[ /libexec/zfunc draw_page main-screen ]"'
+  "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]+execute-silent[ /libexec/zfunc draw_page main-screen ]"'
   "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]"'
   "--bind" "\"alt-l:execute[ /bin/zlogtail ]${HAS_REFRESH:++refresh-preview}\""
   "--bind" "\"ctrl-l:execute[ /bin/zlogtail ]${HAS_REFRESH:++refresh-preview}\""
@@ -99,7 +99,7 @@ fuzzy_default_options=(
 # shellcheck disable=SC2016,SC2086
 if [ ${loglevel:-4} -eq 7 ] ; then
   fuzzy_default_options+=(
-    "--bind" '"alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
+    "--bind" '"alt-t:execute[ /sbin/ztrace > ${control_term} ]+execute-silent[ /libexec/zfunc draw_page ]"'
     "--bind" '"ctrl-t:execute[ /sbin/ztrace > ${control_term} ]"'
     "--bind" '"ctrl-alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
     "--bind" '"f12:execute[ /libexec/zfunc emergency_shell \"debugging shell\" > ${control_term} ]"'

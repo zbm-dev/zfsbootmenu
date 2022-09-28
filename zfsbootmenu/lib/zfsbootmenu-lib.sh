@@ -121,7 +121,7 @@ draw_page() {
 
   [ -z "${COLUMNS}" ] && COLUMNS="$( tput cols )"
   # shellcheck disable=SC2154
-  echo -n -e "\033[50D\033[$(( ( COLUMNS - hlen ) / 2 ))C${header}" > "${control_term}"
+  echo -n -e "\033[0;$(( ( COLUMNS - hlen ) / 2 ))H${header}" > "${control_term}"
 }
 
 # arg1: Path to file with detected boot environments, 1 per line
