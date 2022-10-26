@@ -24,19 +24,30 @@ without setting any values.
     hexadecimal number, to override the value
     contained within the image.
 
-[1mzbm.prefer=<pool>[0m
+[1mzbm.prefer[0m
     ZFSBootMenu will attempt to import as many pools
     as possible to identify boot environments and
     will, by default, look for the [33mbootfs[0m property
     on the first imported pool (sorted
     alphabetically) to select the default boot
-    environment. If you have multiple pools, replace
-    [1m<pool>[0m with the name of your preferred pool to
-    override the default. If [1m<pool>[0m is the name of a
-    pool followed by a literal [33m![0m character,
-    ZFSBootMenu will insist on successfully
-    importing the named pool before attempting to
-    import any others.
+    environment. This option controls this behavior.
+
+    [1mzbm.prefer=<pool>[0m
+      The simplest form attempts to import [1m<pool>[0m
+      before any other pool. The [33mbootfs[0m value from
+      this pool will control the default boot
+      environment.
+
+    [1mzbm.prefer=<pool>[33m![0m[0m
+      If a literal [33m![0m has been appended to the pool
+      name, ZFSBootMenu will insist on successfully
+      importing the named pool before attempting to
+      import any others.
+
+    [1mzbm.prefer=<pool>[33m!![0m[0m
+      If a literal [33m!![0m has been appended to the pool
+      name, ZFSBootMenu will insist on successfully
+      importing the named pool and no others.
 
 [1mzbm.import_delay=<time>[0m
     Should ZFSBootMenu fail to successfully import

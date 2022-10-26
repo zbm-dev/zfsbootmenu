@@ -105,7 +105,10 @@ while true; do
 
   # shellcheck disable=SC2154
   if check_for_pools; then
-    if [ -n "${try_pool}" ]; then
+    if [ "${zbm_require_bpool}" = "only" ]; then
+      zdebug "only importing ${try_pool}"
+      break
+    elif [ -n "${try_pool}" ]; then
       # If a single pool was requested and imported, try importing others
       try_pool=""
       continue
@@ -127,7 +130,7 @@ while true; do
     # allow another pass to pick up others with the same hostid
     try_pool=""
     continue
-  elif [ -n "${try_pool}" ] && [ "${zbm_require_bpool:-0}" -ne 1 ]; then
+  elif [ -n "${try_pool}" ] && [ -z "${zbm_require_bpool}" ]; then
     # If a specific pool was tried unsuccessfully but is not a requirement,
     # allow another pass to try any other importable pools
     try_pool=""

@@ -231,13 +231,23 @@ case "${root}" in
   ;;
 esac
 
-# Pool preference ending in ! indicates a hard requirement
-bpool="${root%\!}"
-if [ "${bpool}" != "${root}" ]; then
-  # shellcheck disable=SC2034
-  zbm_require_bpool=1
-  root="${bpool}"
-fi
+# pool! : this pool must be imported before all others
+# pool!!: this pool, and no others, must be imported
+
+# shellcheck disable=SC2034
+case "${root}" in
+  *!!)
+    zbm_require_bpool="only"
+    root="${root%!!}"
+    ;;
+  *!)
+    zbm_require_bpool="yes"
+    root="${root%!}"
+    ;;
+  *)
+    zbm_require_bpool=""
+    ;;
+esac
 
 # Make sure Dracut is happy that we have a root
 if [ ${wait_for_zfs} -eq 1 ]; then
