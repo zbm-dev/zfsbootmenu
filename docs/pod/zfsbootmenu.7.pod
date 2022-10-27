@@ -112,6 +112,26 @@ Display a countdown timer for the specified number of seconds before booting the
 
 =back
 
+=item B<zbm.hookroot=E<lt>hookspecE<gt>>
+
+Tell ZFSBootMenu to attempt to read any early-setup, setup or teardown hooks from the path specified by I<hookspec> in addition to any included directly in the image.
+
+The I<hookspec> parameter takes the form
+
+  device//path
+
+where I<device> is either a regular device node (e.g., I</dev/sda>) or other partition identifier recognized by B<mount>(8) (e.g., I<LABEL=E<lt>labelE<gt>> o I<UUID=E<lt>uuidE<gt>>). The I<path> component following I<//> represents the location of a directory with respect to the root of the filesystem on I<device>. For example, if a partition with a UUID of I<DEAD-BEEF> is mounted at I</boot/efi> on a running system and the hook root should refer to the path
+
+  /boot/efi/EFI/zfsbootmenu/hooks,
+
+the corresponding hook specification should be
+
+  zbm.hookroot=UUID=DEAD-BEEF//EFI/zfsbootmenu/hooks
+
+on the ZFSBootMenu command line. Note that any kernel modules necessary to mount the specified filesystem must be present in the ZFSBootMenu image. (For example, mounting a FAT32 filesystem may require that I<vfat.ko>, I<fat.ko>, I<nls_cp437.ko> and I<nls_iso8859_1.ko> be added to the image.)
+
+Within the hook root, create subdirectories I<early-setup.d>, I<setup.d> or I<teardown.d> to hold hooks for the respective stages of hook execution (early-setup, setup and teardown). ZFSBootMenu will mount the device named by the hook specification, look for the individual hook directories, and copy any files found therein into its own memory-backed root filesystem. The copy is not recursive and further subdirectorie are ignored. Note that, because ZFSBootMenu copies these scripts into its standard hook paths at each boot, it is possible to "mask" a script explicitly included in the ZFSBootMenu image by including an external hook script with the same name in the appropriate directory.
+
 =back
 
 =head1 Deprecated Command-Line Parameters

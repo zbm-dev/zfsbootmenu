@@ -1815,3 +1815,52 @@ zreport() {
   echo -e "\n# zfs list"
   zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource
 }
+
+# arg1: hook root spec, as <device>//<path>
+# prints: nothing
+# returns: 0 iff device and path are valid
+
+import_zbm_hooks() {
+  local hook_root hook_fs hook_path hook_mount hdir hsrc hfile
+
+  hook_root="${1}"
+  if [ -z "${hook_root}" ]; then
+    zerror "hook root is not defined"
+    return 1
+  fi
+
+  hook_fs="${hook_root%//*}"
+  if [ -z "${hook_fs}" ] || [ "${hook_fs}" = "${hook_root}" ]; then
+    zerror "unable to find hook device: '${hook_root}' is malformed"
+    return 1
+  fi
+
+  hook_path="${hook_root##*//}"
+  if [ -z "${hook_path}" ] || [ "${hook_path}" = "${hook_root}" ]; then
+    zerror "unable to find hook path: '${hook_root}' is malformed"
+    return 1
+  fi
+
+  hook_mount="${BASE}/.external_hooks"
+  mkdir -p "${hook_mount}"
+  if ! mount -r "${hook_fs}" "${hook_mount}"; then
+    zerror "failed to mount hook filesystem ${hook_fs}"
+    return 1
+  fi
+
+  for hdir in early-setup.d setup.d teardown.d; do
+    hsrc="${hook_mount}/${hook_path}/${hdir}"
+    [ -d "${hsrc}" ] || continue
+    mkdir -p "/libexec/${hdir}"
+    for hfile in "${hsrc}"/*; do
+      [ -f "${hfile}" ] || continue
+      if ! cp "${hfile}" "/libexec/${hdir}" >/dev/null 2>&1; then
+        zwarn "failed to copy user hook ${hfile}"
+      fi
+    done
+  done
+
+  umount "${hook_mount}"
+
+  return 0
+}

@@ -75,6 +75,11 @@ elif [ ! -e /etc/hostid ]; then
   write_hostid "${default_hostid}"
 fi
 
+# Import ZBM hooks from an external root, if they exist
+if [ -n "${zbm_hook_root}" ]; then
+  import_zbm_hooks "${zbm_hook_root}"
+fi
+
 # Run early setup hooks, if they exist
 if [ -d /libexec/early-setup.d ]; then
   tput clear
