@@ -193,6 +193,14 @@ else
   zinfo "defaulting sort key order to ${zbm_sort}"
 fi
 
+# Allow hooks to be imported from another filesystem
+
+# shellcheck disable=SC2034
+zbm_hook_root=
+if zbm_hook_root=$( get_zbm_arg zbm.hookroot ) ; then
+  zinfo "setting user hook root to ${zbm_hook_root}"
+fi
+
 # shellcheck disable=SC2034
 if [ "${BYTE_ORDER}" = "be" ]; then
   zbm_set_hostid=0

@@ -111,6 +111,40 @@ Default options were chosen to allow general systems to boot without setting any
       Display a countdown timer for the specified number of seconds before booting the
       configured [33mbootfs[0m boot environment.
 
+[1mzbm.hookroot=<hookspec>[0m
+    Tell ZFSBootMenu to attempt to read any early-setup, setup or teardown hooks from the
+    path specified by [33mhookspec[0m in addition to any included directly in the image.
+
+    The [33mhookspec[0m parameter takes the form
+
+      device//path
+
+    where [33mdevice[0m is either a regular device node (e.g., [33m/dev/sda[0m) or other partition
+    identifier recognized by [1mmount[0m(8) (e.g., [33mLABEL=<label>[0m o [33mUUID=<uuid>[0m). The [33mpath[0m
+    component following [33m//[0m represents the location of a directory with respect to the root
+    of the filesystem on [33mdevice[0m. For example, if a partition with a UUID of [33mDEAD-BEEF[0m is
+    mounted at [33m/boot/efi[0m on a running system and the hook root should refer to the path
+
+      /boot/efi/EFI/zfsbootmenu/hooks,
+
+    the corresponding hook specification should be
+
+      zbm.hookroot=UUID=DEAD-BEEF//EFI/zfsbootmenu/hooks
+
+    on the ZFSBootMenu command line. Note that any kernel modules necessary to mount the
+    specified filesystem must be present in the ZFSBootMenu image. (For example, mounting a
+    FAT32 filesystem may require that [33mvfat.ko[0m, [33mfat.ko[0m, [33mnls_cp437.ko[0m and [33mnls_iso8859_1.ko[0m be
+    added to the image.)
+
+    Within the hook root, create subdirectories [33mearly-setup.d[0m, [33msetup.d[0m or [33mteardown.d[0m to hold
+    hooks for the respective stages of hook execution (early-setup, setup and teardown).
+    ZFSBootMenu will mount the device named by the hook specification, look for the
+    individual hook directories, and copy any files found therein into its own memory-backed
+    root filesystem. The copy is not recursive and further subdirectorie are ignored. Note
+    that, because ZFSBootMenu copies these scripts into its standard hook paths at each
+    boot, it is possible to "mask" a script explicitly included in the ZFSBootMenu image by
+    including an external hook script with the same name in the appropriate directory.
+
 [1mDeprecated Command-Line Parameters[0m
 
 [1mtimeout[0m
