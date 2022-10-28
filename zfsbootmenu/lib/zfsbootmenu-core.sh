@@ -240,7 +240,7 @@ mount_zfs() {
     return 1
   fi
 
-  mnt="${BASE}/${fs}/mnt"
+  mnt="$( be_location "${fs}" )/mnt"
   mkdir -p "${mnt}"
 
   # filesystems are readonly by default, but read-write mounts may be requested
@@ -782,7 +782,7 @@ find_be_kernels() {
 # returns: nothing
 
 select_kernel() {
-  local zfsbe specific_kernel kexec_args spec_kexec_args
+  local zfsbe bepath specific_kernel kexec_args spec_kexec_args
 
   zfsbe="${1}"
   if [ -z "${zfsbe}" ]; then
@@ -791,8 +791,10 @@ select_kernel() {
   fi
   zdebug "zfsbe set to ${zfsbe}"
 
+  bepath="$( be_location "${zfsbe}" )"
+
   # By default, select the last kernel entry
-  kexec_args="$( tail -1 "${BASE}/${zfsbe}/kernels" )"
+  kexec_args="$( tail -1 "${bepath}/kernels" )"
 
   # If a specific kernel is listed, prefer it when possible
   specific_kernel="$( zfs get -H -o value org.zfsbootmenu:kernel "${zfsbe}" )"
@@ -806,7 +808,7 @@ select_kernel() {
         kexec_args="${spec_kexec_args}"
         break
       fi
-    done <<<"$( tac "${BASE}/${zfsbe}/kernels" )"
+    done <<<"$( tac "${bepath}/kernels" )"
   fi
 
   zdebug "using kexec args: ${kexec_args}"
@@ -921,7 +923,7 @@ load_be_cmdline() {
   fi
   zdebug "fs set to ${fs}"
 
-  cache="${BASE}/${fs}/cmdline"
+  cache="$( be_location "${fs}" )/cmdline"
 
   if [ -r "${BASE}/cmdline" ]; then
     # Always prefer a user-entered KCL
@@ -1741,6 +1743,24 @@ load_key() {
   zdebug "prompting for passphrase for ${encroot}"
   zfs load-key -L prompt "${encroot}"
   return $?
+}
+
+# arg1: ZFS filesystem
+# prints: The base path to this filesystem for use by ZFSBootMenu functions, with out a trailing /
+# returns: nothing
+
+be_location() {
+  local fs beloc
+  fs="${1}"
+  if [ -z "${fs}" ]; then
+    zerror "fs is undefined"
+    return 1
+  fi
+  zdebug "fs set to ${fs}"
+
+  local beloc="${BASE}/environments/${fs}"
+  mkdir -p "${beloc}"
+  echo "${beloc}"
 }
 
 # arg1: ZFS filesystem
