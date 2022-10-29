@@ -7,7 +7,7 @@ check() {
 }
 
 depends() {
-  echo udev-rules
+  echo bash udev-rules
   return 0
 }
 
