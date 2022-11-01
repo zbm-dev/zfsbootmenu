@@ -487,6 +487,22 @@ if ( enabled $config{Components} ) {
 
 # Generate syslinux.cfg, requires components to be built
 if ( enabled $config{Components}{syslinux} ) {
+  my $warning = <<"EOF";
+
+DEPRECATION WARNING: syslinux support in generate-zbm is deprecated.
+  Support will be removed in the next release.
+
+  As an alternative: consider one of the following two options:
+
+  1. Set `Components.Versions` to `false` in the ZFSBootMenu configuration and
+     maintain a static syslinux configuration.
+
+  2. Use the contrib/syslinux-update.sh script in the ZFSBootMenu repository
+     as a post-image hook for generate-zbm(5).
+
+EOF
+  print $warning;
+
   my $glob    = sprintf( "%s/%s-*", $config{Components}{ImageDir}, $runConf{kernel_prefix} );
   my @listing = sort versioncmp glob($glob);
 
