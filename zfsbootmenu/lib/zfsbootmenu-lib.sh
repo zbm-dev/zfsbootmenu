@@ -135,7 +135,7 @@ draw_kernel() {
     return 130
   fi
 
-  _kernels="${BASE}/${benv}/kernels"
+  _kernels="$( be_location "${benv}" )/kernels"
   if [ ! -r "${_kernels}" ] ; then
     zerror "kernel file ${_kernels} missing"
     return 130
