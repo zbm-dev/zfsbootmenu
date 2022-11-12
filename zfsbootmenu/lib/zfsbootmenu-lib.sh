@@ -67,6 +67,53 @@ column_wrap() {
   echo -e "${footer//^/${pad}}"
 }
 
+# arg1: optional page to mark as active
+# prints: a header string with the active page highlighted yellow
+# returns: nothing
+
+# shellcheck disable=SC2120
+global_header() {
+  local header page tab
+
+  # Accept a parameter to explicitly set a page to be shown
+  if [ -n "${1}" ]; then
+    page="${1}"
+  else
+    # Name of the calling function
+    page="${FUNCNAME[1]}"
+  fi
+
+  # Set the entire string to one color
+  header="\\033[0;37m Boot Environments | Snapshots | Kernels | Pool Status | Logs | Help \\033[0m"
+
+  case "${page}" in
+    draw_be)
+      tab="Boot Environments"
+      ;;
+    draw_kernel)
+      tab="Kernels"
+      ;;
+    draw_snapshots)
+      tab="Snapshots"
+      ;;
+    draw_pool_status)
+      tab="Pool Status"
+      ;;
+    help_pager)
+      tab="Help"
+      ;;
+    zlogtail)
+      tab="Logs"
+      ;;
+    *)
+      zdebug "Called from unknown function: ${page}"
+      ;;
+  esac
+
+  # change the name of the selected tab to be yellow
+  echo -n -e "${header/${tab}/\\033[1;33m${tab}\\033[0;37m}"
+}
+
 # arg1: Path to file with detected boot environments, 1 per line
 # prints: key pressed, boot environment on successful selection
 # returns: 0 on successful selection, 1 if Esc was pressed, 130 if BE list is missing
@@ -109,7 +156,8 @@ draw_be() {
 
   if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
-      --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}" \
+      ${HAS_BORDER_LABEL:+--border-label="$( global_header )"} \
+      --header="${header}" --preview-window="up:${PREVIEW_HEIGHT},border-sharp" \
       --preview="/libexec/zfsbootmenu-preview {} ${BOOTFS}" < "${env}" )"; then
     return 1
   fi
@@ -156,9 +204,10 @@ draw_kernel() {
 
   if ! selected="$( HELP_SECTION=kernel-management ${FUZZYSEL} \
       --prompt "${benv} > " --tac --with-nth=2 --header="${header}" \
+      ${HAS_BORDER_LABEL:+--border-label="$( global_header )"} \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
       --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS}"  \
-      --preview-window="up:${PREVIEW_HEIGHT}" < "${_kernels}" )"; then
+      --preview-window="up:${PREVIEW_HEIGHT},border-sharp" < "${_kernels}" )"; then
     return 1
   fi
 
@@ -206,14 +255,28 @@ draw_snapshots() {
 
   zdebug "snapshots: ${snapshots[*]}"
 
-  if ! selected="$( HELP_SECTION=snapshot-management ${FUZZYSEL} \
+  # when defined this controls passing an additional parameter to zfsbootmenu-preview
+  # as well as extending the preview window height by 1
+  # when undefined, it triggers added 0 to the window height, leaving it as-is
+
+  local LEGACY_CONTEXT
+  if [ -z "${HAS_BORDER_LABEL}" ]; then
+    LEGACY_CONTEXT=1
+  fi
+
+  if ! selected="$(\
+      HELP_SECTION=snapshot-management ${FUZZYSEL} \
         --prompt "Snapshot > " --header="${header}" --tac --multi 2 \
+        ${HAS_BORDER_LABEL:+--border-label="$( global_header )"} \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
         --bind='alt-d:execute[ /libexec/zfunc draw_diff {+} ]' \
         --bind='ctrl-d:execute[ /libexec/zfunc draw_diff {+} ]' \
         --bind='ctrl-alt-d:execute[ /libexec/zfunc draw_diff {+} ]' \
-        --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS} '${context}'" \
-        --preview-window="up:$(( PREVIEW_HEIGHT + 1 ))" <<<"${snapshots}" )"; then
+        ${HAS_BORDER_LABEL:+--preview-label-pos=bottom} \
+        ${HAS_BORDER_LABEL:+--preview-label="$( colorize orange " ${context} " )"} \
+        --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS} ${LEGACY_CONTEXT:+\"${context}\"}" \
+        --preview-window="up:$(( PREVIEW_HEIGHT + ${LEGACY_CONTEXT:-0} )),border-sharp" <<<"${snapshots}" )"
+  then
     return 1
   fi
 
@@ -291,8 +354,9 @@ draw_diff() {
   line_two="${left_pad}$( colorize green "+++${diff_target}" )"
 
   sed "s,${mnt},," <&3 | HELP_SECTION=diff-viewer ${FUZZYSEL} --prompt "> " \
+    ${HAS_BORDER_LABEL:+--border-label="$( global_header )"} \
     --preview="echo -e '${line_one}\n${line_two}'" --no-sort \
-    --preview-window="up:${PREVIEW_HEIGHT}"
+    --preview-window="up:${PREVIEW_HEIGHT},border-sharp"
 
   [ -n "${zfs_diff_PID}" ] && kill "${zfs_diff_PID}"
 
@@ -322,7 +386,8 @@ draw_pool_status() {
   if ! selected="$( zpool list -H -o name |
       HELP_SECTION=zpool-health ${FUZZYSEL} \
       --prompt "Pool > " --tac --expect=alt-r,ctrl-r,ctrl-alt-r \
-      --preview-window="right:${psize}" \
+      ${HAS_BORDER_LABEL:+--border-label="$( global_header )"} \
+      --preview-window="right:${psize},border-sharp" \
       --preview="zpool status -v {}" --header="${header}" )"; then
     return 1
   fi

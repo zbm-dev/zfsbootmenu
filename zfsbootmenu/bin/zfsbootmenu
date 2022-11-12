@@ -96,6 +96,14 @@ fuzzy_default_options=(
   "--bind" "\"ctrl-alt-l:execute[ /bin/zlogtail ]${HAS_REFRESH:++refresh-preview}\""
 )
 
+if [ -n "${HAS_BORDER_LABEL}" ]; then
+  # shellcheck disable=SC2016
+  fuzzy_default_options+=(
+    "--border-label-pos=top" "--border=top"
+    "--color=border:white" "--separator=''"
+  )
+fi
+
 # shellcheck disable=SC2016,SC2086
 if [ ${loglevel:-4} -eq 7 ] ; then
   fuzzy_default_options+=(

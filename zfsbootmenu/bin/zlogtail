@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# shellcheck disable=SC1091
+source /lib/zfsbootmenu-lib.sh >/dev/null 2>&1 || exit 1
+
 [ -f "${BASE}/have_errors" ] && rm "${BASE}/have_errors"
 [ -f "${BASE}/have_warnings" ] && rm "${BASE}/have_warnings"
 
@@ -13,6 +16,14 @@ fuzzy_default_options+=(
 if [ -n "${HAS_DISABLED}" ]; then
   fuzzy_default_options+=(
     "--disabled"
+  )
+fi
+
+if [ -n "${HAS_BORDER_LABEL}" ]; then
+  fuzzy_default_options+=(
+    "--border-label-pos=top" "--border=top"
+    "--border-label=\"$( global_header zlogtail )\""
+    "--color=border:white"
   )
 fi
 
