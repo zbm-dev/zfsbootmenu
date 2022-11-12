@@ -98,6 +98,13 @@ create_zbm_conf() {
     has_disabled=1
   fi
 
+  # Check if fuzzy finder supports border labels
+  # Added in fzf 0.35.0
+  local has_border_label
+  if echo "abc" | fzf -f "abc" --border-label=test --exit-0 >/dev/null 2>&1; then
+    has_border_label=1
+  fi
+
   local has_column
   if command -v column >/dev/null 2>&1 ; then
     has_column=1
@@ -113,6 +120,7 @@ create_zbm_conf() {
 	export BYTE_ORDER="${endian:-le}"
 	export HAS_REFRESH="${has_refresh}"
 	export HAS_DISABLED="${has_disabled}"
+	export HAS_BORDER_LABEL="${has_border_label}"
 	export HAS_COLUMN="${has_column}"
 	EOF
 }
