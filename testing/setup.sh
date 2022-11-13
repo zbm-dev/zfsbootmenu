@@ -171,9 +171,9 @@ EOF
   mkdir -p "${MKINITCPIOD}"
 
   cat << EOF > "${MKINITCPIOD}/base.conf"
-MODULES=()
+MODULES=(ahci.ko)
 BINARIES=()
-FILEs=()
+FILES=()
 HOOKS=(base udev autodetect modconf block filesystems keyboard)
 COMPRESSION="cat"
 EOF
