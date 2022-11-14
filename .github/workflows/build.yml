@@ -24,13 +24,13 @@ jobs:
           /zbm/releng/docker/zbm-build.sh -b /zbm/releng/docker -- --debug
 
       - name: Archive release EFI
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Release-EFI
           path: /zbm/releng/docker/build/*.EFI
 
       - name: Archive release components
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Release-Components
           path: |
@@ -48,13 +48,13 @@ jobs:
           /zbm/releng/docker/zbm-build.sh -b /zbm/releng/docker -- --debug
 
       - name: Archive recovery EFI
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Recovery-EFI
           path: /zbm/releng/docker/build/*.EFI
 
       - name: Archive recovery components
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Recovery-Components
           path: |
