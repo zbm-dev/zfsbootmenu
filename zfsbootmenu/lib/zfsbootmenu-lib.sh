@@ -73,7 +73,7 @@ column_wrap() {
 
 # shellcheck disable=SC2120
 global_header() {
-  local header page tab
+  local header page tab replacement
 
   # Accept a parameter to explicitly set a page to be shown
   if [ -n "${1}" ]; then
@@ -93,8 +93,12 @@ global_header() {
     draw_kernel)
       tab="Kernels"
       ;;
-    draw_snapshots|draw_diff)
+    draw_snapshots)
       tab="Snapshots"
+      ;;
+    draw_diff)
+      tab="Snapshots"
+      replacement="Diff Viewer"
       ;;
     draw_pool_status)
       tab="Pool Status"
@@ -111,7 +115,7 @@ global_header() {
   esac
 
   # change the name of the selected tab to be yellow
-  echo -n -e "${header/${tab}/\\033[1;33m${tab}\\033[0;37m}"
+  echo -n -e "${header/${tab}/\\033[1;33m${replacement:-${tab}}\\033[0;37m}"
 }
 
 # arg1: Path to file with detected boot environments, 1 per line
