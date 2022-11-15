@@ -84,7 +84,7 @@ global_header() {
   fi
 
   # Set the entire string to one color
-  header="\\033[0;37m Boot Environments | Snapshots | Kernels | Pool Status | Logs | Help \\033[0m"
+  header="\\033[0;37m Boot Environments - Snapshots - Kernels - Pool Status - Logs - Help \\033[0m"
 
   case "${page}" in
     draw_be)
@@ -115,7 +115,7 @@ global_header() {
   esac
 
   # change the name of the selected tab to be yellow
-  echo -n -e "${header/${tab}/\\033[1;33m${replacement:-${tab}}\\033[0;37m}"
+  echo -n -e "${header/${tab}/\\033[1;33m[ ${replacement:-${tab}} ]\\033[0;37m}"
 }
 
 # arg1: Path to file with detected boot environments, 1 per line
