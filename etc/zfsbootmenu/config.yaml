@@ -4,7 +4,6 @@ Global:
   DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
   PreHooksDir: /etc/zfsbootmenu/generate-zbm.pre.d
   PostHooksDir: /etc/zfsbootmenu/generate-zbm.post.d
-  InitCPIO: false
   InitCPIOConfig: /etc/zfsbootmenu/mkinitcpio.conf
 Components:
   ImageDir: /boot/efi/EFI/zbm

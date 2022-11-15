@@ -28,10 +28,10 @@ trap 'gpgconf --homedir /etc/pacman.d/gnupg --kill all; exit' EXIT INT TERM
 pacman-key --init
 pacman-key --populate
 
-# Do this in two stages to avoid dracut providing the initramfs virtual
+# Install everything needed to build a mkinitcpio image
 pacman --noconfirm -Sy linux linux-headers mkinitcpio vi openssh \
-  fakeroot automake autoconf pkg-config gcc make libtool binutils curl
-pacman --noconfirm -Sy dkms git dracut fzf kexec-tools cpanminus
+  fzf fakeroot automake autoconf pkg-config gcc libtool binutils \
+  make curl dkms git kexec-tools cpanminus
 
 # Install ZFS command-line utilities
 runuser -u nobody -- /bin/sh -c "cd /tmp && \
@@ -68,7 +68,7 @@ mkinitcpio -p linux
 
 if [ -x /root/zbm-populate.sh ]; then
   # Arch installs cpanm in the vendor_perl subdirectory
-  PATH="${PATH}:/usr/bin/site_perl:/usr/bin/vendor_perl" INITCPIO=yes /root/zbm-populate.sh
+  PATH="${PATH}:/usr/bin/site_perl:/usr/bin/vendor_perl" /root/zbm-populate.sh
   rm /root/zbm-populate.sh
 fi
 

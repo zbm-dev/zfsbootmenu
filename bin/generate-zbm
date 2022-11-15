@@ -55,7 +55,6 @@ my ( %runConf, %config );
 
 $runConf{config} = "/etc/zfsbootmenu/config.yaml";
 $runConf{bootdir} = "/boot";
-$runConf{usecpio} = false;
 
 GetOptions(
   "version|v=s" => \$runConf{version},
@@ -68,7 +67,7 @@ GetOptions(
   "config|c=s"  => \$runConf{config},
   "enable"      => \$runConf{enable},
   "disable"     => \$runConf{disable},
-  "initcpio|i"  => \$runConf{usecpio},
+  "initcpio|i!" => \$runConf{usecpio},
   "hookd|H=s@"  => \$runConf{cpio_hookd},
   "debug|d"     => \$runConf{debug},
   "help|h"      => sub {
@@ -120,13 +119,21 @@ unless ( $config{Global}{ManageImages} ) {
   exit;
 }
 
-unless ( $runConf{usecpio} ) {
+unless ( defined $runConf{usecpio} ) {
 
-  # If usecpio wasn't set by cmdline, load from the config
+  # If usecpio wasn't set by cmdline, try loading from the config
   if ( defined $config{Global}{InitCPIO} ) {
     $runConf{usecpio} = $config{Global}{InitCPIO};
   } else {
-    $runConf{usecpio} = false;
+    my @output = execute(qw(sh -c "command -v dracut"));
+    my $status = pop(@output);
+    if ( $status eq 0 ) {
+      print "No initramfs generator specified; using dracut\n";
+      $runConf{usecpio} = false;
+    } else {
+      print "No initramfs generator specified; using mkinitcpio\n";
+      $runConf{usecpio} = true;
+    }
   }
 }
 
@@ -1052,7 +1059,11 @@ Manually specify the output image prefix; supersedes I<Kernel.Prefix>
 
 =item B<--initcpio|-i>
 
-Use mkinitcpio instead of dracut.
+Force the use of mkinitcpio instead of dracut.
+
+=item B<--no-initcpio|-i>
+
+Force the use of dracut instead of mkinitcpio.
 
 =item B<--confd|-C> I<config-path>
 
