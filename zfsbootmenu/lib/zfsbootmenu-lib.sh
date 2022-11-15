@@ -75,12 +75,11 @@ column_wrap() {
 global_header() {
   local header page tab replacement
 
-  # Accept a parameter to explicitly set a page to be shown
-  if [ -n "${1}" ]; then
-    page="${1}"
-  else
-    # Name of the calling function
-    page="${FUNCNAME[1]}"
+  page="${FUNCNAME[1]}"
+
+  # 'main' isn't unique, so switch to the name of the script
+  if [ "${page}" = "main" ]; then
+    page="${0##*/}"
   fi
 
   # Set the entire string to one color
