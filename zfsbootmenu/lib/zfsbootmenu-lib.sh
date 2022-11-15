@@ -273,9 +273,9 @@ draw_snapshots() {
         --prompt "Snapshot > " --header="${header}" --tac --multi 2 \
         ${HAS_BORDER_LABEL:+--border-label="$( global_header )"} \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
-        --bind='alt-d:execute[ /libexec/zfunc draw_diff {+} ]' \
-        --bind='ctrl-d:execute[ /libexec/zfunc draw_diff {+} ]' \
-        --bind='ctrl-alt-d:execute[ /libexec/zfunc draw_diff {+} ]' \
+        --bind="alt-d:execute[ /libexec/zfunc draw_diff {+} ]${HAS_REFRESH:++refresh-preview}" \
+        --bind="ctrl-d:execute[ /libexec/zfunc draw_diff {+} ]${HAS_REFRESH:++refresh-preview}" \
+        --bind="ctrl-alt-d:execute[ /libexec/zfunc draw_diff {+} ]${HAS_REFRESH:++refresh-preview}" \
         ${HAS_BORDER_LABEL:+--preview-label-pos=bottom} \
         ${HAS_BORDER_LABEL:+--preview-label="$( colorize orange " ${context} " )"} \
         --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS} ${LEGACY_CONTEXT:+\"${context}\"}" \
