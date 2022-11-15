@@ -96,7 +96,7 @@ global_header() {
     draw_snapshots)
       tab="Snapshots"
       ;;
-    draw_diff)
+    zfsbootmenu-diff)
       tab="Snapshots"
       replacement="Diff Viewer"
       ;;
@@ -273,9 +273,9 @@ draw_snapshots() {
         --prompt "Snapshot > " --header="${header}" --tac --multi 2 \
         ${HAS_BORDER_LABEL:+--border-label="$( global_header )"} \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
-        --bind="alt-d:execute[ /libexec/zfunc draw_diff {+} ]${HAS_REFRESH:++refresh-preview}" \
-        --bind="ctrl-d:execute[ /libexec/zfunc draw_diff {+} ]${HAS_REFRESH:++refresh-preview}" \
-        --bind="ctrl-alt-d:execute[ /libexec/zfunc draw_diff {+} ]${HAS_REFRESH:++refresh-preview}" \
+        --bind="alt-d:execute[ /libexec/zfsbootmenu-diff {+} ]${HAS_REFRESH:++refresh-preview}" \
+        --bind="ctrl-d:execute[ /libexec/zfsbootmenu-diff {+} ]${HAS_REFRESH:++refresh-preview}" \
+        --bind="ctrl-alt-d:execute[ /libexec/zfsbootmenu-diff {+} ]${HAS_REFRESH:++refresh-preview}" \
         ${HAS_BORDER_LABEL:+--preview-label-pos=bottom} \
         ${HAS_BORDER_LABEL:+--preview-label="$( colorize orange " ${context} " )"} \
         --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS} ${LEGACY_CONTEXT:+\"${context}\"}" \
@@ -290,83 +290,6 @@ draw_snapshots() {
   zdebug "selected: ${selected}"
 
   return 0
-}
-
-# arg1: ZFS snapshot
-# arg2: ZFS filesystem
-# prints: nothing
-# returns: nothing
-
-draw_diff() {
-  local snapshot diff_target pool base_fs mnt
-  local zfs_diff zfs_diff_PID
-  local line_one line_two left_pad
-
-  snapshot="${1}"
-  if [ -z "${snapshot}" ]; then
-    zerror "snapshot is undefined"
-    return 130
-  fi
-
-  # if a second parameter was passed in and it's a snapshot, compare
-  # creation dates and make sure diff_target is newer than snapshot
-  if [ -n "${2}" ] ; then
-    local sd td
-    sd="$( zfs get -H -p -o value creation "${snapshot}" )"
-    td="$( zfs get -H -p -o value creation "${2}" )"
-    if [ "${sd}" -lt "${td}" ] ; then
-      diff_target="${2}"
-    else
-      diff_target="${snapshot}"
-      snapshot="${2}"
-    fi
-  else
-    diff_target="${snapshot%%@*}"
-  fi
-
-  zdebug "snapshot: ${snapshot}"
-  zdebug "diff target: ${diff_target}"
-
-  pool="${snapshot%%/*}"
-  zdebug "pool: ${pool}"
-
-  if ! set_rw_pool "${pool}"; then
-    zerror "unable to set ${pool} read/write"
-    return
-  fi
-
-  base_fs="${snapshot%%@*}"
-  zdebug "base filesystem: ${base_fs}"
-
-  CLEAR_SCREEN=1 load_key "${base_fs}"
-
-  if ! mnt="$( mount_zfs "${base_fs}" )" ; then
-    zerror "unable to mount ${base_fs}"
-    return
-  fi
-
-  zdebug "executing: zfs diff -F -H ${snapshot} ${diff_target}"
-  coproc zfs_diff ( zfs diff -F -H "${snapshot}" "${diff_target}" )
-
-  # Bash won't use an FD referenced in a variable on the left side of a pipe
-  exec 3>&"${zfs_diff[0]}"
-
-  # shellcheck disable=SC2154
-  line_one="$( center_string "---${snapshot}" )"
-  left_pad="${line_one//---${snapshot}/}"
-  line_one="$( colorize red "${line_one}" )"
-  line_two="${left_pad}$( colorize green "+++${diff_target}" )"
-
-  sed "s,${mnt},," <&3 | HELP_SECTION=diff-viewer ${FUZZYSEL} --prompt "> " \
-    ${HAS_BORDER_LABEL:+--border-label="$( global_header )"} \
-    --preview="echo -e '${line_one}\n${line_two}'" --no-sort \
-    --preview-window="up:${PREVIEW_HEIGHT},border-sharp"
-
-  [ -n "${zfs_diff_PID}" ] && kill "${zfs_diff_PID}"
-
-  umount "${mnt}"
-
-  return
 }
 
 # arg1: nothing
