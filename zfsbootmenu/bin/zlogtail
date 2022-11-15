@@ -22,7 +22,7 @@ fi
 if [ -n "${HAS_BORDER_LABEL}" ]; then
   fuzzy_default_options+=(
     "--border-label-pos=top" "--border=top"
-    "--border-label=\"$( global_header zlogtail )\""
+    "--border-label=\"$( global_header )\""
     "--color=border:white"
   )
 fi
