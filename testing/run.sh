@@ -358,6 +358,14 @@ if ((CREATE)) ; then
     yq-go eval ".Components.Enabled = true" -i "${yamlconf}"
   fi
 
+  if ((DRACUT)) ; then
+    GENZBM_FLAGS+=( "--no-initcpio" )
+  elif ((INITCPIO)) ; then
+    GENZBM_FLAGS+=( "--initcpio" )
+  else
+    GENZBM_FLAGS+=( "--initcpio" )
+  fi
+
   # Try to find the local dracut and generate-zbm first
   if ! ( cd "${TESTDIR}" && PATH=./dracut:${PATH} ./generate-zbm -c ./local.yaml "${GENZBM_FLAGS[@]}" ); then
     error "unable to create ZFSBootMenu images"
