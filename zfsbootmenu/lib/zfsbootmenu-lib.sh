@@ -159,8 +159,8 @@ draw_be() {
 
   if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
-      ${HAS_BORDER_LABEL:+--border-label="$( global_header )"} \
-      --header="${header}" --preview-window="up:${PREVIEW_HEIGHT},border-sharp" \
+      ${HAS_BORDER:+--border-label="$( global_header )"} \
+      --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}${HAS_BORDER:+,border-sharp}" \
       --preview="/libexec/zfsbootmenu-preview {} ${BOOTFS}" < "${env}" )"; then
     return 1
   fi
@@ -207,10 +207,10 @@ draw_kernel() {
 
   if ! selected="$( HELP_SECTION=kernel-management ${FUZZYSEL} \
       --prompt "${benv} > " --tac --with-nth=2 --header="${header}" \
-      ${HAS_BORDER_LABEL:+--border-label="$( global_header )"} \
+      ${HAS_BORDER:+--border-label="$( global_header )"} \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
       --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS}"  \
-      --preview-window="up:${PREVIEW_HEIGHT},border-sharp" < "${_kernels}" )"; then
+      --preview-window="up:${PREVIEW_HEIGHT}${HAS_BORDER:+,border-sharp}" < "${_kernels}" )"; then
     return 1
   fi
 
@@ -263,22 +263,22 @@ draw_snapshots() {
   # when undefined, it triggers added 0 to the window height, leaving it as-is
 
   local LEGACY_CONTEXT
-  if [ -z "${HAS_BORDER_LABEL}" ]; then
+  if [ -z "${HAS_BORDER}" ]; then
     LEGACY_CONTEXT=1
   fi
 
   if ! selected="$(\
       HELP_SECTION=snapshot-management ${FUZZYSEL} \
         --prompt "Snapshot > " --header="${header}" --tac --multi 2 \
-        ${HAS_BORDER_LABEL:+--border-label="$( global_header )"} \
+        ${HAS_BORDER:+--border-label="$( global_header )"} \
         ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
         --bind="alt-d:execute[ /libexec/zfsbootmenu-diff {+} ]${HAS_REFRESH:++refresh-preview}" \
         --bind="ctrl-d:execute[ /libexec/zfsbootmenu-diff {+} ]${HAS_REFRESH:++refresh-preview}" \
         --bind="ctrl-alt-d:execute[ /libexec/zfsbootmenu-diff {+} ]${HAS_REFRESH:++refresh-preview}" \
-        ${HAS_BORDER_LABEL:+--preview-label-pos=bottom} \
-        ${HAS_BORDER_LABEL:+--preview-label="$( colorize orange " ${context} " )"} \
+        ${HAS_BORDER:+--preview-label-pos=bottom} \
+        ${HAS_BORDER:+--preview-label="$( colorize orange " ${context} " )"} \
         --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS} ${LEGACY_CONTEXT:+\"${context}\"}" \
-        --preview-window="up:$(( PREVIEW_HEIGHT + ${LEGACY_CONTEXT:-0} )),border-sharp" <<<"${snapshots}" )"
+        --preview-window="up:$(( PREVIEW_HEIGHT + ${LEGACY_CONTEXT:-0} ))${HAS_BORDER:+,border-sharp}" <<<"${snapshots}" )"
   then
     return 1
   fi
@@ -312,8 +312,8 @@ draw_pool_status() {
   if ! selected="$( zpool list -H -o name |
       HELP_SECTION=zpool-health ${FUZZYSEL} \
       --prompt "Pool > " --tac --expect=alt-r,ctrl-r,ctrl-alt-r \
-      ${HAS_BORDER_LABEL:+--border-label="$( global_header )"} \
-      --preview-window="right:${psize},border-sharp" \
+      ${HAS_BORDER:+--border-label="$( global_header )"} \
+      --preview-window="right:${psize}${HAS_BORDER:+,border-sharp}" \
       --preview="zpool status -v {}" --header="${header}" )"; then
     return 1
   fi

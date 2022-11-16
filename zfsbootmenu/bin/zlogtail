@@ -19,7 +19,7 @@ if [ -n "${HAS_DISABLED}" ]; then
   )
 fi
 
-if [ -n "${HAS_BORDER_LABEL}" ]; then
+if [ -n "${HAS_BORDER}" ]; then
   fuzzy_default_options+=(
     "--border-label-pos=top" "--border=top"
     "--border-label=\"$( global_header )\""

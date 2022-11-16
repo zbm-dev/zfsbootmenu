@@ -42,9 +42,10 @@ help_pager() {
     --with-nth=2.. \
     --bind pgup:preview-up,pgdn:preview-down \
     --preview="$0 -s {1}" \
-    --preview-window="right:${PREVIEW_SIZE}:wrap,border-sharp" \
+    --preview-window="right:${PREVIEW_SIZE}:wrap${HAS_BORDER:+,border-sharp}" \
     --header="${header}" \
-    --border=top --border-label="$( global_header )" \
+    ${HAS_BORDER:+--border=top} \
+    ${HAS_BORDER:+--border-label="$( global_header )"} \
     --tac --inline-info --ansi --layout="reverse-list"
 }
 

@@ -66,9 +66,9 @@ line_one="$( colorize red "${line_one}" )"
 line_two="${left_pad}$( colorize green "+++${diff_target}" )"
 
 sed "s,${mnt},," <&3 | HELP_SECTION=diff-viewer ${FUZZYSEL:-fzf} --prompt "> " \
-  ${HAS_BORDER_LABEL:+--border-label="$( global_header )"} \
+  ${HAS_BORDER:+--border-label="$( global_header )"} \
   --preview="echo -e '${line_one}\n${line_two}'" --no-sort \
-  --preview-window="up:${PREVIEW_HEIGHT},border-sharp" || true
+  --preview-window="up:${PREVIEW_HEIGHT}${HAS_BORDER:+,border-sharp}" || true
 
 [ -n "${zfs_diff_PID}" ] && kill "${zfs_diff_PID}"
 wait "${zfs_diff_PID}" >/dev/null 2>&1
