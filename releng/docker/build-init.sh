@@ -161,6 +161,10 @@ if [ -d /zbm/zfsbootmenu ]; then
       || error "unable to link mkinitcpio script ${cdir}/zfsbootmenu"
   done
 
+  # Link to default initcpio configuration file
+  mkdir -p /etc/zfsbootmenu
+  ln -Tsf /zbm/etc/zfsbootmenu/mkinitcpio.conf /etc/zfsbootmenu/mkinitcpio.conf
+
   # dracut module is in "dracut"
   dracutmod=/zbm/dracut
 elif [ -d /zbm/90zfsbootmenu ]; then
@@ -257,12 +261,21 @@ else
 fi
 
 # If a custom dracut.conf.d exists, link to its contents in the default location
-if [ -d "${BUILDROOT}/dracut.conf.d" ]; then
-  for cfile in "${BUILDROOT}"/dracut.conf.d/*; do
-    [ -e "${cfile}" ] || continue
-    ln -Tsf "${cfile}" "${dconfd}/${cfile##*/}" || error "unable to link ${cfile}"
-  done
+for cfile in "${BUILDROOT}"/dracut.conf.d/*; do
+  [ -e "${cfile}" ] || continue
+  ln -Tsf "${cfile}" "${dconfd}/${cfile##*/}" || error "unable to link ${cfile}"
+done
+
+# If a custom mkinitcpio.conf exist, link to its contents in the default location
+if [ -e "${BUILDROOT}/mkinitcpio.conf" ]; then
+  ln -Tsf "${BUILDROOT}/mkinitcpio.conf" /etc/zfsbootmenu/mkinitcpio.conf
 fi
+
+# If a custom rc.d exists, run every executable file therein
+for rfile in "${BUILDROOT}"/rc.d/*; do
+  [ -x "${rfile}" ] || continue
+  "${rfile}" || error "failed to run RC script ${rfile##*/}"
+done
 
 /zbm/bin/generate-zbm "${GENARGS[@]}" || error "failed to build images"
 

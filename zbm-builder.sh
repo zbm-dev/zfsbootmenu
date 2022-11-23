@@ -11,6 +11,15 @@ sanitise_path() {
   return 1
 }
 
+boolean_enabled() {
+  local val="${1:-}"
+
+  case "${val}" in
+    [Yy][Ee][Ss]|[Yy]|[Oo][Nn]|1) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 usage() {
   cat << EOF
 Build ZFSBootMenu images in an OCI container using podman or docker.
@@ -39,6 +48,8 @@ OPTIONS:
      Build specific ZFSBootMenu commit or tag (e.g. v1.12.0, d5594589)
      (Default: current upstream master)
 
+  -R Remove any existing zpool.cache and hostid in the build directory
+
   -C Do not include host /etc/zfs/zpool.cache in image
      (If ./zpool.cache exists, this switch will be ignored)
 
@@ -63,6 +74,7 @@ EOF
 
 SKIP_HOSTID=
 SKIP_CACHE=
+REMOVE_HOST_FILES=
 
 # By default, use the latest upstream build container image
 BUILD_IMG="ghcr.io/zbm-dev/zbm-builder:latest"
@@ -80,23 +92,62 @@ BUILD_ARGS=()
 # Volume mounts for the container manager
 VOLUME_ARGS=()
 
+# Optional configuration file
+CONFIG=
+
 if command -v podman >/dev/null 2>&1; then
   PODMAN="podman"
 else
   PODMAN="docker"
 fi
 
-while getopts "b:dhi:l:t:p:v:CH" opt; do
+CMDOPTS="b:dhi:l:t:p:v:c:CHR"
+
+# First pass to get build directory and configuration file
+while getopts "${CMDOPTS}" opt; do
   case "${opt}" in
     b)
       BUILD_DIRECTORY="${OPTARG}"
       ;;
-    d)
-      PODMAN=docker
+    c)
+      CONFIG="${OPTARG}"
       ;;
     h)
       usage
       exit 0
+      ;;
+  esac
+done
+
+# Make sure the build directory is identifiable
+if ! BUILD_DIRECTORY="$( sanitise_path "${BUILD_DIRECTORY}" )"; then
+  echo "ERROR: build directory does not exist"
+  exit 1
+fi
+
+# If a configuration wasn't specified, use a default it one exists
+if [ -z "${CONFIG}" ] && [ -r "${BUILD_DIRECTORY}/zbm-builder.conf" ]; then
+  CONFIG="${BUILD_DIRECTORY}/zbm-builder.conf"
+fi
+
+# Read the optional configuration
+if [ -n "${CONFIG}" ]; then
+  if [ -r "${CONFIG}" ]; then
+    # shellcheck disable=SC1090
+    source "${CONFIG}"
+  else
+    echo "ERROR: non-existent configuration specified"
+    exit 1
+  fi
+fi
+
+while getopts "${CMDOPTS}" opt; do
+  case "${opt}" in
+    # These have already been parsed in first pass
+    b|c|h)
+      ;;
+    d)
+      PODMAN=docker
       ;;
     i)
       BUILD_IMG="${OPTARG}"
@@ -112,6 +163,9 @@ while getopts "b:dhi:l:t:p:v:CH" opt; do
       ;;
     H)
       SKIP_HOSTID="yes"
+      ;;
+    R)
+      REMOVE_HOST_FILES="yes"
       ;;
     p)
       BUILD_ARGS+=( "-p" "${OPTARG}" )
@@ -132,11 +186,6 @@ if ! command -v "${PODMAN}" >/dev/null 2>&1; then
 fi
 
 # Always mount a build directory at /build
-if ! BUILD_DIRECTORY="$( sanitise_path "${BUILD_DIRECTORY}" )"; then
-  echo "ERROR: build directory does not exist"
-  exit 1
-fi
-
 VOLUME_ARGS+=( "-v" "${BUILD_DIRECTORY}:/build" )
 
 # Only mount a local repo at /zbm if specified
@@ -154,9 +203,21 @@ if [ -n "${BUILD_TAG}" ]; then
   BUILD_ARGS+=( "-t" "${BUILD_TAG}" )
 fi
 
+if boolean_enabled "${REMOVE_HOST_FILES}"; then
+  # Remove existing host files
+  for host_file in "hostid" "zpool.cache"; do
+    [ -e "${BUILD_DIRECTORY}/${host_file}" ] || continue
+    if ! rm "${BUILD_DIRECTORY}/${host_file}"; then
+      echo "ERROR: failed to remove file '${host_file}' from build directory"
+      exit 1
+    fi
+    echo "Removed file '${host_file}' by user request"
+  done
+fi
+
 # If no local hostid is available, copy the system hostid if desired
 if ! [ -r "${BUILD_DIRECTORY}"/hostid ]; then
-  if [ "${SKIP_HOSTID}" != "yes" ] && [ -r /etc/hostid ]; then
+  if ! boolean_enabled "${SKIP_HOSTID}" && [ -r /etc/hostid ]; then
     if ! cp /etc/hostid "${BUILD_DIRECTORY}"/hostid; then
       echo "ERROR: unable to copy /etc/hostid"
       echo "Copy a hostid file to ./hostid or use -H to disable"
@@ -167,7 +228,7 @@ fi
 
 # If no local zpool.cache is available, copy the system cache if desired
 if ! [ -r "${BUILD_DIRECTORY}"/zpool.cache ]; then
-  if [ "${SKIP_CACHE}" != "yes" ] && [ -r /etc/zfs/zpool.cache ]; then
+  if ! boolean_enabled "${SKIP_CACHE}" && [ -r /etc/zfs/zpool.cache ]; then
     if ! cp /etc/zfs/zpool.cache "${BUILD_DIRECTORY}"/zpool.cache; then
       echo "ERROR: unable to copy /etc/zfs/zpool.cache"
       echo "Copy a zpool cache to ./zpool.cache or use -C to disable"
