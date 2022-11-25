@@ -20,7 +20,8 @@ RUN echo "ignorepkg=linux" > /etc/xbps.d/10-nolinux.conf \
 # Install components necessary to build the image
 RUN xbps-query -Rp run_depends zfsbootmenu | xargs xbps-install -y
 RUN xbps-install -y linux5.10 linux5.10-headers \
-	zfs gummiboot-efistub curl yq-go bash kbd terminus-font dracut mkinitcpio cryptsetup
+	zfs gummiboot-efistub curl yq-go bash kbd \
+	terminus-font dracut mkinitcpio cryptsetup
 
 # Remove headers and massive dkms development toolchain; binutils
 # provides objcopy, which is necessary for UEFI bundle creation
@@ -32,8 +33,8 @@ RUN xbps-remove -Roy linux5.10-headers dkms && rm -f /var/cache/xbps/*
 RUN if [ -n "${ZBM_COMMIT_HASH}" ]; then echo "${ZBM_COMMIT_HASH}" > /etc/zbm-commit-hash; fi
 
 # Copy the build script
-COPY zbm-build.sh /zbm-build.sh
+COPY build-init.sh /build-init.sh
 
 # Run the build script with no arguments by default
-ENTRYPOINT [ "/zbm-build.sh" ]
+ENTRYPOINT [ "/build-init.sh" ]
 CMD [ ]

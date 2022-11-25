@@ -30,10 +30,10 @@ discovered, no default will be recorded and containers will attempt to build
 from the current `master`.
 
 The `image-build.sh` script expects to be run from the root of the ZFSBootMenu
-tree by default. From there, the path `releng/docker/zbm-build.sh` defines the
+tree by default. From there, the path `releng/docker/build-init.sh` defines the
 entrypoint for build containers. To run the `image-build.sh` script from
 another directory, simply set the `ZBM_BUILDER` environment variable to the
-location of the `zbm-build.sh` script to use.
+location of the `build-init.sh` script to use.
 
 For those without access to `buildah`, the `Dockerfile` will also create of a
 ZFSBootMenu builder image. From this directory, simply run
@@ -54,10 +54,10 @@ the latest release version packaged for Void; manually editing the `Dockerfile`
 to add new dependencies may be necessary until a new release is packaged.
 
 The builder image does **not** contain a ZFSBootMenu installation or a copy of
-the upstream git repository. Instead, the entrypoint `/zbm-build.sh` will fetch
-a ZFSBootMenu archive when the container is instantiated (or allow a local copy
-to be bind-mounted) and, as noted above, attempt to check out a specific commit
-based on the contents of `/etc/zbm-commit-hash`.
+the upstream git repository. Instead, the entrypoint `/build-init.sh` will
+fetch a ZFSBootMenu archive when the container is instantiated (or allow a
+local copy to be bind-mounted) and, as noted above, attempt to check out a
+specific commit based on the contents of `/etc/zbm-commit-hash`.
 
 # Running a ZFSBootMenu Builder Container
 
