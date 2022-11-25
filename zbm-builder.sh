@@ -141,6 +141,7 @@ if [ -n "${CONFIG}" ]; then
   fi
 fi
 
+OPTIND=1
 while getopts "${CMDOPTS}" opt; do
   case "${opt}" in
     # These have already been parsed in first pass
@@ -239,7 +240,6 @@ fi
 
 # If no config is specified, use in-tree default but force EFI and components
 if ! [ -r "${BUILD_DIRECTORY}"/config.yaml ]; then
-  BUILD_ARGS+=( "-c" "/zbm/etc/zfsbootmenu/config.yaml" )
   BUILD_ARGS+=( "-e" ".EFI.Enabled=true" )
   BUILD_ARGS+=( "-e" ".Components.Enabled=true" )
 fi

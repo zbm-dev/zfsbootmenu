@@ -24,21 +24,9 @@ Usage: $0 [options]
      Specify path for build root
      (Default: /build)
 
-  -c <configuration>
-     Specify path to generate-zbm(5) configuration
-     (Default: \${BUILDROOT}/config.yaml or \${BUILDROOT}/config.yaml.default)
-
   -o <output-directory>
      Specify path to output directory
      (Default: \${BUILDROOT}/build)
-
-  -H <hostid>
-     Specify path to hostid file
-     (Default: \${BUILDROOT}/hostid)
-
-  -C <cache>
-     Specify path to zpool.cache file
-     (Default: \${BUILDROOT}/zpool.cache)
 
   -p <package>
      Install the named Void Linux package in the container
@@ -66,22 +54,13 @@ EOF
 PACKAGES=()
 CONFIGEVALS=()
 GENARGS=()
-while getopts "hc:b:o:H:C:t:e:p:" opt; do
+while getopts "hb:o:t:e:p:" opt; do
   case "${opt}" in
-    c)
-      ZBMCONF="${OPTARG}"
-      ;;
     b)
       BUILDROOT="${OPTARG}"
       ;;
     o)
       ZBMOUTPUT="${OPTARG}"
-      ;;
-    H)
-      HOSTID="${OPTARG}"
-      ;;
-    C)
-      POOLCACHE="${OPTARG}"
       ;;
     t)
       ZBMTAG="${OPTARG}"
@@ -161,10 +140,6 @@ if [ -d /zbm/zfsbootmenu ]; then
       || error "unable to link mkinitcpio script ${cdir}/zfsbootmenu"
   done
 
-  # Link to default initcpio configuration file
-  mkdir -p /etc/zfsbootmenu
-  ln -Tsf /zbm/etc/zfsbootmenu/mkinitcpio.conf /etc/zfsbootmenu/mkinitcpio.conf
-
   # dracut module is in "dracut"
   dracutmod=/zbm/dracut
 elif [ -d /zbm/90zfsbootmenu ]; then
@@ -179,18 +154,6 @@ mkdir -p /usr/lib/dracut/modules.d
 ln -Tsf "${dracutmod}" /usr/lib/dracut/modules.d/90zfsbootmenu \
   || error "unable to link dracut module"
 
-# generate-zbm configures dracut to look in /etc/zfsbootmenu/dracut.conf.d.
-# Rather than override the default, just link to the in-repo defaults
-dconfd="/etc/zfsbootmenu/dracut.conf.d"
-if [ ! -d "${dconfd}" ]; then
-  mkdir -p "${dconfd}" || error "unable to create dracut configuration directory"
-
-  for cfile in /zbm/etc/zfsbootmenu/dracut.conf.d/*; do
-    [ -e "${cfile}" ] || continue
-    ln -Tsf "${cfile}" "${dconfd}/${cfile##*/}" || error "unable to link ${cfile}"
-  done
-fi
-
 # Make sure the build root exists
 : "${BUILDROOT:=/build}"
 mkdir -p "${BUILDROOT}" || error "unable to create directory '${BUILDROOT}'"
@@ -199,77 +162,54 @@ mkdir -p "${BUILDROOT}" || error "unable to create directory '${BUILDROOT}'"
 : "${ZBMOUTPUT:=${BUILDROOT}/build}"
 mkdir -p "${ZBMOUTPUT}" || error "unable to create directory '${ZBMOUTPUT}'"
 
-# Pick a default configuration if one was not provided
-if [ -z "${ZBMCONF}" ]; then
-  if [ -r "${BUILDROOT}/config.yaml" ]; then
-    ZBMCONF="${BUILDROOT}/config.yaml"
-  else
-    ZBMCONF="${BUILDROOT}/config.yaml.default"
-  fi
-fi
-
-# Configuration must exist
-[ -r "${ZBMCONF}" ] || error "missing configuration '${ZBMCONF}'"
-cp "${ZBMCONF}" "${ZBMWORKDIR}/config.yaml"
-
-# ZBMCONF now points to local copy
-ZBMCONF="${ZBMWORKDIR}/config.yaml"
-
-GENARGS+=( "--config" "${ZBMCONF}" )
-
 # Add forced overrides to the end of CONFIGEVALS
 CONFIGEVALS+=(
   ".Global.ManageImages = true"
-  ".Components.ImageDir = \"${ZBMWORKDIR}/build/components\""
-  ".EFI.ImageDir = \"${ZBMWORKDIR}/build\""
+  ".Components.ImageDir = \"${ZBMOUTPUT}\""
+  ".EFI.ImageDir = \"${ZBMOUTPUT}\""
   "del(.Global.BootMountPoint)"
 )
 
-mkdir -p "${ZBMWORKDIR}/build" || error "unable to create build directory"
-
-# Apply CONFIGEVALS to override configuration
-for ceval in "${CONFIGEVALS[@]}"; do
-  yq-go eval "${ceval}" -i "${ZBMCONF}" || error "failed to apply '${ceval}' to config"
-done
-
-# Make sure a hostid and cache, if provided, exist
-if [ -z "${HOSTID}" ]; then
-  [ -r "${BUILDROOT}/hostid" ] && HOSTID="${BUILDROOT}/hostid"
-elif [ ! -r "${HOSTID}" ]; then
-  error "missing hostid '${HOSTID}'"
-fi
-
-if [ -z "${POOLCACHE}" ]; then
-  [ -r "${BUILDROOT}/zpool.cache" ] && POOLCACHE="${BUILDROOT}/zpool.cache"
-elif [ ! -r "${POOLCACHE}" ]; then
-  error "missing pool cache '${POOLCACHE}'"
-fi
-
-# Copy the hostid in place if specified, otherwise remove any hostid
-if [ -n "${HOSTID}" ]; then
-  cp "${HOSTID}" "/etc/hostid" || error "unable to copy hostid"
+# Use provided hostid and zpool.cache files
+if [ -r "${BUILDROOT}/hostid" ]; then
+  ln -Tsf "${BUILDROOT}/hostid" /etc/hostid \
+    || error "failed to link hostid"
 else
   rm -f /etc/hostid
 fi
 
-# Copy the pool cache in place if specified, otherwise remove any cache
-if [ -n "${POOLCACHE}" ]; then
+if [ -r "${BUILDROOT}/zpool.cache" ]; then
   mkdir -p /etc/zfs
-  cp "${POOLCACHE}" /etc/zfs/zpool.cache || error "unable to copy pool cache"
+  ln -Tsf "${BUILDROOT}/zpool.cache" /etc/zfs/zpool.cache \
+    || error "failed to link zpool.cache"
 else
   rm -f /etc/zfs/zpool.cache
 fi
 
-# If a custom dracut.conf.d exists, link to its contents in the default location
-for cfile in "${BUILDROOT}"/dracut.conf.d/*; do
-  [ -e "${cfile}" ] || continue
-  ln -Tsf "${cfile}" "${dconfd}/${cfile##*/}" || error "unable to link ${cfile}"
-done
+# Link all configuration files in standard location;
+# go from most generic to most specificj
+mkdir -p /etc/zfsbootmenu
+confroots=(
+  "/zbm/etc/zfsbootmenu"
+  "/zbm/etc/zbm-builder"
+  "${BUILDROOT}"
+)
+for confroot in "${confroots[@]}"; do
+  for cfile in "config.yaml" "mkinitcpio.conf"; do
+    [ -e "${confroot}/${cfile}" ] || continue
+    ln -Tsf "${confroot}/${cfile}" "/etc/zfsbootmenu/${cfile}" \
+      || error "unable to link mkinitcpio.conf"
+  done
 
-# If a custom mkinitcpio.conf exist, link to its contents in the default location
-if [ -e "${BUILDROOT}/mkinitcpio.conf" ]; then
-  ln -Tsf "${BUILDROOT}/mkinitcpio.conf" /etc/zfsbootmenu/mkinitcpio.conf
-fi
+  for confd in "dracut.conf.d" "mkinitcpio.conf.d"; do
+    mkdir -p "/etc/zfsbootmenu/${confd}"
+    for cfile in "${confroot}/${confd}"/*; do
+      [ -e "${cfile}" ] || continue
+      ln -Tsf "${cfile}" "/etc/zfsbootmenu/${confd}/${cfile##*/}" \
+        || error "unable to link ${cfile}"
+    done
+  done
+done
 
 # If a custom rc.d exists, run every executable file therein
 for rfile in "${BUILDROOT}"/rc.d/*; do
@@ -277,9 +217,17 @@ for rfile in "${BUILDROOT}"/rc.d/*; do
   "${rfile}" || error "failed to run RC script ${rfile##*/}"
 done
 
-/zbm/bin/generate-zbm "${GENARGS[@]}" || error "failed to build images"
+# Copy default configuration to temporary directory for modifications
+ZBMCONF="${ZBMWORKDIR}/config.yaml"
+cp "/etc/zfsbootmenu/config.yaml" "${ZBMCONF}" \
+  || error "failed to copy configuration to working directory"
 
-for f in "${ZBMWORKDIR}"/build/*; do
-  [ "${f}" != "${ZBMWORKDIR}/build/*" ] || error "no images to copy to output"
-  cp -R "${f}" "${ZBMOUTPUT}"
+GENARGS+=( "--config" "${ZBMCONF}" )
+
+# Apply CONFIGEVALS to override configuration in working directory
+for ceval in "${CONFIGEVALS[@]}"; do
+  yq-go eval "${ceval}" -i "${ZBMCONF}" \
+    || error "failed to apply '${ceval}' to config"
 done
+
+exec /zbm/bin/generate-zbm "${GENARGS[@]}"

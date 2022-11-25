@@ -1,0 +1,17 @@
+Global:
+  # Set InitCPIO to true to use mkinitcpio for ZBM images
+  #InitCPIO: true
+  # The build container *forces* Global.ManageImages
+Components:
+  # Enable only current kernel/initramfs components and a backup
+  Enabled: true
+  Versions: false
+  # The ZBM build container *forces* Components.ImageDir
+EFI:
+  # Enable only current EFI executable and a backup file
+  Enabled: true
+  Versions: false
+  # The ZBM build container *forces* EFI.ImageDir
+Kernel:
+  # Set ZBM command-line options for the EFI bundle here
+  CommandLine: zfsbootmenu ro quiet loglevel=4 nomodeset
