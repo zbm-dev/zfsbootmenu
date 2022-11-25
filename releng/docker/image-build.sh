@@ -58,7 +58,7 @@ if [ -z "${zbm_commit_hash}" ]; then
 fi
 
 if [ -z "${ZBM_BUILDER}" ]; then
-  ZBM_BUILDER="./releng/docker/zbm-build.sh"
+  ZBM_BUILDER="./releng/docker/build-init.sh"
 fi
 
 if [ ! -r "${ZBM_BUILDER}" ]; then
@@ -114,12 +114,12 @@ if [ -n "${zbm_commit_hash}" ]; then
     buildah run "${container}" sh -c 'cat > /etc/zbm-commit-hash'
 fi
 
-buildah copy "${container}" "${ZBM_BUILDER}" /zbm-build.sh
-buildah run "${container}" chmod 755 /zbm-build.sh
+buildah copy "${container}" "${ZBM_BUILDER}" /build-init.sh
+buildah run "${container}" chmod 755 /build-init.sh
 
 buildah config \
   --workingdir / \
-  --entrypoint '[ "/zbm-build.sh" ]' \
+  --entrypoint '[ "/build-init.sh" ]' \
   --cmd '[ ]' \
   "${container}"
 

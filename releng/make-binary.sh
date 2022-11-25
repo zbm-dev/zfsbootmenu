@@ -73,7 +73,7 @@ for style in release recovery; do
   mkdir -p "${buildtmp}/build/dracut.conf.d" || error "cannot create config tree"
 
   # Copy style-specific configuration components in place;
-  # zbm-build.sh sets up standard configuration elements
+  # build container sets up standard configuration elements
   cp "./etc/zfsbootmenu/${style}.yaml" "${buildtmp}/build/config.yaml"
   cp "./etc/zfsbootmenu/${style}.conf.d/"*.conf "${buildtmp}/build/dracut.conf.d"
 

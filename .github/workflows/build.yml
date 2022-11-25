@@ -21,7 +21,7 @@ jobs:
         run: |
           cp /zbm/etc/zfsbootmenu/dracut.conf.d/*.conf /zbm/etc/zfsbootmenu/release.conf.d/
           yq-go e '.Global.DracutConfDir = "/zbm/etc/zfsbootmenu/release.conf.d"' -i /zbm/releng/docker/config.yaml
-          /zbm/releng/docker/zbm-build.sh -b /zbm/releng/docker -- --debug
+          /zbm/releng/docker/build-init.sh -b /zbm/releng/docker -- --debug
 
       - name: Archive release EFI
         uses: actions/upload-artifact@v3
@@ -45,7 +45,7 @@ jobs:
         run: |
           cp /zbm/etc/zfsbootmenu/dracut.conf.d/*.conf /zbm/etc/zfsbootmenu/recovery.conf.d/
           yq-go e '.Global.DracutConfDir = "/zbm/etc/zfsbootmenu/recovery.conf.d"' -i /zbm/releng/docker/config.yaml
-          /zbm/releng/docker/zbm-build.sh -b /zbm/releng/docker -- --debug
+          /zbm/releng/docker/build-init.sh -b /zbm/releng/docker -- --debug
 
       - name: Archive recovery EFI
         uses: actions/upload-artifact@v3
