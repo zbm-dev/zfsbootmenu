@@ -34,7 +34,22 @@ OPTIONS:
      Use an alternate build directory
      (Default: current directory)
 
+  -c <config>
+     Specify the path to a configuration file that will be sourced
+     (Default: \${BUILD_DIRECTORY}/zbm-builder.conf, if it exists)
+
   -d Force use of docker instead of podman
+
+  -O <argument>
+     Provide an option to 'podman run' or 'docker run'; if the
+     argument accepts one or more options, use a form with no spaces
+     or make sure each option gets its own '-O', e.g.:
+
+       zbm-builder -O -v -O /boot/efi/EFI/zfsbootmenu:/output
+       zbm-builder -O --volume -O /boot/efi/EFI/zfsbootmenu:/output
+       zbm-builder -O --volume=/boot/efi/EFI/zfsbootmenu:/output
+
+     May be specified multiple times.
 
   -i <image>
      Build within the named container image
@@ -51,11 +66,6 @@ OPTIONS:
 
   -H Do not include host /etc/hostid in image
      (If ./hostid exists, this switch will be ignored)
-
-  -v <src-path>:<container-path>[:opts]
-     Bind-mount the source path <src-path> at <container-path>
-     inside the container, using Docker-stype volume syntax
-     (May be specified multiple times for multiple mounts)
 
   -- <arguments>
      Additional arguments to the zbm-builder container
@@ -83,8 +93,8 @@ BUILD_REPO=
 # Arguments to the build script
 BUILD_ARGS=()
 
-# Volume mounts for the container manager
-VOLUME_ARGS=()
+# Arguments for the container runtime
+RUNTIME_ARGS=()
 
 # Optional configuration file
 CONFIG=
@@ -95,7 +105,7 @@ else
   PODMAN="docker"
 fi
 
-CMDOPTS="b:dhi:l:v:c:CHR"
+CMDOPTS="b:dhi:l:c:O:CHR"
 
 # First pass to get build directory and configuration file
 while getopts "${CMDOPTS}" opt; do
@@ -150,6 +160,9 @@ while getopts "${CMDOPTS}" opt; do
     l)
       BUILD_REPO="${OPTARG}"
       ;;
+    O)
+      RUNTIME_ARGS+=( "${OPTARG}" )
+      ;;
     C)
       SKIP_CACHE="yes"
       ;;
@@ -158,9 +171,6 @@ while getopts "${CMDOPTS}" opt; do
       ;;
     R)
       REMOVE_HOST_FILES="yes"
-      ;;
-    v)
-      VOLUME_ARGS+=( "-v" "${OPTARG}" )
       ;;
     *)
       usage
@@ -178,7 +188,7 @@ if ! command -v "${PODMAN}" >/dev/null 2>&1; then
 fi
 
 # Always mount a build directory at /build
-VOLUME_ARGS+=( "-v" "${BUILD_DIRECTORY}:/build" )
+RUNTIME_ARGS+=( "-v" "${BUILD_DIRECTORY}:/build" )
 
 # Only mount a local repo at /zbm if specified
 if [ -n "${BUILD_REPO}" ]; then
@@ -187,7 +197,7 @@ if [ -n "${BUILD_REPO}" ]; then
     exit 1
   fi
 
-  VOLUME_ARGS+=( "-v" "${BUILD_REPO}:/zbm:ro" )
+  RUNTIME_ARGS+=( "-v" "${BUILD_REPO}:/zbm:ro" )
 fi
 
 if boolean_enabled "${REMOVE_HOST_FILES}"; then
@@ -263,5 +273,5 @@ done
 
 # Make `/build` the working directory so relative paths in configs make sense
 exec "${PODMAN}" run \
-  --rm "${VOLUME_ARGS[@]}" -w "/build" \
+  --rm -w "/build" "${RUNTIME_ARGS[@]}" \
   "${BUILD_IMG}" "${BUILD_ARGS[@]}" "$@"
