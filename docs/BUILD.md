@@ -6,13 +6,13 @@ Official ZFSBootMenu release assets are built within OCI containers based on the
 
 The `zbm-builder.sh` script provides a front-end for integrating custom ZFSBootMenu configurations into the build container without the complexity of directly controlling the container runtime.
 
-Users wishing to build custom ZFSBootMenu images should be familiar with the core concepts of ZFSBootMenu as outlined in the [project README](README.md). For those interested, the [container README](releng/docker/README.md) provides more details on the operation of the ZFSBootMenu build container. However, `zbm-builder.sh` seeks to abstract away many of the details discussed in that document.
+Users wishing to build custom ZFSBootMenu images should be familiar with the core concepts of ZFSBootMenu as outlined in the [project README](../README.md). For those interested, the [container README](../releng/docker/README.md) provides more details on the operation of the ZFSBootMenu build container. However, `zbm-builder.sh` seeks to abstract away many of the details discussed in that document.
 
 ## Dependencies
 
 To build ZFSBootMenu images from a build container, one of [`podman`](https://podman.io) or [`docker`](https://www.docker.com) is required. The development team prefers `podman`, but `docker` may generally be substituted without consequence.
 
-If a custom build container is desired, [`buildah`](https://buildah.io) and `podman` are generally required. A [`Dockerfile`](releng/docker/Dockerfile) is provided for convenience, but feature parity with the `buildah` script is not guaranteed. The [container README](releng/docker/README.md) provides more information about the process of creating a custom build image.
+If a custom build container is desired, [`buildah`](https://buildah.io) and `podman` are generally required. A [`Dockerfile`](../releng/docker/Dockerfile) is provided for convenience, but feature parity with the `buildah` script is not guaranteed. The [container README](../releng/docker/README.md) provides more information about the process of creating a custom build image.
 
 ### Podman
 
@@ -54,7 +54,7 @@ To build a default image, invoke `zbm-builder.sh` with no arguments. For example
 ./zbm-builder.sh
 ```
 
-to produce a default kernel/initramfs pair in the `./build/components` subdirectory.
+to produce a default kernel/initramfs pair in the `./build` subdirectory.
 
 The default behavior of `zbm-builder.sh` will:
 
@@ -82,11 +82,17 @@ When `zbm-builder.sh` runs, it will identify custom hooks as executable files in
 
 For each hook directory that contains at least one executable file, `zbm-builder.sh` will write custom configuration snippets for `dracut` and `mkinitcpio` that will include these files in the output images.
 
+> The `mkinitcpio` configuration prepared by `zbm-builder.sh` consists of snippets installed in a `mkinitcpio.d` subdirectory of the build directory. The [default `mkinitcpio` configuration](../etc/zbm-builder/mkinitcpio.conf) includes a loop to source these snippets.
+
 ### Fully Customizing Images
 
-A custom `config.yaml` may be provided in the working directory to override the default ZFSBootMenu configuration. The build container runs its build script from the working directory on the host. Therefore, relative paths in a custom `config.yaml` will be interpreted relative to the working directory when `zbm-builder.sh` is invoked.
+The entrypoint for the ZFSBootMenu implements a [tiered configuration approach](../releng/docker/README.md#zfsbootmenu-configuration-and-execution) that allows default configurations to be augmented or replaced with local configurations in the build directory. A custom `config.yaml` may be provided in the working directory to override the default ZFSBootMenu configuration; configuration snippets for `dracut` or `mkinitcpio` can be placed in the `dracut.conf.d` and `mkinitcpio.conf.d` subdirectories, respectively. For `mkinitcpio` configurations, a complete `mkinitcpio.conf` can be placed in the working directory to override the standard configuration.
 
-> The internal build script **always** overrides the output paths for ZFSBootMenu components and UEFI executables to ensure that the images will reside in the `./build` subdirectory upon completion. Relative paths are primarily useful for specifying local `dracut` or `mkinitcpio` configuration paths.
+> The standard `mkinitcpio.conf` in the ZBM build container contains customizations to source snippets in the `mkinitcpio.conf.d`. This is not standard behavior for `mkinitcpio`. If the primary `mkinitcpio.conf` is overridden, this logic may need to be replicated. It is generally better to rely on the default configuration and override portions in `mkinitcpio.conf.d`.
+
+The build container runs its build script from the working directory on the host. In general, relative paths in custom configuration files are generally acceptable and refer to locations relative to the build directory. If absolute paths are preferred or required for some configurations, note that the build directory will be mounted as `/build` in the container.
+
+> The internal build script **always** overrides the output paths for ZFSBootMenu components and UEFI executables to ensure that the images will reside in a specified output directory (or, by default, a `build` subdirectory of build directory) upon completion. Relative paths are primarily useful for specifying local `dracut` or `mkinitcpio` configuration paths.
 
 More advanced users may wish to alter the build process itself. Some control over the build process is exposed through command-line options that are described in the output of
 
