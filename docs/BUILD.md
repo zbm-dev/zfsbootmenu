@@ -94,4 +94,4 @@ More advanced users may wish to alter the build process itself. Some control ove
 zbm-builder.sh -h
 ```
 
-Before adjusting these command-line options, seek a thorough understanding of the [image build process](releng/docker/README.md) and the command sequence of `zbm-builder.sh` itself.
+Before adjusting these command-line options, seek a thorough understanding of the [image build process](../releng/docker/README.md) and the command sequence of `zbm-builder.sh` itself.
