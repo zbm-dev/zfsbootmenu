@@ -44,10 +44,6 @@ OPTIONS:
      Build from ZFSBootMenu source tree at <path>
      (Default: fetch upstream source tree inside container)
 
-  -t <tag>
-     Build specific ZFSBootMenu commit or tag (e.g. v1.12.0, d5594589)
-     (Default: current upstream master)
-
   -R Remove any existing zpool.cache and hostid in the build directory
 
   -C Do not include host /etc/zfs/zpool.cache in image
@@ -56,14 +52,13 @@ OPTIONS:
   -H Do not include host /etc/hostid in image
      (If ./hostid exists, this switch will be ignored)
 
-  -p <pkg>
-     Include the named Void Linux package in the build container
-     (May be specified multiple times to add multiple packages)
-
   -v <src-path>:<container-path>[:opts]
      Bind-mount the source path <src-path> at <container-path>
      inside the container, using Docker-stype volume syntax
      (May be specified multiple times for multiple mounts)
+
+  -- <arguments>
+     Additional arguments to the zbm-builder container
 
 For more information, see documentation at
 
@@ -82,9 +77,8 @@ BUILD_IMG="ghcr.io/zbm-dev/zbm-builder:latest"
 # By default, build from the current directory
 BUILD_DIRECTORY="${PWD}"
 
-# By default, there is no local repo or repo tag
+# By default, there is no local repo
 BUILD_REPO=
-BUILD_TAG=
 
 # Arguments to the build script
 BUILD_ARGS=()
@@ -101,7 +95,7 @@ else
   PODMAN="docker"
 fi
 
-CMDOPTS="b:dhi:l:t:p:v:c:CHR"
+CMDOPTS="b:dhi:l:v:c:CHR"
 
 # First pass to get build directory and configuration file
 while getopts "${CMDOPTS}" opt; do
@@ -156,9 +150,6 @@ while getopts "${CMDOPTS}" opt; do
     l)
       BUILD_REPO="${OPTARG}"
       ;;
-    t)
-      BUILD_TAG="${OPTARG}"
-      ;;
     C)
       SKIP_CACHE="yes"
       ;;
@@ -167,9 +158,6 @@ while getopts "${CMDOPTS}" opt; do
       ;;
     R)
       REMOVE_HOST_FILES="yes"
-      ;;
-    p)
-      BUILD_ARGS+=( "-p" "${OPTARG}" )
       ;;
     v)
       VOLUME_ARGS+=( "-v" "${OPTARG}" )
@@ -180,6 +168,9 @@ while getopts "${CMDOPTS}" opt; do
       ;;
   esac
 done
+
+# Drop all processed arguments
+shift $((OPTIND-1))
 
 if ! command -v "${PODMAN}" >/dev/null 2>&1; then
   echo "ERROR: this script requires podman or docker"
@@ -197,11 +188,6 @@ if [ -n "${BUILD_REPO}" ]; then
   fi
 
   VOLUME_ARGS+=( "-v" "${BUILD_REPO}:/zbm:ro" )
-fi
-
-# If a tag was specified for building, pass to the container
-if [ -n "${BUILD_TAG}" ]; then
-  BUILD_ARGS+=( "-t" "${BUILD_TAG}" )
 fi
 
 if boolean_enabled "${REMOVE_HOST_FILES}"; then
@@ -240,8 +226,11 @@ fi
 
 # If no config is specified, use in-tree default but force EFI and components
 if ! [ -r "${BUILD_DIRECTORY}"/config.yaml ]; then
-  BUILD_ARGS+=( "-e" ".EFI.Enabled=true" )
-  BUILD_ARGS+=( "-e" ".Components.Enabled=true" )
+  BUILD_ARGS=(
+    "-e" ".EFI.Enabled=true"
+    "-e" ".Components.Enabled=true"
+    "${BUILD_ARGS[@]}"
+  )
 fi
 
 # Try to include ZBM hooks in the images by default
@@ -273,4 +262,6 @@ for stage in early_setup setup teardown; do
 done
 
 # Make `/build` the working directory so relative paths in configs make sense
-exec "${PODMAN}" run --rm "${VOLUME_ARGS[@]}" -w "/build" "${BUILD_IMG}" "${BUILD_ARGS[@]}"
+exec "${PODMAN}" run \
+  --rm "${VOLUME_ARGS[@]}" -w "/build" \
+  "${BUILD_IMG}" "${BUILD_ARGS[@]}" "$@"
