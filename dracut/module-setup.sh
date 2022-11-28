@@ -168,14 +168,9 @@ install() {
     exit 1
   fi
 
-  # zpool.cache, vdev_id.conf and hostid files are host-specific
+  # vdev_id.conf and hostid files are host-specific
   # and do not belong in public release images
   if [ -z "${release_build}" ]; then
-    if [ -e /etc/zfs/zpool.cache ]; then
-      inst /etc/zfs/zpool.cache
-      type mark_hostonly >/dev/null 2>&1 && mark_hostonly /etc/zfs/zpool.cache
-    fi
-
     if [ -e /etc/zfs/vdev_id.conf ]; then
       inst /etc/zfs/vdev_id.conf
       type mark_hostonly >/dev/null 2>&1 && mark_hostonly /etc/zfs/vdev_id.conf

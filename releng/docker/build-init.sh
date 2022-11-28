@@ -170,20 +170,12 @@ CONFIGEVALS+=(
   "del(.Global.BootMountPoint)"
 )
 
-# Use provided hostid and zpool.cache files
+# Use provided hostid
 if [ -r "${BUILDROOT}/hostid" ]; then
   ln -Tsf "${BUILDROOT}/hostid" /etc/hostid \
     || error "failed to link hostid"
 else
   rm -f /etc/hostid
-fi
-
-if [ -r "${BUILDROOT}/zpool.cache" ]; then
-  mkdir -p /etc/zfs
-  ln -Tsf "${BUILDROOT}/zpool.cache" /etc/zfs/zpool.cache \
-    || error "failed to link zpool.cache"
-else
-  rm -f /etc/zfs/zpool.cache
 fi
 
 # Link all configuration files in standard location;

@@ -185,10 +185,9 @@ each level of configurations to mask or augment earlier defaults.
 > `mkinitcpio.conf` that manually sources these snippets to emulate the
 > standard configuration behavior of dracut.
 
-In addition, host-specific files are linked if each exists:
+In addition, the hostid file is linked if it exists:
 
     /etc/hostid -> ${BUILDROOT}/hostid
-    /etc/zfs/zpool.cache -> ${BUILDROOT}/zfs/zpool.cache
 
 When launched, the container entrypoint will run any executable files it finds
 in `${BUILDROOT}/rc.d`. This provides a means to "terraform" the build
@@ -227,7 +226,7 @@ the `/etc/zfsbootmenu/build` directory, copy the desired files and run the
 container with the appropriate volume mount:
 
 ```sh
-cp /etc/hostid /etc/zfs/zpool.cache /etc/zfsbootmenu/build
+cp /etc/hostid /etc/zfsbootmenu/build
 podman run -v /etc/zfsbootmenu/build:/build zbm
 ```
 

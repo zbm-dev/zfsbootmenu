@@ -186,7 +186,6 @@ build() {
 
     # Copy host-specific ZFS configs
     [[ -f /etc/hostid ]] && add_file "/etc/hostid"
-    [[ -f /etc/zfs/zpool.cache ]] && add_file "/etc/zfs/zpool.cache"
     [[ -f /etc/zfs/vdev_id.conf ]] && add_file "/etc/zfs/vdev_id.conf"
     [[ -f /etc/modprobe.d/zfs.conf ]] && add_file "/etc/modprobe.d/zfs.conf"
 
