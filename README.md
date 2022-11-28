@@ -64,7 +64,7 @@ Installation and integration guides are available, along with other live documen
 
 ## Containerized builds
 
-If you run Docker or [podman](https://podman.io/), it is also possible to build ZFSBootMenu images in a container. Build containers are based on Void Linux and provide a consistent and well-tested environment for creating images with custom configurations. The [build guide](docs/BUILD.md) provides a brief overview of the [zbm-builder.sh](zbm-builder.sh) script that provides a simple front-end for containerized builds. Advanced users with very specific needs may consult the [container README](releng/docker/README.md) for a more detailed description of ZFSBootMenu build containers.
+If you run Docker or [podman](https://podman.io/), it is also possible to build ZFSBootMenu images in a container. Build containers are based on Void Linux and provide a consistent and well-tested environment for creating images with custom configurations. The [build guide](docs/BUILD.md) provides a brief overview of the [zbm-builder.sh](zbm-builder.sh) script that provides a simple front-end for containerized builds. A straightforward example, which includes optional support for remote access via the `dropbear` SSH server, is [provided in the wiki](https://github.com/zbm-dev/zfsbootmenu/wiki/Building-in-Containers). Advanced users with very specific needs may consult the [container README](releng/docker/README.md) for a more detailed description of ZFSBootMenu build containers.
 
 # ZFS boot environments
 
