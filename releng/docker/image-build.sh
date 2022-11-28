@@ -94,6 +94,12 @@ buildah run "${container}" sh -c "cat > /etc/xbps.d/10-nolinux.conf" <<-EOF
 	ignorepkg=linux-headers
 EOF
 
+# Prevent initramfs kernel hooks from being installed
+buildah run "${container}" sh -c "cat > /etc/xbps.d/15-noinitramfs.conf" <<-EOF
+	noextract=/usr/libexec/mkinitcpio/*
+	noextract=/usr/libexec/dracut/*
+EOF
+
 # Install ZFSBootMenu dependencies and components necessary to build images
 buildah run "${container}" \
   sh -c 'xbps-query -Rp run_depends zfsbootmenu | xargs xbps-install -y'
