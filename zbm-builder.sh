@@ -59,10 +59,7 @@ OPTIONS:
      Build from ZFSBootMenu source tree at <path>
      (Default: fetch upstream source tree inside container)
 
-  -R Remove any existing zpool.cache and hostid in the build directory
-
-  -C Do not include host /etc/zfs/zpool.cache in image
-     (If ./zpool.cache exists, this switch will be ignored)
+  -R Remove any existing hostid in the build directory
 
   -H Do not include host /etc/hostid in image
      (If ./hostid exists, this switch will be ignored)
@@ -78,7 +75,6 @@ EOF
 }
 
 SKIP_HOSTID=
-SKIP_CACHE=
 REMOVE_HOST_FILES=
 
 # By default, use the latest upstream build container image
@@ -105,7 +101,7 @@ else
   PODMAN="docker"
 fi
 
-CMDOPTS="b:dhi:l:c:O:CHR"
+CMDOPTS="b:dhi:l:c:O:HR"
 
 # First pass to get build directory and configuration file
 while getopts "${CMDOPTS}" opt; do
@@ -163,9 +159,6 @@ while getopts "${CMDOPTS}" opt; do
     O)
       RUNTIME_ARGS+=( "${OPTARG}" )
       ;;
-    C)
-      SKIP_CACHE="yes"
-      ;;
     H)
       SKIP_HOSTID="yes"
       ;;
@@ -200,16 +193,13 @@ if [ -n "${BUILD_REPO}" ]; then
   RUNTIME_ARGS+=( "-v" "${BUILD_REPO}:/zbm:ro" )
 fi
 
-if boolean_enabled "${REMOVE_HOST_FILES}"; then
-  # Remove existing host files
-  for host_file in "hostid" "zpool.cache"; do
-    [ -e "${BUILD_DIRECTORY}/${host_file}" ] || continue
-    if ! rm "${BUILD_DIRECTORY}/${host_file}"; then
-      echo "ERROR: failed to remove file '${host_file}' from build directory"
-      exit 1
-    fi
-    echo "Removed file '${host_file}' by user request"
-  done
+# Remove existing hostid
+if boolean_enabled "${REMOVE_HOST_FILES}" && [ -e "${BUILD_DIRECTORY}/hostid" ]; then
+  if ! rm "${BUILD_DIRECTORY}/hostid"; then
+    echo "ERROR: failed to remove hostid from build directory"
+    exit 1
+  fi
+  echo "Removed hostid by user request"
 fi
 
 # If no local hostid is available, copy the system hostid if desired
@@ -218,17 +208,6 @@ if ! [ -r "${BUILD_DIRECTORY}"/hostid ]; then
     if ! cp /etc/hostid "${BUILD_DIRECTORY}"/hostid; then
       echo "ERROR: unable to copy /etc/hostid"
       echo "Copy a hostid file to ./hostid or use -H to disable"
-      exit 1
-    fi
-  fi
-fi
-
-# If no local zpool.cache is available, copy the system cache if desired
-if ! [ -r "${BUILD_DIRECTORY}"/zpool.cache ]; then
-  if ! boolean_enabled "${SKIP_CACHE}" && [ -r /etc/zfs/zpool.cache ]; then
-    if ! cp /etc/zfs/zpool.cache "${BUILD_DIRECTORY}"/zpool.cache; then
-      echo "ERROR: unable to copy /etc/zfs/zpool.cache"
-      echo "Copy a zpool cache to ./zpool.cache or use -C to disable"
       exit 1
     fi
   fi

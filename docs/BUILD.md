@@ -60,8 +60,7 @@ The default behavior of `zbm-builder.sh` will:
 
 1. Pull the default builder image, `ghcr.io/zbm-dev/zbm-builder:latest`.
 2. If `./hostid` does not exist, copy `/etc/hostid` (if it exists) to `./hostid`.
-3. If `./zpool.cache` does not exist, copy `/etc/zfs/zpool.cache` to `./zpool.cache`.
-4. Spawn an ephemeral container from the builder image and run its build process:
+3. Spawn an ephemeral container from the builder image and run its build process:
     1. Bind-mount the working directory into the container to expose local configurations to the builder
     2. If `./config.yaml` exists, inform the builder to use that custom configuration instead of the default
     3. Run the internal build script to produce output in the `./build` subdirectory
