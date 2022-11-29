@@ -48,6 +48,13 @@
 # zfsbootmenu
 # ```
 
+## SCRIPT ARGUMENTS
+
+# This script forwards arguments to the zbm-builder.sh helper script, but
+# overrides any build-directory specification. In addition, the script adds
+# arguments to bind-mount \${BUILD_DIR}/cmdline.d and install the `dropbear`
+# and `dracut-crypt-ssh` packages inside the container.
+
 
 BUILD_DIR=$(realpath "${BUILD_DIR:-${PWD}}")
 ZBM_BUILDER=$(realpath "${ZBM_BUILDER:-zbm-builder.sh}")
@@ -126,10 +133,28 @@ for keytype in "${RS_SSH_KEYTYPES[@]}"; do
   echo "dropbear_${keytype}_key=/build/dropbear/ssh_host_${keytype}_key" >> "${RS_DDC}"
 done
 
-
 ## ZBM BUILDING
 
-"${ZBM_BUILDER}" -b "${BUILD_DIR}" \
-  -p dracut-crypt-ssh -p dropbear \
-  -v "${BUILD_DIR}/cmdline.d":/etc/cmdline.d:ro \
-  "${@}"
+# Separate arguemnts into those for the helper and those for the container
+HELPER_ARGS=( )
+BUILDER_ARGS=( )
+
+_builder=""
+for _arg in "$@"; do
+  # Pulling helper arguments first
+  if [ -z "${_builder}" ]; then
+    # If the argument is "--", drop it and switch to container args
+    if [ "${_arg}" = "--" ]; then
+      _builder="yes"
+      continue
+    fi
+
+    HELPER_ARGS+=( "${_arg}" )
+  else
+    BUILDER_ARGS+=( "${_arg}" )
+  fi
+done
+
+"${ZBM_BUILDER}" "${HELPER_ARGS[@]}" -b "${BUILD_DIR}" \
+  -O -v -O "${BUILD_DIR}/cmdline.d:/etc/cmdline.d:ro" \
+  -- "${BUILDER_ARGS[@]}" -p dracut-crypt-ssh -p dropbear
