@@ -1,3 +1,58 @@
+# ZFSBootMenu v2.1.0 (2022-12-19)
+
+## Deprecated features
+
+* `syslinux` support as a core part of `generate-zbm` will be removed in the next release. [contrib/syslinux-update.sh](https://github.com/zbm-dev/zfsbootmenu/blob/master/contrib/syslinux-update.sh) should be used to create `syslinux.cfg` moving forward. Refer to the script for usage documentation.
+* Awareness of platform endianness when writing `/etc/hostid` was rendered moot when support for `skim` was removed because `fzf` is only supported on little-endian systems. All hostid writes assume little-endian byte order by default.
+
+## New features
+
+* The command line option `zbm.prefer` has been extended with a `!!` marker to import exactly one pool when multiple are available on a system. Refer to [docs/pod/zfsbootmenu.7.pod](https://github.com/zbm-dev/zfsbootmenu/blob/master/docs/pod/zfsbootmenu.7.pod) for more details.
+* Users of the binary releases are now able to use their own custom hooks with the new `zbm.hookroot` command line option. Using this, a partition and directory specification can be provided which allows for additional scripts to be loaded at runtime. Refer to [docs/pod/zfsbootmenu.7.pod](https://github.com/zbm-dev/zfsbootmenu/blob/master/docs/pod/zfsbootmenu.7.pod) for more details.
+* [contrib/remote-ssh-build.sh](https://github.com/zbm-dev/zfsbootmenu/blob/master/contrib/remote-ssh-build.sh) has been provided by a new contributor. This script helps ease the creation of a custom EFI file with an embedded SSH server and keys.
+* A global application header has been added to highlight the pages that are available and the currently selected page.
+* Unless explicitly configured, `generate-zbm` will now default to `dracut` but fall back to `mkinitcpio` when it cannot find `dracut` in the path.
+* The build container `ghcr.io/zbm-dev/zbm-builder` has been substantially improved, making it easier to manage custom images built in a controlled, compatible environment using podman or docker.
+
+## Fixes
+
+* On some systems, Dracut was incorrectly using `dash` where `bash` should be used. Forbidding the inclusion of `dash` with Dracut resolves this issue.
+* The `drm` Dracut module has been blacklisted. ZFSBootMenu should never attempt to load firmware for video cards.
+* When using ZFSBootMenu to pin a kernel, ensure that an anchor is attached to the end of the pin. This resolves incorrect matches on systems that have unversioned kernels.
+* To avoid a potential conflict between ZFS pool names and files/directories created by ZFSBootMenu, all detected boot environment mountpoints have been moved to a dedicated `environments/` sub-directory.
+
+## Significant commits in this release
+* 8e6ca4a - set_default_kernel: properly clear default when no kernel is specified (Andrew J. Hesford)
+* 0b40f44 - interface: enable left/right arrow key navigation (Zach Dykstra)
+* 235eb17 - Stop installing zpool.cache (Andrew J. Hesford)
+* 5427883 - Improve containerized builds (Andrew J. Hesford)
+* c023517 - Automatically select initramfs generator when not forced (Andrew J. Hesford)
+* 6223804 - Update artifact uploader to latest version (Zach Dykstra)
+* 00ef434 - Add/use border label feature flag (Zach Dykstra)
+* 562b14a - Fix booting test VMs on some hardware (Zach Dykstra)
+* 8d3bbff - Fix kernel selection after introducing $BASE/environments (Alexander Lobakin)
+* b743893 - contrib/README.md: document contrib scripts (Andrew J. Hesford)
+* a3f15ed - generate-zbm: deprecate syslinux support (Andrew J. Hesford)
+* 9f85003 - Include the OpenSSH client in recovery images (Zach Dykstra)
+* 91900d3 - Explicitly require bash, blacklist dash (Andrew J. Hesford)
+* 3399f4b - Move dataset mountpoint to $BASE/environments/ (Zach Dykstra)
+* 7eb7780 - Allow imports of hooks from external sources at runtime (Andrew J. Hesford)
+* 57b46a2 - Extend capabilities of zbm.prefer (Zach Dykstra)
+* af1c74b - Remove diff from early days of playing around (Zach Dykstra)
+* 3da5547 - Center key bind text on horizontal layout fzf screens (Zach Dykstra)
+* df8ab05 - Support busybox as /bin/sh in chroot (Zach Dykstra)
+* 2fa207e - fix: ensure $uefi_stub is defined before checking if it is a file (Zach Dykstra)
+* 906ce3b - Add anchor to end of string when pinning a kernel (Zach Dykstra)
+* 9c91afa - Make default efi path distro agnostic (gardar)
+* 333b6d8 - Wrapper Build Script for ZBM with SSH access (Gerhard Roethlin)
+* 05dbf11 - Show /etc/zbm-commit-hash in zreport (Zach Dykstra)
+* d4b35a0 - zbm-build.sh: don't upgrade packages when installing custom software (Andrew J. Hesford)
+* 10e3624 - Exploit common configurations for recovery/release images (Andrew J. Hesford)
+* 1be8ed0 - Drop drm module from standard dracut config (Andrew J. Hesford)
+* 9b57d8a - testing: move Ubuntu to 22.04 LTS, make column available to Debian/Ubuntu (Andrew J. Hesford)
+* feb6a26 - documentation: provide a link to the wiki (Zach Dykstra)
+* f2d3336 - Add a contrib script to snapshot the BE prior to boot (Zach Dykstra)
+
 # ZFSBootMenu v2.0.0 (2022-06-28)
 
 ZFSBootMenu 2.0.0 introduces a major internal reorganization that allows images to be built with initramfs generators other than dracut and includes some helpful command-line utilities. This release is based on Linux 5.10.125 and ZFS 2.1.5.
