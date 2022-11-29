@@ -157,6 +157,11 @@ while true; do
   BE_SELECTED=0
 
   case "${key}" in
+    "right")
+      key="mod-s"
+      BE_SELECTED=1
+      continue
+      ;;
     "enter")
       if ! kexec_kernel "$( select_kernel "${selected_be}" )"; then
         zdebug "kexec failed for ${selected_be}"
@@ -189,6 +194,16 @@ while true; do
         "mod-u")
           set_default_kernel "${fs}"
           ;;
+        "left")
+          key="mod-s"
+          BE_SELECTED=1
+          continue
+          ;;
+        "right")
+          BE_SELECTED=1
+          key="mod-p"
+          continue
+          ;;
       esac
       ;;
     "mod-p")
@@ -199,6 +214,11 @@ while true; do
       zdebug "selected pool: ${selected_pool}"
 
       case "${subkey}" in
+        "left")
+          key="mod-k"
+          BE_SELECTED=1
+          continue
+          ;;
         "enter")
           continue
           ;;
@@ -220,6 +240,18 @@ while true; do
       # two snapshots were potentially returned - discard the second
       selected_snap="${selected_snap%,*}"
       zdebug "selected snapshot: ${selected_snap}"
+
+      case "${subkey}" in
+        "left")
+          BE_SELECTED=0
+          continue
+          ;;
+        "right")
+          BE_SELECTED=1
+          key="mod-k"
+          continue
+          ;;
+      esac
 
       if is_snapshot "${selected_snap}" ; then
         case "${subkey}" in
