@@ -83,7 +83,7 @@ global_header() {
   fi
 
   # Set the entire string to one color
-  header="\\033[0;37m Boot Environments - Snapshots - Kernels - Pool Status - Logs - Help \\033[0m"
+  header="\\033[0;37m Boot Environments - Snapshots - Kernels - Pool Status | Logs - Help \\033[0m"
 
   case "${page}" in
     draw_be)
@@ -155,7 +155,7 @@ draw_be() {
 ^[CTRL+R] recovery shell
 ^[CTRL+H] help" )"
 
-  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-j,alt-o${kcl_bind:+,${kcl_bind}}"
+  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-j,alt-o${kcl_bind:+,${kcl_bind}},right"
 
   if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
@@ -203,7 +203,7 @@ draw_kernel() {
 ^[CTRL+D] set default
 ^[CTRL+H] help" )"
 
-  expects="--expect=alt-d,alt-u"
+  expects="--expect=alt-d,alt-u,left,right"
 
   if ! selected="$( HELP_SECTION=kernel-management ${FUZZYSEL} \
       --prompt "${benv} > " --tac --with-nth=2 --header="${header}" \
@@ -250,7 +250,7 @@ draw_snapshots() {
 
   context="Note: for diff viewer, use tab to select/deselect up to two items"
 
-  expects="--expect=alt-x,alt-c,alt-j,alt-o,alt-n,alt-r"
+  expects="--expect=alt-x,alt-c,alt-j,alt-o,alt-n,alt-r,left,right"
 
   # ${snapshots} must always be defined so that the mod-n handler can be executed
   snapshots="$( zfs list -t snapshot -H -o name "${benv}" -S "${sort_key}" )"
@@ -309,9 +309,12 @@ draw_pool_status() {
 [CTRL+L] view logs
 [CTRL+H] help" )"
 
+  expects="--expect=left"
+
   if ! selected="$( zpool list -H -o name |
       HELP_SECTION=zpool-health ${FUZZYSEL} \
       --prompt "Pool > " --tac --expect=alt-r,ctrl-r,ctrl-alt-r \
+      ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
       ${HAS_BORDER:+--border-label="$( global_header )"} \
       --preview-window="right:${psize}${HAS_BORDER:+,border-sharp}" \
       --preview="zpool status -v {}" --header="${header}" )"; then
