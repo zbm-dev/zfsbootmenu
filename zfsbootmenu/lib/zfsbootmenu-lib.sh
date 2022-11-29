@@ -83,7 +83,7 @@ global_header() {
   fi
 
   # Set the entire string to one color
-  header="\\033[0;37m Boot Environments - Snapshots - Kernels - Pool Status | Logs - Help \\033[0m"
+  header="\\033[0;37m Boot Environments - Snapshots - Kernels - Pool Status \\033[0m"
 
   case "${page}" in
     draw_be)
@@ -103,9 +103,11 @@ global_header() {
       tab="Pool Status"
       ;;
     help_pager)
+      header="\\033[0;37m Help \\033[0m"
       tab="Help"
       ;;
     zlogtail)
+      header="\\033[0;37m Logs \\033[0m"
       tab="Logs"
       ;;
     *)
