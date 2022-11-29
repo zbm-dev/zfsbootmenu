@@ -304,6 +304,7 @@ Host ${TESTHOST}
   UserKnownHostsFile /dev/null
   StrictHostKeyChecking no
   LogLevel error
+  IdentityAgent none
 EOF
   fi
 
