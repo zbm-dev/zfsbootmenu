@@ -61,10 +61,6 @@ center_string() {
   printf "%*s" $(( ( ${#1} + COLUMNS ) / 2 )) "${1}"
 }
 
-# arg1: text to center
-# prints: left-padded text
-# returns: nothing
-
 # arg1: hostid, as hex number without leading "0x"
 # prints: nothing
 # returns: 0 on successful write, 1 on error
