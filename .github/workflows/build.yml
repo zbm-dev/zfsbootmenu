@@ -41,7 +41,7 @@ jobs:
 
       - name: Prune release artifacts
         run: |
-          rm -rf /zbm/releng/docker/build/*
+          rm -r /build/build
 
       - name: Build recovery artifacts
         run: |
