@@ -108,18 +108,29 @@ if echo "${release}" | grep -q "[A-Za-z]"; then
   prerelease="--prerelease"
 fi
 
+[ -d "releng/assets/${release}" ] || mkdir -p "releng/assets/${release}"
+
+asset_dir="$( realpath -e "releng/assets/${release}" )"
+asset_files=()
+assets=()
+
 # Create binary assets
 if ! releng/make-binary.sh "${release}"; then
   error "ERROR: unable to make release assets, exiting!"
 fi
 
+# Copy in any extra assets/files, relative to the project root
+# shellcheck disable=SC2043
+for extra in bin/zbm-efi-kcl ; do
+  [ -f "${extra}" ] || error "ERROR: missing ${extra}"
+  cp "${extra}" "${asset_dir}/"
+  assets+=( "${extra##*/}" )
+done
+
 # Sign the binary assets
 if ! releng/sign-assets.sh "${release}"; then
   error "ERROR: unable to sign release assets, exiting!"
 fi
-
-asset_dir="$( realpath -e "releng/assets/${release}" )"
-asset_files=()
 
 for style in release recovery; do
   assets+=( "zfsbootmenu-${style}-vmlinuz-${arch}-v${release}.EFI" )
@@ -128,7 +139,7 @@ done
 
 for asset in "${assets[@]}" ; do
   f="${asset_dir}/${asset}"
-  [ -f "${f}" ] || error "ERROR: missing boot image ${f}"
+  [ -f "${f}" ] || error "ERROR: missing release asset ${f}"
   asset_files+=( "${f}" )
 done
 
