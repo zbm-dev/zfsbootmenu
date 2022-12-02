@@ -24,7 +24,7 @@ case "${release}" in
   *) ;;
 esac
 
-buildtag="${2:-localhost/zbm-builder:$(date '+%Y%m%d')}"
+buildtag="${2:-ghcr.io/zbm-dev/zbm-builder:$(date '+%Y%m%d')}"
 if ! podman inspect "${buildtag}" >/dev/null 2>&1; then
   build_args=( "${buildtag}" )
 
@@ -44,16 +44,13 @@ case "${arch}" in
 esac
 
 buildtmp="$( mktemp -d )" || error "cannot create build directory"
-mkdir -p "${buildtmp}/out" || error "cannot create output directory"
 
-# Volume mounts for the container:
+# Common volume mounts for the container:
 # - Current repo is the tree from which builds will be made
 # - A read-only "build" directory (to be made) will contain configuration
-# - Output directory will receive build products
 volmounts=(
   "-v" ".:/zbm:ro"
   "-v" "${buildtmp}/build:/build:ro"
-  "-v" "${buildtmp}/out:/out"
 )
 
 if ! assets="$( realpath -e releng )/assets/${release}"; then
@@ -72,41 +69,47 @@ for style in release recovery; do
   # Always start with a fresh configuration tree
   mkdir -p "${buildtmp}/build/dracut.conf.d" || error "cannot create config tree"
 
+  # Make sure there is an output directory for this asset style
+  zbmtriplet="zfsbootmenu-${style}-vmlinuz-${arch}-v${release}"
+  outdir="${buildtmp}/${zbmtriplet}"
+  mkdir -p "${outdir}" || error "cannot create output directory"
+
   # Copy style-specific configuration components in place;
   # build container sets up standard configuration elements
   cp "./etc/zfsbootmenu/${style}.yaml" "${buildtmp}/build/config.yaml"
   cp "./etc/zfsbootmenu/${style}.conf.d/"*.conf "${buildtmp}/build/dracut.conf.d"
 
-  # Specify options for the build st
-  buildopts=(
-    "-o" "/out"
-    "-e" ".EFI.Enabled = ${BUILD_EFI}"
-  )
-
-  # For the containerized build, use current repo by mounting at /zbm
-  # Custom configs and outputs will be in the temp dir, mounted at /build
-  if ! podman run --rm "${volmounts[@]}" "${buildtag}" "${buildopts[@]}"; then
+  # In addition to common mounts which expose source repo and build configs,
+  # make sure a writable output directory is available for this style and
+  # build the EFI bundle if it is supported for this arch
+  if ! podman run --rm \
+      "${volmounts[@]}" -v "${outdir}:/out" \
+      "${buildtag}" -o /out -e ".EFI.Enabled = ${BUILD_EFI}"; then
     error "failed to create image"
   fi
 
-  zbmtriplet="zfsbootmenu-${style}-vmlinuz-${arch}-v${release}"
-
   # EFI file is currently only built on x86_64
   if [ "${BUILD_EFI}" = "true" ]; then
-    if !  cp "${buildtmp}/out/vmlinuz.EFI" "${assets}/${zbmtriplet}.EFI"; then
+    if ! cp "${outdir}/vmlinuz.EFI" "${assets}/${zbmtriplet}.EFI"; then
       error "failed to copy UEFI bundle"
     fi
+    rm -f "${outdir}/vmlinuz.EFI"
   fi
 
-  # Nothing to archive if no components were produced
-  [ -d "${buildtmp}/out/components" ] || exit 0
+  have_components=
+  for f in "${outdir}"/*; do
+    [ -e "${f}" ] || continue
+    have_components="yes"
+    break
+  done
 
-  zbmtriplet="zfsbootmenu-${style}-${arch}-v${release}"
-  # If components were produced, archive them
-  ( cd "${buildtmp}/out" && mv components "${zbmtriplet}" && \
-    tar czvf "${assets}/${zbmtriplet}.tar.gz" "${zbmtriplet}"
-  ) || error "failed to pack components"
+  if [ -n "${have_components}" ]; then
+    # If components were produced, archive them
+    ( cd "${buildtmp}" && \
+      tar -czvf "${assets}/${zbmtriplet}.tar.gz" "${zbmtriplet}"
+    ) || error "failed to pack components"
+  fi
 
   # Clean up the style-specific build components
-  rm -rf "${buildtmp}/build"
+  rm -rf "${buildtmp}/build" "${outdir}"
 done
