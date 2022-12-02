@@ -44,7 +44,7 @@ In general, this should be the location of your EFI System Partition. B<generate
 
 =item B<Version>
 
-A specific ZFSBootMenu version string to use in producing images. In the string, the value I<%{current}> will be replaced with the release version of ZFSBootMenu. The default value is simply I<%{current}>.
+A specific ZFSBootMenu version string to use in versioned output images. In the string, the value I<%{current}> will be replaced with the release version of ZFSBootMenu. The default value is simply I<%{current}>.
 
 =item B<DracutFlags>
 

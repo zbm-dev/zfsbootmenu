@@ -70,11 +70,17 @@ GetOptions(
   "initcpio|i!" => \$runConf{usecpio},
   "hookd|H=s@"  => \$runConf{cpio_hookd},
   "debug|d"     => \$runConf{debug},
+  "showver|V"   => \$runConf{showver},
   "help|h"      => sub {
     pod2usage( -verbose => 2 );
     exit;
   },
-);
+) or exit 1;
+
+if ( defined $runConf{showver} and $runConf{showver} ) {
+  printf "%s\n", $VERSION;
+  exit 0;
+}
 
 if ( -r $runConf{config} ) {
   eval {
@@ -301,7 +307,7 @@ unless ( nonempty $runConf{kernel_prefix} and nonempty $runConf{kernel_version} 
   }
 }
 
-printf "Creating ZFSBootMenu %s from kernel %s\n", $runConf{version}, $runConf{kernel};
+printf "Creating ZFSBootMenu %s from kernel %s\n", $VERSION, $runConf{kernel};
 
 my $spl_hostid = "/sys/module/spl/parameters/spl_hostid";
 if ( -f $spl_hostid ) {
@@ -1043,7 +1049,7 @@ Where noted, command-line options supersede options in the B<generate-zbm>(5) co
 
 =item B<--version|-v> I<zbm-version>
 
-Override the ZFSBootMenu version; supersedes I<Global.Version>
+Override the ZFSBootMenu version in output files; supersedes I<Global.Version>
 
 =item B<--kernel|-k> I<kernel-path>
 
@@ -1106,6 +1112,10 @@ Set the I<Global.ManageImages> option to false, disabling image generation.
 =item B<--debug|d>
 
 Enable debug output
+
+=item B<--showver|V>
+
+Print ZFSBootMenu version and quit.
 
 =back
 
