@@ -4,11 +4,14 @@
 YAML=0
 GENZBM=0
 IMAGE=0
-CONFD=0
-DRACUT=0
 MKINITCPIO=0
 SIZE="5G"
 POOL_PREFIX="ztest"
+
+# Dracut setup requires a local installation to work
+# In "all" mode, dracut is opportunistic
+DRACUT="no"
+CONFD=0
 
 DISTROS=()
 
@@ -17,10 +20,13 @@ dictfile="/usr/share/dict/words"
 
 usage() {
   cat <<EOF
-Usage: $0 [options]
+USAGE: $0 [options]
+
+OPTIONS
+
   -y  Create local.yaml
   -g  Create a generate-zbm symlink
-  -c  Create dracut.conf.d
+  -c  Create dracut.conf.d (if dracut is enabled)
   -d  Create a local dracut tree for local mode
   -m  Create mkinitcpio.conf
   -i  Create a test VM image
@@ -33,8 +39,24 @@ Usage: $0 [options]
   -r  Use a randomized pool name
   -x  Use an existing pool image
   -k  Populate host SSH host and authorized keys
+  -E  Add a variable to the image-creation environment
   -o  Distribution to install (may specify more than one)
       [ void, void-musl, alpine, arch, debian, ubuntu ]
+
+ENVIRONMENT VARIABLES
+
+  Certain variables, when set with -E, allow customization of test images:
+
+  RELEASE (Debian, Ubuntu)
+  Specify a particular release to install in the test image
+  (e.g., "bullseye" or "buster" for Debian; "kinetic" or "jammy" for ubuntu)
+
+  APT_REPOS (Debian, Ubuntu)
+  Specify a space-separated list of specific repositories to configure for apt
+  (e.g., "main universe multiverse")
+
+  LIBC (Void)
+  Set LIBC=musl to build a test image with musl; otherwise, glib will be used
 EOF
 }
 
@@ -53,10 +75,15 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-while getopts "heycgdaiD:s:o:lp:rxkm" opt; do
+# Environment variables to set for the image mage creation
+ENVIRONS=(
+  PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+)
+
+while getopts "heycgdaiD:s:o:lp:rxkmE:" opt; do
   case "${opt}" in
     e)
-      ENCRYPT=1
+      ENVIRONS+=( "ENCRYPT=1" )
       ;;
     y)
       YAML=1
@@ -68,7 +95,7 @@ while getopts "heycgdaiD:s:o:lp:rxkm" opt; do
       IMAGE=1
       ;;
     d)
-      DRACUT=1
+      DRACUT="yes"
       ;;
     g)
       GENZBM=1
@@ -80,9 +107,10 @@ while getopts "heycgdaiD:s:o:lp:rxkm" opt; do
       YAML=1
       CONFD=1
       IMAGE=1
-      DRACUT=1
       GENZBM=1
       MKINITCPIO=1
+      # Dracut is opportunistic unless forced earlier
+      [ "${DRACUT}" = yes ] || DRACUT="maybe"
       ;;
     D)
       TESTDIR="${OPTARG}"
@@ -94,7 +122,7 @@ while getopts "heycgdaiD:s:o:lp:rxkm" opt; do
       DISTROS+=( "${OPTARG}" )
       ;;
     l)
-      LEGACY_POOL=1
+      ENVIRONS+=( "LEGACY_POOL=1" )
       ;;
     p)
       POOL_PREFIX="${OPTARG}"
@@ -109,6 +137,9 @@ while getopts "heycgdaiD:s:o:lp:rxkm" opt; do
       ;;
     k)
       INCLUDE_KEYS=1
+      ;;
+    E)
+      ENVIRONS+=( "${OPTARG}" )
       ;;
     *)
       usage
@@ -130,57 +161,90 @@ TESTDIR="$(realpath "${TESTDIR}")" || exit 1
 # Make sure the test directory exists
 mkdir -p "${TESTDIR}" || exit 1
 
-if ((CONFD)) && [ ! -d "${TESTDIR}/dracut.conf.d" ]; then
-  echo "Creating dracut.conf.d"
-  cp -Rp ../etc/zfsbootmenu/dracut.conf.d "${TESTDIR}"
-  echo "zfsbootmenu_module_root=\"$( realpath -e ../zfsbootmenu )\"" >> "${TESTDIR}/dracut.conf.d/zfsbootmenu.conf"
+# If dracut is opportunistic, determine if it should be available
+if [ "${DRACUT}" = "maybe" ]; then
+  if [ -d /usr/lib/dracut ] && command -v dracut >/dev/null 2>&1; then
+    DRACUT="yes"
+  else
+    DRACUT="no"
+  fi
 fi
 
-if ((DRACUT)) ; then
-  if [ ! -d /usr/lib/dracut ]; then
-    echo "ERROR: missing /usr/lib/dracut"
-    exit 1
-  fi
-
+if [ "${DRACUT}" = "yes" ]; then
   DRACUTBIN="$(command -v dracut)"
   if [ ! -x "${DRACUTBIN}" ]; then
     echo "ERROR: missing dracut script"
     exit 1
   fi
 
-  if [ ! -d "${TESTDIR}/dracut" ]; then
-    echo "Creating local dracut tree"
-    cp -a /usr/lib/dracut "${TESTDIR}"
-    cp "${DRACUTBIN}" "${TESTDIR}/dracut"
+  if [ ! -d /usr/lib/dracut ]; then
+    echo "ERROR: missing /usr/lib/dracut"
+    exit 1
   fi
 
-  # Make sure the zfsbootmenu module is a link to the repo version
-  _dracut_mods="${TESTDIR}/dracut/modules.d"
-  test -d "${_dracut_mods}" && rm -rf "${_dracut_mods}/90zfsbootmenu"
-  ln -s "$(realpath -e ../dracut)" "${_dracut_mods}/90zfsbootmenu"
+  ## Populate dracut and dracut.conf.d trees if needed or demanded
+  if ((CONFD)) || [ ! -d "${TESTDIR}/dracut.conf.d" ]; then
+    if [ -d "${TESTDIR}/dracut.conf.d" ]; then
+      echo "Re-creating dracut.conf.d"
+      rm -r "${TESTDIR}/dracut.conf.d"
+    else
+      echo "Creating dracut.conf.d"
+    fi
+
+    if ! cp -Rp ../etc/zfsbootmenu/dracut.conf.d "${TESTDIR}"; then
+      echo "ERROR: failed to create dracut.conf.d"
+      exit 1
+    fi
+
+    cat >> "${TESTDIR}/dracut.conf.d/zfsbootmenu.conf" <<-EOF
+	zfsbootmenu_module_root="$( realpath -e ../zfsbootmenu )"
+	EOF
+  fi
+
+  if ((CONFD)) || [ ! -d "${TESTDIR}/dracut" ]; then
+    if [ -d "${TESTDIR}/dracut" ]; then
+      echo "Re-creating local dracut tree"
+      rm -r "${TESTDIR}/dracut"
+    else
+      echo "Creating local dracut tree"
+    fi
+
+    cp -a /usr/lib/dracut "${TESTDIR}"
+    cp "${DRACUTBIN}" "${TESTDIR}/dracut"
+
+    # Make sure the zfsbootmenu module is a link to the repo version
+    _zbm_mod="${TESTDIR}/dracut/modules.d/90zfsbootmenu"
+    if [ -L "${_zbm_mod}" ]; then
+      rm "${_zbm_mod}"
+    elif [ -d "${_zbm_mod}" ]; then
+      rm -r "${_zbm_mod}"
+    fi
+
+    ln -Tsf "$(realpath -e ../dracut)" "${_zbm_mod}"
+  fi
 fi
 
 if ((MKINITCPIO)) ; then
-  cat << EOF > "${TESTDIR}/mkinitcpio.conf"
-for snippet in $( realpath -e "${TESTDIR}" )/mkinitcpio.d/*.conf ; do
-  source \${snippet}
-done
-EOF
+  cat <<-EOF > "${TESTDIR}/mkinitcpio.conf"
+	for snippet in $( realpath -e "${TESTDIR}" )/mkinitcpio.d/*.conf ; do
+	  source \${snippet}
+	done
+	EOF
 
   MKINITCPIOD="${TESTDIR}/mkinitcpio.d"
   mkdir -p "${MKINITCPIOD}"
 
-  cat << EOF > "${MKINITCPIOD}/base.conf"
-MODULES=(ahci.ko)
-BINARIES=()
-FILES=()
-HOOKS=(base udev autodetect modconf block filesystems keyboard)
-COMPRESSION="cat"
-EOF
+  cat <<-EOF > "${MKINITCPIOD}/base.conf"
+	MODULES=(ahci.ko)
+	BINARIES=()
+	FILES=()
+	HOOKS=(base udev autodetect modconf block filesystems keyboard)
+	COMPRESSION="cat"
+	EOF
 
-  cat << EOF > "${MKINITCPIOD}/modroot.conf"
-zfsbootmenu_module_root="$( realpath -e ../zfsbootmenu )"
-EOF
+  cat <<-EOF > "${MKINITCPIOD}/modroot.conf"
+	zfsbootmenu_module_root="$( realpath -e ../zfsbootmenu )"
+	EOF
 fi
 
 if ((GENZBM)) ; then
@@ -268,10 +332,7 @@ if ((IMAGE)); then
     fi
 
     "${SUDO}" unshare --fork --pid --mount env \
-      ENCRYPT="${ENCRYPT}" \
-      LEGACY_POOL="${LEGACY_POOL}" \
-      EXISTING_POOL="${EXISTING_POOL}" \
-      PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" \
+      EXISTING_POOL="${EXISTING_POOL}" "${ENVIRONS[@]}" \
       "${IMAGE_SCRIPT}" "${TESTDIR}" "${SIZE}" "${DISTRO}" "${POOL_NAME}"
 
     # All subsequent distros use the same pool
