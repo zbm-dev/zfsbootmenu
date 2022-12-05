@@ -1,13 +1,16 @@
 #!/bin/bash
 
+: "${RELEASE:=jammy}"
+: "${APT_REPOS:=main restricted universe multiverse}"
+
 cat << EOF > /etc/apt/sources.list
-deb http://us.archive.ubuntu.com/ubuntu jammy main restricted universe multiverse
-deb-src http://us.archive.ubuntu.com/ubuntu jammy main restricted universe multiverse
+deb http://us.archive.ubuntu.com/ubuntu ${RELEASE} ${APT_REPOS}
+deb-src http://us.archive.ubuntu.com/ubuntu ${RELEASE} ${APT_REPOS}
 EOF
 
-cat << EOF > /etc/apt/sources.list.d/jammy-backports.list
-deb http://us.archive.ubuntu.com/ubuntu jammy-backports main restricted universe multiverse
-deb-src http://us.archive.ubuntu.com/ubuntu jammy-backports main restricted universe multiverse
+cat << EOF > /etc/apt/sources.list.d/${RELEASE}-backports.list
+deb http://us.archive.ubuntu.com/ubuntu ${RELEASE}-backports ${APT_REPOS}
+deb-src http://us.archive.ubuntu.com/ubuntu ${RELEASE}-backports ${APT_REPOS}
 EOF
 
 apt-get update

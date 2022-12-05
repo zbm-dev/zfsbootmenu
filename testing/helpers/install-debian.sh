@@ -7,11 +7,11 @@ if [ -z "${CHROOT_MNT}" ] || [ ! -d "${CHROOT_MNT}" ]; then
 fi
 
 if [[ "$0" =~ "ubuntu" ]]; then
-  SUITE="jammy"
+  SUITE="${RELEASE:-jammy}"
   MIRROR="http://us.archive.ubuntu.com/ubuntu/"
   CONFIGURATOR="configure-ubuntu.sh"
 else
-  SUITE="bullseye"
+  SUITE="${RELEASE:-bullseye}"
   MIRROR="http://ftp.us.debian.org/debian/"
   CONFIGURATOR="configure-debian.sh"
 fi

@@ -71,10 +71,6 @@ else
   done
 fi
 
-if ! [ -d "${TESTDIR}/dracut.conf.d" ] ; then
-  error "test directory '${TESTDIR}' is incomplete"
-fi
-
 # Support x86_64 and ppc64(le)
 case "$(uname -m)" in
   ppc64*)
@@ -111,9 +107,9 @@ EFI=0
 SERDEV_COUNT=0
 GENZBM_FLAGS=()
 
-# Internally, default to mkinitcpio
+# Defer a choice on initramfs generator until options are parsed
 DRACUT=0
-INITCPIO=1
+INITCPIO=0
 
 # Override any default variables
 #shellcheck disable=SC1091
@@ -186,7 +182,6 @@ while getopts "${CMDOPTS}" opt; do
     i)
       DRACUT=0
       INITCPIO=1
-      AAPPEND+=( "rd.log=kmsg" )
       ;;
     r)
       DRACUT=1
@@ -197,13 +192,37 @@ while getopts "${CMDOPTS}" opt; do
   esac
 done
 
-if ((INITCPIO)) ; then
-  GENZBM_FLAGS+=( "-i" )
+if ! ((INITCPIO)) && ! ((DRACUT)); then
+  # Prefer mkinitcpio if available
+  if command -v mkinitcpio >/dev/null 2>&1 && [ -d "${TESTDIR}/mkinitcpio.d" ]; then
+    INITCPIO=1
+  else
+    DRACUT=1
+  fi
+elif ((INITCPIO)) && ((DRACUT)); then
+    echo "ERROR: dracut and mkinitcpio are mutually exclusive"
+    exit 1
 fi
 
-# Zero out any customizations from the last run
-: > "${TESTDIR}/dracut.conf.d/testing.conf"
-: > "${TESTDIR}/mkinitcpio.d/testing.conf"
+# Verify that necessary configuration snippets are available
+if ((DRACUT)); then
+  if [ ! -d "${TESTDIR}/dracut.conf.d" ]; then
+    echo "ERROR: cannot use dracut without dracut.conf.d"
+    exit 1
+  fi
+elif ((INITCPIO)); then
+  if [ ! -d "${TESTDIR}/mkinitcpio.d" ]; then
+    echo "ERROR: cannot use mkinitcpio without mkinitcpio.d"
+    exit 1
+  fi
+
+  # Directoy initcpio logs to the kernel buffer
+  AAPPEND+=( "rd.log=kmsg" )
+fi
+
+# Remove any customizations from the last run
+rm -f "${TESTDIR}/dracut.conf.d/testing.conf"
+rm -f "${TESTDIR}/mkinitcpio.d/testing.conf"
 
 # If no drives were specified, glob all -pool.img disks
 if [ "${#DRIVE[@]}" -eq 0 ]; then
@@ -219,9 +238,12 @@ else
   # Suppress graphical display (implies serial mode)
   DISPLAY_ARGS=( "-nographic" )
   SERIAL=1
-  cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
-omit_dracutmodules+=" i18n "
-EOF
+
+  if ((DRACUT)); then
+    cat <<-EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
+	omit_dracutmodules+=" i18n "
+	EOF
+  fi
 fi
 
 if ((SERIAL)) ; then
@@ -246,23 +268,20 @@ if ((FLAME)) ; then
   coproc perf_data ( cat "${FIFO}.out" > "${TESTDIR}/perfdata.log" )
   trap cleanup EXIT INT TERM
 
-    cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
-zfsbootmenu_trace_enable=yes
-zfsbootmenu_trace_term="/dev/${SERDEV}${SERDEV_COUNT}"
-zfsbootmenu_trace_baud="115200"
-EOF
-
-  cat << EOF >> "${TESTDIR}/mkinitcpio.d/testing.conf"
-zfsbootmenu_trace_enable=yes
-zfsbootmenu_trace_term="/dev/${SERDEV}${SERDEV_COUNT}"
-zfsbootmenu_trace_baud="115200"
-EOF
+  for _cdir in "dracut.conf.d" "mkinitcpio.d"; do
+    [ -d "${TESTDIR}/${_cdir}" ] || continue
+    cat <<-EOF >> "${TESTDIR}/${_cdir}/testing.conf"
+	zfsbootmenu_trace_enable=yes
+	zfsbootmenu_trace_term="/dev/${SERDEV}${SERDEV_COUNT}"
+	zfsbootmenu_trace_baud="115200"
+	EOF
+  done
 
   # TODO: add support for initcpio
-  if ((EARLY_TRACING)) ; then
-    cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
-dracut_trace_enable=yes
-EOF
+  if ((EARLY_TRACING)) && ((DRACUT)); then
+    cat <<-EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
+	dracut_trace_enable=yes
+	EOF
   fi
 
   ((SERDEV_COUNT++))
@@ -282,55 +301,64 @@ done
 
 if ((SSH_INCLUDE)); then
   export SSH_CONF_DIR="${HOME}/.ssh/zfsbootmenu.d"
-  [ -d "${SSH_CONF_DIR}" ] || mkdir "${SSH_CONF_DIR}" && chmod 700 "${SSH_CONF_DIR}"
 
-  echo "Creating host records in ${SSH_CONF_DIR}"
-
-  # Strip directory components
-  TESTHOST="${TESTDIR##*/}"
-  # Make sure the host starts with "test." even if the directory does not
-  TESTHOST="test.${TESTHOST#test.}"
-
-  [ "${TESTHOST}" = "test." ] && TESTHOST=""
-
-  export TESTHOST
-
-  if [ -n "${TESTHOST}" ]; then
-    cat << EOF > "${SSH_CONF_DIR}/${TESTHOST}"
-Host ${TESTHOST}
-  HostName localhost
-  Port ${SSH_PORT}
-  User root
-  UserKnownHostsFile /dev/null
-  StrictHostKeyChecking no
-  LogLevel error
-  IdentityAgent none
-EOF
+  if [ ! -d "${SSH_CONF_DIR}" ]; then
+    mkdir "${SSH_CONF_DIR}" && chmod 700 "${SSH_CONF_DIR}"
   fi
 
-  cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
-dropbear_acl="${HOME}/.ssh/authorized_keys"
-dropbear_port="22"
-add_dracutmodules+=" crypt-ssh "
-EOF
-  # TODO: add support for initcpio
+  if [ -d "${SSH_CONF_DIR}" ]; then
+    echo "Creating host records in ${SSH_CONF_DIR}"
 
-  if ((DRACUT)) ; then
+    # Strip directory components
+    TESTHOST="${TESTDIR##*/}"
+    # Make sure the host starts with "test." even if the directory does not
+    TESTHOST="test.${TESTHOST#test.}"
+
+    [ "${TESTHOST}" = "test." ] && TESTHOST=""
+
+    export TESTHOST
+
+    # Write an SSH config to allow easy access to the VM
+    if [ -n "${TESTHOST}" ]; then
+      cat <<-EOF > "${SSH_CONF_DIR}/${TESTHOST}"
+	Host ${TESTHOST}
+	  HostName localhost
+	  Port ${SSH_PORT}
+	  User root
+	  UserKnownHostsFile /dev/null
+	  StrictHostKeyChecking no
+	  LogLevel error
+	  IdentityAgent none
+	EOF
+    fi
+
+    chmod 0600 "${SSH_CONF_DIR}/${TESTHOST}"
+    trap cleanup EXIT INT TERM
+  fi
+
+  # TODO: add support for initcpio
+  if ((DRACUT)); then
+    cat <<-EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
+	dropbear_acl="${HOME}/.ssh/authorized_keys"
+	dropbear_port="22"
+	add_dracutmodules+=" crypt-ssh "
+	EOF
     AAPPEND+=("ip=dhcp" "rd.neednet")
   fi
-
-  chmod 0600 "${SSH_CONF_DIR}/${TESTHOST}"
-  trap cleanup EXIT INT TERM
 else
-  cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
-omit_dracutmodules+=" crypt-ssh network-legacy "
-EOF
+  if ((DRACUT)); then
+    cat <<-EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
+	omit_dracutmodules+=" crypt-ssh network-legacy "
+	EOF
+  fi
 fi
 
 # These are not needed for our testing setup, and are quite expensive
-cat << EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
-omit_dracutmodules+=" nvdimm fs-lib rootfs-block dm dmraid lunmask "
-EOF
+if ((DRACUT)); then
+  cat <<-EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
+	omit_dracutmodules+=" nvdimm fs-lib rootfs-block dm dmraid lunmask "
+	EOF
+fi
 
 # Creation is required if either kernel or initramfs is missing
 if ((EFI)) ; then
@@ -403,18 +431,18 @@ fi
 
 # shellcheck disable=SC2086
 "${BIN}" \
-	"${BFILES[@]}" \
-	"${DRIVE[@]}" \
-	-m "${MEMORY}" \
-	-smp "${SMP}" \
-	-cpu host \
-	-machine "${MACHINE}" \
-	-object rng-random,id=rng0,filename=/dev/urandom \
-	-device virtio-rng-pci,rng=rng0 \
-	"${DISPLAY_ARGS[@]}" \
-	"${SOPTS[@]}" \
-	-netdev user,id=n1,hostfwd=tcp::${SSH_PORT}-:22 -device virtio-net-pci,netdev=n1 \
-	-append "${APPEND}" || exit 1
+  "${BFILES[@]}" \
+  "${DRIVE[@]}" \
+  -m "${MEMORY}" \
+  -smp "${SMP}" \
+  -cpu host \
+  -machine "${MACHINE}" \
+  -object rng-random,id=rng0,filename=/dev/urandom \
+  -device virtio-rng-pci,rng=rng0 \
+  "${DISPLAY_ARGS[@]}" \
+  "${SOPTS[@]}" \
+  -netdev user,id=n1,hostfwd=tcp::${SSH_PORT}-:22 -device virtio-net-pci,netdev=n1 \
+  -append "${APPEND}" || exit 1
 
 if ((SERIAL)) && ((RESET)); then
   reset

@@ -1,8 +1,11 @@
 #!/bin/bash
 
+: "${RELEASE:=bullseye}"
+: "${APT_REPOS:=main contrib}"
+
 cat << EOF > /etc/apt/sources.list
-deb http://deb.debian.org/debian bullseye main contrib
-deb-src http://deb.debian.org/debian bullseye main contrib
+deb http://deb.debian.org/debian ${RELEASE} ${APT_REPOS}
+deb-src http://deb.debian.org/debian ${RELEASE} ${APT_REPOS}
 EOF
 
 apt-get update
