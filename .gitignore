@@ -1,7 +1,11 @@
 *.img
 *.swp
 */*.swp
+.vscode/
 releases/*
 build
 hostid
 zpool.cache
+
+*env/
+/docs/_build/
