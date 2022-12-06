@@ -15,13 +15,24 @@ release = '2.0.0'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    'sphinx_toolbox.collapse',
+    'sphinx.ext.extlinks',
+    'sphinx_tabs.tabs',
     'sphinx_rtd_theme',
     'recommonmark',
 ]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '*env', '**/_include']
+
+today_fmt = '%Y-%m-%d'
+highlight_language = 'sh'
+smartquotes = False
+manpages_url = 'https://man.voidlinux.org/{page}.{section}'
+
+# https://www.sphinx-doc.org/en/master/usage/extensions/extlinks.html
+extlinks = {
+    'zbm': (f'https://github.com/zbm-dev/zfsbootmenu/blob/v{release}/%s', '%s'),
+}
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
