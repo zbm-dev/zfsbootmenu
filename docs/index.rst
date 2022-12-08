@@ -27,3 +27,15 @@ ZFSBootMenu
   guides/debian
   guides/void-linux
   guides/third-party
+
+.. toctree::
+  :caption: Runtime Help
+  :maxdepth: 3
+  :titlesonly:
+
+  online/main-screen
+  online/snapshot-management
+  online/diff-viewer
+  online/kernel-management
+  online/zpool-health
+  online/recovery-shell
