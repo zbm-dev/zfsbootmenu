@@ -65,12 +65,8 @@ if [ -z "${doc_path}" ]; then
   doc_path="${doc_base}/$( ls "${doc_base}" | sort -n | head -1 )"
 fi
 
-for pod in "${doc_path}"/* ; do
-  desc="$( head -3 "${pod}" | grep zfsbootmenu )"
-  # shellcheck disable=SC2206
-  broken=(${desc//-/ })
-  unset "broken[0]"
-  SECTIONS+=( "${pod} ${broken[*]}" )
+for doc in "${doc_path}"/* ; do
+  SECTIONS+=( "${doc} $( head -1 "${doc}" )" )
 done
 
 while getopts "lL:s:" opt; do
@@ -84,8 +80,7 @@ while getopts "lL:s:" opt; do
       exit
       ;;
     s)
-      # Skip the first three lines
-      tail -n +3 "${OPTARG}"
+      less -f -n -r "${OPTARG}"
       exit
       ;;
     ?)

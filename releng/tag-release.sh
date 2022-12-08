@@ -56,15 +56,15 @@ fi
 echo "Will tag release version ${release} as ${tag}"
 
 # Synchronize man pages with POD documentation
-if [ ! -x releng/pod2man.sh ]; then
+if [ ! -x releng/rst2help.sh ]; then
   error "ERROR: unable to convert documentation"
 fi
 
-if ! out="$( releng/pod2man.sh "${release}" )" ; then
+if ! out="$( releng/rst2help.sh )" ; then
   error "ERROR: ${out}"
 fi
 
-if ! out="$( releng/pod2help.sh )" ; then
+if ! out="$( cd docs ; make gen-man )" ; then
   error "ERROR: ${out}"
 fi
 
