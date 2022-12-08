@@ -1025,6 +1025,9 @@ sub Log {
 
 __END__
 
+=for comment
+KEEP IN SYNC WITH docs/man/generate-zbm.8.rst
+
 =head1 NAME
 
 B<generate-zbm> - ZFSBootMenu initramfs generator

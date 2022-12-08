@@ -9,7 +9,7 @@ SERVEOPTS     ?=
 SOURCEDIR     = .
 BUILDDIR      = _build
 
-.PHONY: help setup serve envclean requirements.txt Makefile setup-void
+.PHONY: help setup serve envclean requirements.txt Makefile setup-void gen-man
 
 help:
 	@echo "Use \033[94mmake setup\033[m to set up a virtual environment."
@@ -20,6 +20,10 @@ ifneq ("$(wildcard $(VENV))","")
 	@echo
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
 endif
+
+gen-man: man
+	@rm -rf $(SOURCEDIR)/man/dist
+	@cp -r $(BUILDDIR)/man $(SOURCEDIR)/man/dist
 
 setup-void:
 	@sudo xbps-install -Su python3-rst2ansi python3-sphinx-tabs python3-sphinx_rtd_theme python3-recommonmark

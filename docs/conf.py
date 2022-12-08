@@ -8,7 +8,8 @@
 
 project = 'ZFSBootMenu'
 author = 'Zach Dykstra'
-copyright = f'2019 {author}'
+man_author = 'ZFSBootMenu Team <https://github.com/zbm-dev/zfsbootmenu>'
+copyright = f'2019, {author}'
 release = '2.0.0'
 
 # -- General configuration ---------------------------------------------------
@@ -48,3 +49,15 @@ html_theme_options = {
 }
 html_baseurl = 'https://docs.zfsbootmenu.org'
 html_css_files = ['custom.css']
+
+# -- Options for manual page output ------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-manual-page-output
+
+man_make_section_directory = True
+man_pages = [
+    ('man/generate-zbm.5', 'generate-zbm', 'configuration file for generate-zbm', man_author, '5'),
+    ('man/generate-zbm.8', 'generate-zbm', 'ZFSBootMenu initramfs generator', man_author, '8'),
+    ('man/zbm-efi-kcl.8', 'zbm-efi-kcl', 'manipulate kernel command lines for EFI binaries', man_author, '8'),
+    ('man/zbm-kcl.8', 'zbm-kcl', 'manipulate kernel command lines for ZFS boot environments', man_author, '8'),
+    ('man/zfsbootmenu.7', 'zfsbootmenu', 'System Integration', man_author, '7'),
+]

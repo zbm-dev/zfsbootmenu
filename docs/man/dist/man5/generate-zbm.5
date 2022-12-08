@@ -1,0 +1,254 @@
+.\" Man page generated from reStructuredText.
+.
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.TH "GENERATE-ZBM" "5" "2022-12-19" "" "ZFSBootMenu"
+.SH NAME
+generate-zbm \- configuration file for generate-zbm
+.SH SYNOPSIS
+.sp
+\fB/etc/zfsbootmenu/config.yaml\fP
+.SH DESCRIPTION
+.sp
+The YAML file \fB/etc/zfsbootmenu/config.yaml\fP controls the generation of ZFSBootMenu images by \fI\%generate\-zbm(8)\fP\&.
+.SH SECTIONS
+.sp
+The configuration is divided into several logical sections as keys of a YAML map. The value of each section is itself a YAML map.
+.SS Global
+.sp
+\fBManageImages\fP
+.INDENT 0.0
+.INDENT 3.5
+This must be set to \fItrue\fP before \fBgenerate\-zbm\fP will attempt to perform any action (e.g., image creation or pruning old files).
+.UNINDENT
+.UNINDENT
+.sp
+\fBInitCPIO\fP
+.INDENT 0.0
+.INDENT 3.5
+Set to \fItrue\fP to use \fBmkinitcpio\fP instead of \fBdracut\fP to create ZFSBootMenu images.
+.UNINDENT
+.UNINDENT
+.sp
+\fBDracutConfDir\fP
+.INDENT 0.0
+.INDENT 3.5
+The path of the dracut configuration directory for ZFSBootMenu. This \fBMUST NOT\fP be the same location as the system \fIdracut.conf.d\fP, as the configuration files there interfere with the creation of the ZFSBootMenu initramfs. If unspecified, a default value of \fI/etc/zfsbootmenu/dracut.conf.d\fP is assumed. This value is ignored when \fIGlobal.InitCPIO\fP is \fItrue\fP\&.
+.UNINDENT
+.UNINDENT
+.sp
+\fBInitCPIOConfig\fP
+.INDENT 0.0
+.INDENT 3.5
+The path to a mkinitcpio configuration file for ZFSBootMenu. The \fIzfsbootmenu\fP hook will be forcefully added when \fBgenerate\-zbm\fP invokes \fBmkinitcpio\fP using a command\-line argument and does not need to be specified in the \fIHOOKS\fP array in the configuration file. This value is ignored when \fIGlobal.InitCPIO\fP is not \fItrue\fP\&.
+.UNINDENT
+.UNINDENT
+.sp
+\fBInitCPIOHookDirs\fP
+.INDENT 0.0
+.INDENT 3.5
+A single path or an array of paths to \fBmkinitcpio\fP hook directories. When specifying a custom directory for the \fIzfsbootmenu\fP hook, it is generally required to also specify the default location as well. This option is ignored when \fIGlobal.InitCPIO\fP is not \fItrue\fP\&.
+.UNINDENT
+.UNINDENT
+.sp
+\fBBootMountPoint\fP
+.INDENT 0.0
+.INDENT 3.5
+In general, this should be the location of your EFI System Partition. \fBgenerate\-zbm\fP will ensure that this is mounted when images are created and, if \fBgenerate\-zbm\fP does the mounting, will unmount this filesystem on exit. When this parameter is not specified, \fBgenerate\-zbm\fP will not verify or attempt to mount any filesystems.
+.UNINDENT
+.UNINDENT
+.sp
+\fBVersion\fP
+.INDENT 0.0
+.INDENT 3.5
+A specific ZFSBootMenu version string to use in versioned output images. In the string, the value \fI%{current}\fP will be replaced with the release version of ZFSBootMenu. The default value is simply \fI%{current}\fP\&.
+.UNINDENT
+.UNINDENT
+.sp
+\fBDracutFlags\fP
+.INDENT 0.0
+.INDENT 3.5
+An array of additional arguments that will be passed to \fBdracut\fP when generating an initramfs. This option is ignored when \fIGlobal.InitCPIO\fP is \fItrue\fP\&.
+.UNINDENT
+.UNINDENT
+.sp
+\fBInitCPIOFlags\fP
+.INDENT 0.0
+.INDENT 3.5
+An array of additional arguments that will be passed to \fBmkinitcpio\fP when generating an initramfs. This option is ignored when \fIGlobal.InitCPIO\fP is not \fItrue\fP\&.
+.UNINDENT
+.UNINDENT
+.sp
+\fBPreHooksDir\fP
+.INDENT 0.0
+.INDENT 3.5
+The path of the directory containing executables that should be executed after \fIBootMountPoint\fP has been mounted. Files in this directory should be \fB+x\fP, and are executed in the order returned by a shell glob. The exit code of each hook is ignored.
+.UNINDENT
+.UNINDENT
+.sp
+\fBPostHooksDir\fP
+.INDENT 0.0
+.INDENT 3.5
+The path of the directory containing executables that should be executed after all images have been created and any file pruning has taken place. Files in this directory should be \fB+x\fP, and are executed in the order returned by a shell glob. The exit code of each hook is ignored.
+.UNINDENT
+.UNINDENT
+.SS Kernel
+.sp
+\fBCommandLine\fP
+.INDENT 0.0
+.INDENT 3.5
+If you\(aqre making a unified EFI file or a syslinux configuration, this is the command line passed to the boot image.
+.UNINDENT
+.UNINDENT
+.sp
+\fBPath\fP
+.INDENT 0.0
+.INDENT 3.5
+The full path to a specific kernel to use when making the boot images. If not specified, \fBgenerate\-zbm\fP will try to pick a reasonable kernel.
+.UNINDENT
+.UNINDENT
+.sp
+\fBVersion\fP
+.INDENT 0.0
+.INDENT 3.5
+A specific kernel version to use. The value \fI%{current}\fP will be replaced with the output of \fBuname \-r\fP\&. If not set, \fBgenerate\-zbm\fP will try to parse the path of the selected kernel filename for a version.
+.UNINDENT
+.UNINDENT
+.sp
+\fBPrefix\fP
+.INDENT 0.0
+.INDENT 3.5
+The prefix to use for the names of ZFSBootMenu images. By default, the prefix is extracted from the input kernel name.
+.UNINDENT
+.UNINDENT
+.SS Components
+.sp
+\fBEnabled\fP
+.INDENT 0.0
+.INDENT 3.5
+When \fItrue\fP, \fBgenerate\-zbm\fP will create separate ZFSBootMenu kernel and initramfs images. The default value is \fIfalse\fP\&.
+.UNINDENT
+.UNINDENT
+.sp
+\fBImageDir\fP
+.INDENT 0.0
+.INDENT 3.5
+The destination directory for separate initramfs and kernel images.
+.UNINDENT
+.UNINDENT
+.sp
+\fBVersions\fP
+.INDENT 0.0
+.INDENT 3.5
+When \fIfalse\fP or \fI0\fP, image versioning will be disabled; \fBgenerate\-zbm\fP will not use its \fIGlobal.Version\fP parameter to name outputs, and will keep exactly one backup copy of any image it would overwrite.
+.sp
+When \fItrue\fP (which behaves as \fI1\fP) or any positive integer, \fBgenerate\-zbm\fP will append the value of \fIGlobal.Version\fP to every image it produces, followed by a revision as \fI_$revision\fP\&. \fBgenerate\-zbm\fP will save \fIComponents.Versions\fP revisions of all images with versions matching the current value of \fIGlobal.Version\fP\&. In addition, \fBgenerate\-zbm\fP will save the highest revision of the most recent \fIComponents.Versions\fP image versions distinct from \fIGlobal.Version\fP\&.
+.UNINDENT
+.UNINDENT
+.SS Components.syslinux
+.sp
+\fBEnabled\fP
+.INDENT 0.0
+.INDENT 3.5
+When \fItrue\fP, syslinux configuration generation is enabled. The default value is \fIfalse\fP\&.
+.UNINDENT
+.UNINDENT
+.sp
+\fBConfig\fP
+.INDENT 0.0
+.INDENT 3.5
+The path of the syslinux configuration file to produce.
+.UNINDENT
+.UNINDENT
+.SS EFI
+.sp
+\fBEnabled\fP
+.INDENT 0.0
+.INDENT 3.5
+When \fItrue\fP, \fBgenerate\-zbm\fP will create unified UEFI bundles. The default value is \fIfalse\fP\&.
+.UNINDENT
+.UNINDENT
+.sp
+\fBImageDir\fP
+.INDENT 0.0
+.INDENT 3.5
+The destination directory for unified EFI files.
+.UNINDENT
+.UNINDENT
+.sp
+\fBVersions\fP
+.INDENT 0.0
+.INDENT 3.5
+Behaves similarly to \fIComponents.Versions\fP, but acts on files matching the UEFI bundle naming scheme.
+.UNINDENT
+.UNINDENT
+.sp
+\fBStub\fP
+.INDENT 0.0
+.INDENT 3.5
+The path to the EFI stub loader used to boot the unified bundle. If not set, a default of \fB/usr/lib/gummiboot/linuxx64.efi.stub\fP is assumed.
+.UNINDENT
+.UNINDENT
+.SH EXAMPLE
+.sp
+The following example will write separate, unversioned ZFSBootMenu kernel and initramfs images to \fI/boot/efi/EFI/zbm\fP, keeping a backup for each file that would be overwritten when creating the new images. In addition, a versioned UEFI bundle will be stored in the same directory, where two prior revisions of the current version and the highest revision of each of the two most recent prior versions will be retained.
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+Global:
+  ManageImages: true
+  BootMountPoint: /boot/efi
+  DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
+Components:
+  ImageDir: /boot/efi/EFI/zbm
+  Versions: false
+  Enabled: true
+  syslinux:
+    Config: /boot/syslinux/syslinux.cfg
+    Enabled: false
+EFI:
+  ImageDir: /boot/efi/EFI/zbm
+  Versions: 2
+  Enabled: true
+Kernel:
+  CommandLine: ro quiet loglevel=0
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.SH SEE ALSO
+.sp
+\fI\%generate\-zbm(8)\fP \fI\%zfsbootmenu(7)\fP
+.SH AUTHOR
+ZFSBootMenu Team <https://github.com/zbm-dev/zfsbootmenu>
+.SH COPYRIGHT
+2019, Zach Dykstra
+.\" Generated by docutils manpage writer.
+.

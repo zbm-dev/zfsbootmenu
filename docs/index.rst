@@ -10,10 +10,13 @@ ZFSBootMenu
 .. toctree::
   :caption: Manual Pages
   :maxdepth: 3
-  :glob:
   :titlesonly:
+  :includehidden:
 
-  man/*
+  man/zfsbootmenu.7
+  man/generate-zbm.8
+  man/zbm-kcl.8
+  man/zbm-efi-kcl.8
 
 .. toctree::
   :caption: Guides
