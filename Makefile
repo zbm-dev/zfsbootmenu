@@ -16,9 +16,9 @@ core:
 	./install-tree.sh zfsbootmenu "$(DESTDIR)$(MODDIR)/zfsbootmenu"
 	install -m 0644 -t "$(DESTDIR)$(CONFDIR)" -D etc/zfsbootmenu/config.yaml
 	install -m 0755 -t "$(DESTDIR)$(BINDIR)" -D bin/*
-	install -m 0644 -t "$(DESTDIR)$(MANDIR)/man5" -D docs/man/*.5
-	install -m 0644 -t "$(DESTDIR)$(MANDIR)/man7" -D docs/man/*.7
-	install -m 0644 -t "$(DESTDIR)$(MANDIR)/man8" -D docs/man/*.8
+	install -m 0644 -t "$(DESTDIR)$(MANDIR)/man5" -D docs/man/dist/man5/*.5
+	install -m 0644 -t "$(DESTDIR)$(MANDIR)/man7" -D docs/man/dist/man7/*.7
+	install -m 0644 -t "$(DESTDIR)$(MANDIR)/man8" -D docs/man/dist/man8/*.8
 	install -m 0755 -t "$(DESTDIR)$(EXAMPLES)" -D contrib/*
 
 dracut:
