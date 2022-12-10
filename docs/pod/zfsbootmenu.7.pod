@@ -50,7 +50,7 @@ This option controls how the pool import process should take place.
 
 =item B<zbm.import_policy=hostid>
 
-Set this option to allow run-time reconfiguration of the SPL hostid. If a pool is preferred via B<zbm.prefer> and the pool can not be imported with a preconfigured hostid, the system will attempt to adopt the hostid of the system that last imported the pool. If a preferred pool is not set and no pools can be imported using a preconfigured hostid, the system will adopt the hostid of the first otherwise-importable pool. After adopting a detected hostid, ZFSBootMenu will subsequently attempt to import as many pools as possible. This option is forbidden on big-endian systems. This is the default import policy.
+Set this option to allow run-time reconfiguration of the SPL hostid. If a pool is preferred via B<zbm.prefer> and the pool can not be imported with a preconfigured hostid, the system will attempt to adopt the hostid of the system that last imported the pool. If a preferred pool is not set and no pools can be imported using a preconfigured hostid, the system will adopt the hostid of the first otherwise-importable pool. After adopting a detected hostid, ZFSBootMenu will subsequently attempt to import as many pools as possible. This is the default import policy.
 
 =item B<zbm.import_policy=strict>
 
@@ -64,9 +64,7 @@ Set this option to attempt to force pool imports. When set, this invokes I<zpool
 
 =item B<zbm.set_hostid>
 
-On little-endian systems, setting this option will cause ZFSBootMenu to set the I<spl.spl_hostid> command-line parameter for the selected boot environment to the hostid used to import its pool. The SPL kernel module will use this value as the hostid of the booted environment regardless of the contents of I</etc/hostid>. As a special case, if the hostid to be set is zero, ZFSBootMenu will instead set I<spl_hostid=00000000>, which should be used by dracut-based initramfs images to write an all-zero I</etc/hostid> in the initramfs prior to importing the boot pool. This option is on by default.
-
-This option has no effect on big-endian systems.
+Setting this option will cause ZFSBootMenu to set the I<spl.spl_hostid> command-line parameter for the selected boot environment to the hostid used to import its pool. The SPL kernel module will use this value as the hostid of the booted environment regardless of the contents of I</etc/hostid>. As a special case, if the hostid to be set is zero, ZFSBootMenu will instead set I<spl_hostid=00000000>, which should be used by dracut-based initramfs images to write an all-zero I</etc/hostid> in the initramfs prior to importing the boot pool. This option is on by default.
 
 B<Note:> Setting I<spl.spl_hostid> to a non-zero value on the kernel commandline will make the ZFS kernel modules B<ignore> any value set in I</etc/hostid>. To restore standard ZFS behavior on a running system, execute
 

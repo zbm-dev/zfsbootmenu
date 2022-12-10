@@ -19,11 +19,6 @@ done
 
 unset src sources
 
-if [ -z "${BYTE_ORDER}" ]; then
-  zwarn "unable to determine platform endianness; assuming little-endian"
-  BYTE_ORDER="le"
-fi
-
 # shellcheck disable=SC2154
 if [ -n "${embedded_kcl}" ]; then
   mkdir -p /etc/cmdline.d/
@@ -91,13 +86,7 @@ fi
 if import_policy=$( get_zbm_arg zbm.import_policy ) ; then
   case "${import_policy}" in
     hostid)
-      if [ "${BYTE_ORDER}" = "be" ]; then
-        zwarn "invalid option for big endian systems"
-        zinfo "setting import_policy to strict"
-        import_policy="strict"
-      else
-        zinfo "setting import_policy to hostid matching"
-      fi
+      zinfo "setting import_policy to hostid matching"
       ;;
     force)
       zinfo "setting import_policy to force"
@@ -202,10 +191,7 @@ if zbm_hook_root=$( get_zbm_arg zbm.hookroot ) ; then
 fi
 
 # shellcheck disable=SC2034
-if [ "${BYTE_ORDER}" = "be" ]; then
-  zbm_set_hostid=0
-  zinfo "big endian detected, disabling automatic replacement of spl_hostid"
-elif get_zbm_bool 1 zbm.set_hostid ; then
+if get_zbm_bool 1 zbm.set_hostid ; then
   zbm_set_hostid=1
   zinfo "enabling automatic replacement of spl_hostid"
 else
