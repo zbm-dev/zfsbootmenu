@@ -72,18 +72,6 @@ zfsbootmenu_optional_modules=(
 create_zbm_conf() {
   # Create core ZBM configuration file
 
-  local endian ival
-  ival="$( echo -n 3 | od -tx2 -N2 -An )"
-  ival="${ival//[[:space:]]/}"
-  if [ "${ival}" = "3300" ]; then
-    endian="be"
-  else
-    if [ "${ival}" != "0033" ]; then
-      warning "unable to determine platform endianness; assuming little-endian"
-    fi
-    endian="le"
-  fi
-
   # Check if fuzzy finder supports the refresh-preview flag
   # Added in fzf 0.22.0
   local has_refresh
@@ -117,7 +105,6 @@ create_zbm_conf() {
 	EOF
 
   cat >> "${BUILDROOT}/etc/zfsbootmenu.conf" <<-EOF
-	export BYTE_ORDER="${endian:-le}"
 	export HAS_REFRESH="${has_refresh}"
 	export HAS_DISABLED="${has_disabled}"
 	export HAS_BORDER="${has_border}"
