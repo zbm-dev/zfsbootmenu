@@ -159,6 +159,7 @@ draw_be() {
 
   expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-j,alt-o${kcl_bind:+,${kcl_bind}},right"
 
+  # shellcheck disable=SC2086
   if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
       ${HAS_BORDER:+--border-label="$( global_header )"} \

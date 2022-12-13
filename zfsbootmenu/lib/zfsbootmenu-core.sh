@@ -1040,7 +1040,7 @@ import_pool() {
     zdebug "${import_output}"
   fi
 
-  return ${ret}
+  return "${ret}"
 }
 
 # arg1: pool name
@@ -1063,7 +1063,7 @@ export_pool() {
 
   zdebug "${pool} export process return: ${ret}"
 
-  return ${ret}
+  return "${ret}"
 }
 
 # arg1: pool name

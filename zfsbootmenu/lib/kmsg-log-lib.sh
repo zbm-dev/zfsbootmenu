@@ -14,7 +14,7 @@ fi
 # returns: 1 if loglevel isn't high enough
 
 zdebug() {
-  [ ${loglevel:-4} -ge 7 ] || return 1
+  [ "${loglevel:-4}" -ge 7 ] || return 1
   local prefix trace last lines line lc i
 
   # Remove everything but new lines from the string, count the length
@@ -37,7 +37,7 @@ zdebug() {
   done <<<"${1}"
 }
 
-if [ ${loglevel:-4} -ge 7 ] ; then
+if [ "${loglevel:-4}" -ge 7 ] ; then
   # Trap errors and send them to the debug handler
   traperror() {
     zdebug "trapped error from: '${BASH_COMMAND}'"

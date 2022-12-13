@@ -172,7 +172,7 @@ if ! git push; then
   error "ERROR: failed to push to default branch; release aborted"
 fi
 
-if ! gh release create "${tag}" ${prerelease} \
+if ! gh release create "${tag}" "${prerelease}" \
     -F "${relnotes}" -t "ZFSBootMenu ${tag}" "${asset_files[@]}"; then
   error "ERROR: release creation failed"
 fi
