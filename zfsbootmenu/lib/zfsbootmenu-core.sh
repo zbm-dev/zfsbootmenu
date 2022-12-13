@@ -75,23 +75,18 @@ write_hostid() {
     return 1
   fi
 
-  # shellcheck disable=SC2154
-  if [ "${endian}" = "be" ]; then
-    # Write in big-endian format
-    zdebug "writing hostid ${hostid} to /etc/hostid (big-endian)"
-    echo -ne "\\x${hostid:0:2}\\x${hostid:2:2}\\x${hostid:4:2}\\x${hostid:6:2}" > "/etc/hostid"
-    ret=$?
+
+  if echo -ne "\\x${hostid:6:2}\\x${hostid:4:2}\\x${hostid:2:2}\\x${hostid:0:2}" > "/etc/hostid" ; then
+    zdebug "wrote hostid ${hostid} to /etc/hostid"
+    if [ -w "${splmod}" ]; then
+      echo 0 > "${splmod}" || zwarn "failed to force spl.spl_hostid=0 for host ID matching"
+    fi
   else
-    zdebug "writing hostid ${hostid} to /etc/hostid (little-endian)"
-    echo -ne "\\x${hostid:6:2}\\x${hostid:4:2}\\x${hostid:2:2}\\x${hostid:0:2}" > "/etc/hostid"
-    ret=$?
+    zerror "unable to write $hostid to /etc/hostid"
+    return 1
   fi
 
-  if [ "${ret}" -eq 0 ] && [ -w "${splmod}" ]; then
-    echo 0 > "${splmod}" || zwarn "failed to force spl.spl_hostid=0 for host ID matching"
-  fi
-
-  return ${ret}
+  return 0
 }
 
 # args: no arguments
