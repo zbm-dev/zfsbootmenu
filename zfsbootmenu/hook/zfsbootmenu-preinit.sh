@@ -22,7 +22,6 @@ export BASE="/zfsbootmenu"
 cat >> "/etc/zfsbootmenu.conf" <<EOF
 # BEGIN additions by zfsbootmenu-preinit.sh
 export BASE="${BASE}"
-export endian="${endian}"
 export spl_hostid="${spl_hostid}"
 export import_policy="${import_policy}"
 export menu_timeout="${menu_timeout}"
