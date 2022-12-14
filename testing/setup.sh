@@ -19,6 +19,9 @@ DISTROS=()
 dictfile="/usr/share/dict/words"
 
 usage() {
+  local compat_dir
+  compat_dir="/usr/share/zfs/compatibility.d/"
+
   cat <<EOF
 USAGE: $0 [options]
 
@@ -30,11 +33,10 @@ OPTIONS
   -d  Create a local dracut tree for local mode
   -m  Create mkinitcpio.conf
   -i  Create a test VM image
-  -a  Perform all setup options
+  -a  Perform all create options
   -D  Specify a test directory to use
   -s  Specify size of VM image
   -e  Enable native ZFS encryption
-  -l  Disable features for legacy (zfs<2.0.0) support
   -p  Specify a pool name
   -r  Use a randomized pool name
   -x  Use an existing pool image
@@ -57,6 +59,11 @@ ENVIRONMENT VARIABLES
 
   LIBC (Void)
   Set LIBC=musl to build a test image with musl; otherwise, glib will be used
+
+  POOL_COMPAT (All)
+  Set POOL_COMPAT to one of the ZFS pool compatiblity targets listed below.
+
+$( find "${compat_dir}" -type f | sed "s|${compat_dir}||" | column | sed 's/^/\t/' )
 EOF
 }
 
@@ -120,9 +127,6 @@ while getopts "heycgdaiD:s:o:lp:rxkmE:" opt; do
       ;;
     o)
       DISTROS+=( "${OPTARG}" )
-      ;;
-    l)
-      ENVIRONS+=( "LEGACY_POOL=1" )
       ;;
     p)
       POOL_PREFIX="${OPTARG}"
@@ -320,6 +324,26 @@ if ((IMAGE)); then
     IMAGE_SCRIPT="./helpers/image-${DISTRO}.sh"
     if [ ! -x "${IMAGE_SCRIPT}" ]; then
       IMAGE_SCRIPT="./helpers/image.sh"
+    fi
+
+    AUTO_POOL_COMPAT=1
+    for environ in "${ENVIRONS[@]}"; do
+      if [[ "${environ}" =~ "^POOL_COMPAT=" ]]; then
+        AUTO_POOL_COMPAT=0
+      fi
+    done
+
+    if ((AUTO_POOL_COMPAT)); then
+      case "${DISTRO}" in
+        debian)
+          ENVIRONS+=( POOL_COMPAT="openzfs-2.0-linux" )
+          ;;
+        ubuntu)
+          ENVIRONS+=( POOL_COMPAT="openzfs-2.0-linux" )
+          ;;
+        *)
+          ;;
+      esac
     fi
 
     if command -v doas >/dev/null 2>&1; then

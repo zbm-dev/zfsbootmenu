@@ -98,10 +98,8 @@ if [ -z "${EXISTING_POOL}" ]; then
     ENCRYPT_OPTS+=( "-O" "keylocation=file://${ENCRYPT_KEYFILE}" )
   fi
 
-  if [ -n "${LEGACY_POOL}" ]; then
-    LEGACY_OPTS=( "-o" "compatibility=zol-0.8" )
-  else
-    LEGACY_OPTS=()
+  if [ -n "${POOL_COMPAT}" ]; then
+    COMPAT=( "-o" "compatibility=${POOL_COMPAT}" )
   fi
 
   if zpool create -f -m none \
@@ -111,7 +109,7 @@ if [ -z "${EXISTING_POOL}" ]; then
         -O relatime=on \
         -o autotrim=on \
         -o cachefile=none \
-        "${LEGACY_OPTS[@]}" \
+        "${POOL_COMPAT:+${COMPAT[@]}}" \
         "${ENCRYPT_OPTS[@]}" \
         "${zpool_name}" "${LOOP_DEV}"; then
     export ZBM_POOL="${zpool_name}"
