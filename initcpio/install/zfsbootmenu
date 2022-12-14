@@ -184,6 +184,11 @@ build() {
         add_file "${_file}" "/libexec/teardown.d/${_file##*/}"
     done
 
+    compat_dirs=( "/etc/zfs/compatibility.d" "/usr/share/zfs/compatibility.d/" )
+    for compat_dir in "${compat_dirs[@]}"; do
+        [ -d "${compat_dir}" ] && add_full_dir "${compat_dir}"
+    done
+
     # Copy host-specific ZFS configs
     [[ -f /etc/hostid ]] && add_file "/etc/hostid"
     [[ -f /etc/zfs/vdev_id.conf ]] && add_file "/etc/zfs/vdev_id.conf"

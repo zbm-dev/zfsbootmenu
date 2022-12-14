@@ -95,6 +95,11 @@ install() {
     inst_simple "${doc}" "/usr/share/docs/${relative}"
   done <<<"$( find "${zfsbootmenu_module_root}/help-files" -type f )"
 
+  compat_dirs=( "/etc/zfs/compatibility.d" "/usr/share/zfs/compatibility.d/" )
+  for compat_dir in "${compat_dirs[@]}"; do
+    # shellcheck disable=2164
+    [ -d "${compat_dir}" ] && tar -cf - "${compat_dir}" | ( cd "${initdir}" ; tar xfp - )
+  done
   _ret=0
 
   # Core ZFSBootMenu functionality
