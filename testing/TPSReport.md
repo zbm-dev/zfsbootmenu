@@ -129,7 +129,7 @@ From the main menu, perform the following checks:
 - [ ] Pressing `[CTRL+W]` toggles the pool holding the selected BE between
   read-only and read/write.
 
-- [ ] Pressing `[CTRL+O]` cycles through name/creation/used sort order
+- [ ] Pressing `[CTRL+O]` cycles through name/creation/used sort order.
 
 ## Pool Status Checks
 
@@ -144,7 +144,7 @@ From the main menu, perform the following checks:
 - [ ] Pressing `[CTRL+J]` jumps into an interactive chroot for the selected
   snapshot, or fails if the snapshot is missing a shell.
 
-- [ ] Pressing `[CTRL+D]` shows the diff viewer
+- [ ] Pressing `[CTRL+D]` shows the diff viewer:
     - Selecting one snapshot will show a diff between the snapshot and the filesystem
     - Selecting two snapshots will show the diff between them
     - The diff screen updates dynamically and is interruptable
@@ -175,13 +175,13 @@ From the main menu, perform the following checks:
     - Entering a non-empty name triggers a new snapshot
     - The new snapshot appears in the list of snapshots
 
-- [ ] Pressing `[CTRl+R]` presents the rollback creation prompt
+- [ ] Pressing `[CTRl+R]` presents the rollback creation prompt:
     - The selected snapshot is listed, highlighted in red
     - Entering anything but `ROLLBACK` cancels the operation
     - Entering `ROLLBACK` rolls the dataset back to the snapshot
     - The selected snapshot is no longer listed on the Snapshot screen
 
-- [ ] Pressing `[CTRL+O]` cycles through name/creation/used sort order
+- [ ] Pressing `[CTRL+O]` cycles through name/creation/used sort order.
 
 - [ ] Pressing `[ESCAPE]` returns to the main menu.
 
@@ -210,6 +210,9 @@ of the kernel list. That BE should be selected when entering the list.
 - [ ] Pressing `[CTRL+H]` displays the help browser, preselecting the section
   corresponding to the current menu screen.
 
+- [ ] Pressing the left/right arrow keys moves to the next/previous screen shown
+  in the header. Screens will not wrap around.
+
 ## General Testing
 
 - [ ] If every encryption root specifies an `org.zfsbootmenu:keysource`
@@ -229,43 +232,50 @@ of the kernel list. That BE should be selected when entering the list.
   prompt each time. (Keys must not have been already cached before a keysource
   property is cleared, or the previously cached keys will continue to be used.)
 
-- [ ] ZBM can be forced to spin until the pool defined via zbm.prefer=pool!
+- [ ] ZBM can be forced to spin until the pool defined via `zbm.prefer=pool!`
   is available. During the wait period, the user can exit to a recovery shell
-  via `[ESCAPE]`
+  via `[ESCAPE]`.
 
-- [ ] ZBM can be forced to import *only* a specific pool via zbm.prefer=pool!!.
+- [ ] ZBM can be forced to import the pool defined via `zbm.prefer=pool!!` with
+  all other pools ignored/skipped. This will spin until the pool is available, and
+  can be broken via `[ESCAPE]`.
 
-- [ ] Invalid `spl_hostid` or `spl.spl_hostid` values do not cause ZBM to fail
+- [ ] Invalid `spl_hostid` or `spl.spl_hostid` values do not cause ZBM to fail.
 
-- [ ] Adding `zbm.skip` to the KCL causes ZBM to immediately boot BOOTFS, otherwise
-  show the main menu.
+- [ ] Adding `zbm.skip` to the KCL causes ZBM to immediately boot BOOTFS,
+  otherwise show the main menu.
 
 - [ ] Adding `zbm.show` to the KCL causes ZBM to always show the main menu.
 
-- [ ] Adding `rd.vconsole.keymap=fr` causes the ZBM keymap to change when booted in 
-  GTK mode. This can be verified by dropping to the recovery shell and typing qwerty.
+- [ ] Adding `rd.vconsole.keymap=fr` causes the ZBM keymap to change when booted
+  in GTK mode. This can be verified by dropping to the recovery shell and typing
+  qwerty.
 
-## Recovery shell and SSH access
+## Recovery Shell and SSH Access
 
-- [ ] Basic tab completion for some internal functions is available in the recovery
-  shell
+- [ ] Basic tab completion for some internal functions is available in the
+  recovery shell.
 
 - [ ] SSH'ing in to dracut-crypt enabled ZBM build should result in a functional
-  shell, with a proper path and prompt set
+  shell, with a proper path and prompt set.
 
-- [ ] A running copy of ZBM can be taken over by executing `zbm` from an SSH session
-    - If the running copy can't be correctly stopped, `zbm` will spin until it gets a lock
-      or the user cancels the attempt
+- [ ] A running copy of ZBM can be taken over from a remote session:
+
+    - Executing `zbm` or `zfsbootmenu` from the remote login will attempt to
+      stop any currently running instance.
+
+    - Until the running instance is stopped, the new invocation will spin with
+      a timed message until it succeeds or the user cancels the attempt.
 
 ## OS-Specific Image Creation
 
-- [ ] For each supported distribution [Void, Void Musl, Arch, Ubuntu, Debian], verify
-  that `module-setup.sh` is able to correctly install all required binaries in the
-  initramfs.
+- [ ] For each supported distribution [Void, Void Musl, Arch, Ubuntu, Debian],
+  verify that `module-setup.sh` is able to correctly install all required
+  binaries in the initramfs.
 
 - [ ] For each supported distribution, verify that `generate-zbm` can successfully
   produce an versioned and unversioned initramfs and a unified EFI bundle.
 
 - [ ] For each supported distribution, verify that the components and EFI bundles
-  are able to correctly boot other systems. The check stages listed above should be
-  used and any functionality that is missing or broken noted.
+  are able to correctly boot other systems. The check stages listed above should
+  be used and any functionality that is missing or broken noted.
