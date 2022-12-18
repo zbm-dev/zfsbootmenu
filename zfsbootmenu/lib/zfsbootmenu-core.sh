@@ -624,19 +624,20 @@ set_default_kernel() {
   fi
   zdebug "pool set to ${pool}"
 
-  # Strip /boot/ to list only the file
-  kernel="${2#/boot/}$"
-  zdebug "kernel set to ${kernel}"
-
   # Make sure the pool is writable
   set_rw_pool "${pool}" || return 1
   CLEAR_SCREEN=1 load_key "${fs}"
 
+  # Strip /boot/ to list only the file
+  kernel="${2#/boot/}"
+
   # Restore nonspecific default when no kernel specified
   if [ -z "$kernel" ]; then
+    zdebug "clearing default kernel"
     zfs inherit org.zfsbootmenu:kernel "${fs}" || return 1
   else
-    zfs set org.zfsbootmenu:kernel="${kernel}" "${fs}" || return 1
+    zdebug "kernel set to ${kernel}"
+    zfs set org.zfsbootmenu:kernel="${kernel}$" "${fs}" || return 1
   fi
 
   return 0
