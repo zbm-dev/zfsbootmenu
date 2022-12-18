@@ -233,6 +233,8 @@ of the kernel list. That BE should be selected when entering the list.
   is available. During the wait period, the user can exit to a recovery shell
   via `[ESCAPE]`
 
+- [ ] ZBM can be forced to import *only* a specific pool via zbm.prefer=pool!!.
+
 - [ ] Invalid `spl_hostid` or `spl.spl_hostid` values do not cause ZBM to fail
 
 - [ ] Adding `zbm.skip` to the KCL causes ZBM to immediately boot BOOTFS, otherwise
