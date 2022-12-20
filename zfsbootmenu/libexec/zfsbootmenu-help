@@ -45,6 +45,7 @@ help_pager() {
     --preview-window="right:${PREVIEW_SIZE}:wrap${HAS_BORDER:+,border-sharp}" \
     --header="${header}" \
     ${HAS_BORDER:+--border=top} \
+    ${HAS_BORDER:+--color=border:white} \
     ${HAS_BORDER:+--border-label="$( global_header )"} \
     --tac --inline-info --ansi --layout="reverse-list"
 }
