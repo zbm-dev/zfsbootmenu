@@ -105,10 +105,12 @@ git commit -m "Bump to version ${release}"
 
 # Publish release, as prerelease if version contains alphabetics
 if echo "${release}" | grep -q "[A-Za-z]"; then
-  prerelease="--prerelease"
+  prerelease=( "--prerelease" )
+else
+  prerelease=( )
 fi
 
-[ -d "releng/assets/${release}" ] || mkdir -p "releng/assets/${release}"
+mkdir -p "releng/assets/${release}"
 
 asset_dir="$( realpath -e "releng/assets/${release}" )"
 asset_files=()
@@ -172,7 +174,7 @@ if ! git push; then
   error "ERROR: failed to push to default branch; release aborted"
 fi
 
-if ! gh release create "${tag}" "${prerelease}" \
+if ! gh release create "${tag}" "${prerelease[@]}" \
     -F "${relnotes}" -t "ZFSBootMenu ${tag}" "${asset_files[@]}"; then
   error "ERROR: release creation failed"
 fi
