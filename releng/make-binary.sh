@@ -70,7 +70,7 @@ for style in release recovery; do
   mkdir -p "${buildtmp}/build/dracut.conf.d" || error "cannot create config tree"
 
   # Make sure there is an output directory for this asset style
-  zbmtriplet="zfsbootmenu-${style}-vmlinuz-${arch}-v${release}"
+  zbmtriplet="zfsbootmenu-${style}-${arch}-v${release}"
   outdir="${buildtmp}/${zbmtriplet}"
   mkdir -p "${outdir}" || error "cannot create output directory"
 
@@ -90,7 +90,7 @@ for style in release recovery; do
 
   # EFI file is currently only built on x86_64
   if [ "${BUILD_EFI}" = "true" ]; then
-    if ! cp "${outdir}/vmlinuz.EFI" "${assets}/${zbmtriplet}.EFI"; then
+    if ! cp "${outdir}/vmlinuz.EFI" "${assets}/${zbmtriplet}-vmlinuz.EFI"; then
       error "failed to copy UEFI bundle"
     fi
     rm -f "${outdir}/vmlinuz.EFI"

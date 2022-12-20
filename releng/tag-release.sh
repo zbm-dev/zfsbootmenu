@@ -133,7 +133,7 @@ if ! releng/sign-assets.sh "${release}"; then
 fi
 
 for style in release recovery; do
-  assets+=( "zfsbootmenu-${style}-vmlinuz-${arch}-v${release}.EFI" )
+  assets+=( "zfsbootmenu-${style}-${arch}-v${release}-vmlinuz.EFI" )
   assets+=( "zfsbootmenu-${style}-${arch}-v${release}.tar.gz" )
 done
 
