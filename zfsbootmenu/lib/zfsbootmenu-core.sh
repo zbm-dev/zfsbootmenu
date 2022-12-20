@@ -1547,7 +1547,7 @@ cache_key() {
   fi
 
   keycache="${BASE}/.keys/${keysrc}"
-  mutex="${keycache}/.cachemutex"
+  mutex="${keycache}/.cachemutex.$$"
 
   if [ -e "${mutex}" ]; then
     # Attempting to load key source could lead to infinite recursion
@@ -1695,7 +1695,7 @@ load_key() {
   if [ -e "/${key}" ]; then
     # Prefer the actual path to the key file
     keypath="/${key}"
-  elif keysource="$( be_keysource "${fs}" )" && [ "${NO_CACHE}" -eq 0 ]; then
+  elif keysource="$( be_keysource "${fs}" )" && ! [ "${NO_CACHE}" -eq 1 ]; then
     # Otherwise, try to pre-seed a cache location
     # Don't care if this succeeds because it may already be cached
     cache_key "${fs}" "${keylocation}"
