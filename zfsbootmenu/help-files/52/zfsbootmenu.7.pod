@@ -77,8 +77,7 @@ without setting any values.
       otherwise-importable pool. After adopting a
       detected hostid, ZFSBootMenu will subsequently
       attempt to import as many pools as possible.
-      This option is forbidden on big-endian
-      systems. This is the default import policy.
+      This is the default import policy.
 
     [1mzbm.import_policy=strict[0m
       Set this option to only import pools that
@@ -97,22 +96,19 @@ without setting any values.
       Use this option with caution!
 
 [1mzbm.set_hostid[0m
-    On little-endian systems, setting this option
-    will cause ZFSBootMenu to set the [33mspl.spl_hostid[0m
-    command-line parameter for the selected boot
-    environment to the hostid used to import its
-    pool. The SPL kernel module will use this value
-    as the hostid of the booted environment
-    regardless of the contents of [33m/etc/hostid[0m. As a
-    special case, if the hostid to be set is zero,
-    ZFSBootMenu will instead set
+    Setting this option will cause ZFSBootMenu to
+    set the [33mspl.spl_hostid[0m command-line parameter
+    for the selected boot environment to the hostid
+    used to import its pool. The SPL kernel module
+    will use this value as the hostid of the booted
+    environment regardless of the contents of
+    [33m/etc/hostid[0m. As a special case, if the hostid to
+    be set is zero, ZFSBootMenu will instead set
     [33mspl_hostid=00000000[0m, which should be used by
     dracut-based initramfs images to write an
     all-zero [33m/etc/hostid[0m in the initramfs prior to
     importing the boot pool. This option is on by
     default.
-
-    This option has no effect on big-endian systems.
 
     [1mNote:[0m Setting [33mspl.spl_hostid[0m to a non-zero value
     on the kernel commandline will make the ZFS

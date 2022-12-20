@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "zfsbootmenu 7"
-.TH zfsbootmenu 7 "2022-10-28" "2.0.0" "ZFSBootMenu"
+.TH zfsbootmenu 7 "2022-12-19" "2.1.0" "ZFSBootMenu"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -174,7 +174,7 @@ This option controls how the pool import process should take place.
 .RS 4
 .IP "\fBzbm.import_policy=hostid\fR" 2
 .IX Item "zbm.import_policy=hostid"
-Set this option to allow run-time reconfiguration of the \s-1SPL\s0 hostid. If a pool is preferred via \fBzbm.prefer\fR and the pool can not be imported with a preconfigured hostid, the system will attempt to adopt the hostid of the system that last imported the pool. If a preferred pool is not set and no pools can be imported using a preconfigured hostid, the system will adopt the hostid of the first otherwise-importable pool. After adopting a detected hostid, ZFSBootMenu will subsequently attempt to import as many pools as possible. This option is forbidden on big-endian systems. This is the default import policy.
+Set this option to allow run-time reconfiguration of the \s-1SPL\s0 hostid. If a pool is preferred via \fBzbm.prefer\fR and the pool can not be imported with a preconfigured hostid, the system will attempt to adopt the hostid of the system that last imported the pool. If a preferred pool is not set and no pools can be imported using a preconfigured hostid, the system will adopt the hostid of the first otherwise-importable pool. After adopting a detected hostid, ZFSBootMenu will subsequently attempt to import as many pools as possible. This is the default import policy.
 .IP "\fBzbm.import_policy=strict\fR" 2
 .IX Item "zbm.import_policy=strict"
 Set this option to only import pools that match the \s-1SPL\s0 hostid configured in ZFSBootMenu. If none can be imported, an emergency shell will be invoked. The \fIstrict\fR policy is consistent with the behavior of earlier versions of ZFSBootMenu.
@@ -186,9 +186,7 @@ Set this option to attempt to force pool imports. When set, this invokes \fIzpoo
 .RE
 .IP "\fBzbm.set_hostid\fR" 4
 .IX Item "zbm.set_hostid"
-On little-endian systems, setting this option will cause ZFSBootMenu to set the \fIspl.spl_hostid\fR command-line parameter for the selected boot environment to the hostid used to import its pool. The \s-1SPL\s0 kernel module will use this value as the hostid of the booted environment regardless of the contents of \fI/etc/hostid\fR. As a special case, if the hostid to be set is zero, ZFSBootMenu will instead set \fIspl_hostid=00000000\fR, which should be used by dracut-based initramfs images to write an all-zero \fI/etc/hostid\fR in the initramfs prior to importing the boot pool. This option is on by default.
-.Sp
-This option has no effect on big-endian systems.
+Setting this option will cause ZFSBootMenu to set the \fIspl.spl_hostid\fR command-line parameter for the selected boot environment to the hostid used to import its pool. The \s-1SPL\s0 kernel module will use this value as the hostid of the booted environment regardless of the contents of \fI/etc/hostid\fR. As a special case, if the hostid to be set is zero, ZFSBootMenu will instead set \fIspl_hostid=00000000\fR, which should be used by dracut-based initramfs images to write an all-zero \fI/etc/hostid\fR in the initramfs prior to importing the boot pool. This option is on by default.
 .Sp
 \&\fBNote:\fR Setting \fIspl.spl_hostid\fR to a non-zero value on the kernel commandline will make the \s-1ZFS\s0 kernel modules \fBignore\fR any value set in \fI/etc/hostid\fR. To restore standard \s-1ZFS\s0 behavior on a running system, execute
 .Sp
