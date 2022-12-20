@@ -99,7 +99,9 @@ if [ -z "${EXISTING_POOL}" ]; then
   fi
 
   if [ -n "${POOL_COMPAT}" ]; then
-    COMPAT=( "-o" "compatibility=${POOL_COMPAT}" )
+    COMPAT_OPTS=( "-o" "compatibility=${POOL_COMPAT}" )
+  else
+    COMPAT_OPTS=( )
   fi
 
   if zpool create -f -m none \
@@ -109,7 +111,7 @@ if [ -z "${EXISTING_POOL}" ]; then
         -O relatime=on \
         -o autotrim=on \
         -o cachefile=none \
-        "${POOL_COMPAT:+${COMPAT[@]}}" \
+        "${COMPAT_OPTS[@]}" \
         "${ENCRYPT_OPTS[@]}" \
         "${zpool_name}" "${LOOP_DEV}"; then
     export ZBM_POOL="${zpool_name}"
