@@ -7,6 +7,8 @@ SYNOPSIS
 
 ZFSBootMenu behavior is controlled through ZFS filesystem properties and command-line options provided to the ZFSBootMenu kernel.
 
+.. _cli-parameters:
+
 Command-Line Parameters
 =======================
 
@@ -141,6 +143,9 @@ Deprecated Command-Line Parameters
 **zbm.force_import=1**
 
   Deprecated; use **zbm.import_policy=force**.
+
+
+.. _zfs-properties:
 
 ZFS Properties
 ==============
