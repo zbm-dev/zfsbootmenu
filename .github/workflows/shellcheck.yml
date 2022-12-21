@@ -1,5 +1,5 @@
 name: Analyze scripts
-on: [ push ] 
+on: [ push, pull_request ] 
 
 jobs:
   shellcheck:
