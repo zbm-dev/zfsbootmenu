@@ -1,0 +1,81 @@
+[1mSnapshot Management[0m
+
+[1mKeyboard Shortcuts[0m
+
+  [33m[ENTER][0m [1mduplicate[0m
+
+    Creation method: [33mzfs send | zfs recv[0m
+
+    This creates a boot environment that does not depend on any other snapshots, allowing it
+    to be destroyed at will. The new boot environment will immediately consume space on
+    the pool equal to the [33mREFER[0m value of the snapshot.
+
+    A duplicated boot environment is commonly used if you need a new boot environment
+    without any associated snapshots.
+
+    The operation will fail gracefully if the pool can not be set [33mread/write[0m.
+
+    If [33mmbuffer[0m is available, it is used to provide feedback.
+
+  [33m[MOD+X][0m [1mclone and promote[0m
+
+    Creation method: [33mzfs clone , zfs promote[0m
+
+    This creates a boot environment that is not dependent on the origin snapshot, allowing
+    you to destroy the file system that the clone was created from. A cloned and
+    promoted boot environment is commonly used when you've done an upgrade but want to
+    preserve historical snapshots.
+
+    The operation will fail gracefully if the pool can not be set [33mread/write[0m.
+
+  [33m[MOD+C][0m [1mclone[0m
+
+    Creation method: [33mzfs clone[0m
+
+    This creates a boot environment from a snapshot with out modifying snapshot inheritence.
+    A cloned boot environment is commonly used if you need to boot a previous system
+    state for a short time and then discard the environment.
+
+    The operation will fail gracefully if the pool can not be set [33mread/write[0m.
+
+  [33m[MOD+N][0m [1msnapshot creation[0m
+
+    This creates a new snapshot of the currently selected boot environment. A new snapshot
+    is useful if you need to repair a boot environment from a chroot, to allow for easy
+    roll-back of the changes.
+
+    The operation will fail gracefully if the pool can not be set [33mread/write[0m.
+
+  [33m[MOD+D][0m [1mdiff[0m
+
+    Compare the differences between snapshots and filesystems. A single snapshot can be
+    selected and a diff will be generated between that and the current state of the
+    filesystem. Two snapshots can be selected (and deselected) with the tab key and a
+    diff will be generated between them.
+
+    The operation will fail gracefully if the pool can not be set [33mread/write[0m.
+
+  [33m[MOD+J][0m [1mjump into chroot[0m
+
+    Enter a chroot of the selected boot environment snapshot. The snapshot is always mounted
+    read-only.
+
+  [33m[MOD+O][0m [1msort order[0m
+
+    Cycle the sorting key through the following list:
+
+      • [1mname[0m Use the filesystem or snapshot name
+      • [1mcreation[0m Use the filesystem or snapshot creation time
+      • [1mused[0m Use the filesystem or snapshot size
+
+    The default sort key is [33mname[0m.
+
+  [33m[MOD+L][0m [1mview logs[0m
+
+    View logs, as indicated by [33m[!][0m. The indicator will be yellow for warning conditions and
+    red for errors.
+
+  [33m[MOD+R][0m [1mroll back snapshot[0m
+
+    Roll back a boot environment to the selected snapshot. This is a destructive operation
+    that will not proceed without affirmative confirmation.
