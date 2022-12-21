@@ -130,6 +130,8 @@ mkinitcpio
 ZFSBootMenu also supports the `mkinitcpio <https://gitlab.archlinux.org/archlinux/mkinitcpio/mkinitcpio/>`_ initramfs
 generator used by Arch Linux.
 
+.. _remote-mkinitcpio-core:
+
 ZFSBootMenu Configuration Changes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -175,6 +177,8 @@ the configuration. The standard ``HOOKS`` line in ``/etc/zfsbootmenu/mkinitcpio.
 like::
 
   HOOKS=(base udev autodetect modconf block filesystems keyboard)
+
+.. _remote-mkinitcpio-net:
 
 Basic Network Access
 ~~~~~~~~~~~~~~~~~~~~
@@ -240,6 +244,8 @@ Finally, make sure to include the ``ip`` executable in your initramfs image by m
 .. code-block::
 
   sed -e '/BINARIES=/a BINARIES+=(ip)' -i /etc/zfsbootmenu/mkinitcpio.conf
+
+.. _remote-mkinitcpio-dropbear:
 
 Dropbear
 ~~~~~~~~

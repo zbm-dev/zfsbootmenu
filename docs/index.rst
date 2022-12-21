@@ -22,6 +22,7 @@ ZFSBootMenu
   :caption: Guides
   :maxdepth: 3
   :titlesonly:
+  :includehidden:
 
   guides/general
   guides/debian
