@@ -1,5 +1,10 @@
-Custom ZFSBootMenu Images from Build Containers
-===============================================
+ZFSBootMenu Build Containers
+============================
+
+.. toctree::
+  :hidden:
+
+  container-example
 
 .. contents:: Contents
   :depth: 2
@@ -10,17 +15,23 @@ Introduction
 ------------
 
 Official ZFSBootMenu release assets are built within OCI containers based on the
-`zbm-builder image <https://github.com/zbm-dev/zfsbootmenu/pkgs/container/zbm-builder>`_. The image is built atop Void
-Linux and provides a predictable environment without the need to install ZFSBootMenu or its dependencies on the host
-system.
+`zbm-builder image <https://github.com/zbm-dev/zfsbootmenu/pkgs/container/zbm-builder>`_. The image is built atop
+`Void Linux <https://voidlinux.org/>`_ and provides a predictable environment without the need to install ZFSBootMenu or
+its dependencies on the host system. While ZFSBootMenu is officially packaged for Void Linux and is guaranteed to work
+well with the tools provided therein, the experience is not always as smooth for users of other distributions. System
+packages for ZFSBootMenu or its requirements may be missing entirely. Tooling may be outdated and missing features that
+ZFSBootMenu uses to provide an enhanced user experience. (Where possible, ZFSBootMenu will test for features and work
+around their absence.) The ``zbm-builder`` container image provides a means to work around the limitations of particular
+distributions and provides all users with first-class ZFSBootMenu support.
 
 The ``zbm-builder.sh`` script provides a front-end for integrating custom ZFSBootMenu configurations into the build
 container without the complexity of directly controlling the container runtime.
 
 Users wishing to build custom ZFSBootMenu images should be familiar with the core concepts of ZFSBootMenu as outlined in
 the :zbm:`project README <README.md>`. For those interested, the :zbm:`container README <releng/docker/README.md>`
-provides more details on the operation of the ZFSBootMenu build container. However, ``zbm-builder.sh`` seeks to
-abstract away many of the details discussed in that document.
+provides more details on the operation of the ZFSBootMenu build container. However, the ``zbm-builder.sh``
+:zbm:`build helper <zbm-builder.sh>` provides a front-end for integrating custom ZFSBootMenu configurations into the
+build container and abstracts away many of the complex details discussed in that document.
 
 Dependencies
 ------------
@@ -62,14 +73,34 @@ groups. For example::
 
 will add ``zbmuser`` to the ``docker`` group on systems that provide the ``usermod`` program.
 
-Build Script
-~~~~~~~~~~~~
+The Build Container and Its Helper
+----------------------------------
 
-The ``zbm-builder.sh`` script requires nothing more than functional installations of ``bash`` and one of ``podman`` or
-``docker``. Simply download a copy of the script to a convenient directory.
+The ``zbm-builder`` container is based on a Void Linux image that uses an LTS kernel and a relatively recent version of
+ZFS. When run, the container entrypoint will:
 
-Advanced users may wish to build images from a local copy of the ZFSBootMenu source tree. To make this possible, either
-fetch and unpack a source tarball or clone the git repository locally.
+1. Fetch a specified or default version of the ZFSBootMenu source repository (or use a local copy that is bind-mounted
+   into the container);
+2. Perform an "installation" of this repository into the container instance to ensure that ZFSBootMenu is usable within;
+3. Optionally run some scripts to customize the container instance;
+4. Merge default and build-specific ZFSBootMenu configurations; and
+5. Produce a ZFSBootMenu image.
+
+To facilitate interaction with the host, the container should be run with a build directory (along with an output
+directory, if it is not already a child of the build directory) bind-mounted into the container.
+
+
+.. note::
+
+  Advanced users may wish to build images from a local copy of the ZFSBootMenu source tree. To make this possible,
+  either fetch and unpack a source tarball or clone the git repository locally. The local repository should be
+  bind-mounted to the ``/zbm`` directory within the container.
+
+The ``zbm-builder.sh`` helper script requires nothing more than functional installations of ``bash`` and one of
+``podman`` or ``docker``. Simply download a copy of the script to a convenient directory. The helper coordinates volume
+mounts necessary to read configurations from and write output to the host and ensures that the system's hostid file is
+passed through. The script also supports a simple configuration file that allows options to be recorded for repeated
+use.
 
 Building a ZFSBootMenu Image
 ----------------------------
@@ -108,10 +139,6 @@ build directory:
 For each hook directory that contains at least one executable file, ``zbm-builder.sh`` will write custom configuration
 snippets for ``dracut`` and ``mkinitcpio`` that will include these files in the output images.
 
-The ``mkinitcpio`` configuration prepared by ``zbm-builder.sh`` consists of snippets installed in a ``mkinitcpio.d``
-subdirectory of the build directory. The :zbm:`default mkinitcpio configuration <etc/zbm-builder/mkinitcpio.conf>`
-includes a loop to source these snippets.
-
 Fully Customizing Images
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -123,10 +150,14 @@ configuration snippets for ``dracut`` or ``mkinitcpio`` can be placed in the ``d
 subdirectories, respectively. For ``mkinitcpio`` configurations, a complete ``mkinitcpio.conf`` can be placed in the
 working directory to override the standard configuration.
 
-The standard ``mkinitcpio.conf`` in the ZBM build container contains customizations to source snippets in the
-``mkinitcpio.conf.d``. This is not standard behavior for ``mkinitcpio``. If the primary ``mkinitcpio.conf`` is
-overridden, this logic may need to be replicated. It is generally better to rely on the default configuration and
-override portions in ``mkinitcpio.conf.d``.
+.. note::
+
+  The ``mkinitcpio`` configuration prepared by ``zbm-builder.sh`` may include custom snippets installed in a
+  ``mkinitcpio.d`` subdirectory of the build directory. The
+  :zbm:`default mkinitcpio configuration <etc/zbm-builder/mkinitcpio.conf>` includes a loop to source these snippets.
+  Should you prefer to overide the default ``mkinitcpio.conf`` in your build, any files in the ``mkinitcpio.d``
+  subdirectory will need to be sourced within your custom configuration. In general, it is better to leave the default
+  ``mkinitcpio.conf`` and store all custom configurations in the ``mkinitcpio.d`` subdirectory.
 
 The build container runs its build script from the working directory on the host. In general, relative paths in custom
 configuration files are generally acceptable and refer to locations relative to the build directory. If absolute paths
