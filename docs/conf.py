@@ -10,7 +10,7 @@ project = 'ZFSBootMenu'
 author = 'Zach Dykstra'
 man_author = 'ZFSBootMenu Team <https://github.com/zbm-dev/zfsbootmenu>'
 copyright = f'2019, {author}'
-release = '2.0.0'
+release = '2.1.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
