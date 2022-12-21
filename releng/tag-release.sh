@@ -55,6 +55,9 @@ fi
 
 echo "Will tag release version ${release} as ${tag}"
 
+# update version in documentation
+sed -i "s/^release = '.*'\$/release = '${release}'" docs/conf.py
+
 # Synchronize man pages with POD documentation
 if [ ! -x releng/pod2man.sh ]; then
   error "ERROR: unable to convert documentation"
