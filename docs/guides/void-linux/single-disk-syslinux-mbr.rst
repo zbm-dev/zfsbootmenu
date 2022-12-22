@@ -11,7 +11,7 @@ This guide can be used to install Void onto a single ZFS disk with or without ZF
 * Your system uses BIOS to boot
 * Your system is x86_64
 * You will use ``glibc`` as your system libc.
-* ``/dev/sda`` is the onboard SSD, used for ZFS and syslinux
+* ``/dev/sda`` is the disk to be used for ZFS and syslinux
 * You're mildly comfortable with ZFS and discovering system facts on your own (``lsblk``, ``dmesg``, ``gdisk``, ...)
 
 .. include:: _include/intro.rst
@@ -21,55 +21,24 @@ system in BIOS mode.
 
 .. include:: _include/zfs-prep.rst
 
-SSD prep work
--------------
+Disk prep work
+--------------
 
-Create a syslinux partition on ``/dev/sda``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The disk that will hold the syslinux partition and ZFS pool should be labeled in MBR format and provide two partitions.
+The partitioning can be done with any standard partition tool. The ``sfdisk`` utility that comes with can be used to
+script the partitioning process to minimize the likelihood of error::
 
-.. code-block:: none
+  cat > sda.partition <<EOF
+  label: dos
+  start=1MiB, size=512MiB, type=83, bootable
+  start=513MiB, size=+, type=83
+  EOF
 
-  bash-5.0# fdisk /dev/sda
+  sfdisk /dev/sda < sda.partition
 
-  Welcome to fdisk (util-linux 2.35.2).
-  Changes will remain in memory only, until you decide to write them.
-  Be careful before using the write command.
-
-
-  Command (m for help): o
-  Created a new DOS disklabel with disk identifier 0xf5f142cb.
-
-  Command (m for help): n
-  Partition type
-     p   primary (0 primary, 0 extended, 4 free)
-     e   extended (container for logical partitions)
-  Select (default p): p
-  Partition number (1-4, default 1): 1
-  First sector (2048-1000215215, default 2048): 
-  Last sector, +/-sectors or +/-size{K,M,G,T,P} (2048-1000215215, default 1000215215): +512M
-
-  Created a new partition 1 of type 'Linux' and of size 512 MiB.
-
-  Command (m for help): n
-  Partition type
-     p   primary (1 primary, 0 extended, 3 free)
-     e   extended (container for logical partitions)
-  Select (default p): p
-  Partition number (2-4, default 2): 2
-  First sector (1050624-1000215215, default 1050624): 
-  Last sector, +/-sectors or +/-size{K,M,G,T,P} (1050624-1000215215, default 1000215215): 
-
-  Created a new partition 2 of type 'Linux' and of size 476.4 GiB.
-
-  Command (m for help): a
-  Partition number (1,2, default 2): 1
-
-  The bootable flag on partition 1 is enabled now.
-
-  Command (m for help): w
-  The partition table has been altered.
-  Calling ioctl() to re-read partition table.
-  Syncing disks.
+The script creates a 512-MiB syslinux partition as ``/dev/sda1`` and fill the remaininder of the disk with the
+``/dev/sda2`` partition that will hold your ZFS pool. Adjust the sizes of the partitions or the disk device node as
+appropriate for your needs.
 
 .. include:: _include/pool-creation-non-detached.rst
 
@@ -87,7 +56,7 @@ Create an ext4 filesystem on ``/dev/sda1``
 
 .. code-block::
 
-  mkfs.ext4 -O '^64bit' /dev/sda1
+  mfs.ext4 -O '^64bit' /dev/sda1
 
 .. note::
 
@@ -138,37 +107,68 @@ Install the syslinux MBR data
 Enable zfsbootmenu image creation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Edit ``/etc/zfsbootmenu/config.yaml`` and set:
-
-* ``ManageImages: true`` and ``BootMountPoint: /boot/syslinux`` under the ``Global`` section
-* ``ImageDir: /boot/syslinux/zfsbootmenu``, ``Versions: 3`` and ``Enabled: true`` under the ``Components`` section
-* ``Enabled: true`` under the ``Components.syslinux`` section
-
-See :doc:`generate-zbm(5) </man/generate-zbm.5>` for more details.
-
-Sample /etc/zfsbootmenu/config.yaml
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Edit ``/etc/zfsbootmenu/config.yaml`` and make sure that the following parameters are set:
 
 .. code-block:: yaml
 
   Global:
     ManageImages: true
     BootMountPoint: /boot/syslinux
-    DracutConfDir: /etc/zfsbootmenu/dracut.conf.d
   Components:
-    ImageDir: /boot/syslinux/zfsbootmenu
-    Versions: 3
     Enabled: true
-    syslinux:
-      Config: /boot/syslinux/syslinux.cfg
-      Enabled: true
-  EFI:
-    ImageDir: /boot/efi/EFI/void
-    Versions: 2
-    Enabled: false
-  Kernel:
-    CommandLine: quiet loglevel=0
+    Versions: false
+    ImageDir: /boot/syslinux/zfsbootmenu
+
+See :doc:`generate-zbm(5) </man/generate-zbm.5>` for more details.
+
+Configure syslinux
+~~~~~~~~~~~~~~~~~~
+
+The ``generate-zbm`` image-creation utility includes now-deprecated support for managing a syslinux configuration.
+Because this capability is slated for removal and was not reliable in the first place, it is better to create a static
+syslinux configuration. The ZFSBootMenu configuration described above disables explicit image versioning, which means
+that each invocation of ``generate-zbm`` will produce two output files at a predictable location:
+
+* ``/boot/syslinux/zfsbootmenu/vmlinuz-bootmenu``
+* ``/boot/syslinux/zfsbootmenu/initramfs-bootmenu.img``
+
+In addition, any existing copies of the ZFSBootMenu kernel and initramfs will be saved to a backup location:
+
+* ``/boot/syslinux/zfsbootmenu/vmlinuz-bootmenu-backup``
+* ``/boot/syslinux/zfsbootmenu/initramfs-bootmenu-backup.img``
+
+The following syslinux configuration will provide a simple menu that provides a choice between the current and backup
+images::
+
+  cat > /boot/syslinux/syslinux.cfg <<EOF
+  UI menu.c32
+  PROMPT 0
+
+  MENU TITLE ZFSBootMenu
+  TIMEOUT 50
+
+  DEFAULT zfsbootmenu
+
+  LABEL zfsbootmenu
+    MENU LABEL ZFSBootMenu
+    KERNEL /zfsbootmenu/vmlinuz-bootmenu
+    INITRD /zfsbootmenu/initramfs-bootmenu.img
+    APPEND zfsbootmenu quiet loglevel=4
+
+  LABEL zfsbootmenu-backup
+    MENU LABEL ZFSBootMenu (Backup)
+    KERNEL /zfsbootmenu/vmlinuz-bootmenu-backup
+    INITRD /zfsbootmenu/initramfs-bootmenu-backup.img
+    APPEND zfsbootmenu quiet loglevel=4
+  EOF
+
+Consult the `syslinux documentation <https://wiki.syslinux.org/wiki/index.php?title=Config>`_ for more details on the
+contents of the ``syslinux.cfg`` configuration file. To alter the command-line arguments passed to the ZFSBootMenu
+image, adjust the contents of the ``APPEND`` lines in the configuration.
 
 .. include:: _include/gen-initramfs.rst
 
 .. include:: _include/cleanup.rst
+
+..
+  vim: softtabstop=2 shiftwidth=2 textwidth=120

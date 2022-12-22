@@ -14,10 +14,3 @@ Install the ZFSBootMenu package
 .. code-block::
 
   xbps-install -Rs zfsbootmenu
-
-Disable GPU drivers
-~~~~~~~~~~~~~~~~~~~
-
-.. code-block::
-
-  echo 'omit_drivers+=" amdgpu radeon nvidia nouveau i915 "' >> /etc/zfsbootmenu/dracut.conf.d/drivers.conf
