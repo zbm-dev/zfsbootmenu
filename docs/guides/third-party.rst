@@ -1,7 +1,9 @@
-3rd-party guides and resources
-==============================
+Third-Party Resources
+=====================
 
-The links in this section are not hosted in the ZFSBootMenu docs, but may provide useful information.
+The `ZFSBootMenu Wiki <https://github.com/zbm-dev/zfsbootmenu/wiki>`_ hosts several user-contributed guides.
+
+The following links are not hosted by ZFSBootMenu, but may provide useful information.
 
 Void Linux
 ----------
@@ -25,4 +27,4 @@ Arch Linux
 Fedora
 ------
 
-* https://ociaw.com/posts/install-fedora-zfs-boot-menu
+* `Install and boot Fedora with ZFSBootMenu <https://ociaw.com/posts/install-fedora-zfs-boot-menu>`_
