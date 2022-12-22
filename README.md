@@ -1,4 +1,4 @@
-[![ZFSBootMenu Logo](docs/logos/Logo_Colors_Horizontal_Layout_NoBackground.svg)](https://zfsbootmenu.org)
+[![ZFSBootMenu Logo](docs/logos/Logo_TextOnly_Color.svg)](https://zfsbootmenu.org)
 
 [![Build check](https://github.com/zbm-dev/zfsbootmenu/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/zbm-dev/zfsbootmenu/actions/workflows/build.yml) [![latest packaged version(s)](https://repology.org/badge/latest-versions/zfsbootmenu.svg)](https://repology.org/project/zfsbootmenu/versions)
 
