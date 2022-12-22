@@ -9,8 +9,8 @@
 
 ### New features
 
-* The command line option `zbm.prefer` has been extended with a `!!` marker to import exactly one pool when multiple are available on a system. Refer to [docs/pod/zfsbootmenu.7.pod](https://github.com/zbm-dev/zfsbootmenu/blob/master/docs/pod/zfsbootmenu.7.pod) for more details.
-* Users of the binary releases are now able to use their own custom hooks with the new `zbm.hookroot` command line option. Using this, a partition and directory specification can be provided which allows for additional scripts to be loaded at runtime. Refer to [docs/pod/zfsbootmenu.7.pod](https://github.com/zbm-dev/zfsbootmenu/blob/master/docs/pod/zfsbootmenu.7.pod) for more details.
+* The command line option `zbm.prefer` has been extended with a `!!` marker to import exactly one pool when multiple are available on a system. Refer to [docs/man/zfsbootmenu.7.rst](https://github.com/zbm-dev/zfsbootmenu/blob/master/docs/man/zfsbootmenu.7.rst) for more details.
+* Users of the binary releases are now able to use their own custom hooks with the new `zbm.hookroot` command line option. Using this, a partition and directory specification can be provided which allows for additional scripts to be loaded at runtime. Refer to [docs/man/zfsbootmenu.7.rst](https://github.com/zbm-dev/zfsbootmenu/blob/master/docs/man/zfsbootmenu.7.rst) for more details.
 * [contrib/remote-ssh-build.sh](https://github.com/zbm-dev/zfsbootmenu/blob/master/contrib/remote-ssh-build.sh) has been provided by a new contributor. This script helps ease the creation of a custom EFI file with an embedded SSH server and keys.
 * A global application header has been added to highlight the pages that are available and the currently selected page.
 * Unless explicitly configured, `generate-zbm` will now default to `dracut` but fall back to `mkinitcpio` when it cannot find `dracut` in the path.
@@ -250,7 +250,7 @@ ZFSBootMenu 1.10.0 brings some minor new features and some behavior changes that
 
 Previous releases have had `zbm.import_policy=strict` and `zbm.set_hostid=0` set by default. Starting with this release, the default values are `zbm.import_policy=hostid` and `zbm.set_hostid=1`. `zbm.import_policy=hostid` can help ZFSBootMenu automatically and safely import a pool when the wrong hostid is provided. `zbm.set_hostid=1` passes the hostid used to import the pool to the boot environment, ensuring that it can also correctly import the pool.
 
-Please refer to [Command-Line Parameters](https://github.com/zbm-dev/zfsbootmenu/blob/master/pod/zfsbootmenu.7.pod#command-line-parameters) for a compete description of both of these feature flags.
+Please refer to [Command-Line Parameters](https://github.com/zbm-dev/zfsbootmenu/blob/master/docs/man/zfsbootmenu.7.rst#command-line-parameters) for a compete description of both of these feature flags.
 
 ### Fixes
 * When no hostid is provided or discoverable, use `0x00bab10c` instead of `0x0`.
@@ -362,7 +362,7 @@ The EFI binary can be used as a recovery tool by naming it `BOOTX86.EFI` and add
 
 ### Other changes
 
-Some command line options have now been deprecated with the inclusion of `zbm.import_policy`. See [zfsbootmenu(7)](https://github.com/zbm-dev/zfsbootmenu/blob/master/pod/zfsbootmenu.7.pod#deprecated-command-line-parameters).
+Some command line options have now been deprecated with the inclusion of `zbm.import_policy`. See [zfsbootmenu(7)](https://github.com/zbm-dev/zfsbootmenu/blob/master/docs/man/zfsbootmenu.7.rst#deprecated-command-line-parameters).
 
 ### Testing improvements
 
@@ -436,9 +436,9 @@ ZFSBootMenu 1.8.0 offers a significant list of new features, fixes and general i
 * Colored text and timed messages are used to bring emphasis to important messages presented by ZFSBootMenu.
 * Extensive logging to the kernel ring-buffer has been enabled throughout ZFSBootMenu, with verbosity controlled by the `loglevel` kernel-command-line argument.
 * Much of the core menu functionality has been separated into a standalone `zfsbootmenu` program on the initramfs, allowing the menu to be accessed over SSH using something like the [dracut-crypt-ssh](https://github.com/dracut-crypt-ssh/dracut-crypt-ssh) module.
-* Boot images can be configured to include [tmux](https://github.com/tmux/tmux), allowing the boot menu to be presented in a multi-pane, detachable view. This is primarily aimed at development/debugging efforts. See descriptions of the `zbm.tmux` command-line option and the `zfsbootmenu_tmux` dracut option in the [zfsbootmenu(7)](https://github.com/zbm-dev/zfsbootmenu/blob/master/pod/zfsbootmenu.7.pod) manual page.
-* ZFSBootMenu can now execute arbitrary, user-supplied "setup" hooks before the menu is displayed and "teardown" hooks immediately before jumping into a selected boot environment. See descriptions of the `zfsbootmenu_setup` and `zfsbootmenu_teardown` dracut options in the [zfsbootmenu(7)](https://github.com/zbm-dev/zfsbootmenu/blob/master/pod/zfsbootmenu.7.pod) manual page.
-* Encryption keys can now be cached by pointing the `org.zfsbootmenu:keysource` property of a ZFS encryptionroot to a specific filesystem. When ZFSBootMenu attempts to load a key from a `file://` location, it will first attempt to load the key at that location relative to the filesystem specified by `org.zfsbootmenu:keysource`. If this succeeds, ZFSBootMenu will retain a copy of the key in the initramfs so that subsequent need for the key (for example, when re-importing a pool read-write to set default boot options or duplicate a snapshot) will not require re-entry of the passphrase. See descriptions of the `org.zfsbootmenu:keysource` ZFS property in the [zfsbootmenu(7)](https://github.com/zbm-dev/zfsbootmenu/blob/master/pod/zfsbootmenu.7.pod) manual page.
+* Boot images can be configured to include [tmux](https://github.com/tmux/tmux), allowing the boot menu to be presented in a multi-pane, detachable view. This is primarily aimed at development/debugging efforts. See descriptions of the `zbm.tmux` command-line option and the `zfsbootmenu_tmux` dracut option in the [zfsbootmenu(7)](https://github.com/zbm-dev/zfsbootmenu/blob/master/docs/man/zfsbootmenu.7.rst) manual page.
+* ZFSBootMenu can now execute arbitrary, user-supplied "setup" hooks before the menu is displayed and "teardown" hooks immediately before jumping into a selected boot environment. See descriptions of the `zfsbootmenu_setup` and `zfsbootmenu_teardown` dracut options in the [zfsbootmenu(7)](https://github.com/zbm-dev/zfsbootmenu/blob/master/docs/man/zfsbootmenu.7.rst) manual page.
+* Encryption keys can now be cached by pointing the `org.zfsbootmenu:keysource` property of a ZFS encryptionroot to a specific filesystem. When ZFSBootMenu attempts to load a key from a `file://` location, it will first attempt to load the key at that location relative to the filesystem specified by `org.zfsbootmenu:keysource`. If this succeeds, ZFSBootMenu will retain a copy of the key in the initramfs so that subsequent need for the key (for example, when re-importing a pool read-write to set default boot options or duplicate a snapshot) will not require re-entry of the passphrase. See descriptions of the `org.zfsbootmenu:keysource` ZFS property in the [zfsbootmenu(7)](https://github.com/zbm-dev/zfsbootmenu/blob/master/docs/man/zfsbootmenu.7.rst) manual page.
 * The `Alt+C` hot key provides the means to chroot into a selected boot environment. If the pool is mounted read-write, the chroot will be writable, allowing recovery operations directly from ZFSBootMenu.
 
 ### Significant commits in this release
