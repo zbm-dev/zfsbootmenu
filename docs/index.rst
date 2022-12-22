@@ -48,8 +48,8 @@
   :hidden:
 
   guides/general
-  guides/debian
   guides/void-linux
+  guides/debian/uefi-install
   guides/third-party
 
 .. toctree::
