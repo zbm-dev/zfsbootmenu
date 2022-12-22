@@ -1,4 +1,4 @@
-.. image:: logos/Logo_Colors_Horizontal_Layout_NoBackground.svg
+.. image:: logos/Logo_TextOnly_Color.svg
    :alt: ZFSBootMenu logo
    :align: center
 
