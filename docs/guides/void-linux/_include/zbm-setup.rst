@@ -13,4 +13,4 @@ Install the ZFSBootMenu package
 
 .. code-block::
 
-  xbps-install -Rs zfsbootmenu
+  xbps-install -S zfsbootmenu
