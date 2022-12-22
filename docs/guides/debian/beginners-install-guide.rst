@@ -22,7 +22,7 @@ encounter any difficulties following this guide with your particular distributio
 
 1. `OpenZFS: Debian root-on-ZFS guide
    <https://openzfs.github.io/openzfs-docs/Getting%20Started/Debian/Debian%20Bullseye%20Root%20on%20ZFS.html>`_
-2. :doc:`/guides/general/direct-uefi-booting`
+2. :doc:`/guides/general/uefi-booting`
 3. :doc:`/guides/debian/uefi-install`
 
 What is ZFSBootMenu?
