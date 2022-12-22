@@ -6,8 +6,11 @@ PYTHON        ?= python3
 VENV          ?= env
 PIP_FLAGS     ?= -q
 SERVEOPTS     ?=
+SUDO          ?= sudo
 SOURCEDIR     = .
 BUILDDIR      = _build
+
+VOID_PKGS     = python3-rst2ansi python3-sphinx-tabs python3-sphinx_rtd_theme python3-recommonmark
 
 .PHONY: help setup serve envclean requirements.txt Makefile setup-void gen-man
 
@@ -26,7 +29,7 @@ gen-man: man
 	@cp -r $(BUILDDIR)/man $(SOURCEDIR)/man/dist
 
 setup-void:
-	@sudo xbps-install -Su python3-rst2ansi python3-sphinx-tabs python3-sphinx_rtd_theme python3-recommonmark
+	@$(SUDO) xbps-install -Su $(VOID_PKGS)
 
 setup: $(VENV)/req_done
 
@@ -35,6 +38,9 @@ serve: html
 
 envclean:
 	@rm -rf $(VENV)
+
+clean-void:
+	@$(SUDO) xbps-remove -R $(VOID_PKGS)
 
 $(VENV)/success:
 ifeq ("$(wildcard $(VENV))","")
