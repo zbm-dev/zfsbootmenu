@@ -4,9 +4,9 @@ The `contrib` directory contains an assorted collection of helper scripts that
 augment core functionality. These scripts are reviewed and approved by members
 of the core team, but not all are thoroughly tested. Some have not been tested
 at all. User-contributed scripts are intended as starting points for customized
-[setup hooks](../docs/pod/zfsbootmenu.7.pod) that can be deployed within the
+[setup hooks](../docs/man/zfsbootmenu.7.rst) that can be deployed within the
 ZFSBootMenu environment or for [`generate-zbm`
-hooks](../docs/pod/generate-zbm.5.pod) that alter the process of creating
+hooks](../docs/man/generate-zbm.5.rst) that alter the process of creating
 ZFSBootMenu images.
 
 ## Script Directory
