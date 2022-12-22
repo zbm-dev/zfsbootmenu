@@ -1,8 +1,3 @@
-.. only:: not html
-
-    ZFSBootMenu
-    ===========
-
 .. image:: logos/Logo_Colors_Horizontal_Layout_NoBackground.svg
    :alt: ZFSBootMenu logo
    :align: center
@@ -87,8 +82,17 @@ or direct user selection), ZFSBootMenu launches that kernel using the ``kexec`` 
   :alt: ZFSBootMenu screenshot
   :align: center
 
+.. raw:: html
+
+  <br>
+
 Overview
---------
+========
+
+.. contents::
+  :depth: 2
+  :local:
+  :backlinks: none
 
 In broad strokes, ZFSBootMenu works as follows:
 
