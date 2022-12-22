@@ -6,6 +6,10 @@ General
 
   general/bootenvs-and-you
   general/container-building
-  general/direct-uefi-booting
+  general/native-encryption
+  general/uefi-booting
   general/remote-access
   general/portable
+
+..
+  vim: softtabstop=2 shiftwidth=2 textwidth=120
