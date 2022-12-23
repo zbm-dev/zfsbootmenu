@@ -1,5 +1,23 @@
 name: Build check
-on: [ push, pull_request ]
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'bin/**'
+      - 'zfsbootmenu/**'
+      - 'dracut/**'
+      - 'initcpio/**'
+  pull_request:
+    paths:
+      - 'bin/**'
+      - 'zfsbootmenu/**'
+      - 'dracut/**'
+      - 'initcpio/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
