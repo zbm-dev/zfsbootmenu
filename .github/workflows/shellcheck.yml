@@ -1,5 +1,27 @@
 name: Analyze scripts
-on: [ push, pull_request ] 
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '**.sh'
+      - 'bin/**'
+      - 'initcpio/**'
+      - 'zfsbootmenu/bin/**'
+      - 'zfsbootmenu/libexec/**'
+      - '!testing/**'
+  pull_request:
+    paths:
+      - '**.sh'
+      - 'bin/**'
+      - 'initcpio/**'
+      - 'zfsbootmenu/bin/**'
+      - 'zfsbootmenu/libexec/**'
+      - '!testing/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   shellcheck:
