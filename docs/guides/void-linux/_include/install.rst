@@ -5,7 +5,7 @@ Adjust the mirror, libc, and package selection as you see fit.
 
 .. code-block::
 
-  XBPS_TARGET_ARCH=x86_64 xbps-install -S -R https://mirrors.servercentral.com/voidlinux/current -r /mnt base-system vim efibootmgr gptfdisk curl
+  XBPS_ARCH=x86_64 xbps-install -S -R https://mirrors.servercentral.com/voidlinux/current -r /mnt base-system vim efibootmgr gptfdisk curl
 
 Copy our files into the new install
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
