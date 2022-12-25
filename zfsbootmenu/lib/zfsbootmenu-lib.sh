@@ -7,6 +7,7 @@ readonly _ZFSBOOTMENU_LIB=1
 # shellcheck disable=SC1091
 source /lib/zfsbootmenu-core.sh >/dev/null 2>&1 || exit 1
 
+# doc: csv_cat
 # arg1: value to substitute for empty first line (default: "enter")
 # prints: concatenated lines of stdin, joined by commas
 
@@ -32,6 +33,7 @@ csv_cat() {
   (IFS=',' ; printf '%s' "${CSV[*]}")
 }
 
+# doc: column_wrap
 # arg1: colon-delimited string
 # arg2: short string used when column is missing / display is small
 # prints: string, columnized
@@ -67,6 +69,7 @@ column_wrap() {
   echo -e "${footer//^/${pad}}"
 }
 
+# doc: global_header
 # arg1: optional page to mark as active
 # prints: a header string with the active page highlighted yellow
 # returns: nothing
@@ -119,6 +122,7 @@ global_header() {
   echo -n -e "${header/${tab}/\\033[1;33m[ ${replacement:-${tab}} ]\\033[0;37m}"
 }
 
+# doc: draw_be
 # arg1: Path to file with detected boot environments, 1 per line
 # prints: key pressed, boot environment on successful selection
 # returns: 0 on successful selection, 1 if Esc was pressed, 130 if BE list is missing
@@ -176,6 +180,7 @@ draw_be() {
   return 0
 }
 
+# doc: draw_kernel
 # arg1: ZFS filesystem name
 # prints: bootfs, kernel, initramfs
 # returns: 130 on error, 0 otherwise
@@ -225,6 +230,7 @@ draw_kernel() {
   return 0
 }
 
+# doc: draw_snapshots
 # arg1: ZFS filesystem name
 # prints: selected snapshot name, optionally a second snapshot
 # returns: 130 on error, 0 otherwise
@@ -294,6 +300,7 @@ draw_snapshots() {
   return 0
 }
 
+# doc: draw_pool_status
 # arg1: nothing
 # prints: selected pool
 # returns: 130 on error, 0 otherwise
@@ -332,6 +339,7 @@ draw_pool_status() {
   return 0
 }
 
+# doc: snapshot_dispatcher
 # arg1: selected snapshot
 # arg2: subkey
 # prints: snapshot/filesystem creation prompt
@@ -463,6 +471,7 @@ snapshot_dispatcher() {
   esac
 }
 
+# doc: find_child_pid
 # arg1: pid
 # prints: child pid
 # returns: 0 if a child pid was found, 1 if there are no children
@@ -488,6 +497,7 @@ find_child_pid() {
   return 1
 }
 
+# doc: takeover
 # prints: nothing
 # returns: nothing
 
@@ -519,6 +529,7 @@ takeover() {
   fi
 }
 
+# doc: change_sort
 # prints: nothing
 # returns: nothing
 
@@ -531,6 +542,7 @@ change_sort() {
   zdebug "Setting zbm_sort to ${zbm_sort}"
 }
 
+# doc: get_sort_key
 # prints: first sort key
 # returns: nothing
 
@@ -541,6 +553,7 @@ get_sort_key() {
   echo -n "${sort_key:-name}"
 }
 
+# doc: populate_be_list
 # arg1: path to BE list
 # prints: nothing
 # returns: 0 iff at least one valid BE was found

@@ -3,8 +3,9 @@
 
 : "${loglevel:=3}"
 
+# doc: zdebug zinfo znotice zwarn zerror
 # arg1: log line
-# prints: log line 
+# prints: log line with prefix to stderr
 # returns: 1 if loglevel isn't high enough
 
 zdebug() {

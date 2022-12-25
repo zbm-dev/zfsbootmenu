@@ -5,6 +5,7 @@
 [ -n "${_ZFSBOOTMENU_KCL}" ] && return
 readonly _ZFSBOOTMENU_KCL=1
 
+# doc: kcl_tokenize
 # args: none
 # prints: tokenization of KCL [read from stdin]: one argument per line
 
@@ -40,6 +41,7 @@ kcl_tokenize() {
   '
 }
 
+# doc: read_kcl_prop
 # arg1: ZFS filesystem
 # prints: value of org.zfsbootmenu:commandline, with %{parent} recursively expanded
 # returns: 0 on success
@@ -102,6 +104,7 @@ read_kcl_prop() {
   return 0
 }
 
+# doc: kcl_suppress
 # arg1..argN: keys (and, optionally, associated value) to suppress from KCL
 # prints: tokenized KCL [read from stdin] with suppressed arguments removed
 
@@ -123,7 +126,8 @@ kcl_suppress() {
   done
 }
 
-# args1..argN: keys (and values, as appropriate) to append to a tokenized KCL
+# doc: kcl_append
+# arg1..argN: keys (and values, as appropriate) to append to a tokenized KCL
 # prints: tokenized KCL [read from stdin] with appended arguments
 
 kcl_append() {
@@ -138,7 +142,7 @@ kcl_append() {
   done
 }
 
-
+# doc: kcl_assemble
 # args: none
 # prints: space-separated concatenation of tokenized KCL [read from stdin]
 
@@ -157,6 +161,7 @@ kcl_assemble() {
   '
 }
 
+# doc: _build_zbm_kcl
 # args: none
 # prints: tokenized KCL from /etc/cmdline, /etc/cmdline.d/*.conf and /proc/cmdline
 
@@ -173,6 +178,7 @@ _build_zbm_kcl() {
   [ -r /proc/cmdline ] && kcl_tokenize < /proc/cmdline
 }
 
+# doc: get_zbm_kcl
 # args: none
 # prints: tokenized KCL, read from cache if possible or else built on demand
 
@@ -189,6 +195,7 @@ get_zbm_kcl() {
   echo "${kcl}"
 }
 
+# doc: make_cmdline_dir
 # args: none
 # prints: nothing
 # returns: nothing
@@ -208,6 +215,7 @@ make_cmdline_dir() {
   done <<< "$( _build_zbm_kcl )"
 }
 
+# doc: get_zbm_arg
 # arg1..argN: argument to lookup (multiples are alternatives, ordered by precedence)
 # prints: value associated with the argument (with no value, 1 is printed)
 # returns: 0 if match is found, 1 otherwise
@@ -228,9 +236,10 @@ get_zbm_arg() {
   return 1
 }
 
+# doc: get_zbm_bool
 # arg1: default value (0 or 1)
 # arg2..argN: argument to extract (all after first are alternatives)
-# return: default if no match is found, 0 or 1 based on found value
+# returns: default if no match is found, 0 or 1 based on found value
 
 get_zbm_bool() {
   local def val
@@ -253,6 +262,7 @@ get_zbm_bool() {
   return 0;
 }
 
+# doc: zbmcmdline
 # prints: ZBM kernel command line
 
 zbmcmdline() {

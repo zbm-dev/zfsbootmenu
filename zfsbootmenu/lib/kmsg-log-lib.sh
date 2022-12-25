@@ -9,6 +9,7 @@ fi
 
 : "${loglevel:=4}"
 
+# doc: zdebug
 # arg1..argN: log line
 # prints: nothing
 # returns: 1 if loglevel isn't high enough
@@ -47,6 +48,7 @@ if [ "${loglevel:-4}" -ge 7 ] ; then
   set -o errtrace
 fi
 
+# doc: zinfo
 # arg1: log line
 # prints: nothing
 # returns: 1 if loglevel isn't high enough
@@ -56,6 +58,7 @@ zinfo() {
   echo "<6>ZFSBootMenu: $1" > /dev/kmsg
 }
 
+# doc: znotice
 # arg1: log line
 # prints: nothing
 # returns: 1 if loglevel isn't high enough
@@ -65,6 +68,7 @@ znotice() {
   echo "<5>ZFSBootMenu: $1" > /dev/kmsg
 }
 
+# doc: zwarn
 # arg1: log line
 # prints: nothing
 # returns: 1 if loglevel isn't high enough
@@ -75,6 +79,7 @@ zwarn() {
   echo "<4>ZFSBootMenu: $1" > /dev/kmsg
 }
 
+# doc: zerror
 # arg1: log line
 # prints: nothing
 # returns: 1 if loglevel isn't high enough

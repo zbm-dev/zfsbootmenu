@@ -11,6 +11,7 @@ if ! source /lib/zfsbootmenu-kcl.sh >/dev/null 2>&1; then
   exit 1
 fi
 
+# doc: decolorize
 # arg1: text with color sequences
 # prints: text with color sequences removed
 # returns: nothing
@@ -21,6 +22,7 @@ decolorize() {
   shopt -u extglob
 }
 
+# doc: colorize
 # arg1: color name
 # arg2...argN: text to color
 # prints: text with color escape codes
@@ -53,6 +55,7 @@ colorize() {
   echo -e -n '\033[0m'
 }
 
+# doc: center_string
 # arg1: text to center
 # prints: left-padded text
 # returns: nothing
@@ -61,6 +64,7 @@ center_string() {
   printf "%*s" $(( ( ${#1} + COLUMNS ) / 2 )) "${1}"
 }
 
+# doc: write_hostid
 # arg1: hostid, as hex number without leading "0x"
 # prints: nothing
 # returns: 0 on successful write, 1 on error
@@ -89,6 +93,7 @@ write_hostid() {
   return 0
 }
 
+# doc: get_spl_hostid
 # args: no arguments
 # prints: hostid used by the SPL kmod, as hex with 0x prefix
 # returns: 0 on successful read, 1 on failure
@@ -131,7 +136,7 @@ get_spl_hostid() {
   return 1
 }
 
-
+# doc: match_hostid
 # arg1: optional specific pool to inspect
 # prints: <imported pool>;<hostid>
 # returns: 0 on successful pool import, 1 on failure
@@ -196,6 +201,7 @@ match_hostid() {
   return 1
 }
 
+# doc: check_for_pools
 # args: none
 # prints: nothing
 # returns: 0 if at least one pool is available
@@ -210,6 +216,7 @@ check_for_pools() {
   return 1
 }
 
+# doc: mount_zfs
 # arg1: ZFS filesystem name
 # prints: mountpoint
 # returns: 0 on success
@@ -267,6 +274,7 @@ mount_zfs() {
   return ${ret}
 }
 
+# doc: kexec_kernel
 # arg1: bootfs kernel initramfs
 # prints: nothing
 # returns: 1 on error, otherwise does not return
@@ -350,6 +358,7 @@ kexec_kernel() {
   fi
 }
 
+# doc: duplicate_snapshot
 # arg1: snapshot name
 # arg2: new BE name
 # prints: nothing
@@ -433,6 +442,7 @@ duplicate_snapshot() {
   fi
 }
 
+# doc: clone_snapshot
 # arg1: snapshot name
 # arg2: new BE name
 # arg3: prevents promotion if equal to "nopromote"; otherwise ignored
@@ -499,6 +509,7 @@ clone_snapshot() {
   return 0
 }
 
+# doc: create_snapshot
 # arg1: filesystem name
 # arg2: snapshot name
 # prints: nothing
@@ -538,6 +549,7 @@ create_snapshot() {
   return 0
 }
 
+# doc: rollback_snapshot
 # arg1: snapshot name
 # prints: nothing
 # returns: 0 on success
@@ -602,6 +614,7 @@ rollback_snapshot() {
   fi
 }
 
+# doc: set_default_kernel
 # arg1: ZFS filesystem
 # arg2: default kernel path (omit to unset default)
 # prints: nothing
@@ -643,6 +656,7 @@ set_default_kernel() {
   return 0
 }
 
+# doc: set_default_env
 # arg1: ZFS filesystem
 # prints: nothing
 # returns: nothing
@@ -675,6 +689,7 @@ set_default_env() {
   fi
 }
 
+# doc: find_be_kernels
 # arg1: ZFS filesystem
 # prints: nothing
 # returns: 0 if kernels were found, 1 otherwise
@@ -769,6 +784,7 @@ find_be_kernels() {
   return 0
 }
 
+# doc: select_kernel
 # arg1: ZFS filesystem
 # prints: fs kernel initramfs
 # returns: nothing
@@ -807,6 +823,7 @@ select_kernel() {
   echo "${kexec_args}"
 }
 
+# doc: find_root_prefix
 # arg1: ZFS filesystem
 # arg2: path for the mounted filesystem
 # prints: discovered prefix for root= command-line argument
@@ -881,6 +898,7 @@ find_root_prefix() {
   echo "root=zfs:"
 }
 
+# doc: validate_cmdline_cache
 # arg1: ZFS KCL cache to validate
 # returns: 0 if cache is valid, 1 otherwise
 
@@ -901,6 +919,7 @@ validate_cmdline_cache() {
   return 1
 }
 
+# doc: load_be_cmdline
 # arg1: ZFS filesystem
 # prints: kernel command line arguments
 # returns: nothing
@@ -977,6 +996,7 @@ load_be_cmdline() {
   echo "${kcl}"
 }
 
+# doc: import_pool
 # arg1: pool name, empty to import all
 # prints: nothing
 # returns: 0 on success, 1 on failure
@@ -1044,6 +1064,7 @@ import_pool() {
   return "${ret}"
 }
 
+# doc: export_pool
 # arg1: pool name
 # prints: nothing
 # returns: 0 on success, 1 on failure
@@ -1067,6 +1088,7 @@ export_pool() {
   return "${ret}"
 }
 
+# doc: rewind_checkpoint
 # arg1: pool name
 # prints: nothing
 # returns: 0 on success, 1 on failure
@@ -1120,6 +1142,7 @@ rewind_checkpoint() {
   return $?
 }
 
+# doc: has_resume_device
 # prints: nothing
 # returns: 0 if suspend device found, 1 otherwise
 
@@ -1135,6 +1158,7 @@ has_resume_device() {
   return 1
 }
 
+# doc: timed_prompt
 # getopts arguments:
 # -d  prompt countdown/delay
 # -p  prompt with countdown timer (%0.xd)
@@ -1223,6 +1247,7 @@ timed_prompt() {
   return 0
 }
 
+# doc: resume_prompt
 # arg1: pool name
 # prints: warning message
 # returns: 0 on success, 1 on failure
@@ -1291,6 +1316,7 @@ resume_prompt() {
   return 0
 }
 
+# doc: is_snapshot
 # arg1: filesystem name
 # prints: nothing
 # returns: 0 when filesystem is snapshot, 1 otherwise
@@ -1311,6 +1337,7 @@ is_snapshot() {
   fi
 }
 
+# doc: is_writable
 # arg1: pool name
 # prints: nothing
 # returns: 0 when pool is writable, 1 otherwise
@@ -1337,6 +1364,7 @@ is_writable() {
   return 1
 }
 
+# doc: set_rw_pool
 # arg1: pool name
 # prints: nothing
 # returns: 0 on success, 1 on failure
@@ -1379,6 +1407,7 @@ set_rw_pool() {
   return 1
 }
 
+# doc: set_ro_pool
 # arg1: pool name
 # prints: nothing
 # returns: 0 on success, 1 on failure
@@ -1406,6 +1435,7 @@ set_ro_pool() {
 }
 
 
+# doc: be_has_encroot
 # arg1: ZFS filesystem or snapshot
 # prints: name of encryption root, if present
 # returns: 0 if system has an encryption root, 1 otherwise
@@ -1440,6 +1470,7 @@ be_has_encroot() {
   return 1
 }
 
+# doc: be_is_locked
 # arg1: ZFS filesystem
 # prints: name of encryption root, iff filesystem is locked
 # returns: 0 if filesystem is locked, 1 otherwise
@@ -1472,6 +1503,7 @@ be_is_locked() {
   return 1
 }
 
+# doc: be_keysource
 # arg1: BE key source
 # prints: value of org.zfsbootmenu:keysource for BE, iff it is a valid filesystem
 # returns: 0 iff the value is defined, not empty and is a valid filesystem
@@ -1507,6 +1539,7 @@ be_keysource() {
   return 0
 }
 
+# doc: cache_key
 # arg1: ZFS filesystem
 # arg2: key location
 # prints: nothing
@@ -1646,6 +1679,7 @@ cache_key() {
   return $ret
 }
 
+# doc: load_key
 # arg1: ZFS filesystem
 # prints: nothing
 # returns: 0 on success, 1 on failure
@@ -1737,6 +1771,7 @@ load_key() {
   return $?
 }
 
+# doc: be_location
 # arg1: ZFS filesystem
 # prints: The base path to this filesystem for use by ZFSBootMenu functions, with out a trailing /
 # returns: nothing
@@ -1755,6 +1790,7 @@ be_location() {
   echo "${beloc}"
 }
 
+# doc: zfs_chroot
 # arg1: ZFS filesystem
 # prints: nothing
 # returns: nothing
@@ -1776,7 +1812,7 @@ zfs_chroot() {
   /bin/bash -c "zfs-chroot ${fs}"
 }
 
-
+# doc: emergency_shell
 # arg1: message
 # prints: nothing
 # returns: nothing
@@ -1807,6 +1843,7 @@ emergency_shell() {
   done < /proc/self/mounts
 }
 
+# doc: zreport
 # prints: zpool list and zfs property list
 # returns: nothing
 
@@ -1828,6 +1865,7 @@ zreport() {
   zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource
 }
 
+# doc: import_zbm_hooks
 # arg1: hook root spec, as <device>//<path>
 # prints: nothing
 # returns: 0 iff device and path are valid
