@@ -290,7 +290,7 @@ Set a desired kernel command line for the boot environment, *e.g.*::
 
   zfs set org.zfsbootmenu:commandline="quiet" zroot/ROOT
 
-Install ZFSBootMenu. There is no pre-built package for Debian, so we need to install from source.
+Install ZFSBootMenu. There is no pre-built package for Debian, so we need to install from source.::
 
   mkdir -p /usr/local/src
   cd /usr/local/src
@@ -302,7 +302,7 @@ Configure ZFSBootMenu to build images. (It may be easier to modify the configura
 
 .. code-block::
 
-  sed -i -e "s|void|debian|" -e "s|ManageImages: false|ManageImages: true|" /etc/zfsbootmenu/config.yaml
+  sed -i -e "s|ManageImages: false|ManageImages: true|" /etc/zfsbootmenu/config.yaml
 
 Install required dependencies::
 
@@ -327,8 +327,8 @@ Generate a ZFSBootMenu image::
 Configure rEFInd to boot the ZFSBootMenu image::
 
   cat > /boot/efi/EFI/debian/refind_linux.conf <<EOF
-  "Boot default"  "spl.spl_hostid=0x$( hostid ) zbm.prefer=zroot zbm.skip loglevel=4"
-  "Boot to menu"  "spl.spl_hostid=0x$( hostid ) zbm.prefer=zroot zbm.show loglevel=4"
+  "Boot default"  "zbm.prefer=zroot zbm.skip loglevel=4"
+  "Boot to menu"  "zbm.prefer=zroot zbm.show loglevel=4"
   EOF
 
 (Optional) You may need to add rEFInd to your EFI boot order manually::
