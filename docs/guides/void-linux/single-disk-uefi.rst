@@ -30,9 +30,9 @@ SSD prep work
 Create an EFI partition on ``/dev/sda``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code-block:: none
+.. parsed-literal::
 
-  bash-5.0# gdisk /dev/sda
+  bash-5.0# **gdisk /dev/sda**
   GPT fdisk (gdisk) version 1.0.4
 
   Partition table scan:
@@ -43,35 +43,34 @@ Create an EFI partition on ``/dev/sda``
 
   Creating new GPT entries in memory.
 
-  Command (? for help): o
+  Command (? for help): **o**
   This option deletes all partitions and creates a new protective MBR.
-  Proceed? (Y/N): y
+  Proceed? (Y/N): **y**
 
-  Command (? for help): n
-  Partition number (1-128, default 1): 1
-  First sector (34-1000215182, default = 2048) or {+-}size{KMGTP}: 
-  Last sector (2048-1000215182, default = 1000215182) or {+-}size{KMGTP}: +512M
+  Command (? for help): **n**
+  Partition number (1-128, default 1): **1**
+  First sector (34-1000215182, default = 2048) or {+-}size{KMGTP}: **2048**
+  Last sector (2048-1000215182, default = 1000215182) or {+-}size{KMGTP}: **+512M**
   Current type is 'Linux filesystem'
-  Hex code or GUID (L to show codes, Enter = 8300): EF00
+  Hex code or GUID (L to show codes, Enter = 8300): **EF00**
   Changed type of partition to 'EFI System'
 
-  Command (? for help): n
-  Partition number (2-128, default 2): 
-  First sector (34-1000215182, default = 1050624) or {+-}size{KMGTP}: 
-  Last sector (1050624-1000215182, default = 1000215182) or {+-}size{KMGTP}: 
+  Command (? for help): **n**
+  Partition number (2-128, default 2): **2**
+  First sector (34-1000215182, default = 1050624) or {+-}size{KMGTP}: **1050624**
+  Last sector (1050624-1000215182, default = 1000215182) or {+-}size{KMGTP}: **-1M**
   Current type is 'Linux filesystem'
-  Hex code or GUID (L to show codes, Enter = 8300): 
+  Hex code or GUID (L to show codes, Enter = 8300): **BF00**
   Changed type of partition to 'Linux filesystem'
 
-  Command (? for help): w
+  Command (? for help): **w**
 
   Final checks complete. About to write GPT data. THIS WILL OVERWRITE EXISTING
   PARTITIONS!!
 
-  Do you want to proceed? (Y/N): y
+  Do you want to proceed? (Y/N): **y**
   OK; writing new GUID partition table (GPT) to /dev/sda.
   The operation has completed successfully.
-  bash-5.0#
 
 .. include:: _include/pool-creation-non-detached.rst
 

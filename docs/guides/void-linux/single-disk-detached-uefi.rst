@@ -73,9 +73,9 @@ Install and configure ZFSBootMenu
 Create an EFI partition on ``/dev/sdb``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code-block:: none
+.. parsed-literal::
 
-  bash-5.0# gdisk /dev/sdb
+  bash-5.0# **gdisk /dev/sdb**
   GPT fdisk (gdisk) version 1.0.4
 
   Partition table scan:
@@ -86,27 +86,26 @@ Create an EFI partition on ``/dev/sdb``
 
   Creating new GPT entries in memory.
 
-  Command (? for help): o
+  Command (? for help): **o**
   This option deletes all partitions and creates a new protective MBR.
-  Proceed? (Y/N): y
+  Proceed? (Y/N): **y**
 
-  Command (? for help): n
-  Partition number (1-128, default 1): 1
-  First sector (34-1000215182, default = 2048) or {+-}size{KMGTP}: 
-  Last sector (2048-1000215182, default = 1000215182) or {+-}size{KMGTP}: +512M
+  Command (? for help): **n**
+  Partition number (1-128, default 1): **1**
+  First sector (34-1000215182, default = 2048) or {+-}size{KMGTP}: **2048**
+  Last sector (2048-1000215182, default = 1000215182) or {+-}size{KMGTP}: **+512M**
   Current type is 'Linux filesystem'
-  Hex code or GUID (L to show codes, Enter = 8300): EF00
+  Hex code or GUID (L to show codes, Enter = 8300): **EF00**
   Changed type of partition to 'EFI System'
 
-  Command (? for help): w
+  Command (? for help): **w**
 
   Final checks complete. About to write GPT data. THIS WILL OVERWRITE EXISTING
   PARTITIONS!!
 
-  Do you want to proceed? (Y/N): y
+  Do you want to proceed? (Y/N): **y**
   OK; writing new GUID partition table (GPT) to /dev/sdb.
   The operation has completed successfully.
-  bash-5.0#
 
 Create a vfat filesystem
 ~~~~~~~~~~~~~~~~~~~~~~~~
