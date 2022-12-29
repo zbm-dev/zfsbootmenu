@@ -326,7 +326,7 @@ Generate a ZFSBootMenu image::
 
 Configure rEFInd to boot the ZFSBootMenu image::
 
-  cat > /boot/efi/EFI/debian/refind_linux.conf <<EOF
+  cat > /boot/efi/EFI/zbm/refind_linux.conf <<EOF
   "Boot default"  "zbm.prefer=zroot zbm.skip loglevel=4"
   "Boot to menu"  "zbm.prefer=zroot zbm.show loglevel=4"
   EOF
