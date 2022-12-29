@@ -7,6 +7,7 @@ VENV          ?= env
 PIP_FLAGS     ?= -q
 SERVEOPTS     ?=
 SUDO          ?= sudo
+INSTALLOPTS   ?= -Su
 SOURCEDIR     = .
 BUILDDIR      = _build
 
@@ -29,7 +30,7 @@ gen-man: man
 	@cp -r $(BUILDDIR)/man $(SOURCEDIR)/man/dist
 
 setup-void:
-	@$(SUDO) xbps-install -Su $(VOID_PKGS)
+	@$(SUDO) xbps-install $(INSTALLOPTS) $(VOID_PKGS)
 
 setup: $(VENV)/req_done
 
