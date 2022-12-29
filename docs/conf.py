@@ -51,6 +51,14 @@ html_theme_options = {
 html_baseurl = 'https://docs.zfsbootmenu.org'
 html_css_files = ['custom.css']
 
+# -- Options for linkcheck output -------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-linkcheck-builder
+
+linkcheck_ignore = [
+    'https://github.com/zbm-dev/zfsbootmenu/blob/master/docs/man/zfsbootmenu.7.rst#',
+    f'https://github.com/zbm-dev/zfsbootmenu/blob/v{release}/releng/docker/README.md#',
+]
+
 # -- Options for manual page output ------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-manual-page-output
 

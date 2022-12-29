@@ -357,7 +357,7 @@ Binary releases in the form of a standalone EFI file and a kernel/initramfs pair
 * `zbm.set_hostid`
 * [xhci-teardown.sh](https://github.com/zbm-dev/zfsbootmenu/blob/master/contrib/xhci-teardown.sh)
 
-The EFI binary can be used as a recovery tool by naming it `BOOTX86.EFI` and adding it to an `EF00` partition on a USB drive. It can also be used as a drop-in bootloader for your system without needing to locally build a copy. See [UEFI Booting](https://github.com/zbm-dev/zfsbootmenu/wiki/UEFI-Booting-without-an-Intermediate-Boot-Manager#booting-the-bundled-executable) for example `efibootmgr` commands.
+The EFI binary can be used as a recovery tool by naming it `BOOTX86.EFI` and adding it to an `EF00` partition on a USB drive. It can also be used as a drop-in bootloader for your system without needing to locally build a copy. See [UEFI Booting](https://docs.zfsbootmenu.org/en/latest/guides/general/uefi-booting.html#booting-the-bundled-executable) for example `efibootmgr` commands.
 
 
 ### Other changes
