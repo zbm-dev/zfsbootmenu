@@ -49,7 +49,7 @@
 
   guides/general
   guides/void-linux
-  guides/debian/uefi-install
+  guides/debian
   guides/third-party
 
 .. toctree::

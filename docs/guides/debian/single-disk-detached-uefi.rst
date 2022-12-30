@@ -1,13 +1,13 @@
-Debian Bullseye UEFI Installation
-=================================
+Bullseye Single-disk detached UEFI
+==================================
 
-.. |esp_disk| replace:: /dev/sda
+.. |esp_disk| replace:: /dev/sdb
 .. |esp_part_no| replace:: 1
-.. |esp_part_full| replace:: /dev/sda1
+.. |esp_part_full| replace:: /dev/sdb1
 
 .. |pool_disk| replace:: /dev/sda
-.. |pool_part_no| replace:: 2
-.. |pool_part_full| replace:: /dev/sda2
+.. |pool_part_no| replace:: 1
+.. |pool_part_full| replace:: /dev/sda
 
 .. |distribution| replace:: debian
 
@@ -25,7 +25,8 @@ It assumes the following:
 
 * Your system uses UEFI to boot
 * Your system is x86_64
-* ``/dev/sda`` is the onboard SSD, used for both ZFS and EFI
+* ``/dev/sda`` is the onboard SSD, used for ZFS
+* ``/dev/sdb`` is a dedicated USB drive, used for the EFI partition
 * You're mildly comfortable with ZFS, EFI and discovering system facts on your own (``lsblk``, ``dmesg``, ``gdisk``, ...)
 
 Download the latest `Debian Bullseye (11) Live image <https://www.debian.org/CD/live/>`_, write it to a USB drive and
@@ -51,6 +52,6 @@ boot your system in EFI mode. You can confirm you've booted in EFI mode by runni
 
 .. include:: _include/zbm-install.rst
 
-.. include:: ../_include/efi-boot-method.rst
+.. include:: _include/efi-boot-method.rst
 
 .. include:: ../_include/cleanup.rst
