@@ -1,6 +1,12 @@
 Single-disk syslinux MBR
 ========================
 
+.. |pool_disk| replace:: /dev/sda
+.. |pool_part_no| replace:: 2
+.. |pool_part_full| replace:: /dev/sda2
+
+.. |distribution| replace:: void
+
 .. contents:: Contents
   :depth: 2
   :local:
@@ -14,7 +20,7 @@ This guide can be used to install Void onto a single ZFS disk with or without ZF
 * ``/dev/sda`` is the disk to be used for ZFS and syslinux
 * You're mildly comfortable with ZFS and discovering system facts on your own (``lsblk``, ``dmesg``, ``gdisk``, ...)
 
-.. include:: _include/intro.rst
+.. include:: ../_include/intro.rst
 
 Download the latest `hrmpf <https://github.com/leahneukirchen/hrmpf/releases>`_, write it to USB drive and boot your
 system in BIOS mode.
@@ -40,11 +46,11 @@ The script creates a 512-MiB syslinux partition as ``/dev/sda1`` and fill the re
 ``/dev/sda2`` partition that will hold your ZFS pool. Adjust the sizes of the partitions or the disk device node as
 appropriate for your needs.
 
-.. include:: _include/pool-creation-non-detached.rst
+.. include:: ../_include/pool-creation.rst
 
-.. include:: _include/create-filesystems.rst
+.. include:: ../_include/create-filesystems.rst
 
-.. include:: _include/install.rst
+.. include:: _include/void-install.rst
 
 .. include:: _include/zfs-config.rst
 
@@ -102,7 +108,9 @@ Install the syslinux MBR data
   1+0 records out
   440 bytes copied, 0.000306845 s, 1.4 MB/s
 
-.. include:: _include/zbm-setup.rst
+.. include:: ../_include/zbm-setup.rst
+
+.. include:: _include/zbm-install-package.rst
 
 Enable zfsbootmenu image creation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -166,9 +174,9 @@ Consult the `syslinux documentation <https://wiki.syslinux.org/wiki/index.php?ti
 contents of the ``syslinux.cfg`` configuration file. To alter the command-line arguments passed to the ZFSBootMenu
 image, adjust the contents of the ``APPEND`` lines in the configuration.
 
-.. include:: _include/gen-initramfs.rst
+.. include:: ../_include/gen-initramfs.rst
 
-.. include:: _include/cleanup.rst
+.. include:: ../_include/cleanup.rst
 
 ..
   vim: softtabstop=2 shiftwidth=2 textwidth=120
