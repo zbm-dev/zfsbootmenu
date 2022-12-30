@@ -1,4 +1,6 @@
-.. parsed-literal::
+Clone the ZFSBootMenu repository and install on the host:
+
+.. code-block::
 
   mkdir -p /usr/local/src
   cd /usr/local/src

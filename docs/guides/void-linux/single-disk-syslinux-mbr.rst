@@ -174,7 +174,7 @@ Consult the `syslinux documentation <https://wiki.syslinux.org/wiki/index.php?ti
 contents of the ``syslinux.cfg`` configuration file. To alter the command-line arguments passed to the ZFSBootMenu
 image, adjust the contents of the ``APPEND`` lines in the configuration.
 
-.. include:: ../_include/gen-initramfs.rst
+.. include:: _include/gen-initramfs.rst
 
 .. include:: ../_include/cleanup.rst
 

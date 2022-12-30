@@ -1,3 +1,5 @@
+Install all packages required to build a ZFSBootMenu image on Debian:
+
 .. parsed-literal::
 
   apt install \\
