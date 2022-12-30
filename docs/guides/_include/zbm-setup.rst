@@ -1,3 +1,6 @@
+Install and configure ZFSBootMenu
+---------------------------------
+
 Set ZFSBootMenu properties on datasets
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -7,10 +10,3 @@ common properties to the ``ROOT`` dataset so all children will inherit common ar
 .. code-block::
 
   zfs set org.zfsbootmenu:commandline="quiet" zroot/ROOT
-
-Install the ZFSBootMenu package
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block::
-
-  xbps-install -S zfsbootmenu
