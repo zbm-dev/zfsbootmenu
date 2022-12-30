@@ -1,6 +1,12 @@
-Edit ``/etc/zfsbootmenu/config.yaml`` and set:
+Configure :doc:`generate-zbm(5) </man/generate-zbm.5>` by ensuring that the following keys appear in
+``/etc/zfsbootmenu/config.yaml``:
 
-* ``ManageImages: true`` under the ``Global`` section
-* ``Versions: false`` and ``Enabled: true`` under the ``EFI`` section
+.. code-block:: yaml
 
-See :doc:`generate-zbm(5) </man/generate-zbm.5>` for more details.
+   Global:
+     ManageImages: true
+     BootMountPoint: /boot/efi
+   EFI:
+     ImageDir: /boot/efi/EFI/zbm
+     Versions: false
+     Enabled: true

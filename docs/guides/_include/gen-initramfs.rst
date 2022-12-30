@@ -1,6 +1,5 @@
-Generate the initial ZFSBootMenu initramfs
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Create a ZFSBootMenu image:
 
-.. code-block:: none
+.. code-block:: bash
 
-  xbps-reconfigure -f zfsbootmenu
+   generate-zbm
