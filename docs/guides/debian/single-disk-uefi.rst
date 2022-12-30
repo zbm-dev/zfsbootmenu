@@ -51,6 +51,6 @@ boot your system in EFI mode. You can confirm you've booted in EFI mode by runni
 
 .. include:: _include/zbm-install.rst
 
-.. include:: ../_include/efi-boot-method.rst
+.. include:: _include/efi-boot-method.rst
 
 .. include:: ../_include/cleanup.rst
