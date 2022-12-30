@@ -39,6 +39,8 @@ See `make help` for a list of all possible targets.
 - `CHANGELOG.md`: the changelog for ZFSBootMenu
 - `guides`: where most documentation should reside. Documents about various topics, including installation on various
   distros and various configuration options
+  + guides/_include/ contains distribution agonostic snippets
+  + guides/*distro*/_include/ contains distribution specific snippets
 - `man`: manpages
 - `online`: documentation primarily to be shown within ZFSBootMenu's help system
 - `logos`: various versions of the ZFSBootMenu logo
