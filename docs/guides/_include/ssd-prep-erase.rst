@@ -6,4 +6,4 @@ Wipe partitions
 
 .. parsed-literal::
 
-  sgdisk --zap-all \ |pool_disk| \ |esp_disk|
+  sgdisk --zap-all |pool_disk| |esp_disk|
