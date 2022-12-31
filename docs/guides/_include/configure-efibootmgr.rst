@@ -1,4 +1,4 @@
-.. parsed-literal::
+.. code-block:: bash
 
-  efibootmgr -c -d |esp_disk| -p |esp_part_no| -L "ZFSBootMenu" -l \\EFI\\ZBM\\VMLINUZ.EFI
-  efibootmgr -c -d |esp_disk| -p |esp_part_no| -L "ZFSBootMenu (Backup)" -l \\EFI\\ZBM\\VMLINUZ-BACKUP.EFI
+  efibootmgr -c -d "$BOOT_DISK" -p "$BOOT_PART" -L "ZFSBootMenu" -l \\EFI\\ZBM\\VMLINUZ.EFI
+  efibootmgr -c -d "$BOOT_DISK" -p "$BOOT_PART" -L "ZFSBootMenu (Backup)" -l \\EFI\\ZBM\\VMLINUZ-BACKUP.EFI

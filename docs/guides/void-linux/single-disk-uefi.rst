@@ -1,13 +1,11 @@
 Single-disk UEFI
 ================
 
-.. |esp_disk| replace:: /dev/sda
-.. |esp_part_no| replace:: 1
-.. |esp_part_full| replace:: /dev/sda1
+.. |boot_disk| replace:: /dev/sda
+.. |boot_part_no| replace:: 1
 
 .. |pool_disk| replace:: /dev/sda
 .. |pool_part_no| replace:: 2
-.. |pool_part_full| replace:: /dev/sda2
 
 .. |distribution| replace:: void
 
@@ -34,11 +32,9 @@ system in EFI mode. You can confirm you've booted in EFI mode by running ``efibo
 
 .. include:: _include/zfs-prep.rst
 
-.. include:: ../_include/ssd-prep-erase.rst
+.. include:: ../_include/define-env.rst
 
-.. include:: ../_include/ssd-prep-esp.rst
-
-.. include:: ../_include/ssd-prep-pool.rst
+.. include:: ../_include/ssd-prep.rst
 
 .. include:: ../_include/pool-creation.rst
 

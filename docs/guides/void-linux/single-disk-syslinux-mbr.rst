@@ -1,9 +1,11 @@
 Single-disk syslinux MBR
 ========================
 
+.. |boot_disk| replace:: /dev/sda
+.. |boot_part_no| replace:: 1
+
 .. |pool_disk| replace:: /dev/sda
 .. |pool_part_no| replace:: 2
-.. |pool_part_full| replace:: /dev/sda2
 
 .. |distribution| replace:: void
 
@@ -17,7 +19,7 @@ This guide can be used to install Void onto a single ZFS disk with or without ZF
 * Your system uses BIOS to boot
 * Your system is x86_64
 * You will use ``glibc`` as your system libc.
-* ``/dev/sda`` is the disk to be used for ZFS and syslinux
+* ``/dev/sda`` is the disk to be used for both ZFS and syslinux
 * You're mildly comfortable with ZFS and discovering system facts on your own (``lsblk``, ``dmesg``, ``gdisk``, ...)
 
 .. include:: ../_include/intro.rst
@@ -27,24 +29,36 @@ system in BIOS mode.
 
 .. include:: _include/zfs-prep.rst
 
+.. include:: ../_include/define-env.rst
+
 Disk prep work
 --------------
 
 The disk that will hold the syslinux partition and ZFS pool should be labeled in MBR format and provide two partitions.
-The partitioning can be done with any standard partition tool. The ``sfdisk`` utility that comes with can be used to
-script the partitioning process to minimize the likelihood of error::
+First, initialize a blank MBR label on the disk that will hold the syslinux boot partition:
 
-  cat > sda.partition <<EOF
-  label: dos
-  start=1MiB, size=512MiB, type=83, bootable
-  start=513MiB, size=+, type=83
-  EOF
+.. code-block:: bash
 
-  sfdisk /dev/sda < sda.partition
+  echo "label: dos" | sfdisk "$BOOT_DISK"
 
-The script creates a 512-MiB syslinux partition as ``/dev/sda1`` and fill the remaininder of the disk with the
-``/dev/sda2`` partition that will hold your ZFS pool. Adjust the sizes of the partitions or the disk device node as
-appropriate for your needs.
+If the ZFS pool resides on a separate disk, also initialize a blank MBR label on the disk that will hold the pool:
+
+.. code-block:: bash
+
+  echo "label: dos" | sfdisk "$POOL_DISK"
+
+Finally, create partitions for syslinux and the ZFS pool:
+
+.. code-block:: bash
+
+  echo "${BOOT_DEVICE}: start=1MiB, size=512MiB, type=83, bootable" | sfdisk -a "$BOOT_DISK"
+  echo "${POOL_DEVICE}: start=513MiB, size=+, type=83" | sfdisk -a "$POOL_DISK"
+
+.. note::
+
+  The ``start`` value specified for the ``${POOL_DEVICE}`` partition was selected to ensure that the ZFS partition does
+  not overlap the boot partition when both reside on the same disk. You may wish to adjust the sizes or offsets to
+  better suit your needs.
 
 .. include:: ../_include/pool-creation.rst
 
@@ -57,12 +71,12 @@ appropriate for your needs.
 Install and configure ZFSBootMenu
 ---------------------------------
 
-Create an ext4 filesystem on ``/dev/sda1``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Create a ext4 boot filesystem
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block::
 
-  mfs.ext4 -O '^64bit' /dev/sda1
+  mkfs.ext4 -O '^64bit' "$BOOT_DEVICE"
 
 .. note::
 
@@ -76,8 +90,9 @@ Create an fstab entry and mount
 .. code-block::
 
   cat << EOF >> /etc/fstab
-  $( blkid | grep /dev/sda1 | cut -d ' ' -f 2 ) /boot/syslinux ext4 defaults 0 0
+  $( blkid | grep "$BOOT_DEVICE" | cut -d ' ' -f 2 ) /boot/syslinux ext4 defaults 0 0
   EOF
+
   mkdir /boot/syslinux
   mount /boot/syslinux
 
@@ -92,18 +107,18 @@ Install the syslinux package, copy modules
 Install extlinux
 ~~~~~~~~~~~~~~~~
 
-.. code-block::
+.. parsed-literal::
 
-  bash-5.0# extlinux --install /boot/syslinux
-  /boot/syslinux is device /dev/sda1
+  bash-5.0# **extlinux --install /boot/syslinux**
+  /boot/syslinux is device |boot_disk|\ |boot_part_no|
 
 
 Install the syslinux MBR data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code-block:: none
+.. parsed-literal::
 
-  bash-5.0# dd bs=440 count=1 conv=notrunc if=/usr/lib/syslinux/mbr.bin of=/dev/sda
+  bash-5.0# **dd bs=440 count=1 conv=notrunc if=/usr/lib/syslinux/mbr.bin of="$BOOT_DISK"**
   1+0 records in
   1+0 records out
   440 bytes copied, 0.000306845 s, 1.4 MB/s

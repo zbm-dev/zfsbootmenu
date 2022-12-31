@@ -1,7 +1,7 @@
 Install Debian
 --------------
 
-.. code-block::
+.. code-block:: bash
 
   debootstrap bullseye /mnt
 
@@ -12,7 +12,7 @@ Copy files into the new install
 
   .. group-tab:: Encrypted
 
-    .. code-block::
+    .. code-block:: bash
 
       cp /etc/hostid /mnt/etc/hostid
       cp /etc/resolv.conf /mnt/etc/
@@ -21,7 +21,7 @@ Copy files into the new install
 
   .. group-tab:: Unencrypted
 
-    .. code-block::
+    .. code-block:: bash
 
       cp /etc/hostid /mnt/etc/hostid
       cp /etc/resolv.conf /mnt/etc
@@ -29,7 +29,7 @@ Copy files into the new install
 Chroot into the new OS
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. code-block::
+.. code-block:: bash
 
   mount -t proc proc /mnt/proc
   mount -t sysfs sys /mnt/sys
@@ -43,7 +43,7 @@ Basic Debian Configuration
 Set a hostname
 ~~~~~~~~~~~~~~
 
-.. code-block::
+.. code-block:: bash
 
   echo 'YOURHOSTNAME' > /etc/hostname
   echo -e '127.0.1.1\tYOURHOSTNAME' >> /etc/hosts
@@ -51,13 +51,13 @@ Set a hostname
 Set a root password
 ~~~~~~~~~~~~~~~~~~~
 
-.. code-block::
+.. code-block:: bash
 
   passwd
 
 Configure ``apt``. Use other mirrors if you prefer.
 
-.. code-block::
+.. code-block:: bash
 
   cat <<EOF > /etc/apt/sources.list
   deb http://deb.debian.org/debian bullseye main contrib
@@ -76,21 +76,21 @@ Configure ``apt``. Use other mirrors if you prefer.
 Update the repository cache
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code::
+.. code-block:: bash
 
   apt update
 
 Install additional base packages
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code::
+.. code-block:: bash
 
   apt install locales keyboard-configuration console-setup
 
 Configure packages to customize local and console properties
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code-block::
+.. code-block:: bash
 
   dpkg-reconfigure locales tzdata keyboard-configuration console-setup
 

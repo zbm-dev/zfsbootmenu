@@ -1,4 +1,4 @@
-.. parsed-literal::
+.. code-block:: bash
 
   refind-install
   rm /boot/refind_linux.conf
