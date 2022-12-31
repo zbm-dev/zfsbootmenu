@@ -23,7 +23,7 @@ Copy files into the new install
 
     .. code-block:: bash
 
-      cp /etc/hostid /mnt/etc/hostid
+      cp /etc/hostid /mnt/etc
       cp /etc/resolv.conf /mnt/etc
 
 Chroot into the new OS
@@ -33,6 +33,7 @@ Chroot into the new OS
 
   mount -t proc proc /mnt/proc
   mount -t sysfs sys /mnt/sys
+  mount -t efivarfs efivarfs /mnt/sys/firmware/efi/efivars
   mount -B /dev /mnt/dev
   mount -t devpts pts /mnt/dev/pts
   chroot /mnt /bin/bash
@@ -63,7 +64,7 @@ Configure ``apt``. Use other mirrors if you prefer.
   deb http://deb.debian.org/debian bullseye main contrib
   deb-src http://deb.debian.org/debian bullseye main contrib
 
-  deb http://deb.debian.org/debian-security/ bullseye-security main contrib
+  deb http://deb.debian.org/debian-security bullseye-security main contrib
   deb-src http://deb.debian.org/debian-security/ bullseye-security main contrib
 
   deb http://deb.debian.org/debian bullseye-updates main contrib
