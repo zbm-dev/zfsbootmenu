@@ -47,6 +47,6 @@ Verify that everything is mounted correctly
 
 .. parsed-literal::
 
-  # mount | grep mnt
+  # **mount | grep mnt**
   zroot/ROOT/\ |distribution| on /mnt type zfs (rw,relatime,xattr,posixacl)
   zroot/home on /mnt/home type zfs (rw,relatime,xattr,posixacl)

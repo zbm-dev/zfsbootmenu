@@ -5,7 +5,7 @@ Configure EFI boot entries
 
   .. group-tab:: Direct
 
-    .. parsed-literal::
+    .. code-block:: bash
 
       apt install efibootmgr
 
@@ -13,7 +13,7 @@ Configure EFI boot entries
   
   .. group-tab:: rEFInd
 
-    .. parsed-literal::
+    .. code-block::
 
       apt install refind
 

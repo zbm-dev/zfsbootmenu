@@ -1,17 +1,17 @@
 Create a ``vfat`` filesystem
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. parsed-literal::
+.. code-block:: bash
 
-  mkfs.vfat -F32 |esp_part_full|
+  mkfs.vfat -F32 "$BOOT_DEVICE"
 
 Create an fstab entry and mount
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. parsed-literal::
+.. code-block:: bash
 
   cat << EOF >> /etc/fstab
-  $( blkid | grep |esp_part_full| | cut -d ' ' -f 2 ) /boot/efi vfat defaults 0 0
+  $( blkid | grep "$BOOT_DEVICE" | cut -d ' ' -f 2 ) /boot/efi vfat defaults 0 0
   EOF
 
   mkdir /boot/efi

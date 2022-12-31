@@ -8,21 +8,21 @@ Create the zpool
 
   .. group-tab:: Encrypted
 
-    .. parsed-literal::
+    .. code-block:: bash
 
       echo 'SomeKeyphrase' > /etc/zfs/zroot.key
       chmod 000 /etc/zfs/zroot.key
 
-      zpool create -f -o ashift=12 \\
-       -O compression=lz4 \\
-       -O acltype=posixacl \\
-       -O xattr=sa \\
-       -O relatime=on \\
-       -O encryption=aes-256-gcm \\
-       -O keylocation=file:///etc/zfs/zroot.key \\
-       -O keyformat=passphrase \\
-       -o autotrim=on \\
-       -m none zroot |pool_part_full|
+      zpool create -f -o ashift=12 \
+       -O compression=lz4 \
+       -O acltype=posixacl \
+       -O xattr=sa \
+       -O relatime=on \
+       -O encryption=aes-256-gcm \
+       -O keylocation=file:///etc/zfs/zroot.key \
+       -O keyformat=passphrase \
+       -o autotrim=on \
+       -m none zroot "$POOL_DEVICE"
 
     .. note::
 
@@ -40,12 +40,12 @@ Create the zpool
 
   .. group-tab:: Unencrypted
 
-    .. parsed-literal::
+    .. code-block::
 
-      zpool create -f -o ashift=12 \\
-       -O compression=lz4 \\
-       -O acltype=posixacl \\
-       -O xattr=sa \\
-       -O relatime=on \\
-       -o autotrim=on \\
-       -m none zroot |pool_part_full|
+      zpool create -f -o ashift=12 \
+       -O compression=lz4 \
+       -O acltype=posixacl \
+       -O xattr=sa \
+       -O relatime=on \
+       -o autotrim=on \
+       -m none zroot "$POOL_DEVICE"
