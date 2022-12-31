@@ -4,3 +4,4 @@ Fetch a prebuilt ZFSBootMenu EFI executable, saving it to the EFI system partiti
 
   mkdir -p /boot/efi/EFI/zbm
   curl -o /boot/efi/EFI/zbm/vmlinuz.EFI -L https://get.zfsbootmenu.org/efi
+  cp /boot/efi/EFI/zbm/vmlinuz.EFI /boot/efi/EFI/zbm/vmlinuz-backup.EFI

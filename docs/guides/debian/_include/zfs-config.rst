@@ -6,7 +6,7 @@ Install required packages
 
 .. code-block::
 
-  apt install linux-headers-amd64 linux-image-amd64 git zfs-initramfs dosfstools
+  apt install linux-headers-amd64 linux-image-amd64 zfs-initramfs dosfstools
   echo "REMAKE_INITRD=yes" > /etc/dkms/zfs.conf
 
 Set up pool caching

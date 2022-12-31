@@ -4,8 +4,7 @@ Exit the chroot, unmount everything
 .. code-block::
 
   exit
-  umount -n /mnt/{dev/pts,dev,sys,proc}
-  umount /mnt/boot/efi
+  umount -n -R /mnt
 
 Export the zpool and reboot
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

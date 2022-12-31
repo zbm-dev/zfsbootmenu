@@ -2,8 +2,9 @@ Define the environment
 ----------------------
 
 For convenience and to reduce the likelihood of errors, set environment variables that refer to the devices that
-will be configured during the setup. First, define variables that refer to the disk and partition number that will hold
-boot files:
+will be configured during the setup. Verify your target disk devices with ``lsblk``.
+
+First, define variables that refer to the disk and partition number that will hold boot files:
 
 .. parsed-literal::
 
@@ -17,7 +18,7 @@ Next, define variables that refer to the disk and partition number that will hol
 
    export POOL_DISK="\ |pool_disk|"
    export POOL_PART="\ |pool_part_no|"
-   export POOL_DEVICE="${ZFS_DISK}${ZFS_PART}"
+   export POOL_DEVICE="${POOL_DISK}${POOL_PART}"
 
 These definitions may be adjusted as needed to accommodate your system.
 

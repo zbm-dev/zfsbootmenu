@@ -5,6 +5,10 @@ Install ZFSBootMenu
 
   .. group-tab:: Prebuilt
 
+    .. code-block:: bash
+
+      apt install curl
+
     .. include:: ../_include/zbm-install-prebuilt.rst
 
   .. group-tab:: Source
