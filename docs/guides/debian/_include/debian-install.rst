@@ -33,7 +33,6 @@ Chroot into the new OS
 
   mount -t proc proc /mnt/proc
   mount -t sysfs sys /mnt/sys
-  mount -t efivarfs efivarfs /mnt/sys/firmware/efi/efivars
   mount -B /dev /mnt/dev
   mount -t devpts pts /mnt/dev/pts
   chroot /mnt /bin/bash
