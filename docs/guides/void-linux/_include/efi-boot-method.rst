@@ -1,6 +1,10 @@
 Configure EFI boot entries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. code-block::
+
+   mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+
 .. tabs::
 
   .. group-tab:: Direct
