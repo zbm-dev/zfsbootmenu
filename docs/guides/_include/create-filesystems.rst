@@ -7,6 +7,8 @@ Create our initial file systems
   zfs create -o mountpoint=/ -o canmount=noauto zroot/ROOT/\ |distribution|
   zfs create -o mountpoint=/home zroot/home
 
+  zpool set bootfs=zroot/ROOT/\ |distribution| zroot
+
 .. note::
 
   It is important to set the property ``canmount=noauto`` on any file systems with ``mountpoint=/`` (that is, on

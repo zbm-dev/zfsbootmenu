@@ -9,20 +9,6 @@ Install required packages
   apt install linux-headers-amd64 linux-image-amd64 zfs-initramfs dosfstools
   echo "REMAKE_INITRD=yes" > /etc/dkms/zfs.conf
 
-Set up pool caching
-~~~~~~~~~~~~~~~~~~~
-
-To more quickly discover and import pools on boot, we need to set a pool cachefile::
-
-  zpool set cachefile=/etc/zfs/zpool.cache zroot
-
-Configure our default boot environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block::
-
-  zpool set bootfs=zroot/ROOT/debian zroot
-
 Enable systemd ZFS services
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

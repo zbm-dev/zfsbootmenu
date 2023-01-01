@@ -33,17 +33,3 @@ Install ZFS
 .. code-block::
 
   xbps-install -S zfs
-
-Set up pool caching
-~~~~~~~~~~~~~~~~~~~
-
-To more quickly discover and import pools on boot, we need to set a pool cachefile::
-
-  zpool set cachefile=/etc/zfs/zpool.cache zroot
-
-Configure our default boot environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block::
-
-  zpool set bootfs=zroot/ROOT/void zroot
