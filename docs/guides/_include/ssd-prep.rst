@@ -6,6 +6,9 @@ Wipe partitions
 
 .. code-block:: bash
 
+  wipefs -a "$POOL_DISK"
+  wipefs -a "$BOOT_DISK"
+
   sgdisk --zap-all "$POOL_DISK"
   sgdisk --zap-all "$BOOT_DISK"
 

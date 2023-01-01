@@ -1,27 +1,6 @@
 ZFS Configuration
 -----------------
 
-Install ZFS
-~~~~~~~~~~~
-
-.. code-block::
-
-  xbps-install -S zfs
-
-Set up pool caching
-~~~~~~~~~~~~~~~~~~~
-
-To more quickly discover and import pools on boot, we need to set a pool cachefile::
-
-  zpool set cachefile=/etc/zfs/zpool.cache zroot
-
-Configure our default boot environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block::
-
-  zpool set bootfs=zroot/ROOT/void zroot
-
 Configure Dracut to load ZFS support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -48,11 +27,23 @@ Configure Dracut to load ZFS support
       omit_dracutmodules+=" btrfs "
       EOF
 
-Rebuild the initramfs
-~~~~~~~~~~~~~~~~~~~~~
+Install ZFS
+~~~~~~~~~~~
 
 .. code-block::
 
-  xbps-reconfigure -f linuxX.Y
+  xbps-install -S zfs
 
-``X.Y`` should be the currently installed kernel version.
+Set up pool caching
+~~~~~~~~~~~~~~~~~~~
+
+To more quickly discover and import pools on boot, we need to set a pool cachefile::
+
+  zpool set cachefile=/etc/zfs/zpool.cache zroot
+
+Configure our default boot environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block::
+
+  zpool set bootfs=zroot/ROOT/void zroot

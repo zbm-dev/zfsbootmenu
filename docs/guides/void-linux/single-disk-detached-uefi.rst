@@ -48,9 +48,7 @@ system in EFI mode. You can confirm you've booted in EFI mode by running ``efibo
 
 .. include:: ../_include/setup-esp.rst
 
-.. include:: _include/zbm-install-package.rst
-
-.. include:: _include/gen-initramfs.rst
+.. include:: _include/zbm-install.rst
 
 .. include:: _include/efi-boot-method.rst
 

@@ -6,6 +6,8 @@ Configure :doc:`generate-zbm(5) </man/generate-zbm.5>` by ensuring that the foll
    Global:
      ManageImages: true
      BootMountPoint: /boot/efi
+   Components:
+      Enabled: false
    EFI:
      ImageDir: /boot/efi/EFI/zbm
      Versions: false
