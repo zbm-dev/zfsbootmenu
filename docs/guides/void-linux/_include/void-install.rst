@@ -19,7 +19,7 @@ Copy our files into the new install
     .. code-block::
 
       cp /etc/hostid /mnt/etc
-      cp /etc/resolv.conf /mnt/etc/
+      mkdir /mnt/etc/zfs
       cp /etc/zfs/zroot.key /mnt/etc/zfs
 
   .. group-tab:: Unencrypted
@@ -34,11 +34,7 @@ Chroot into the new OS
 
 .. code-block::
 
-  mount -t proc proc /mnt/proc
-  mount -t sysfs sys /mnt/sys
-  mount -B /dev /mnt/dev
-  mount -t devpts pts /mnt/dev/pts
-  chroot /mnt /bin/bash
+  xchroot /mnt
 
 Basic Void configuration
 ------------------------
