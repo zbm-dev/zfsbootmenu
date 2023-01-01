@@ -49,3 +49,10 @@ Create the zpool
        -O relatime=on \
        -o autotrim=on \
        -m none zroot "$POOL_DEVICE"
+
+Enable zpool.cache
+~~~~~~~~~~~~~~~~~~
+
+To more quickly discover and import pools on boot, we need to set a pool cachefile::
+
+   zpool set cachefile=/etc/zfs/zpool.cache zroot
