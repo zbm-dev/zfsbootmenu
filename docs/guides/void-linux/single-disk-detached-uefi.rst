@@ -9,6 +9,8 @@ Single-disk detached UEFI
 
 .. |distribution| replace:: void
 
+.. |zbmkcl| replace:: quiet
+
 .. contents:: Contents
   :depth: 2
   :local:

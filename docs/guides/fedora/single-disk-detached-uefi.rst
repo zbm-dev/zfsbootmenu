@@ -1,5 +1,5 @@
-Bullseye Single-disk detached UEFI
-==================================
+Workstation 37 Single-disk detached UEFI
+========================================
 
 .. |boot_disk| replace:: /dev/sdb
 .. |boot_part_no| replace:: 1
@@ -7,9 +7,9 @@ Bullseye Single-disk detached UEFI
 .. |pool_disk| replace:: /dev/sda
 .. |pool_part_no| replace:: 1
 
-.. |distribution| replace:: debian
+.. |distribution| replace:: fedora
 
-.. |zbmkcl| replace:: quiet
+.. |zbmkcl| replace:: quiet rhgb
 
 .. contents:: Contents
   :depth: 2
@@ -29,8 +29,8 @@ It assumes the following:
 * ``/dev/sdb`` is a dedicated USB drive, used for the EFI partition
 * You're mildly comfortable with ZFS, EFI and discovering system facts on your own (``lsblk``, ``dmesg``, ``gdisk``, ...)
 
-Download the latest `Debian Bullseye (11) Live image <https://www.debian.org/CD/live/>`_, write it to a USB drive and
-boot your system in EFI mode.
+Download `Fedora Workstation Live <https://download.fedoraproject.org/pub/fedora/linux/releases/37/Workstation/x86_64/iso/Fedora-Workstation-Live-x86_64-37-1.7.iso>`_
+, write it to a USB drive and boot your system in EFI mode.
 
 .. include:: ../_include/efi-boot-check.rst
 
@@ -44,7 +44,7 @@ boot your system in EFI mode.
 
 .. include:: ../_include/create-filesystems.rst
 
-.. include:: _include/debian-install.rst
+.. include:: _include/distro-install.rst
 
 .. include:: _include/zfs-config.rst
 
@@ -55,5 +55,7 @@ boot your system in EFI mode.
 .. include:: _include/zbm-install.rst
 
 .. include:: _include/efi-boot-method.rst
+
+.. include:: _include/reset-resolv.rst
 
 .. include:: ../_include/cleanup.rst
