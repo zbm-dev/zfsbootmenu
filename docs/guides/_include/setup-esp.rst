@@ -14,5 +14,5 @@ Create an fstab entry and mount
   $( blkid | grep "$BOOT_DEVICE" | cut -d ' ' -f 2 ) /boot/efi vfat defaults 0 0
   EOF
 
-  mkdir /boot/efi
+  mkdir -p /boot/efi
   mount /boot/efi

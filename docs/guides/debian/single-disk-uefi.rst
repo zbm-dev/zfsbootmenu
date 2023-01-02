@@ -9,6 +9,8 @@ Bullseye Single-disk UEFI
 
 .. |distribution| replace:: debian
 
+.. |zbmkcl| replace:: quiet
+
 .. contents:: Contents
   :depth: 2
   :local:

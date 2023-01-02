@@ -9,6 +9,8 @@ Single-disk syslinux MBR
 
 .. |distribution| replace:: void
 
+.. |zbmkcl| replace:: quiet
+
 .. contents:: Contents
   :depth: 2
   :local:

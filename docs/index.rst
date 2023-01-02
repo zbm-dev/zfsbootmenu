@@ -50,6 +50,7 @@
   guides/general
   guides/void-linux
   guides/debian
+  guides/fedora
   guides/third-party
 
 .. toctree::
@@ -134,9 +135,10 @@ requiring any special configuration include:
 * Arch
 * Alpine
 * Gentoo
+* Fedora
 * Debian and its descendants (Ubuntu, Linux Mint, Devuan, etc.)
 
-Red Hat and its descendants (RHEL, CentOS, Fedora, etc.) are expected to work as well but have never been tested.
+Red Hat and its descendants (RHEL, CentOS, etc.) are expected to work as well but have never been tested.
 
 ZFSBootMenu provides several configuration options that can be used to fine-tune the boot process for nonstandard
 configurations.
