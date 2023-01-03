@@ -28,7 +28,9 @@ created on a removable disk. It assumes the following:
 .. include:: ../_include/intro.rst
 
 Download the latest `hrmpf <https://github.com/leahneukirchen/hrmpf/releases>`_, write it to USB drive and boot your
-system in EFI mode. You can confirm you've booted in EFI mode by running ``efibootmgr``. 
+system in EFI mode.
+
+.. include:: ../_include/efi-boot-check.rst
 
 .. include:: _include/zfs-prep.rst
 
