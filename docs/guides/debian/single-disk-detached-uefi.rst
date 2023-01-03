@@ -28,7 +28,9 @@ It assumes the following:
 * You're mildly comfortable with ZFS, EFI and discovering system facts on your own (``lsblk``, ``dmesg``, ``gdisk``, ...)
 
 Download the latest `Debian Bullseye (11) Live image <https://www.debian.org/CD/live/>`_, write it to a USB drive and
-boot your system in EFI mode. You can confirm you've booted in EFI mode by running ``efibootmgr``.
+boot your system in EFI mode.
+
+.. include:: ../_include/efi-boot-check.rst
 
 .. include:: _include/early-prep.rst
 
