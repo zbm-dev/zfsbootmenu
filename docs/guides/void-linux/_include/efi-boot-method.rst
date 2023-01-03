@@ -22,3 +22,5 @@ Configure EFI boot entries
       xbps-install -S refind
 
     .. include:: ../_include/configure-refind.rst
+
+.. include:: ../_include/efi-seealso.rst
