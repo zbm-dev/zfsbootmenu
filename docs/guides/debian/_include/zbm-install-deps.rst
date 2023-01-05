@@ -12,6 +12,7 @@ Install all packages required to build a ZFSBootMenu image on Debian:
     kexec-tools \
     dracut-core \
     efibootmgr \
+    systemd-boot-efi \
     bsdextrautils
 
 .. note::

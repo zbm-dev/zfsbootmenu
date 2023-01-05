@@ -714,6 +714,10 @@ sub createUEFIBundle {
 
   if ( nonempty $config{EFI}{Stub} ) {
     $uefi_stub = $config{EFI}{Stub};
+    unless ( -f $uefi_stub ) {
+      print "UEFI stub loader '$uefi_stub' does not exist\n";
+      exit 1;
+    }
   } else {
     # For now, default stub locations are x86_64 only
     my @uefi_stub_defaults = qw(
@@ -727,11 +731,14 @@ sub createUEFIBundle {
         last;
       }
     }
-  }
 
-  unless ( defined $uefi_stub and -f $uefi_stub ) {
-    print "Cannot find kernel or initramfs to create UEFI bundle\n";
-    exit 1;
+    unless ( defined $uefi_stub and -f $uefi_stub ) {
+      print "Unable to find UEFI stub loader at default locations:\n";
+      foreach my $stubloc (@uefi_stub_defaults) {
+        print " $stubloc\n";
+      }
+      exit 1;
+    }
   }
 
   my @cmd = qw(objcopy);
