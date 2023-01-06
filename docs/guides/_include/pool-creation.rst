@@ -6,6 +6,18 @@ Create the zpool
 
 .. tabs::
 
+  .. group-tab:: Unencrypted
+
+    .. code-block::
+
+      zpool create -f -o ashift=12 \
+       -O compression=lz4 \
+       -O acltype=posixacl \
+       -O xattr=sa \
+       -O relatime=on \
+       -o autotrim=on \
+       -m none zroot "$POOL_DEVICE"
+
   .. group-tab:: Encrypted
 
     .. code-block:: bash
@@ -37,18 +49,6 @@ Create the zpool
       * ``keyformat=passphrase`` - By setting the format to ``passphrase``, we can now force a prompt for this in
         ``zfsbootmenu``. It's critical that your passphrase be something you can type on your keyboard, since you will
         need to type it in to unlock the pool on boot.
-
-  .. group-tab:: Unencrypted
-
-    .. code-block::
-
-      zpool create -f -o ashift=12 \
-       -O compression=lz4 \
-       -O acltype=posixacl \
-       -O xattr=sa \
-       -O relatime=on \
-       -o autotrim=on \
-       -m none zroot "$POOL_DEVICE"
 
 Enable zpool.cache
 ~~~~~~~~~~~~~~~~~~

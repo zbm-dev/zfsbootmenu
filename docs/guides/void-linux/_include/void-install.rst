@@ -14,6 +14,14 @@ Copy our files into the new install
 
 .. tabs::
 
+  .. group-tab:: Unencrypted
+
+    .. code-block::
+
+      cp /etc/hostid /mnt/etc
+      mkdir /mnt/etc/zfs
+      cp /etc/zfs/zpool.cache /mnt/etc/zfs
+
   .. group-tab:: Encrypted
 
     .. code-block::
@@ -22,14 +30,6 @@ Copy our files into the new install
       mkdir /mnt/etc/zfs
       cp /etc/zfs/zpool.cache /mnt/etc/zfs
       cp /etc/zfs/zroot.key /mnt/etc/zfs
-
-  .. group-tab:: Unencrypted
-
-    .. code-block::
-
-      cp /etc/hostid /mnt/etc
-      mkdir /mnt/etc/zfs
-      cp /etc/zfs/zpool.cache /mnt/etc/zfs
 
 Chroot into the new OS
 ~~~~~~~~~~~~~~~~~~~~~~

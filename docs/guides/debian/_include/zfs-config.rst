@@ -24,6 +24,10 @@ Configure ``initramfs-tools``
 
 .. tabs::
 
+  .. group-tab:: Unencrypted
+
+    No required steps
+
   .. group-tab:: Encrypted
 
     .. code-block::
@@ -34,11 +38,6 @@ Configure ``initramfs-tools``
 
       Because the encryption key is stored in ``/etc/zfs`` directory, it will automatically be copied into the system
       initramfs.
-
-  .. group-tab:: Unencrypted
-
-    No required steps
-
 
 Rebuild the initramfs
 ~~~~~~~~~~~~~~~~~~~~~

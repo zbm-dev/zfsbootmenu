@@ -25,6 +25,15 @@ Export, then re-import with a temporary mountpoint of ``/mnt``
 
 .. tabs::
 
+  .. group-tab:: Unencrypted
+
+    .. parsed-literal::
+
+      zpool export zroot
+      zpool import -N -R /mnt zroot
+      zfs mount zroot/ROOT/\ |distribution|
+      zfs mount zroot/home
+
   .. group-tab:: Encrypted
 
     .. parsed-literal::
@@ -32,15 +41,6 @@ Export, then re-import with a temporary mountpoint of ``/mnt``
       zpool export zroot
       zpool import -N -R /mnt zroot
       zfs load-key -L prompt zroot
-      zfs mount zroot/ROOT/\ |distribution|
-      zfs mount zroot/home
-
-  .. group-tab:: Unencrypted
-
-    .. parsed-literal::
-
-      zpool export zroot
-      zpool import -N -R /mnt zroot
       zfs mount zroot/ROOT/\ |distribution|
       zfs mount zroot/home
 
