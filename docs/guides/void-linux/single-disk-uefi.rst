@@ -34,7 +34,7 @@ system in EFI mode.
 
 .. include:: ../_include/efi-boot-check.rst
 
-.. include:: _include/zfs-prep.rst
+.. include:: _include/early-prep.rst
 
 .. include:: ../_include/define-env.rst
 

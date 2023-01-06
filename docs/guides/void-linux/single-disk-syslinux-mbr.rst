@@ -29,7 +29,7 @@ This guide can be used to install Void onto a single ZFS disk with or without ZF
 Download the latest `hrmpf <https://github.com/leahneukirchen/hrmpf/releases>`_, write it to USB drive and boot your
 system in BIOS mode.
 
-.. include:: _include/zfs-prep.rst
+.. include:: _include/early-prep.rst
 
 .. include:: ../_include/define-env.rst
 
