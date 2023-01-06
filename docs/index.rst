@@ -50,6 +50,7 @@
   guides/void-linux
   guides/debian
   guides/fedora
+  guides/opensuse
   guides/third-party
 
 .. toctree::

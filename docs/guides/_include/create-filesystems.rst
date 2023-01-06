@@ -52,3 +52,10 @@ Verify that everything is mounted correctly
   # **mount | grep mnt**
   zroot/ROOT/\ |distribution| on /mnt type zfs (rw,relatime,xattr,posixacl)
   zroot/home on /mnt/home type zfs (rw,relatime,xattr,posixacl)
+
+Update device symlinks
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block::
+
+  udevadm trigger
