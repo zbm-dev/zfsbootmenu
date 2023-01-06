@@ -44,7 +44,7 @@ system in EFI mode.
 
 .. include:: ../_include/create-filesystems.rst
 
-.. include:: _include/void-install.rst
+.. include:: _include/distro-install.rst
 
 .. include:: _include/zfs-config.rst
 

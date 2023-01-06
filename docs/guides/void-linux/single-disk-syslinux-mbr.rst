@@ -66,7 +66,7 @@ Finally, create partitions for syslinux and the ZFS pool:
 
 .. include:: ../_include/create-filesystems.rst
 
-.. include:: _include/void-install.rst
+.. include:: _include/distro-install.rst
 
 .. include:: _include/zfs-config.rst
 
