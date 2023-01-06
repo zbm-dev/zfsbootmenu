@@ -328,7 +328,6 @@ if ((SSH_INCLUDE)); then
 	  UserKnownHostsFile /dev/null
 	  StrictHostKeyChecking no
 	  LogLevel error
-	  IdentityAgent none
 	EOF
     fi
 
