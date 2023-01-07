@@ -1,12 +1,14 @@
-Early Setup
------------
+Configure Live Environment
+--------------------------
 
 Switch to a root shell
 ~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block::
 
-  sudo su --login
+  sudo -i
+
+.. include:: ../_include/os-release.rst
 
 Configure and update APT
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -32,3 +34,8 @@ Install helpers
 
   apt install debootstrap gdisk dkms linux-headers-$(uname -r)
   apt install zfsutils-linux
+
+.. include:: ../_include/zgenhostid.rst
+
+..
+ vim: softtabstop=2 shiftwidth=2 textwidth=120

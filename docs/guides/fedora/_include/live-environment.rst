@@ -1,19 +1,17 @@
-Early Setup
------------
+Configure Live Environment
+--------------------------
 
 Switch to a root account
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block::
 
   sudo -i
 
-Set release related variables
-
-.. code-block::
-
-  source /etc/os-release
+.. include:: ../_include/os-release.rst
 
 Install updated ZFS packages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block::
 
@@ -23,8 +21,7 @@ Install updated ZFS packages
    dnf install -y zfs
    modprobe zfs
 
-Generate a hostid
+.. include:: ../_include/zgenhostid.rst
 
-.. code-block::
-
-  zgenhostid
+..
+ vim: softtabstop=2 shiftwidth=2 textwidth=120

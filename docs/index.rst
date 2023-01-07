@@ -154,7 +154,7 @@ controlled environment of an OCI (Docker) container.
 
 Modern UEFI platforms provide a wide range of :doc:`options for launching ZFSBootmenu </guides/general/uefi-booting>`.
 For legacy BIOS systems, ``syslinux`` is a convenient choice. A
-:doc:`syslinux guide for Void Linux </guides/void-linux/single-disk-syslinux-mbr>` describes the ``syslinux``
+:doc:`syslinux guide for Void Linux </guides/void-linux/syslinux-mbr>` describes the ``syslinux``
 installation and configuration process in the context of a broader Void Linux installation.
 
 Local Installation

@@ -19,6 +19,7 @@ extensions = [
     'sphinx.ext.extlinks',
     'sphinx_tabs.tabs',
     'sphinx_rtd_theme',
+    'sphinx_copybutton',
     'recommonmark',
 ]
 

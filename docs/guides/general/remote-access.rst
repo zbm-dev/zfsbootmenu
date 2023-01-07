@@ -329,7 +329,7 @@ You may then use the menu as if you were connected locally.
 
   from the login shell to ensure that basic terminal functionality works as expected.
 
-If you followed the :doc:`Void Linux ZFSBootMenu install guide </guides/void-linux/single-disk-uefi>` and configured
+If you followed the :doc:`Void Linux ZFSBootMenu install guide </guides/void-linux/uefi>` and configured
 rEFInd to launch ZFSBootMenu, you may need to remove the ``zbm.skip`` argument from the default menu entry if you would
 like remote access and you have no encrypted boot environments. Otherwise, rEFInd will attempt to bypass the ZFSBootMenu
 countdown and your default boot environment will be started immediately if possible. In this case, either set
