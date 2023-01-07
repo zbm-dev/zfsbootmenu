@@ -42,11 +42,3 @@ Install required packages
     https://zfsonlinux.org/fedora/zfs-release-2-2$(rpm --eval "%{dist}").noarch.rpm
 
   dnf install -y zfs zfs-dracut
-
-Build Kernel Modules
-~~~~~~~~~~~~~~~~~~~~
-
-.. code-block::
-
-  ls /lib/modules | xargs -n1 dkms autoinstall -k
-  dracut --regenerate-all --force

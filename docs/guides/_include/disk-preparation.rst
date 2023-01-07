@@ -1,5 +1,5 @@
-Disk prep work
---------------
+Disk preparation
+----------------
 
 Wipe partitions
 ~~~~~~~~~~~~~~~
@@ -12,8 +12,8 @@ Wipe partitions
   sgdisk --zap-all "$POOL_DISK"
   sgdisk --zap-all "$BOOT_DISK"
 
-Create ESP partition 
-~~~~~~~~~~~~~~~~~~~~
+Create EFI boot partition
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
 

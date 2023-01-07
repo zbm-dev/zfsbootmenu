@@ -1,13 +1,13 @@
-Create our initial file systems
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Create initial file systems
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. parsed-literal::
+.. code-block::
 
   zfs create -o mountpoint=none zroot/ROOT
-  zfs create -o mountpoint=/ -o canmount=noauto zroot/ROOT/\ |distribution|
+  zfs create -o mountpoint=/ -o canmount=noauto zroot/ROOT/${ID}
   zfs create -o mountpoint=/home zroot/home
 
-  zpool set bootfs=zroot/ROOT/\ |distribution| zroot
+  zpool set bootfs=zroot/ROOT/${ID} zroot
 
 .. note::
 
@@ -27,21 +27,21 @@ Export, then re-import with a temporary mountpoint of ``/mnt``
 
   .. group-tab:: Unencrypted
 
-    .. parsed-literal::
+    .. code-block::
 
       zpool export zroot
       zpool import -N -R /mnt zroot
-      zfs mount zroot/ROOT/\ |distribution|
+      zfs mount zroot/ROOT/${ID}
       zfs mount zroot/home
 
   .. group-tab:: Encrypted
 
-    .. parsed-literal::
+    .. code-block::
 
       zpool export zroot
       zpool import -N -R /mnt zroot
       zfs load-key -L prompt zroot
-      zfs mount zroot/ROOT/\ |distribution|
+      zfs mount zroot/ROOT/${ID}
       zfs mount zroot/home
 
 Verify that everything is mounted correctly

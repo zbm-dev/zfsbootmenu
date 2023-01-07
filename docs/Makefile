@@ -11,7 +11,7 @@ INSTALLOPTS   ?= -Su
 SOURCEDIR     = .
 BUILDDIR      = _build
 
-VOID_PKGS     = python3-rst2ansi python3-sphinx-tabs python3-sphinx_rtd_theme python3-recommonmark
+VOID_PKGS     = python3-rst2ansi python3-sphinx-tabs python3-sphinx_rtd_theme python3-recommonmark python3-sphinx-copybutton
 
 .PHONY: help setup serve envclean requirements.txt Makefile setup-void gen-man
 
