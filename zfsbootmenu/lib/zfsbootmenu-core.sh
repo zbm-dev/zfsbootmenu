@@ -272,7 +272,7 @@ mount_zfs() {
 # returns: 1 on error, otherwise does not return
 
 kexec_kernel() {
-  local selected fs kernel initramfs tdhook output
+  local selected fs kernel initramfs tdhook output boot_mounted
 
   selected="${1}"
   if [ -z "${selected}" ]; then
@@ -297,6 +297,12 @@ kexec_kernel() {
     return 1
   fi
 
+  if find_be_bootdir "${fs}" "${mnt}"; then
+    boot_mounted=yes
+  else
+    boot_mounted=""
+  fi
+
   cli_args="$( load_be_cmdline "${fs}" )"
   root_prefix="$( find_root_prefix "${fs}" "${mnt}" )"
 
@@ -306,6 +312,7 @@ kexec_kernel() {
   then
     zerror "unable to load ${mnt}${kernel} and ${mnt}${initramfs} into memory"
     zerror "${output}"
+    [ -n "${boot_mounted}" ] && umount "${mnt}/boot"
     umount "${mnt}"
     timed_prompt -d 10 \
       -m "$( colorize red 'Unable to load kernel or initramfs into memory' )" \
@@ -321,6 +328,7 @@ kexec_kernel() {
     fi
   fi
 
+  [ -n "${boot_mounted}" ] && umount "${mnt}/boot"
   umount "${mnt}"
 
   while read -r _pool; do
@@ -676,13 +684,84 @@ set_default_env() {
 }
 
 # arg1: ZFS filesystem
+# arg2: filesystem mount point
 # prints: nothing
-# returns: 0 if kernels were found, 1 otherwise
+# returns: 0 if boot directory was mounted, 1 otherwise
+
+find_be_bootdir() {
+  local fs mnt children
+  local cfs cmp type xtra
+
+  fs="${1}"
+  if [ -z "${fs}" ]; then
+    zerror "fs is undefined"
+    return 1
+  fi
+
+  mnt="${2}"
+  if [ -z "${mnt}" ]; then
+    zerror "mnt is undefined"
+    return 1
+  fi
+
+  if [ ! -d "${mnt}/boot" ]; then
+    zerror "${mnt}/boot does not exist"
+    return 1
+  fi
+
+  # If /boot is non-empty, the boot directory is presumed to be mounted;
+  # this ignores any dot files that might be in /boot
+  for f in "${mnt}/boot"/*; do
+    if [ -e "${f}" ]; then
+      zdebug "${mnt}/boot appears to be non-empty"
+      return 1
+    fi
+  done
+
+  # Try to scan /etc/fstab for a /boot mountpoint; it must have type "zfs"
+  if [ -r "${mnt}/etc/fstab" ]; then
+    # shellcheck disable=SC2034
+    while read -r cfs cmp type xtra; do
+      [ "${cmp}" = "/boot" ] || continue
+
+      if mount -o ro -t "${type}" "${cfs}" "${mnt}/boot"; then
+        zdebug "mounted ${cfs} at ${mnt}/boot"
+        return 0
+      else
+        zerror "failed to mount ${cfs} at ${mnt}/boot"
+        return 1
+      fi
+    done < "${mnt}/etc/fstab"
+  fi
+
+  # Identify children of the root as candidates for /boot mounts
+  if ! children="$(zfs list -H -o name,mountpoint -t filesystem -r "${fs}")"; then
+    zerror "failed to list children of ${fs}"
+    return 1
+  fi
+
+  while read -r cfs cmp; do
+    [ "${cmp}" = "/boot" ] || continue
+
+    # First child with /boot mountpoint wins
+    if mount -o "zfsutil,ro" -t zfs "${cfs}" "${mnt}/boot"; then
+      zdebug "mounted ${cfs} at ${mnt}/boot"
+      return 0
+    else
+      zerror "failed to mount ${cfs} at ${mnt}/boot"
+      return 1
+    fi
+  done <<<"${children}"
+
+  zinfo "failed to find any /boot mountpoint for ${fs}"
+  return 1
+}
 
 find_be_kernels() {
   local fs mnt
   local kernel kernel_base labels version kernel_records
   local defaults def_kernel def_kernel_file
+  local boot_mounted
 
   fs="${1}"
   if [ -z "${fs}" ]; then
@@ -702,6 +781,12 @@ find_be_kernels() {
     zdebug "${mnt}/boot not present"
     umount "${mnt}"
     return 1
+  fi
+
+  if find_be_bootdir "${fs}" "${mnt}"; then
+    boot_mounted=yes
+  else
+    boot_mounted=""
   fi
 
   # Make sure the kernel list starts fresh
@@ -747,6 +832,7 @@ find_be_kernels() {
   done
 
   # No further need for the mount
+  [ -n "${boot_mounted}" ] && umount "${mnt}/boot"
   umount "${mnt}"
 
   defaults="$( select_kernel "${fs}" )"
