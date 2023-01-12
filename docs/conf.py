@@ -67,7 +67,6 @@ man_make_section_directory = True
 man_pages = [
     ('man/generate-zbm.5', 'generate-zbm', 'configuration file for generate-zbm', man_author, '5'),
     ('man/generate-zbm.8', 'generate-zbm', 'ZFSBootMenu initramfs generator', man_author, '8'),
-    ('man/zbm-efi-kcl.8', 'zbm-efi-kcl', 'manipulate kernel command lines for EFI binaries', man_author, '8'),
-    ('man/zbm-kcl.8', 'zbm-kcl', 'manipulate kernel command lines for ZFS boot environments', man_author, '8'),
+    ('man/zbm-kcl.8', 'zbm-kcl', 'manipulate kernel command lines for boot environments and EFI executables', man_author, '8'),
     ('man/zfsbootmenu.7', 'zfsbootmenu', 'System Integration', man_author, '7'),
 ]

@@ -27,31 +27,48 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "ZBM-KCL" "8" "2022-12-19" "" "ZFSBootMenu"
+.TH "ZBM-KCL" "8" "2023-01-13" "" "ZFSBootMenu"
 .SH NAME
-zbm-kcl \- manipulate kernel command lines for ZFS boot environments
+zbm-kcl \- manipulate kernel command lines for boot environments and EFI executables
 .SH SYNOPSIS
 .sp
-\fBzbm\-kcl\fP [OPTION]... [FILESYSTEM]
+\fBzbm\-kcl\fP [OPTION]... [FILESYSTEM|EFI_EXECUTABLE]
 .SH DESCRIPTION
 .sp
-The \fBzbm\-kcl\fP utility allows review and manipulation of the \fIorg.zfsbootmenu:commandline\fP property on ZFS filesystems. ZFSBootMenu reads this property, as set or inherited on each environment that it recognizes, to set the command line for the kernel that it boots.
+The \fBzbm\-kcl\fP utility allows review and manipulation of the \fIorg.zfsbootmenu:commandline\fP property on ZFS filesystems
+or the \fI\&.cmdline\fP section encoded within ZFSBootMenu EFI executables. ZFSBootMenu reads the property
+\fIorg.zfsbootmenu:commandline\fP, as set or inherited on each environment that it recognizes, to set the command line for
+the kernel that it boots. The ZFSBootMenu EFI executable reads its own \fI\&.cmdline\fP section to parse options that control
+the behavior of ZFSBootMenu itself.
 .sp
-When a filesystem is not specified, \fBzbm\-kcl\fP will attempt to determine the root filesystem and operate on that.
+The final argument is treated as a ZFS filesystem as long as one exists with the specified name. If a matching
+filesystem cannot be found, the argument is treated as an EFI executable. To force \fBzbm\-kcl\fP to treat the final
+argument as a relative path to an EFI executable even when a ZFS filesystem exists with the same name, prefix the path
+with \fI\&./\fP\&.
 .sp
-With no options specified, \fBzbm\-kcl\fP will print the current value of \fIorg.zfsbootmenu:commandline\fP on the selected filesystem and exit.
+When neither a filesystem nor an EFI executable is specified, \fBzbm\-kcl\fP will attempt to determine the root filesystem
+and operate on that.
+.sp
+If an EFI executable of \fI\-\fP is specified, \fIstdin\fP will be read as an EFI executable.
+.sp
+With no options specified, \fBzbm\-kcl\fP will print the current value of \fIorg.zfsbootmenu:commandline\fP of the selected
+filesystem or the \fI\&.cmdline\fP section of the named EFI executable and exit.
 .SH OPTIONS
 .sp
 \fB\-a\fP \fIargument\fP
 .INDENT 0.0
 .INDENT 3.5
-Append the value of \fIargument\fP to the kernel command line. The value of \fIargument\fP can be a simple variable name for Boolean arguments or may take the form \fIvar=value\fP to provide a non\-Boolean value. If \fIvalue\fP contains spaces, it may be surrounded by double quotes. In that case, surround the argument in single quotes to ensure that the double quotes are recorded in the property:
+Append the value of \fIargument\fP to the kernel command line. The value of \fIargument\fP can be a simple variable name for
+Boolean arguments or may take the form \fIvar=value\fP to provide a non\-Boolean value. Multiple command\-line arguments may
+be accumulated into a single \fIargument\fP\&. If the value of any variable value contains spaces, it should be surrounded
+by double quotes. In that case, surround the entire argument in single quotes to ensure that the double quotes are
+recorded in the property:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-zbm\-kcl \-a \(aqvariable=\(dqsome argument with spaces\(dq\(aq
+zbm\-kcl \-a \(aqvariable="some argument with spaces"\(aq
 .ft P
 .fi
 .UNINDENT
@@ -64,14 +81,17 @@ This argument may be repeated any number of times.
 \fB\-r\fP \fIargument\fP
 .INDENT 0.0
 .INDENT 3.5
-Remove \fIargument\fP from the kernel command line. The value of \fIargument\fP can be a simple variable name, in which case all arguments of the form \fIargument\fP or \fIargument=<arbitrary\-value>\fP will be stripped. Alternatively, a specific argument may be selected by specifying \fIargument=<specific\-value>\fP\&.
+Remove \fIargument\fP from the kernel command line. The value of \fIargument\fP can be a simple variable name, in which case
+all arguments of the form \fIargument\fP or \fIargument=<arbitrary\-value>\fP will be stripped. Alternatively, a specific
+argument may be selected by specifying \fIargument=<specific\-value>\fP\&.
 .sp
 This argument may be repeated any number of times.
 .sp
 \fBNOTE:\fP
 .INDENT 0.0
 .INDENT 3.5
-All removal options are processed \fIbefore\fP any append options are processed, making it possible to replace an existing argument by combining removal and append options into a single invocation of \fBzbm\-kcl\fP\&.
+All removal options are processed \fIbefore\fP any append options are processed, making it possible to replace an
+existing argument by combining removal and append options into a single invocation of \fBzbm\-kcl\fP\&.
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -80,14 +100,18 @@ All removal options are processed \fIbefore\fP any append options are processed,
 \fB\-e\fP
 .INDENT 0.0
 .INDENT 3.5
-Open the contents of the command\-line property in an interactive editor. If the environment defines \fI$EDITOR\fP, that will be used; otherwise, \fBvi\fP will be used by default. After making changes as desired, overwrite the (temporary) file that was opened and quit the editor. If the contents of the command\-line property appear to have changed, \fBzbm\-kcl\fP will apply those changes.
+Open the contents of the command\-line in an interactive editor. If the environment defines \fI$EDITOR\fP, that will be
+used; otherwise, \fBvi\fP will be used by default. After making changes as desired, overwrite the (temporary) file that
+was opened and quit the editor. The contents of the saved file will be written by \fBzbm\-kcl\fP as the new command line.
 .UNINDENT
 .UNINDENT
 .sp
 \fB\-d\fP
 .INDENT 0.0
 .INDENT 3.5
-Delete the command\-line property by calling
+Delete the command\-line property.
+.sp
+For a ZFS filesystem, this is accomplished by calling
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -99,19 +123,24 @@ zfs inherit org.zfsbootmenu:commandline <filesystem>
 .UNINDENT
 .UNINDENT
 .sp
-This allows the boot environment to inherit any command\-line property that may be defined by some parent.
+to allow the boot environment to inherit any command\-line property that may be defined by some parent.
+.sp
+For a ZFSBootMenu EFI executable, the \fI\&.cmdline\fP section will be stripped.
 .UNINDENT
 .UNINDENT
 .sp
-\fB\-v\fP
+\fB\-o\fP \fIdestination\fP
 .INDENT 0.0
 .INDENT 3.5
-Increase the verbosity of \fBzbm\-kcl\fP as it operates. This may be specified up to three times.
+Save the modified command line to \fIdestination\fP rather than back to the original source. When the source is a ZFS
+filesystem, the destination must also be a valid ZFS filesystem. When the source is an EFI executable, the destination
+will be treated as a file; a special EFI \fIdestination\fP of \fI\-\fP will cause the file to be written to \fIstdout\fP\&.
 .UNINDENT
 .UNINDENT
 .SH EXAMPLES
 .sp
-Change the \fIloglevel\fP value on the currently booted environment by removing any existing value from the command line and appending the desired argument:
+Change the \fIloglevel\fP value on the currently booted environment by removing any existing value from the command line and
+appending the desired argument:
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -123,7 +152,8 @@ zbm\-kcl \-a loglevel=7 \-r loglevel
 .UNINDENT
 .UNINDENT
 .sp
-Delete the entire command line from the \fIzroot/ROOT/void\fP boot environment, allowing it to inherit a command line set at \fIzroot\fP or \fIzroot/ROOT\fP if either of these defines a value:
+Delete the entire command line from the \fIzroot/ROOT/void\fP boot environment, allowing it to inherit a command line set at
+\fIzroot\fP or \fIzroot/ROOT\fP if either of these defines a value:
 .INDENT 0.0
 .INDENT 3.5
 .sp
@@ -135,13 +165,40 @@ zbm\-kcl \-d zroot/ROOT/void
 .UNINDENT
 .UNINDENT
 .sp
-Allow interactive editing of the command line on the \fIzroot/ROOT\fP filesystem:
+Allow interactive editing of the command line on the \fIzroot/ROOT\fP filesystem, but save the resulting changes to
+\fIzroot/ROOT/void\fP rather than back to \fIzroot/ROOT\fP:
 .INDENT 0.0
 .INDENT 3.5
 .sp
 .nf
 .ft C
-zbm\-kcl \-e zroot/ROOT
+zbm\-kcl \-e \-o zroot/ROOT/void zroot/ROOT
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Review the current command line embedded in the EFI file \fI/boot/efi/EFI/zfsbootmenu/zfsbootmenu.EFI\fP:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+zbm\-kcl /boot/efi/EFI/zfsbootmenu/zfsbootmenu.EFI
+.ft P
+.fi
+.UNINDENT
+.UNINDENT
+.sp
+Fetch the official ZFSBootMenu release EFI executable, customizing the menu timeout and saving the result to
+\fIzfsbootmenu\-custom.EFI\fP:
+.INDENT 0.0
+.INDENT 3.5
+.sp
+.nf
+.ft C
+curl \-L https://get.zfsbootmenu.org/efi | \e
+  zbm\-kcl \-a zbm.timeout=15 \-r zbm.timeout \-o zfsbootmenu\-slow.EFI \-
 .ft P
 .fi
 .UNINDENT
