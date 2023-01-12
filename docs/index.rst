@@ -38,7 +38,6 @@
   man/zfsbootmenu.7
   man/generate-zbm.8
   man/zbm-kcl.8
-  man/zbm-efi-kcl.8
 
 .. toctree::
   :caption: Guides
@@ -262,8 +261,8 @@ Run-time Configuration of ZFSBootMenu
 
 ZFSBootMenu may be configured via a combination of :ref:`command-line parameters <cli-parameters>` and
 :ref:`ZFS properties <zfs-properties>` that are described in detail in the :doc:`zfsbootmenu(7) </man/zfsbootmenu.7>`
-manual page. For users of pre-build UEFI executables, the :doc:`zbm-efi-kcl </man/zbm-efi-kcl.8>` helper script provides
-a convenient way to modify the embedded ZFSBootMenu command line without requiring the creation of a custom image.
+manual page. For users of pre-built UEFI executables, the :doc:`zbm-kcl </man/zbm-kcl.8>` helper script provides a
+convenient way to modify the embedded ZFSBootMenu command line without requiring the creation of a custom image.
 
 Signature Verification and Prebuilt EFI Executables
 ---------------------------------------------------

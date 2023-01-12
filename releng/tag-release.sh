@@ -126,7 +126,7 @@ fi
 
 # Copy in any extra assets/files, relative to the project root
 # shellcheck disable=SC2043
-for extra in bin/zbm-efi-kcl ; do
+for extra in bin/zbm-kcl ; do
   [ -f "${extra}" ] || error "ERROR: missing ${extra}"
   cp "${extra}" "${asset_dir}/"
   assets+=( "${extra##*/}" )

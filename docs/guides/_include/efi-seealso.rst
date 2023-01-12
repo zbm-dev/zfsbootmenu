@@ -5,5 +5,5 @@
   file name. See :doc:`Portable EFI </guides/general/portable>` for help with this. Your existing ESP can be used, in place
   of an external USB drive.
 
-  Refer to :doc:`zbm-efi-kcl.8 </man/zbm-efi-kcl.8>` and :doc:`zfsbootmenu.7 </man/zfsbootmenu.7>` for details on
-  configuring the boot-time behavior of ZFSBootMenu.
+  Refer to :doc:`zbm-kcl.8 </man/zbm-kcl.8>` and :doc:`zfsbootmenu.7 </man/zfsbootmenu.7>` for details on configuring
+  the boot-time behavior of ZFSBootMenu.
