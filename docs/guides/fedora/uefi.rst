@@ -8,7 +8,7 @@ Workstation 37 UEFI
   :local:
   :backlinks: none
 
-This guide can be used to install Debian onto a single disk with or without ZFS encryption.
+This guide can be used to install Fedora onto a single disk with or without ZFS encryption.
 
 It assumes the following:
 
