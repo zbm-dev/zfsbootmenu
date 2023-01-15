@@ -4,17 +4,25 @@ Recovery Shell
 Common Commands
 ---------------
 
-**zfsbootmenu**
+**zfsbootmenu** | **zbm**
 
   Launch the interactive boot environment menu.
 
-**zfs-chroot** *filesystem*
+**zfs-chroot** *dataset*
 
   Enter a chroot of the specified boot environment. The boot environment is mounted *read/write* if the zpool is imported *read/write*.
 
-**zkexec** *filesystem kernel initramfs*
+**zkexec** *dataset kernel initramfs*
 
   Directly *kexec* a kernel and initramfs from a boot environment, allowing any kernel and initramfs to be loaded into memory and immediately booted.
+
+**zreport**
+
+  List ZFS module, pool and dataset details for bug reports.
+
+**zbmcmdline**
+
+  Show the aggregated commandline from */etc/cmdline*, */etc/cmdline.d/* and */proc/cmdline*.
 
 **set_rw_pool** *pool*
 
@@ -24,7 +32,7 @@ Common Commands
 
   Export, then re-import the pool *read-only*.
 
-**mount_zfs** *zfs filesystem*
+**mount_zfs** *dataset*
 
   Mount the filesystem at a unique location and print the mount point.
 

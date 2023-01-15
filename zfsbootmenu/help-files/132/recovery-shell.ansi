@@ -2,19 +2,27 @@
 
 [1mCommon Commands[0m
 
-  [1mzfsbootmenu[0m
+  [1mzfsbootmenu[0m | [1mzbm[0m
 
     Launch the interactive boot environment menu.
 
-  [1mzfs-chroot[0m [33mfilesystem[0m
+  [1mzfs-chroot[0m [33mdataset[0m
 
     Enter a chroot of the specified boot environment. The boot environment is mounted [33mread/write[0m if the zpool is imported
     [33mread/write[0m.
 
-  [1mzkexec[0m [33mfilesystem kernel initramfs[0m
+  [1mzkexec[0m [33mdataset kernel initramfs[0m
 
     Directly [33mkexec[0m a kernel and initramfs from a boot environment, allowing any kernel and initramfs to be loaded into memory and
     immediately booted.
+
+  [1mzreport[0m
+
+    List ZFS module, pool and dataset details for bug reports.
+
+  [1mzbmcmdline[0m
+
+    Show the aggregated commandline from [33m/etc/cmdline[0m, [33m/etc/cmdline.d/[0m and [33m/proc/cmdline[0m.
 
   [1mset_rw_pool[0m [33mpool[0m
 
@@ -24,7 +32,7 @@
 
     Export, then re-import the pool [33mread-only[0m.
 
-  [1mmount_zfs[0m [33mzfs filesystem[0m
+  [1mmount_zfs[0m [33mdataset[0m
 
     Mount the filesystem at a unique location and print the mount point.
 
