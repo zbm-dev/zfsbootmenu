@@ -9,7 +9,7 @@
 project = 'ZFSBootMenu'
 author = 'Zach Dykstra'
 man_author = 'ZFSBootMenu Team <https://github.com/zbm-dev/zfsbootmenu>'
-copyright = f'2019, {author}'
+copyright = f'2019 {author}, 2020-2023 ZFSBootMenu Team'
 release = '2.1.0'
 
 # -- General configuration ---------------------------------------------------
