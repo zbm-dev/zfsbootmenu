@@ -7,9 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'ZFSBootMenu'
-author = 'Zach Dykstra'
-man_author = 'ZFSBootMenu Team <https://github.com/zbm-dev/zfsbootmenu>'
-copyright = f'2019 {author}, 2020-2023 ZFSBootMenu Team'
+author = 'ZFSBootMenu Team'
+man_author = f'{author} <https://github.com/zbm-dev/zfsbootmenu>'
+copyright = f'2019 Zach Dykstra, 2020-2023 {author}'
 release = '2.1.0'
 
 # -- General configuration ---------------------------------------------------
