@@ -1795,6 +1795,9 @@ emergency_shell() {
 	type '$( colorize red "exit")' to return to ZFSBootMenu
 
 	EOF
+
+  command -v efibootmgr >/dev/null 2>&1 && mount_efivarfs "rw" 
+
   # -i (interactive) mode will source $HOME/.bashrc
   /bin/bash -i
 
@@ -1805,6 +1808,9 @@ emergency_shell() {
       zdebug "unmounting: ${mp}"
     fi
   done < /proc/self/mounts
+
+  # always remount as read-only
+  mount_efivarfs 
 }
 
 # prints: zpool list and zfs property list
@@ -1875,4 +1881,69 @@ import_zbm_hooks() {
   umount "${hook_mount}"
 
   return 0
+}
+
+# arg1: directory path
+# prints: nothing
+# returns: 0 if the directory is a mountpoint, 1 if directory is not a mountpoint
+
+is_mountpoint() {
+  local mount_path dev path opts
+
+  if command -v mountpoint >/dev/null 2>&1; then
+    mountpoint -q "${1}"
+    return
+  fi
+
+  if ! mount_path="$(readlink -f "${1}")"; then
+    zerror "parent of ${1} does not exist"
+    return 1
+  fi
+
+  if [ ! -r /proc/self/mounts ]; then
+    zerror "unable to read mount database"
+    return 1
+  fi
+
+  # shellcheck disable=SC2034
+  while read -r dev path opts; do
+    path="$(readlink -f "${path}")" || continue
+    [ "${path}" = "${mount_path}" ] && return 0
+  done < /proc/self/mounts
+
+  return 1
+}
+
+# args: none
+# prints: nothing
+# returns: 0 if EFI is detected, 1 if not
+
+is_efi_system() {
+  [ -d /sys/firmware/efi ] && return 0
+  return 1
+}
+
+
+# arg1: 'ro' or 'rw' to mount or remount efivarfs in that desired mode
+# arg2: optional mountpoint
+# prints: nothing
+# returns: 0 on success, 1 on failure, 2 if unsupported
+
+mount_efivarfs() {
+  local efivar_state efivar_location
+
+  efivar_state="${1:-ro}"
+  efivar_location="${2:-/sys/firmware/efi/efivars}"
+
+  if ! is_efi_system ; then
+    zdebug "efivarfs unsupported"
+    return 2
+  elif is_mountpoint "${efivar_location}" >/dev/null 2>&1 ; then
+    zdebug "remounting '${efivar_location}' '${efivar_state}'"
+    # remounting is cheap enough that it's not worth detecting the current state
+    mount -t efivarfs efivarfs "${efivar_location}" -o "remount,${efivar_state}"
+  else
+    zdebug "mounting '${efivar_location}' '${efivar_state}'"
+    mount -t efivarfs efivarfs "${efivar_location}" -o "${efivar_state}"
+  fi
 }

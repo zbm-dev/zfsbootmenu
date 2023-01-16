@@ -26,6 +26,9 @@ unset src sources
 
 mkdir -p "${BASE:=/zfsbootmenu}"
 
+# explicitly mount efivarfs as read-only
+mount_efivarfs "ro"
+
 # Attempt to load spl normally
 if ! _modload="$( modprobe spl 2>&1 )" ; then
   zdebug "${_modload}"

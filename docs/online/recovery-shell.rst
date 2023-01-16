@@ -28,6 +28,10 @@ Common Commands
 
   Mount the filesystem at a unique location and print the mount point.
 
+**mount_efivarfs** *mode*
+
+  Mount or remount *efivarfs* as read-write or read-only.
+
 **help**
 
   View the online help system.
