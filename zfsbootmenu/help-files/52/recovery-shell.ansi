@@ -33,6 +33,11 @@
     Mount the filesystem at a unique location and
     print the mount point.
 
+  [1mmount_efivarfs[0m [33mmode[0m
+
+    Mount or remount [33mefivarfs[0m as read-write or
+    read-only.
+
   [1mhelp[0m
 
     View the online help system.

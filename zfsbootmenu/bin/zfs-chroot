@@ -8,6 +8,8 @@ cleanup() {
     umount "${_fs}" || zerror "unable to unmount ${_fs}"
   done
 
+  mount_efivarfs
+
   _mnt=()
   trap - HUP INT QUIT ABRT EXIT
 }
@@ -37,6 +39,19 @@ if ! mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
   exit 1
 fi
 
+pool="${selected%%/*}"
+
+# Snapshots and read-only pools always produce read-only mounts
+if is_snapshot "${selected}" || ! is_writable "${pool}"; then
+  writemode="$( colorize green "read-only")"
+  efivarmode="ro"
+else
+  writemode="$( colorize red "read/write")"
+  efivarmode="rw"
+fi
+
+notices+=( "* $( colorize orange "${selected}" ) is mounted ${writemode}" )
+
 # Track submounts so we know how to clean up on exit
 trap cleanup HUP INT QUIT ABRT EXIT
 _mnt=( "${mountpoint}" )
@@ -55,19 +70,19 @@ mount -t sysfs sys "${mountpoint}/sys" \
 mount -B /dev "${mountpoint}/dev" \
   && _mnt=( "${mountpoint}/dev" "${_mnt[@]}" )
 
+
+if mount_efivarfs "${efivarmode}" ; then
+  efivarfs="${mountpoint}/sys/firmware/efi/efivars"
+  mount_efivarfs "${efivarmode}" "${efivarfs}" \
+    && _mnt=( "${efivarfs}" "${_mnt[@]}" )
+
+  notices+=( "\n* $( colorize orange "efivarfs" ) is mounted ${writemode}" )
+fi
+
 # Not all /dev filesystems have /dev/pts
 [ -d "${mountpoint}/dev/pts" ] \
   && mount -t devpts pts "${mountpoint}/dev/pts" \
   && _mnt=( "${mountpoint}/dev/pts" "${_mnt[@]}" )
-
-pool="${selected%%/*}"
-
-# Snapshots and read-only pools always produce read-only mounts
-if is_snapshot "${selected}" || ! is_writable "${pool}"; then
-  writemode="$( colorize green "read-only")"
-else
-  writemode="$( colorize red "read/write")"
-fi
 
 _SHELL=
 if [ -x "${mountpoint}/bin/bash" ] \
@@ -88,7 +103,8 @@ if [ -z "${_SHELL}" ]; then
   exit 1
 fi
 
-echo -e "$( colorize orange "${selected}") is mounted ${writemode}, /tmp is shared and read/write\n"
+notices+=( "\n* $( colorize orange "/tmp" ) is mounted $( colorize red "read/write")" )
+echo -e "${notices[*]}\n"
 
 # regardless of shell, set PS1
 # shellcheck disable=SC2086

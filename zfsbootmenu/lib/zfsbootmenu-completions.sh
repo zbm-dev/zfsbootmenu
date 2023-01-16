@@ -101,3 +101,14 @@ _zkexec() {
 
 }
 complete -F _zkexec zkexec
+
+_mount_efivarfs() {
+  local STATE
+  COMPREPLY=()
+
+  [ "${#COMP_WORDS[@]}" != "2" ] && return
+
+  STATE=("ro" "rw")
+  COMPREPLY=( $( compgen -W "${STATE[*]}" -- "${COMP_WORDS[1]}" ) )
+}
+complete -F _mount_efivarfs mount_efivarfs
