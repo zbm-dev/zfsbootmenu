@@ -24,7 +24,14 @@ extensions = [
 ]
 
 templates_path = ['_templates']
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', '*env', '**/_include', 'README.md']
+exclude_patterns = [
+    '_build',
+    'Thumbs.db',
+    '.DS_Store',
+    '*env',
+    '**/_include',
+    'README.md',
+]
 
 today_fmt = '%Y-%m-%d'
 highlight_language = 'sh'
