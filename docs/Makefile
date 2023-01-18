@@ -3,6 +3,7 @@
 SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
 PYTHON        ?= python3
+WATCHEXEC     ?= watchexec
 VENV          ?= env
 PIP_FLAGS     ?= -q
 SERVEOPTS     ?=
@@ -11,14 +12,15 @@ INSTALLOPTS   ?= -Su
 SOURCEDIR     = .
 BUILDDIR      = _build
 
-VOID_PKGS     = python3-rst2ansi python3-sphinx-tabs python3-sphinx_rtd_theme python3-recommonmark python3-sphinx-copybutton
+VOID_PKGS     = python3-rst2ansi python3-sphinx-tabs python3-sphinx_rtd_theme python3-recommonmark python3-sphinx-copybutton watchexec
 
-.PHONY: help setup serve envclean requirements.txt Makefile setup-void gen-man
+.PHONY: help setup serve watch envclean requirements.txt Makefile setup-void gen-man
 
 help:
 	@echo "Use \033[94mmake setup\033[m to set up a virtual environment."
 	@echo "Use \033[94mmake setup-void\033[m to install dependencies on Void Linux."
 	@echo "Use \033[94mmake serve\033[m to run a simple HTTP server for viewing the html docs."
+	@echo "Use \033[94mmake watch\033[m to run 'make serve' but reload when changes are detected."
 	@echo "Use \033[94mmake envclean\033[m to remove the virtual environment."
 ifneq ("$(wildcard $(VENV))","")
 	@echo
@@ -36,6 +38,9 @@ setup: $(VENV)/req_done
 
 serve: html
 	@$(PYTHON) -m http.server -d "$(BUILDDIR)/html" $(SERVEOPTS)
+
+watch:
+	@$(WATCHEXEC) --restart --workdir "$(SOURCEDIR)" --project-origin "$(SOURCEDIR)/.." -e rst,md,css,ico,svg,png,py -- make clean serve
 
 envclean:
 	@rm -rf $(VENV)
