@@ -49,6 +49,7 @@
   guides/general
   guides/void-linux
   guides/debian
+  guides/ubuntu
   guides/fedora
   guides/opensuse
   guides/third-party

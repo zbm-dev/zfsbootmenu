@@ -3,4 +3,4 @@ Generate ``/etc/hostid``
 
 .. code-block::
 
-  zgenhostid 0x00bab10c
+  zgenhostid -f 0x00bab10c
