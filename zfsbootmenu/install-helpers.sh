@@ -152,8 +152,8 @@ create_zbm_traceconf() {
 
   # Enable performance profiling if configured and available
   # shellcheck disable=SC2154
-  case "${zfsbootmenu_trace_enable}" in
-    1|[Yy]|[Yy][Ee][Ss]|[Oo][Nn])
+  case "${zfsbootmenu_trace_enable,,}" in
+    yes|y|on|1)
       zbm_prof_lib="${zfsbootmenu_module_root}/profiling/profiling-lib.sh"
       ;;
     *)
