@@ -160,11 +160,11 @@ echo "Release ${release} ready to push and tag"
 while true; do
   echo "Continue? [Yes]/No"
   read -r response
-  case "${response}" in
-    [Yy][Ee][Ss]|[Yy]|"")
+  case "${response,,}" in
+    yes|y|"")
       break
       ;;
-    [Nn][Oo]|[Nn])
+    no|n)
       error "Release aborted by user request; clean up your local branch!"
       ;;
     *)

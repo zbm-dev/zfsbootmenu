@@ -16,11 +16,11 @@ if [ -f /etc/zfsbootmenu/config.yaml ]; then
       -e 's@ImageDir:.*@ImageDir: /zfsbootmenu/build@' \
       -e '/BootMountPoint:/d' -i /etc/zfsbootmenu/config.yaml
 
-  case "${INITCPIO}" in
-    [Yy][Ee][Ss]|[Yy]|[Oo][Nn]|1)
+  case "${INITCPIO,,}" in
+    yes|y|on|1)
       sed -e "s/InitCPIO:.*/InitCPIO: true/" -i /etc/zfsbootmenu/config.yaml
       ;;
-    [Nn][Oo]|[Nn]|[Oo][Ff][Ff]|0)
+    no|n|off|0)
       sed -e "s/InitCPIO:.*/InitCPIO: false/" -i /etc/zfsbootmenu/config.yaml
       ;;
   esac

@@ -14,8 +14,8 @@ sanitise_path() {
 boolean_enabled() {
   local val="${1:-}"
 
-  case "${val}" in
-    [Yy][Ee][Ss]|[Yy]|[Oo][Nn]|1) return 0 ;;
+  case "${val,,}" in
+    yes|y|on|1) return 0 ;;
     *) return 1 ;;
   esac
 }
