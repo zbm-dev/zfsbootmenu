@@ -11,4 +11,4 @@ EFI:
   Versions: false
   Enabled: true
 Kernel:
-  CommandLine: zfsbootmenu loglevel=4 nomodeset
+  CommandLine: loglevel=4 nomodeset

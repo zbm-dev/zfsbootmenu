@@ -234,6 +234,14 @@ fi
 if [ -n "${DISPLAY_TYPE}" ]; then
   # Use the indicated graphical display
   DISPLAY_ARGS=( "-display" "${DISPLAY_TYPE}" )
+
+  # Add release hooks, supported only under Dracut
+  if ((DRACUT)); then
+    cat <<-EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
+	zfsbootmenu_early_setup+=" $( realpath -e ../contrib )/10-console-init.sh "
+	zfsbootmenu_early_setup+=" $( realpath -e ../contrib )/20-console-autosize.sh "
+	EOF
+  fi
 else
   # Suppress graphical display (implies serial mode)
   DISPLAY_ARGS=( "-nographic" )
