@@ -855,7 +855,7 @@ find_root_prefix() {
             echo "root=zfs:"
             break
             ;;
-          arch)
+          arch|artix)
             echo "zfs="
             break
             ;;
