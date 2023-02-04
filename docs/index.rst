@@ -48,6 +48,7 @@
 
   guides/general
   guides/void-linux
+  guides/alpine
   guides/debian
   guides/ubuntu
   guides/fedora

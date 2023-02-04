@@ -41,6 +41,9 @@ Export, then re-import with a temporary mountpoint of ``/mnt``
       zpool export zroot
       zpool import -N -R /mnt zroot
       zfs load-key -L prompt zroot
+
+    .. code-block::
+
       zfs mount zroot/ROOT/${ID}
       zfs mount zroot/home
 
