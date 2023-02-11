@@ -246,6 +246,20 @@
       external hook script with the same name
       in the appropriate directory.
 
+    [1mzbm.kcl_override="boot environment KCL"[0m
+
+      Override the kernel command line passed in to
+      all boot environments. Double quotes
+      must be used to encapsulate the value of
+      this argument. Arguments that need
+      spaces should be enclosed with single
+      quotes. [33mroot[0m is always removed.
+      [33mspl_hostid[0m and [33mspl.spl_hostid[0m are
+      removed if the default-enabled option
+      [33mzbm.set_hostid[0m is set.
+
+      zbm.kcl_override="some alternate set='of arguments'"
+
   [1mDeprecated Command-Line Parameters[0m
 
     [1mtimeout[0m
