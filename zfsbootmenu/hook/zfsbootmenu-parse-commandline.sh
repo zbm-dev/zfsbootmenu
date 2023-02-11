@@ -204,6 +204,26 @@ if prefer=$( get_zbm_arg zbm.prefer ) ; then
   root="zfsbootmenu:POOL=${prefer}"
 fi
 
+if kcl_override=$( get_zbm_arg zbm.kcl_override ) ; then
+  # Remove the leading /  trailing quote to "unpack" this argument
+  kcl_override="${kcl_override#\"}"
+  kcl_override="${kcl_override%\"}"
+
+  # Up-convert single quotes to double, for kcl_tokenize
+  kcl_override="${kcl_override//\'/\"}"
+
+  # Always strip root=
+  rems+=( "root" )
+
+  # Only strip spl hostid arguments if zbm.set_hostid is enabled
+  if [ "${zbm_set_hostid}" -eq 1 ] ; then
+    rems+=( "spl_hostid" "spl.spl_hostid" )
+  fi
+
+  kcl_tokenize <<< "${kcl_override}" | kcl_suppress "${rems[@]}" > "${BASE}/cmdline"
+  zinfo "overriding all BE KCLs with: '$( kcl_assemble < "${BASE}/cmdline" )'"
+fi
+
 wait_for_zfs=0
 case "${root}" in
   zfsbootmenu:POOL=*)

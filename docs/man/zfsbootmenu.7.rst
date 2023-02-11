@@ -125,6 +125,14 @@ These options are set on the kernel command line when booting the initramfs or U
 
   Within the hook root, create subdirectories *early-setup.d*, *setup.d* or *teardown.d* to hold hooks for the respective stages of hook execution (early-setup, setup and teardown). ZFSBootMenu will mount the device named by the hook specification, look for the individual hook directories, and copy any files found therein into its own memory-backed root filesystem. The copy is not recursive and further subdirectorie are ignored. Note that, because ZFSBootMenu copies these scripts into its standard hook paths at each boot, it is possible to "mask" a script explicitly included in the ZFSBootMenu image by including an external hook script with the same name in the appropriate directory.
 
+**zbm.kcl_override="boot environment KCL"**
+
+  Override the kernel command line passed in to all boot environments. Double quotes must be used to encapsulate the value of this argument. Arguments that need spaces should be enclosed with single quotes. *root* is always removed. *spl_hostid* and *spl.spl_hostid* are removed if the default-enabled option *zbm.set_hostid* is set.
+
+  .. code-block::
+
+    zbm.kcl_override="some alternate set='of arguments'"
+
 Deprecated Command-Line Parameters
 ==================================
 
