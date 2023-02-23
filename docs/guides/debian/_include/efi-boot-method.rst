@@ -19,6 +19,7 @@ Configure EFI boot entries
 
     .. code-block::
 
+      ln -s /proc/self/mounts /etc/mtab
       apt install refind
 
     .. include:: ../_include/configure-refind.rst
