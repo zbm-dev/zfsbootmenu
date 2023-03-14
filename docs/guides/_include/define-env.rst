@@ -10,19 +10,27 @@ disk to the ZFS pool or create a multi-disk pool. A USB flash drive provides a c
 boot partition. Fortunately, this alternative configuration is easily realized by simply defining a few environment
 variables differently.
 
-Verify your target disk devices with ``lsblk``. ``/dev/sda`` and ``/dev/sdb`` used below are examples.
+Verify your target disk devices with ``lsblk``. ``/dev/sda``, ``/dev/sdb`` and ``/dev/nvme0n1`` used below are examples.
 
 First, define variables that refer to the disk and partition number that will hold **boot files**:
 
 .. tabs::
 
-   .. group-tab:: Single Disk
+   .. group-tab:: Single SATA Disk
 
       .. code-block::
 
         export BOOT_DISK="/dev/sda"
         export BOOT_PART="1"
         export BOOT_DEVICE="${BOOT_DISK}${BOOT_PART}"
+
+   .. group-tab:: Single NVMe Disk
+
+      .. code-block::
+
+        export BOOT_DISK="/dev/nvme0n1"
+        export BOOT_PART="1"
+        export BOOT_DEVICE="${BOOT_DISK}p${BOOT_PART}"
 
    .. group-tab:: Separate Boot Device
 
@@ -36,13 +44,21 @@ Next, define variables that refer to the disk and partition number that will hol
 
 .. tabs::
 
-   .. group-tab:: Single Disk
+   .. group-tab:: Single SATA Disk
 
       .. code-block::
 
         export POOL_DISK="/dev/sda"
         export POOL_PART="2"
         export POOL_DEVICE="${POOL_DISK}${POOL_PART}"
+
+   .. group-tab:: Single NVMe Disk
+
+      .. code-block::
+
+        export POOL_DISK="/dev/nvme0n1"
+        export POOL_PART="2"
+        export POOL_DEVICE="${POOL_DISK}p${POOL_PART}"
 
    .. group-tab:: Separate Boot Device
 
