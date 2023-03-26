@@ -19,8 +19,6 @@ Copy our files into the new install
       cp /etc/resolv.conf /mnt/etc
       cp /etc/apk/repositories /mnt/etc/apk
       cp /etc/network/interfaces /mnt/etc/network
-      mkdir /mnt/etc/zfs
-      cp /etc/zfs/zpool.cache /mnt/etc/zfs
 
   .. group-tab:: Encrypted
 
@@ -31,7 +29,6 @@ Copy our files into the new install
       cp /etc/apk/repositories /mnt/etc/apk
       cp /etc/network/interfaces /mnt/etc/network
       mkdir /mnt/etc/zfs
-      cp /etc/zfs/zpool.cache /mnt/etc/zfs
       cp /etc/zfs/zroot.key /mnt/etc/zfs
 
 Chroot into the new OS

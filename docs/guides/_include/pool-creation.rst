@@ -51,10 +51,3 @@ Create the zpool
       * ``keyformat=passphrase`` - By setting the format to ``passphrase``, we can now force a prompt for this in
         ``zfsbootmenu``. It's critical that your passphrase be something you can type on your keyboard, since you will
         need to type it in to unlock the pool on boot.
-
-Enable zpool.cache
-~~~~~~~~~~~~~~~~~~
-
-To more quickly discover and import pools on boot, we need to set a pool cachefile::
-
-   zpool set cachefile=/etc/zfs/zpool.cache zroot

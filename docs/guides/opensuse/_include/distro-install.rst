@@ -43,8 +43,6 @@ Copy files into the new install
       rm /mnt/etc/resolv.conf
       cp -L /etc/resolv.conf /mnt/etc
       cp /etc/hostid /mnt/etc
-      mkdir -p /mnt/etc/zfs
-      cp /etc/zfs/zpool.cache /mnt/etc/zfs
 
   .. group-tab:: Encrypted
 
@@ -54,7 +52,6 @@ Copy files into the new install
       cp /etc/hostid /mnt/etc
       cp -L /etc/resolv.conf /mnt/etc
       mkdir -p /mnt/etc/zfs
-      cp /etc/zfs/zpool.cache /mnt/etc/zfs
       cp /etc/zfs/zroot.key /mnt/etc/zfs
 
 Chroot into the new OS
