@@ -771,10 +771,10 @@ find_be_kernels() {
 
 # arg1: ZFS filesystem
 # prints: fs kernel initramfs
-# returns: nothing
+# returns: 0 if a kernel can be identified, 1 if not
 
 select_kernel() {
-  local zfsbe bepath specific_kernel kexec_args spec_kexec_args
+  local zfsbe kernel_list specific_kernel kexec_args spec_kexec_args
 
   zfsbe="${1}"
   if [ -z "${zfsbe}" ]; then
@@ -783,10 +783,15 @@ select_kernel() {
   fi
   zdebug "zfsbe set to ${zfsbe}"
 
-  bepath="$( be_location "${zfsbe}" )"
+  kernel_list="$( be_location "${zfsbe}" )/kernels"
+
+  if [ ! -f "${kernel_list}" ]; then
+    zerror "kernel list '${kernel_list}' missing"
+    return 1
+  fi
 
   # By default, select the last kernel entry
-  kexec_args="$( tail -1 "${bepath}/kernels" )"
+  kexec_args="$( tail -1 "${kernel_list}" )"
 
   # If a specific kernel is listed, prefer it when possible
   specific_kernel="$( zfs get -H -o value org.zfsbootmenu:kernel "${zfsbe}" )"
@@ -800,7 +805,7 @@ select_kernel() {
         kexec_args="${spec_kexec_args}"
         break
       fi
-    done <<<"$( tac "${bepath}/kernels" )"
+    done <<<"$( tac "${kernel_list}" )"
   fi
 
   zdebug "using kexec args: ${kexec_args}"

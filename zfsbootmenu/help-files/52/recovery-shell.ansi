@@ -20,6 +20,12 @@
     initramfs to be loaded into memory and
     immediately booted.
 
+  [1mzsnapshots[0m [33mdataset[0m
+
+    Access the snapshot browser for a dataset,
+    allowing cloning and rollback operations to
+    be initiated.
+
   [1mzreport[0m
 
     List ZFS module, pool and dataset details for
