@@ -71,6 +71,20 @@ _mount_zfs() {
 }
 complete -F _mount_zfs mount_zfs
 
+_zsnapshots() {
+  local ZFS
+  COMPREPLY=()
+
+  [ "${#COMP_WORDS[@]}" != "2" ] && return
+
+  for FS in $( zfs list -H -o name ) ; do
+    ZFS+=("${FS}")
+  done
+
+  COMPREPLY=( $( compgen -W "${ZFS[*]}" -- "${COMP_WORDS[1]}" ) )
+}
+complete -F _zsnapshots zsnapshots
+
 _zkexec() {
   local ARG index
   COMPREPLY=()

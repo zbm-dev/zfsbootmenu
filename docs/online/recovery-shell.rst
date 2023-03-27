@@ -16,6 +16,10 @@ Common Commands
 
   Directly *kexec* a kernel and initramfs from a boot environment, allowing any kernel and initramfs to be loaded into memory and immediately booted.
 
+**zsnapshots** *dataset*
+
+  Access the snapshot browser for a dataset, allowing cloning and rollback operations to be initiated.
+
 **zreport**
 
   List ZFS module, pool and dataset details for bug reports.

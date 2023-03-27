@@ -1,0 +1,53 @@
+#!/bin/bash
+
+sources=(
+  /lib/profiling-lib.sh
+  /etc/zfsbootmenu.conf
+  /lib/kmsg-log-lib.sh
+  /lib/zfsbootmenu-core.sh
+  /lib/zfsbootmenu-lib.sh
+  /lib/fzf-defaults.sh
+)
+
+for src in "${sources[@]}"; do
+  # shellcheck disable=SC1090
+  if ! source "${src}" >/dev/null 2>&1 ; then
+    echo -e "\033[0;31mWARNING: ${src} was not sourced; unable to proceed\033[0m"
+    exit
+  fi
+done
+
+# Replace the global_header function with a stub
+global_header() {
+  echo -n -e "\\033[1;33m[ Recover from snapshot ]"
+}
+
+if [ $# -ne 1 ] ; then
+ echo "Usage: $0 filesystem"
+ exit
+fi
+
+fs="${1}"
+
+COLUMNS="$( tput cols )"
+
+while true; do
+  if ! selection="$( draw_snapshots "${fs}" )" ; then
+    tput clear
+    exit
+  fi
+
+  # shellcheck disable=SC2162
+  IFS=, read subkey selected_snap <<< "${selection}"
+  selected_snap="${selected_snap%,*}"
+  
+  case "${subkey}" in
+    "left"|"right")
+      continue
+      ;;
+  esac
+
+  if is_snapshot "${selected_snap}" ; then
+    snapshot_dispatcher "${selected_snap}" "${subkey}"
+  fi
+done
