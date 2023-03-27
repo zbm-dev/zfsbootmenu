@@ -52,3 +52,6 @@ review the scripts themselves for more thorough descriptions of their use.
   new kernel. This teardown hook unbinds all detected XHCI controllers from the
   ZFSBootMenu kernel before jumping into the new kernel, allowing devices to be
   properly initialized.
+
+- `zbm-sign.pl` - A Perl script, suitable for use as a generate-zbm post-run
+  hook, that will sign ZFSBootMenu EFI images for use with Secure Boot.
