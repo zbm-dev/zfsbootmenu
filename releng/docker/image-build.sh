@@ -103,8 +103,9 @@ EOF
 # Install ZFSBootMenu dependencies and components necessary to build images
 buildah run "${container}" \
   sh -c 'xbps-query -Rp run_depends zfsbootmenu | xargs xbps-install -y'
-buildah run "${container}" xbps-install -y \
-  linux5.10 linux5.10-headers gummiboot-efistub curl yq-go bash kbd terminus-font \
+buildah run "${container}" xbps-install -y linux5.10 linux5.10-headers \
+  linux5.15 linux5.15-headers linux6.1 linux6.1-headers zstd \
+  gummiboot-efistub curl yq-go bash kbd terminus-font \
   dracut mkinitcpio dracut-network gptfdisk iproute2 iputils parted curl \
   dosfstools e2fsprogs efibootmgr cryptsetup openssh util-linux kpartx
 

@@ -269,11 +269,20 @@ if ( nonempty $runConf{kernel} ) {
 
   # Try to determine a kernel file when one was not provided
   if ( nonempty $runConf{kernel_version} ) {
-    $runConf{kernel} = versionedKernel $runConf{kernel_version};
+    my $exactVersion;
+    ( $runConf{kernel}, $exactVersion ) = versionedKernel $runConf{kernel_version};
+
+    # Make sure a kernel was found
     unless ( nonempty $runConf{kernel} ) {
       print "Unable to find file for kernel version $runConf{kernel_version}\n";
       exit 1;
     }
+
+    # If the kernel version was not exact, allow it to be determined later
+    unless ($exactVersion) {
+      undef $runConf{kernel_version};
+    }
+
   } else {
     $runConf{kernel} = latestKernel;
     unless ( nonempty $runConf{kernel} ) {
@@ -284,26 +293,24 @@ if ( nonempty $runConf{kernel} ) {
 }
 
 # Try to determine kernel_prefix or kernel_version if necessary
-unless ( nonempty $runConf{kernel_prefix} and nonempty $runConf{kernel_version} ) {
+unless ( nonempty $runConf{kernel_version} ) {
 
   # Kernel version comes from either file name or internal strings
+  $runConf{kernel_version} = kernelVersion( $runConf{kernel} );
   unless ( nonempty $runConf{kernel_version} ) {
-    $runConf{kernel_version} = kernelVersion( $runConf{kernel} );
-    unless ( nonempty $runConf{kernel_version} ) {
-      printf "Unable to determine kernel version from %s\n", $runConf{kernel};
-      exit 1;
-    }
+    printf "Unable to determine kernel version from %s\n", $runConf{kernel};
+    exit 1;
   }
+}
 
+unless ( nonempty $runConf{kernel_prefix} ) {
+
+  # Prefix is basename of file, less any "-<version>" suffix
+  $runConf{kernel_prefix} = basename( $runConf{kernel} );
+  $runConf{kernel_prefix} =~ s/-\Q$runConf{kernel_version}\E$//;
   unless ( nonempty $runConf{kernel_prefix} ) {
-
-    # Prefix is basename of file, less any "-<version>" suffix
-    $runConf{kernel_prefix} = basename( $runConf{kernel} );
-    $runConf{kernel_prefix} =~ s/-\Q$runConf{kernel_version}\E$//;
-    unless ( nonempty $runConf{kernel_prefix} ) {
-      printf "Unable to determine kernel prefix from %s\n", $runConf{kernel};
-      exit 1;
-    }
+    printf "Unable to determine kernel prefix from %s\n", $runConf{kernel};
+    exit 1;
   }
 }
 
@@ -587,10 +594,18 @@ sub versionedKernel {
   my ( $kver, ) = @_;
 
   foreach my $prefix (qw(vmlinuz linux vmlinux kernel)) {
-    my $kernel = join( '/', ( $runConf{bootdir}, join( '-', ( $prefix, $kver ) ) ) );
-    if ( -f $kernel ) {
-      return $kernel;
+    my $pattern = join( '/', ( $runConf{bootdir}, join( '-', ( $prefix, $kver ) ) ) );
+
+    # Try an exact match first
+    if ( -f $pattern ) {
+      return $pattern, true;
     }
+
+    # Otherwise, try to glob
+    my @kernels = sort versioncmp glob($pattern);
+
+    next unless @kernels;
+    return pop @kernels, false;
   }
 
   return;

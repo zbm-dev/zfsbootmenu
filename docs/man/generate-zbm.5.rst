@@ -78,7 +78,7 @@ Kernel
 
 **Version**
 
-  A specific kernel version to use. The value *%{current}* will be replaced with the output of ``uname -r``. If not set, **generate-zbm** will try to parse the path of the selected kernel filename for a version.
+  A specific kernel version to use, or a glob used to match possible kernel versions. The value *%{current}* will be replaced with the output of ``uname -r``. For globs, the highest version matching the glob will be selected. If not set, **generate-zbm** will try to parse the path of the selected kernel filename for a version.
 
 **Prefix**
 
