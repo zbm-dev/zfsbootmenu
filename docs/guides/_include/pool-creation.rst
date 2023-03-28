@@ -25,6 +25,8 @@ Create the zpool
       echo 'SomeKeyphrase' > /etc/zfs/zroot.key
       chmod 000 /etc/zfs/zroot.key
 
+    .. code-block:: bash
+
       zpool create -f -o ashift=12 \
        -O compression=lz4 \
        -O acltype=posixacl \
