@@ -28,7 +28,7 @@ Configure mkinitfs to load ZFS support
 
       echo "/etc/hostid" >> /etc/mkinitfs/features.d/zfshost.files
       echo "/etc/zfs/zroot.key" >> /etc/mkinitfs/features.d/zfshost.files
-      echo 'features="ata base keymap kms mmc scsi usb virtio zfs zfshost"' > /etc/mkinitfs/mkinitfs.conf
+      echo 'features="ata base keymap kms mmc scsi usb virtio nvme zfs zfshost"' > /etc/mkinitfs/mkinitfs.conf
 
 Regenerate initramfs
 ~~~~~~~~~~~~~~~~~~~~
