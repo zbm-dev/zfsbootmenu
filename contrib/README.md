@@ -14,10 +14,14 @@ ZFSBootMenu images.
 Brief descriptions of contributed scripts appear below for convenience. Please
 review the scripts themselves for more thorough descriptions of their use.
 
-- `console-init.sh` - In some configurations, the dracut event loop that
+- `10-console-init.sh` - In some configurations, the dracut event loop that
   configures the ZFSBootMenu environment will fail to initialize the console
   with desired font and keymap settings. This script can be added as an "early
   setup" hook to force console initialization.
+
+- `20-console-autosize.sh` - This early-setup hook will run through a set of
+  fonts, selecting the largest font that guarantees a console with at least 100
+  columns. This should ensure a usable default font even on high-DPI displays.
 
 - `esp-sync.sh` - This script can run as a "post-image" hook to `generate-zbm`
   to synchronize the contents of one EFI system partition with others, providing
