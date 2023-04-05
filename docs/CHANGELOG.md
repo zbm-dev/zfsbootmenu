@@ -1,5 +1,48 @@
 # Changelog
 
+## ZFSBootMenu v2.2.0 (2023-04-04)
+
+Perhaps the most significant change in ZFSBootMenu v2.2.0 is an overhaul of the project documentation. We are thrilled to welcome new member @classabbyamp to the project, who oversaw this substantial effort. Disparate documentation previously stored in Markdown files, the GitHub Wiki, POD files, and another git repository have now been combined into a single tree that is published on Read The Docs. The documentation is now maintained as an integral part of this repository and is published at https://docs.zfsbootmenu.org/. This includes:
+
+* Man pages
+* Run-time help pages
+* Distribution installation guides
+* Configuration and how-to documentation
+
+Installation guides for Void Linux, Alpine, Debian Bullseye, Ubuntu 22.04 and openSUSE Leap are available, with similiar steps shared between the guides for easier maintenance and revision.
+
+### New features
+
+Kernel command-line handling for ZFSBootMenu and boot environments has received a revamp with the `zbm-kcl` tool. This comprehensive tool can modify the kernel command-line for both boot environments and for the embedded command-line in binary EFI releases. Refer to [zbm-kcl.8](https://docs.zfsbootmenu.org/en/v2.2.x/man/zbm-kcl.8.html) for additional usage details.
+
+UEFI variable handling in ZFSBootMenu has now been normalized to be consistent between Dracut and mkinitcpio. When chrooting into a boot environment,  `efivarfs` is now mounted in the chroot. The filesystem is mounted read-only if the pool is read-only, and read-write if the pool is read-write. Additionally, if `efibootmgr` is present in the ZFSBootMenu initramfs, `efivarfs` is mounted read-write in the recovery shell.
+
+To help users with high-DPI displays, ZFSBootMenu binary releases will now attempt to set the largest possible font size (up to 32 pixels) that ensures at least 100 text columns on the screen. Users who build their own custom ZFSBootMenu images can add [contrib/20-console-autosize.sh](https://github.com/zbm-dev/zfsbootmenu/blob/v2.2.x/contrib/20-console-autosize.sh) as an early-setup hook to achieve the same effect. Consult [zfsbootmenu.7](https://docs.zfsbootmenu.org/en/v2.2.x/man/zfsbootmenu.7.html) for instructions on configuring custom hooks.
+
+The `generate-zbm` configuration key **Kernel.Version** now supports globs, such as `6.1.*` or `5.*`, to select the latest among a series of matching kernel versions for building a ZFSBootMenu image. The containerized build process now includes Linux versions 6.1, 5.15 and 5.10 and pre-compiled ZFS modules for each to simplify builds of custom images with recent LTS kernels.
+
+### Fixes
+
+A mutex to prevent infinite recursion when attempting to load keys for an encryption root is now restricted to the process that created it. This fixes an edge case where the interface launched from SSH would not be able to unlock an encryption root.
+
+Artix is now a recognized distribution: ZFSBootMenu will specify the proper root argument for Artix boot environments.
+
+### Significant commits in this release
+* f688389 - zfsbootmenu: warn when canmount=on is set for root dataset (Zach Dykstra)
+* aca5ae1 - zfsbootmenu/install-helpers.sh: hard depend on `chroot` (Andrew J. Hesford)
+* dacce21 - contrib/zbm-sign.pl: add hook to sign ZBM EFI images for Secure Boot (Liam)
+* da94578 - zsnapshots: recovery environment helper tool (Zach Dykstra)
+* ddcee9d - generate-zbm: allow globs for kernel-version specs (Andrew J. Hesford)
+* 989449c - zfsbootmenu: add zbm.kcl_override argument handler (Zach Dykstra)
+* 534adcf - omit-drivers: blacklist intel screen orientation sensor (Zach Dykstra)
+* 7f38b12 - zfsbootmenu-core: recognize Artix in root-prefix detection (Andrew J. Hesford)
+* 84da18e - contrib/: expand font setting capabilities (Zach Dykstra)
+* f78f723 - zfsbootmenu: manage efivarfs when needed (Zach Dykstra)
+* c28a44f - zbm-kcl, zbm-efi-kcl: unify, allow streaming EFI modifications (Andrew J. Hesford)
+* d73fad8 - UEFI: improve stub handling (Zach Dykstra)
+* 5b61268 - releng: add kpartx and wipefs to recovery images (Zach Dykstra)
+* c578ef5 - Key management: properly normalize Booleans, make cache mutex per-PID (Andrew J. Hesford)
+
 ## ZFSBootMenu v2.1.0 (2022-12-19)
 
 ### Deprecated features
