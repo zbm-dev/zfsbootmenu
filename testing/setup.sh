@@ -57,8 +57,8 @@ ENVIRONMENT VARIABLES
   Specify a space-separated list of specific repositories to configure for apt
   (e.g., "main universe multiverse")
 
-  LIBC (Void)
-  Set LIBC=musl to build a test image with musl; otherwise, glib will be used
+  KERNEL (Void)
+  Set KERNEL to the Void kernel series to use (e.g., "linux5.10", "linux6.1")
 
   POOL_COMPAT (All)
   Set POOL_COMPAT to one of the ZFS pool compatiblity targets listed below.

@@ -34,7 +34,9 @@ for keyfile in /etc/zfs/*.key; do
   echo "install_items+=\" ${keyfile} \"" >> /etc/dracut.conf.d/zol.conf
 done
 
-xbps-install -y linux5.10 linux5.10-headers dracut zfs
+: "${KERNEL:=linux6.1}"
+
+xbps-install -y "${KERNEL}" "${KERNEL}-headers" dracut zfs
 
 # Set kernel commandline
 case "$(uname -m)" in
