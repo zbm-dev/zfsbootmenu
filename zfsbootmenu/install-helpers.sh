@@ -26,6 +26,7 @@ zfsbootmenu_essential_binaries=(
   "ps"
   "env"
   "chmod"
+  "chroot"
   "od"
   "stty"
   "insmod"
