@@ -546,7 +546,7 @@ get_sort_key() {
 # returns: 0 iff at least one valid BE was found
 
 populate_be_list() {
-  local be_list fs mnt active candidates ret sort_key
+  local be_list fs canmount mnt active candidates ret sort_key
 
   be_list="${1}"
   if [ -z "${be_list}" ]; then
@@ -561,7 +561,7 @@ populate_be_list() {
   : > "${be_list}"
 
   # Find valid BEs
-  while IFS=$'\t' read -r fs mnt active; do
+  while IFS=$'\t' read -r fs canmount mnt active; do
     if [ "${mnt}" = "/" ]; then
       # When mountpoint=/, BE is a candidate unless org.zfsbootmenu:active=off
       [ "${active}" = "off" ] && continue
@@ -577,8 +577,13 @@ populate_be_list() {
       continue
     fi
 
+    # root datasets should never be automatically mounted by the boot environment
+    if [ "${canmount}" = "on" ]; then
+      zwarn "canmount=on set for '${fs}', should be canmount=noauto"
+    fi
+
     candidates+=( "${fs}" )
-  done <<< "$(zfs list -H -o name,mountpoint,org.zfsbootmenu:active -S "${sort_key}")"
+  done <<< "$(zfs list -H -o name,canmount,mountpoint,org.zfsbootmenu:active -S "${sort_key}")"
 
   # put bootfs on the end, so it is shown first with --tac
   [ -n "${BOOTFS}" ] && candidates+=( "${BOOTFS}" )
