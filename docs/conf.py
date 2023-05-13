@@ -70,3 +70,6 @@ man_pages = [
     ('man/zbm-kcl.8', 'zbm-kcl', 'manipulate kernel command lines for boot environments and EFI executables', man_author, '8'),
     ('man/zfsbootmenu.7', 'zfsbootmenu', 'System Integration', man_author, '7'),
 ]
+
+if tags.has('manpages'):
+    exclude_patterns += ['guides/**']
