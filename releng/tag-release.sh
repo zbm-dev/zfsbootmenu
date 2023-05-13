@@ -56,7 +56,7 @@ fi
 echo "Will tag release version ${release} as ${tag}"
 
 # update version in documentation
-sed -i "s/^release = '.*'\$/release = '${release}'" docs/conf.py
+sed -i "s/^release = '.*'\$/release = '${release}'/" docs/conf.py
 
 # Synchronize man pages with POD documentation
 if [ ! -x releng/rst2help.sh ]; then
