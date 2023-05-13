@@ -308,13 +308,13 @@ Please refer to [Command-Line Parameters](https://github.com/zbm-dev/zfsbootmenu
 * Support `console=` kernel parameters with a `,speed` suffix. This is normally used when setting a serial port as the machine console.
 * Add a shortcut key to remove the pinned kernel value for a boot environment.
 
-#### Allow references to parent properties in org.zfsbootmenu:commandline
+### Allow references to parent properties in org.zfsbootmenu:commandline
 
 Any reference to `%{parent}` in `org.zfsbootmenu:commandline` will be replaced with the value of the same property on the parent filesystem (with parent references above recursively expanded), allowing easy specification of common options at a mutual parent of two BEs and overrides or additions of individual options per-BE. The value of `%{parent}` is always an empty string on a root filesystem.
 
 This is not intended to be sophisticated, and `%{parent}` appearing within other words will be replaced regardless. The assumption is that `%{parent}` is unique enough and will not conflict with real KCL options, so dumb global replacement is sufficient.
 
-#### zpool import process improvements
+### zpool import process improvements
 
 The existing `zbm.prefer` option has been extended to support defining a mandatory pool. Append `!` to the pool name to indicate that the specific pool MUST be imported before any other pool imports will be attempted.
 
@@ -362,7 +362,7 @@ This release is dedicated to the late Jürgen Buchmüller (@pullmoll), a major c
 
 ### Major New features
 
-#### `hostid` configuration assistance
+### `hostid` configuration assistance
 A pair of new features have been developed to combat the delicate dance sometimes required to synchronize `hostid` in the boot environment (BE), the initramfs for the BE, and the initramfs for ZFSBootMenu. Both of these are controlled by ZFSBootMenu kernel command line options.
 
 Set `zbm.import_policy=hostid` to allow run-time reconfiguration of the SPL hostid. If a pool is preferred via `zbm.prefer` and the pool can not be imported with a preconfigured hostid, the system will attempt to adopt the hostid of the system that last imported the pool. If a preferred pool is not set and no pools can be imported using a preconfigured hostid, the system will adopt the hostid of the first otherwise-importable pool. After adopting a detected hostid, ZFSBootMenu will subsequently attempt to import as many pools as possible.
@@ -371,22 +371,22 @@ Setting `zbm.set_hostid` will cause ZFSBootMenu to set the `spl.spl_hostid` comm
 
 ### Minor new features
 
-#### Boot environment / snapshot sorting
+### Boot environment / snapshot sorting
 The main boot environment screen and snapshot list screen can now be sorted by multiple criteria. By default, these listings are sorted by name. One of `zbm.sort_key=name`, `zbm.sort_key=creation`, or `zbm.sort_key=used` can be set on the command line to change the default used. `MOD+O` can be pressed at run time to change the sort order to the next in the list.
 
-#### Helper functions in the recovery shell
+### Helper functions in the recovery shell
 
 The internal `zfsbootmenu-lib.sh` library is now sourced by default in the recovery shell. This makes a number of helper functions available for general use.
 
-#### Combined command line printer
+### Combined command line printer
 
 Since `Dracut` can find command line options from multiple places, it can be difficult to determine which option was used to control bootloader behavior. The command `zbmcmdline` will show the command line as seen by Dracut.
 
-#### Shorcut key layout improvements
+### Shorcut key layout improvements
 
 Instead of flowing the helper key text to the width of the screen, shortcut key text is now arranged in one or more columns. Low resolution screens or terminals with small dimensions will use a single column to show the text. As the terminal dimensions increase, text will be laid out in up to a maximum of three left-aligned columns.
 
-#### Logging system
+### Logging system
 
 ZFSBootMenu has an internal logging system backed by `/dev/kmsg` and `dmesg`. Logging is now enabled throughout the entire system, tracking both `debug` level messages as well as `warnings` and `errors`. When a warning or error condition has occurred, a yellow `[!]` or red `[!]` notification will appear in the upper left of the screen. Pressing `MOD+L` will access this logging system, allowing you to easily see these messages.
 
@@ -691,7 +691,7 @@ The new features and fixes in this release are fully described in the final v1.3
 
 This release features substantial code and idea contributions from @ahesford . Thank you for all of your help writing features, debugging code and improving documentation.
 
-#### Snapshot overhaul
+### Snapshot overhaul
 
 Previously, snapshots could be cloned to a boot environment with a pre-generated, and often long, BE name. Substantial quality of life improvements were made here, including:
 
@@ -700,23 +700,23 @@ Previously, snapshots could be cloned to a boot environment with a pre-generated
 * When cloning a snapshot, local ZFS properties of the parent filesystem are now transferred to the clone.
 * For all snapshot operations, you can now directly enter a boot environment name. This name is checked for character validity, and to confirm that it is not already taken.
 
-#### Always up-to-date menu system
+### Always up-to-date menu system
 
 Any time you transition from one menu to another (Snapshots, Kernels, recovery shell), the list of boot environments and kernels is completely regenerated. This helps remove potential disconnects between the state of your pool and boot environments and the ZFSBootMenu interface.
 
-#### UEFI bundle improvements
+### UEFI bundle improvements
 
 If you create unversioned UEFI bundles for static boot entries, `generate-zbm` will now create a `-backup` file for you on upgrade. This will allow you a recovery option if the active UEFI bundle has a problem.
 
-#### Protect against missing kernel modules
+### Protect against missing kernel modules
 
 When creating a new initramfs, the `zfsbootmenu` Dracut module needs to install a number of ZFS-related kernel modules. Previously, the modules were installed through a Dracut helper function that did not verify if the copy succeeded. This process has been reworked to ensure that all of the required kernel modules are installed in the initramfs, or the creation of the image is marked as a failure. If it is marked as a failure, existing/current images are not deleted or otherwise replaced.
 
-#### Set default kernel
+### Set default kernel
 
 Much like setting a default boot environment, you can now set a default kernel for a specific boot environment. You no longer need to manually set a kernel version in your booted OS, you can simply do it from the menu!
 
-#### Shellcheck
+### Shellcheck
 
 On commit, the shell scripts that power the boot menu and Dracut setup are run through a validator to check for common errors and pitfalls. This can help reduce some classes of bugs.
 
@@ -725,12 +725,12 @@ On commit, the shell scripts that power the boot menu and Dracut setup are run t
 
 This release includes a number of small fixes and improvements.
 
-## Fixes
+### Fixes
 * Correctly handle exiting the recovery shell, fixing an infinite loop. A reboot is no longer required to recover from the recovery shell. Thanks, @ahesford.
 * Check that the EFI stub file is present on disk at the specified location. If the file is missing and an EFI bundle is requested, exit with an error.
 * Minor documentation fixes.
 
-## Features
+### Features
 * Handle console fonts defined on the kernel command line. This is useful for systems with a 4k display. You should now be able to read the screen without a magnifying glass. Thanks to @ahesford for the significant time spent on tracking this down.
 * Instead of calling `objcopy` directly, `dracut` is now used to generate a bundled EFI file. This means that the bundled EFI file can now be signed by Secure Boot keys! Thanks to @ericonr for this feature - and learning a bit of Perl to do it!
 
@@ -741,7 +741,7 @@ No configuration file changes are needed to use this release. Enjoy!
 
 We're jumping straight up to v1.0!
 
-## Small changes
+### Small changes
 * Set the kernel log level to 0 when in the menu system, then restore it to the original value on boot
 * Reverse sort the kernel list, so the most recent is always first
 * Add an initial chroot helper script, `zfs-chroot` for the recovery shell. It can be invoked as `zfs-chroot pool/ROOT/BE`.
@@ -749,7 +749,7 @@ We're jumping straight up to v1.0!
 * Allow the EFI stub file to be defined in config.ini
 * Optionally read the kernel command line from `/etc/default/zfsbootmenu`
 
-## Large changes
+### Large changes
 * Clean up or whitelist all issues in `zfsbootmenu-lib.sh`, `zfsbootmenu-preview.sh` and `zfsbootmenu.sh` noted by shellcheck.
 * Support entering a custom kernel command line via `alt-c` on the main menu. The input line is pre-filled with the command line that would have been used on the next boot, for that environment. This command line is NOT persisted between reboots, it's simply here to let you recover an unbootable system.
 * Add support for reading the kernel commandline from the ZFS property `org.zfsbootmenu:commandline`.  This property is now considered the default/primary source of truth for the kernel command line - it takes precedence over `/etc/default/zfsbootmenu` and `/etc/default/grub`.
