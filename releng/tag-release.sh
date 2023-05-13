@@ -82,21 +82,21 @@ trap "rm -f ${relnotes}" 0
 awk < docs/CHANGELOG.md > "${relnotes}" '
   BEGIN{ hdr=0; }
 
-  /^# /{
+  /^## /{
     if (hdr) exit 0;
     hdr=1;
-    sub(/^# /, "", $0);
+    sub(/^## /, "", $0);
     sub(/ \(.*\)$/, "", $0);
   }
 
   {
-    if (hdr < 1) exit 1;
+    if (hdr < 1) next;
     print;
   }'
 
 # Make sure release notes refer to this version
 if ! (head -n 1 "${relnotes}" | grep -q "ZFSBootMenu ${tag}\b"); then
-  error "ERROR: Add '# ZFSBootMenu ${tag}' header to docs/CHANGELOG.md"
+  error "ERROR: Add '## ZFSBootMenu ${tag}' header to docs/CHANGELOG.md"
 fi
 
 # Update version in generate-zbm
