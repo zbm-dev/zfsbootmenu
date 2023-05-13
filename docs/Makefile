@@ -1,8 +1,6 @@
 .DEFAULT_GOAL := help
 
 SPHINXOPTS    ?=
-SPHINXBUILD   ?= sphinx-build
-PYTHON        ?= python3
 WATCHEXEC     ?= watchexec
 VENV          ?= env
 PIP_FLAGS     ?= -q
@@ -13,6 +11,15 @@ SOURCEDIR     = .
 BUILDDIR      = _build
 
 VOID_PKGS     = python3-rst2ansi python3-sphinx-tabs python3-sphinx_rtd_theme python3-recommonmark python3-sphinx-copybutton watchexec
+
+# Use the virtual environment if it exists
+ifneq ("$(wildcard $(VENV)/bin/sphinx-build)","")
+	SPHINXBUILD ?= $(VENV)/bin/sphinx-build
+	PYTHON ?= $(VENV)/bin/python3
+else
+	SPHINXBUILD ?= sphinx-build
+	PYTHON ?= python3
+endif
 
 .PHONY: help setup serve watch envclean requirements.txt Makefile setup-void gen-man
 
@@ -52,14 +59,14 @@ $(VENV)/success:
 ifeq ("$(wildcard $(VENV))","")
 	@echo "Creating the virtual environment at $(VENV)"
 	@$(PYTHON) -m venv $(VENV)
-	@touch $(VENV)/success
 endif
+	# This must always be touched, or the wildcard rule will trigger
+	@touch $(VENV)/success
 
 $(VENV)/req_done: requirements.txt $(VENV)/success
 	@echo "Installing dependencies from requirements.txt"
-	@. $(VENV)/bin/activate && \
-		pip install $(PIP_FLAGS) -U pip wheel && \
-		pip install $(PIP_FLAGS) -U -r requirements.txt
+	@$(VENV)/bin/pip install $(PIP_FLAGS) -U pip wheel && \
+		$(VENV)/bin/pip install $(PIP_FLAGS) -U -r requirements.txt
 	@touch $(VENV)/req_done
 
 %:: Makefile
