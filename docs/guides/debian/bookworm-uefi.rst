@@ -1,4 +1,4 @@
-Bullseye UEFI
+Bookworm (12) UEFI
 =============
 
 .. |distribution| replace:: debian
@@ -16,12 +16,12 @@ It assumes the following:
 * Your system is x86_64
 * You're mildly comfortable with ZFS, EFI and discovering system facts on your own (``lsblk``, ``dmesg``, ``gdisk``, ...)
 
-Download the latest `Debian Bullseye (11) Live image <https://www.debian.org/CD/live/>`_, write it to a USB drive and
+Download the latest `Debian Bookworm (12) Live image <https://www.debian.org/CD/live/>`_, write it to a USB drive and
 boot your system in EFI mode.
 
 .. include:: ../_include/efi-boot-check.rst
 
-.. include:: _include/live-environment.rst
+.. include:: _include/bookworm/live-environment.rst
 
 .. include:: ../_include/define-env.rst
 
@@ -31,7 +31,7 @@ boot your system in EFI mode.
 
 .. include:: ../_include/create-filesystems.rst
 
-.. include:: _include/distro-install.rst
+.. include:: _include/bookworm/distro-install.rst
 
 .. include:: _include/zfs-config.rst
 
