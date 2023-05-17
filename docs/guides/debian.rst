@@ -4,4 +4,5 @@ Debian
 .. toctree::
   :titlesonly:
 
-  debian/uefi
+  debian/bullseye-uefi
+  debian/bookworm-uefi
