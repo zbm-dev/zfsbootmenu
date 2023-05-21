@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GENERATE-ZBM" "5" "2023-02-11" "" "ZFSBootMenu"
+.TH "GENERATE-ZBM" "5" "2023-05-21" "" "ZFSBootMenu"
 .SH NAME
 generate-zbm \- configuration file for generate-zbm
 .SH SYNOPSIS
@@ -136,7 +136,7 @@ The full path to a specific kernel to use when making the boot images. If not sp
 \fBVersion\fP
 .INDENT 0.0
 .INDENT 3.5
-A specific kernel version to use. The value \fI%{current}\fP will be replaced with the output of \fBuname \-r\fP\&. If not set, \fBgenerate\-zbm\fP will try to parse the path of the selected kernel filename for a version.
+A specific kernel version to use, or a glob used to match possible kernel versions. The value \fI%{current}\fP will be replaced with the output of \fBuname \-r\fP\&. For globs, the highest version matching the glob will be selected. If not set, \fBgenerate\-zbm\fP will try to parse the path of the selected kernel filename for a version.
 .UNINDENT
 .UNINDENT
 .sp

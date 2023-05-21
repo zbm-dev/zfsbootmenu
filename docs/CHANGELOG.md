@@ -1,6 +1,6 @@
 # Changelog
 
-## ZFSBootMenu v2.2.0 (2023-04-04)
+## ZFSBootMenu v2.2.0 (2023-05-21)
 
 Perhaps the most significant change in ZFSBootMenu v2.2.0 is an overhaul of the project documentation. We are thrilled to welcome new member @classabbyamp to the project, who oversaw this substantial effort. Disparate documentation previously stored in Markdown files, the GitHub Wiki, POD files, and another git repository have now been combined into a single tree that is published on Read The Docs. The documentation is now maintained as an integral part of this repository and is published at https://docs.zfsbootmenu.org/. This includes:
 
