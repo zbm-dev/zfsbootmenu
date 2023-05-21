@@ -71,6 +71,10 @@ if ! out="$( cd docs ; make gen-man SPHINXOPTS='-t manpages' )" ; then
   error "ERROR: ${out}"
 fi
 
+if ! out="$( rm -r docs/man/dist/_static )"; then
+  error "ERROR: ${out}"
+fi
+
 # Generate a short history for CHANGELOG.md
 # git log --format="* %h - %s (%an)" v1.4.1..HEAD
 
