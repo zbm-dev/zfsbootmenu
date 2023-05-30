@@ -37,6 +37,7 @@ zfsbootmenu_essential_binaries=(
   "less"
   "fzf"
   "setsid"
+  "cat"
 )
 
 # shellcheck disable=SC2034
