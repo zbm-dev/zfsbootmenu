@@ -80,7 +80,7 @@ while getopts "lL:s:" opt; do
       exit
       ;;
     s)
-      less -f -n -r "${OPTARG}"
+      cat "${OPTARG}"
       exit
       ;;
     ?)
