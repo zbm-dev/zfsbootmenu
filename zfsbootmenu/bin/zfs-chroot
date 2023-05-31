@@ -33,13 +33,23 @@ selected="${1}"
 zdebug "started with ${selected}"
 
 [ -n "${selected}" ] || exit 0
+pool="${selected%%/*}"
+
+if ! is_snapshot "${selected}" && ! is_writable "${pool}" ; then
+  if ! timed_prompt -d 10 \
+    -e "Enter r/w chroot" \
+    -r "Enter r/o chroot" \
+    -p "Entering chroot in $( colorize yellow "%0.2d" ) seconds" ; then
+      set_rw_pool "${pool}"
+  fi
+fi
+
+clear
 
 if ! mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
   zerror "failed to mount ${selected}"
   exit 1
 fi
-
-pool="${selected%%/*}"
 
 # Snapshots and read-only pools always produce read-only mounts
 if is_snapshot "${selected}" || ! is_writable "${pool}"; then
