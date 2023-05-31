@@ -34,10 +34,11 @@ Usage: $0 [options]
   -G  Enable debug output for generate-zbm
   -M  Set the amount of memory for the virtual machine
   -C  Set the number of CPUs for the virtual machine
+  -B  Use Busybox for mkinitcpio miser mode
 EOF
 }
 
-CMDOPTS="D:A:a:d:fsv:hineM:C:FEGcr"
+CMDOPTS="D:A:a:d:fsv:hineM:C:FEGcrB"
 
 # First-pass option parsing just looks for test directory
 while getopts "${CMDOPTS}" opt; do
@@ -106,6 +107,7 @@ RESET=1
 EFI=0
 SERDEV_COUNT=0
 GENZBM_FLAGS=()
+MISER=0
 
 # Defer a choice on initramfs generator until options are parsed
 DRACUT=0
@@ -186,6 +188,9 @@ while getopts "${CMDOPTS}" opt; do
     r)
       DRACUT=1
       INITCPIO=0
+      ;;
+    B)
+      MISER=1
       ;;
     *)
       ;;
@@ -364,6 +369,13 @@ fi
 if ((DRACUT)); then
   cat <<-EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
 	omit_dracutmodules+=" nvdimm fs-lib rootfs-block dm dmraid lunmask "
+	EOF
+fi
+
+# Enable initcpio miser mode, using Busybox where possible
+if ((INITCPIO)) && ((MISER)); then
+  cat <<-EOF >> "${TESTDIR}/mkinitcpio.d/testing.conf"
+  zfsbootmenu_miser=yes
 	EOF
 fi
 
