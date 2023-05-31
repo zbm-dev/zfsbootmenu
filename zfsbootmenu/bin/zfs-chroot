@@ -44,6 +44,7 @@ if ! is_snapshot "${selected}" && ! is_writable "${pool}" ; then
   fi
 fi
 
+reset
 clear
 
 if ! mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
@@ -60,7 +61,7 @@ else
   efivarmode="rw"
 fi
 
-notices+=( "* $( colorize orange "${selected}" ) is mounted ${writemode}" )
+notices+=( "$(colorize white "*" ) $( colorize orange "${selected}" ) is mounted ${writemode}" )
 
 # Track submounts so we know how to clean up on exit
 trap cleanup HUP INT QUIT ABRT EXIT
@@ -86,7 +87,7 @@ if mount_efivarfs "${efivarmode}" ; then
   mount_efivarfs "${efivarmode}" "${efivarfs}" \
     && _mnt=( "${efivarfs}" "${_mnt[@]}" )
 
-  notices+=( "\n* $( colorize orange "efivarfs" ) is mounted ${writemode}" )
+  notices+=( "\n$(colorize white "*" ) $( colorize orange "efivarfs" ) is mounted ${writemode}" )
 fi
 
 # Not all /dev filesystems have /dev/pts
@@ -113,7 +114,7 @@ if [ -z "${_SHELL}" ]; then
   exit 1
 fi
 
-notices+=( "\n* $( colorize orange "/tmp" ) is mounted $( colorize red "read/write")" )
+notices+=( "\n$(colorize white "*" ) $( colorize orange "/tmp" ) is mounted $( colorize red "read/write")" )
 echo -e "${notices[*]}\n"
 
 # regardless of shell, set PS1
