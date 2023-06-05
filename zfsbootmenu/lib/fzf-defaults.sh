@@ -9,12 +9,12 @@
 fuzzy_default_options=(
   "--ansi" "--no-clear" "--cycle" "--color=16"
   "--layout=reverse-list" "--inline-info" "--tac"
-  "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]"'
-  "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]"'
-  "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} ]"'
-  "--bind" "\"alt-l:execute[ /bin/zlogtail ]${HAS_REFRESH:++refresh-preview}\""
-  "--bind" "\"ctrl-l:execute[ /bin/zlogtail ]${HAS_REFRESH:++refresh-preview}\""
-  "--bind" "\"ctrl-alt-l:execute[ /bin/zlogtail ]${HAS_REFRESH:++refresh-preview}\""
+  "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
+  "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
+  "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
+  "--bind" "\"alt-l:execute[ /bin/zlogtail 1>/dev/null ]${HAS_REFRESH:++refresh-preview}\""
+  "--bind" "\"ctrl-l:execute[ /bin/zlogtail 1>/dev/null ]${HAS_REFRESH:++refresh-preview}\""
+  "--bind" "\"ctrl-alt-l:execute[ /bin/zlogtail 1>/dev/null ]${HAS_REFRESH:++refresh-preview}\""
 )
 
 if [ -n "${HAS_BORDER}" ]; then
