@@ -108,6 +108,11 @@ Building a ZFSBootMenu Image
 To build a default image, invoke ``zbm-builder.sh`` with no arguments. For example, from the directory that contains the
 script, run ``./zbm-builder.sh`` to produce a default kernel/initramfs pair in the ``./build`` subdirectory.
 
+To build on a host with SELinux enabled, the ``-M z -O -e=DRACUT_NO_XATTR=1`` options are needed. The `z` mount flag will
+relabel both the build (``-b``) and source (``-l``) directories with the ``container_file_t`` type so that the container
+is able to access the files. The ``DRACUT_NO_XATTR`` will prevent dracut from trying to set xattrs on temporary files
+within the container. Specifically, a container is never allowed to set the ``security.selinux`` xattr.
+
 The default behavior of ``zbm-builder.sh`` will:
 
 1. Pull the default builder image, ``ghcr.io/zbm-dev/zbm-builder:latest``.

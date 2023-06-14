@@ -40,6 +40,13 @@ OPTIONS:
 
   -d Force use of docker instead of podman
 
+  -M <argument>
+     Provide a comma-separated list of mount options to use with
+     podman/docker volume mounts. Eg. to relabel the directories
+     on systems with SELinux enabled:
+
+       zbm-builder -M z
+
   -O <argument>
      Provide an option to 'podman run' or 'docker run'; if the
      argument accepts one or more options, use a form with no spaces
@@ -76,6 +83,7 @@ EOF
 
 SKIP_HOSTID=
 REMOVE_HOST_FILES=
+MOUNT_FLAGS=
 
 # By default, use the latest upstream build container image
 BUILD_IMG="ghcr.io/zbm-dev/zbm-builder:latest"
@@ -101,7 +109,7 @@ else
   PODMAN="docker"
 fi
 
-CMDOPTS="b:dhi:l:c:O:HR"
+CMDOPTS="b:dhi:l:c:M:O:HR"
 
 # First pass to get build directory and configuration file
 while getopts "${CMDOPTS}" opt; do
@@ -156,6 +164,9 @@ while getopts "${CMDOPTS}" opt; do
     l)
       BUILD_REPO="${OPTARG}"
       ;;
+    M)
+      MOUNT_FLAGS="${OPTARG}"
+      ;;
     O)
       RUNTIME_ARGS+=( "${OPTARG}" )
       ;;
@@ -181,7 +192,7 @@ if ! command -v "${PODMAN}" >/dev/null 2>&1; then
 fi
 
 # Always mount a build directory at /build
-RUNTIME_ARGS+=( "-v" "${BUILD_DIRECTORY}:/build" )
+RUNTIME_ARGS+=( "-v" "${BUILD_DIRECTORY}:/build${MOUNT_FLAGS:+:${MOUNT_FLAGS}}" )
 
 # Only mount a local repo at /zbm if specified
 if [ -n "${BUILD_REPO}" ]; then
@@ -190,7 +201,7 @@ if [ -n "${BUILD_REPO}" ]; then
     exit 1
   fi
 
-  RUNTIME_ARGS+=( "-v" "${BUILD_REPO}:/zbm:ro" )
+  RUNTIME_ARGS+=( "-v" "${BUILD_REPO}:/zbm:ro${MOUNT_FLAGS:+,${MOUNT_FLAGS}}" )
 fi
 
 # Remove existing hostid
