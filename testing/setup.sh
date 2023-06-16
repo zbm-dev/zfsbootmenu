@@ -63,7 +63,7 @@ ENVIRONMENT VARIABLES
   POOL_COMPAT (All)
   Set POOL_COMPAT to one of the ZFS pool compatiblity targets listed below.
 
-$( find "${compat_dir}" -type f | sed "s|${compat_dir}||" | column | sed 's/^/\t/' )
+$( find "${compat_dir}" -type f | sort | sed "s|${compat_dir}||" | column | sed 's/^/\t/' )
 EOF
 }
 
