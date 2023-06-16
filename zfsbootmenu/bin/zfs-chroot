@@ -41,12 +41,11 @@ if ! is_snapshot "${selected}" && ! is_writable "${pool}" ; then
     -r "Enter r/o chroot" \
     -p "Entering chroot in $( colorize yellow "%0.2d" ) seconds" ; then
       set_rw_pool "${pool}"
-      CLEAR_SCREEN=1 load_key "${selected}"
   fi
 fi
 
-reset
-clear
+tput reset
+tput clear
 
 if ! mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
   zerror "failed to mount ${selected}"

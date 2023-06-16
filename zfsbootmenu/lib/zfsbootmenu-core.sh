@@ -226,9 +226,13 @@ mount_zfs() {
     return 1
   fi
 
-  if be_is_locked "${fs}" >/dev/null; then
-    zerror "${fs} is locked, unable to mount filesystem"
-    zdebug "${fs} is locked, returning"
+  if [ "${NO_LOAD_KEY:-0}" -eq 1 ]; then
+    if be_is_locked "${fs}" >/dev/null; then
+      zerror "${fs} is locked, cannot mount"
+      return 1
+    fi
+  elif ! CLEAR_SCREEN=1 load_key "${fs}"; then
+    zerror "unable to load key for ${fs}, cannot mount"
     return 1
   fi
 
@@ -287,8 +291,6 @@ kexec_kernel() {
   IFS=' ' read -r fs kernel initramfs <<<"${selected}"
 
   zdebug "fs: ${fs}, kernel: ${kernel}, initramfs: ${initramfs}"
-
-  CLEAR_SCREEN=1 load_key "${fs}"
 
   tput cnorm
   tput clear
@@ -1583,7 +1585,7 @@ cache_key() {
     return 1
   fi
 
-  if ! mnt="$( mount_zfs "${keysrc}" )"; then
+  if ! mnt="$( NO_LOAD_KEY=1 mount_zfs "${keysrc}" )"; then
     # Mount failed (this shouldn't happen), clean up mutex
     zerror "failed to mount ${keysrc}"
     rm -f "${mutex}"

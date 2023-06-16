@@ -46,8 +46,6 @@ fi
 base_fs="${snapshot%%@*}"
 zdebug "base filesystem: ${base_fs}"
 
-CLEAR_SCREEN=1 load_key "${base_fs}"
-
 if ! mnt="$( mount_zfs "${base_fs}" )" ; then
   zerror "unable to mount ${base_fs}"
   exit 1 
