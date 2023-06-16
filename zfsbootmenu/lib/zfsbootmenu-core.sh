@@ -227,6 +227,7 @@ mount_zfs() {
   fi
 
   if be_is_locked "${fs}" >/dev/null; then
+    zerror "${fs} is locked, unable to mount filesystem"
     zdebug "${fs} is locked, returning"
     return 1
   fi
