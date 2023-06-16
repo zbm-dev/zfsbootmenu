@@ -1,6 +1,6 @@
 #!/bin/bash
 
-: "${RELEASE:=bullseye}"
+: "${RELEASE:=bookworm}"
 : "${APT_REPOS:=main contrib}"
 
 cat << EOF > /etc/apt/sources.list

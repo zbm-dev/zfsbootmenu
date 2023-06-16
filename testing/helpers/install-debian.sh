@@ -11,7 +11,7 @@ if [[ "$0" =~ "ubuntu" ]]; then
   MIRROR="http://us.archive.ubuntu.com/ubuntu/"
   CONFIGURATOR="configure-ubuntu.sh"
 else
-  SUITE="${RELEASE:-bullseye}"
+  SUITE="${RELEASE:-bookworm}"
   MIRROR="http://ftp.us.debian.org/debian/"
   CONFIGURATOR="configure-debian.sh"
 fi

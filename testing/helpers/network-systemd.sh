@@ -12,6 +12,9 @@ EOF
 
 systemctl enable systemd-networkd.service || true
 
+# Force installation of systemd-resolved for bookworm
+apt-get install --yes --no-install-recommends systemd-resolved
+
 # Enable system resolver
 rm -f /etc/resolv.conf
 systemctl enable systemd-resolved.service || true

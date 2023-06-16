@@ -51,7 +51,7 @@ ENVIRONMENT VARIABLES
 
   RELEASE (Debian, Ubuntu)
   Specify a particular release to install in the test image
-  (e.g., "bullseye" or "buster" for Debian; "kinetic" or "jammy" for ubuntu)
+  (e.g., "bullseye", "bookworm" or "buster" for Debian; "kinetic" or "jammy" for ubuntu)
 
   APT_REPOS (Debian, Ubuntu)
   Specify a space-separated list of specific repositories to configure for apt
