@@ -40,8 +40,9 @@ install() {
   # BUILDROOT is an initcpio-ism
   # shellcheck disable=SC2154,2034
   BUILDROOT="${initdir}"
+
   # shellcheck disable=SC2034
-  BUILDSTYLE="dracut"
+  ZBM_BUILDSTYLE="dracut"
 
   local _rule _exec _ret
 
@@ -84,88 +85,41 @@ install() {
     fi
   done <<< "${_libgcc_s}"
 
-  # shellcheck disable=SC2154
-  while read -r doc ; do
-    relative="${doc//${zfsbootmenu_module_root}\//}"
-    inst_simple "${doc}" "/usr/share/docs/${relative}"
-  done <<<"$( find "${zfsbootmenu_module_root}/help-files" -type f )"
-
   compat_dirs=( "/etc/zfs/compatibility.d" "/usr/share/zfs/compatibility.d/" )
   for compat_dir in "${compat_dirs[@]}"; do
     # shellcheck disable=2164
     [ -d "${compat_dir}" ] && tar -cf - "${compat_dir}" | ( cd "${initdir}" ; tar xfp - )
   done
+
   _ret=0
 
-  # Core ZFSBootMenu functionality
-  # shellcheck disable=SC2154
-  for _lib in "${zfsbootmenu_module_root}"/lib/*; do
-    inst_simple "${_lib}" "/lib/$( basename "${_lib}" )" || _ret=$?
-  done
+  # Install core ZFSBootMenu functionality
+  install_zbm_core || _ret=$?
 
-  # Helper tools not intended for direct human consumption
-  for _libexec in "${zfsbootmenu_module_root}"/libexec/*; do
-    inst_simple "${_libexec}" "/libexec/$( basename "${_libexec}" )" || _ret=$?
-  done
-
-  # User-facing utilities, useful for running in a recovery shell
-  for _bin in "${zfsbootmenu_module_root}"/bin/*; do
-    inst_simple "${_bin}" "/bin/$( basename "${_bin}" )" || _ret=$?
-  done
+  # Install runtime hooks
+  install_zbm_hooks || _ret=$?
 
   # Hooks necessary to initialize ZBM
-  inst_hook cmdline 95 "${zfsbootmenu_module_root}/hook/zfsbootmenu-parse-commandline.sh" || _ret=$?
-  inst_hook pre-mount 90 "${zfsbootmenu_module_root}/hook/zfsbootmenu-preinit.sh" || _ret=$?
+  inst_hook cmdline 95 "${zfsbootmenu_module_root}/pre-init/zfsbootmenu-parse-commandline.sh" || _ret=$?
+  inst_hook pre-mount 90 "${zfsbootmenu_module_root}/pre-init/zfsbootmenu-preinit.sh" || _ret=$?
 
   # Hooks to force the dracut event loop to fire at least once
   # Things like console configuration are done in optional event-loop hooks
-  inst_hook initqueue/settled 99 "${zfsbootmenu_module_root}/hook/zfsbootmenu-ready-set.sh" || _ret=$?
-  inst_hook initqueue/finished 99 "${zfsbootmenu_module_root}/hook/zfsbootmenu-ready-chk.sh" || _ret=$?
-
-  # optionally enable early Dracut profiling
-  if [ -n "${dracut_trace_enable}" ]; then
-    inst_hook cmdline 00 "${zfsbootmenu_module_root}/profiling/profiling-lib.sh"
-  fi
-
-  # Install "early setup" hooks
   # shellcheck disable=SC2154
-  if [ -n "${zfsbootmenu_early_setup}" ]; then
-    for _exec in ${zfsbootmenu_early_setup}; do
-      if [ -x "${_exec}" ]; then
-        inst_simple "${_exec}" "/libexec/early-setup.d/$(basename "${_exec}")" || _ret=$?
-      else
-        dwarning "setup script (${_exec}) missing or not executable; cannot install"
-      fi
-    done
-  fi
-
-  # Install "setup" hooks
-  # shellcheck disable=SC2154
-  if [ -n "${zfsbootmenu_setup}" ]; then
-    for _exec in ${zfsbootmenu_setup}; do
-      if [ -x "${_exec}" ]; then
-        inst_simple "${_exec}" "/libexec/setup.d/$(basename "${_exec}")" || _ret=$?
-      else
-        dwarning "setup script (${_exec}) missing or not executable; cannot install"
-      fi
-    done
-  fi
-
-  # Install "teardown" hooks
-  # shellcheck disable=SC2154
-  if [ -n "${zfsbootmenu_teardown}" ]; then
-    for _exec in ${zfsbootmenu_teardown}; do
-      if [ -x "${_exec}" ]; then
-        inst_simple "${_exec}" "/libexec/teardown.d/$(basename "${_exec}")" || _ret=$?
-      else
-        dwarning "teardown script (${_exec}) missing or not executable; cannot install"
-      fi
-    done
-  fi
+  inst_hook initqueue/settled 99 "${moddir}/zfsbootmenu-ready-set.sh" || _ret=$?
+  inst_hook initqueue/finished 99 "${moddir}/zfsbootmenu-ready-chk.sh" || _ret=$?
 
   if [ ${_ret} -ne 0 ]; then
     dfatal "Unable to install core ZFSBootMenu functions"
     exit 1
+  fi
+
+  # Install online documentation if possible
+  install_zbm_docs
+
+  # optionally enable early Dracut profiling
+  if [ -n "${dracut_trace_enable}" ]; then
+    inst_hook cmdline 00 "${zfsbootmenu_module_root}/profiling/profiling-lib.sh"
   fi
 
   # vdev_id.conf and hostid files are host-specific

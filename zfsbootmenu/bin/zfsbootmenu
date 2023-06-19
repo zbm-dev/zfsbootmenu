@@ -68,14 +68,8 @@ if [ -r "${BASE}/bootfs" ]; then
 fi
 
 # Run setup hooks, if they exist
-if [ -d /libexec/setup.d ]; then
-  tput clear
-  for _hook in /libexec/setup.d/*; do
-    zinfo "Processing hook: ${_hook}"
-    [ -x "${_hook}" ] && "${_hook}"
-  done
-  unset _hook
-fi
+tput clear
+/libexec/zfsbootmenu-run-hooks "setup.d"
 
 # Clear screen before a possible password prompt
 tput clear
