@@ -122,7 +122,7 @@ build() {
     source "${zfsbootmenu_module_root}/install-helpers.sh" || exit 1
 
     # shellcheck disable=SC2034
-    BUILDSTYLE="initcpio"
+    ZBM_BUILDSTYLE="mkinitcpio"
 
     # Modules (required and optional) used by ZBM
     # shellcheck disable=SC2154
@@ -154,51 +154,31 @@ build() {
         fi
     done <<< "${_libgcc_s}"
 
-    # On-line documentation
-    while read -r doc; do
-        relative="${doc#"${zfsbootmenu_module_root}/"}"
-        [ "${relative}" = "${doc}" ] && continue
-        add_file "${doc}" "/usr/share/docs/${relative}"
-    done <<< "$( find "${zfsbootmenu_module_root}/help-files" -type f )"
-
     # Install core ZBM functionality
-    for _file in "${zfsbootmenu_module_root}"/lib/*; do
-        add_file "${_file}" "/lib/${_file##*/}"
-    done
+    if ! install_zbm_core; then
+        error "Failed to install ZFSBootMenu core"
+        exit 1
+    fi
 
-    for _file in "${zfsbootmenu_module_root}"/libexec/*; do
-        add_file "${_file}" "/libexec/${_file##*/}"
-    done
+    # Install runtime hooks
+    if ! install_zbm_hooks; then
+        error "Failed to install runtime hooks"
+        exit 1
+    fi
 
-    for _file in "${zfsbootmenu_module_root}"/bin/*; do
-        add_file "${_file}" "/bin/${_file##*/}"
-    done
+    # Install online documentation if possible
+    install_zbm_docs
 
-    hooks=( zfsbootmenu-{parse-commandline,preinit}.sh )
-    for _file in "${hooks[@]}"; do
-        add_file "${zfsbootmenu_module_root}/hook/${_file}" "/lib/${_file}"
+    # Install pre-init scripts
+    for _file in "${zfsbootmenu_module_root}"/pre-init/*; do
+        add_file "${_file}" "/lib/${_file##*/}" && continue;
+
+        error "Failed to install ZFSBootMenu component ${_file}"
+        exit 1
     done
 
     # allow mount(8) to "autodetect" ZFS
     echo 'zfs' >>"${BUILDROOT}/etc/filesystems"
-
-    # shellcheck disable=SC2154
-    for _file in "${zfsbootmenu_early_setup[@]}"; do
-        [ -x "${_file}" ] || continue
-        add_file "${_file}" "/libexec/early-setup.d/${_file##*/}"
-    done
-
-    # shellcheck disable=SC2154
-    for _file in "${zfsbootmenu_setup[@]}"; do
-        [ -x "${_file}" ] || continue
-        add_file "${_file}" "/libexec/setup.d/${_file##*/}"
-    done
-
-    # shellcheck disable=SC2154
-    for _file in "${zfsbootmenu_teardown[@]}"; do
-        [ -x "${_file}" ] || continue
-        add_file "${_file}" "/libexec/teardown.d/${_file##*/}"
-    done
 
     compat_dirs=( "/etc/zfs/compatibility.d" "/usr/share/zfs/compatibility.d/" )
     for compat_dir in "${compat_dirs[@]}"; do

@@ -6,6 +6,10 @@
 ## which causes the normal dracut initqueue to be thrown out; the ZFSBootMenu
 ## initqueue hooks that force the dracut event loop to run at least once are
 ## purged, so dracut terminates the event loop before console initialization.
+##
+
+# There is nothing to do if we're not in dracut
+[ "${ZBM_BUILDSTYLE,,}" = "dracut" ] || exit 0
 
 # There is nothing to do if the console initializer is not executable
 [ -x /lib/udev/console_init ] || exit 0

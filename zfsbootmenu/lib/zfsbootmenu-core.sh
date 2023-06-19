@@ -273,7 +273,7 @@ mount_zfs() {
 # returns: 1 on error, otherwise does not return
 
 kexec_kernel() {
-  local selected fs kernel initramfs tdhook output
+  local selected fs kernel initramfs output
 
   selected="${1}"
   if [ -z "${selected}" ]; then
@@ -332,15 +332,10 @@ kexec_kernel() {
   done <<<"$( zpool list -H -o name )"
 
   # Run teardown hooks, if they exist
-  if [ -d /libexec/teardown.d ]; then
-    for tdhook in /libexec/teardown.d/*; do
-      [ -x "${tdhook}" ] || continue
-      zinfo "Processing hook: ${tdhook}"
-      env "ZBM_SELECTED_INITRAMFS=${initramfs}" \
-        "ZBM_SELECTED_KERNEL=${kernel}" "ZBM_SELECTED_BE=${fs}" "${tdhook}"
-    done
-    unset tdhook
-  fi
+  env "ZBM_SELECTED_INITRAMFS=${initramfs}" \
+    "ZBM_SELECTED_KERNEL=${kernel}" \
+    "ZBM_SELECTED_BE=${fs}" \
+    /libexec/zfsbootmenu-run-hooks "teardown.d"
 
   if ! output="$( kexec -e -i 2>&1 )"; then
     zerror "kexec -e -i failed!"

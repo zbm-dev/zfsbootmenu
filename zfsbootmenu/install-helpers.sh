@@ -100,6 +100,13 @@ create_zbm_conf() {
     has_column=1
   fi
 
+  # Normalize ZBM_BUILDSTYLE, if set
+  case "${ZBM_BUILDSTYLE,,}" in
+    mkinitcpio) ZBM_BUILDSTYLE="mkinitcpio" ;;
+    dracut) ZBM_BUILDSTYLE="dracut" ;;
+    *) ZBM_BUILDSTYLE="" ;;
+  esac
+
   cat > "${BUILDROOT}/etc/zfsbootmenu.conf" <<-'EOF'
 	# Include guard
 	[ -n "${_ETC_ZFSBOOTMENU_CONF}" ] && return
@@ -111,6 +118,7 @@ create_zbm_conf() {
 	export HAS_DISABLED="${has_disabled}"
 	export HAS_BORDER="${has_border}"
 	export HAS_COLUMN="${has_column}"
+	export ZBM_BUILDSTYLE="${ZBM_BUILDSTYLE}"
 	EOF
 }
 
@@ -149,6 +157,27 @@ create_zbm_profiles() {
   ln -s "/root/.bashrc" "${BUILDROOT}/root/.profile"
 }
 
+zbm_install_file() {
+  case "${ZBM_BUILDSTYLE,,}" in
+    mkinitcpio)
+      if ! add_file "${1}" "${2}"; then
+        error "failed to install file '${1}'"
+        return 1
+      fi
+      ;;
+    dracut)
+      if ! inst_simple "${1}" "${2}"; then
+        dfatal "failed to install file '${1}'"
+        return 1
+      fi
+      ;;
+    *)
+      echo "ERROR: unrecognized build style; unable to install files" >&2
+      return 1
+      ;;
+  esac
+}
+
 create_zbm_traceconf() {
   local zbm_prof_lib
 
@@ -167,16 +196,7 @@ create_zbm_traceconf() {
     return
   fi
 
-  case "${BUILDSTYLE}" in
-    initcpio)
-      add_file "${zbm_prof_lib}" "/lib/profiling-lib.sh"
-      ;;
-    dracut)
-      inst_simple "${zfsbootmenu_module_root}/profiling/profiling-lib.sh" "/lib/profiling-lib.sh"
-      ;;
-    *)
-      ;;
-  esac
+  zbm_install_file "${zbm_prof_lib}" "/lib/profiling-lib.sh"
 
   # shellcheck disable=SC2154
   cat > "${BUILDROOT}/etc/profiling.conf" <<-EOF
@@ -184,6 +204,101 @@ create_zbm_traceconf() {
 	export zfsbootmenu_trace_baud=${zfsbootmenu_trace_baud}
 	EOF
 }
+
+
+install_zbm_core() {
+  local cdir cfile ret
+
+  ret=0
+  for cdir in lib libexec bin; do
+    for cfile in "${zfsbootmenu_module_root}/${cdir}"/*; do
+      zbm_install_file "${cfile}" "/${cdir}/${cfile##*/}" || ret=$?
+    done
+  done
+
+  return $ret
+}
+
+
+install_zbm_docs() {
+  local doc relative ret
+
+  ret=0
+  while read -r doc; do
+    relative="${doc#"${zfsbootmenu_module_root}"}"
+    [ "${relative}" = "${doc}" ] && continue
+    relative="${relative#/}"
+    zbm_install_file "${doc}" "/usr/share/docs/${relative}" || ret=$?
+  done <<< "$( find "${zfsbootmenu_module_root}/help-files" -type f )"
+
+  return $ret
+}
+
+
+populate_hook_dir() {
+  local hfile ret hlev
+
+  hlev="${1}"
+  if [ -z "${hlev}" ]; then
+    echo "ERROR: a hook level is required" >&2
+    return 1
+  fi
+
+  shift
+  [ "$#" -gt 0 ] || return 0
+
+  mkdir -p "${BUILDROOT}/libexec/${hlev}" || return 1
+
+  ret=0
+  for hfile in "$@"; do
+    [ -x "${hfile}" ] || continue
+    zbm_install_file "${hfile}" "/libexec/${hlev}/${hfile##*/}" || ret=$?
+  done
+
+  return $ret
+}
+
+
+install_zbm_hooks() {
+  local hdir hsrc hfile ret
+
+  ret=0
+
+  # Install system hooks first
+  for hdir in early-setup.d setup.d teardown.d; do
+    hsrc="${zfsbootmenu_module_root}/hooks/${hdir}"
+    [ -d "${hsrc}" ] || continue
+    populate_hook_dir "${hdir}" "${hsrc}"/* || ret=$?
+  done
+
+  # Next, install user hooks to allow them to override system versions
+  # shellcheck disable=SC2154
+  if [[ "${zfsbootmenu_early_setup@a}" != *a* ]]; then
+    # shellcheck disable=SC2086
+    populate_hook_dir "early-setup.d" ${zfsbootmenu_early_setup} || ret=$?
+  else
+    populate_hook_dir "early-setup.d" "${zfsbootmenu_early_setup[@]}" || ret=$?
+  fi
+
+  # shellcheck disable=SC2154
+  if [[ "${zfsbootmenu_setup@a}" != *a* ]]; then
+    # shellcheck disable=SC2086
+    populate_hook_dir "setup.d" ${zfsbootmenu_setup} || ret=$?
+  else
+    populate_hook_dir "setup.d" "${zfsbootmenu_setup[@]}" || ret=$?
+  fi
+
+  # shellcheck disable=SC2154
+  if [[ "${zfsbootmenu_teardown@a}" != *a* ]]; then
+    # shellcheck disable=SC2086
+    populate_hook_dir "teardown.d" ${zfsbootmenu_teardown} || ret=$?
+  else
+    populate_hook_dir "teardown.d" "${zfsbootmenu_teardown[@]}" || ret=$?
+  fi
+
+  return $ret
+}
+
 
 find_libgcc_s() {
   local f libdirs libbase ldir zlibs matched

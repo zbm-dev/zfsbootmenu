@@ -133,6 +133,12 @@ These options are set on the kernel command line when booting the initramfs or U
 
     zbm.kcl_override="some alternate set='of arguments'"
 
+**zbm.skip_hooks=<hooklist>**
+
+  Skip execution of any early-setup, setup or teardown hooks with file names matching any entry in the comma-separated list *hooklist*. Only base names of hooks (*i.e.*, with any other path component removed) are matched against the *hooklist*.
+
+  **NOTE**: The *hooklist* argument **MUST NOT** contain spaces and **MUST NOT** be enclosed in quotes.
+
 Deprecated Command-Line Parameters
 ==================================
 
