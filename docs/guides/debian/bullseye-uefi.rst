@@ -1,5 +1,5 @@
 Bullseye (11) UEFI
-=============
+==================
 
 .. |distribution| replace:: debian
 
