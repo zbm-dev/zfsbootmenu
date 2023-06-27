@@ -34,6 +34,8 @@ Download `openSUSE Leap 15.4 <https://download.opensuse.org/distribution/leap/15
 
 .. include:: ../_include/create-filesystems.rst
 
+.. include:: ../_include/update-devices.rst
+
 .. include:: _include/distro-install.rst
 
 .. include:: _include/zfs-config.rst
