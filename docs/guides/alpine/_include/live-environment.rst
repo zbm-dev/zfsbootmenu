@@ -19,9 +19,8 @@ Setup additional tools
 
 .. code-block::
 
-  apk add zfs sgdisk wipefs eudev
+  apk add zfs sgdisk wipefs
   modprobe zfs
-  setup-devd udev
 
 .. include:: ../_include/zgenhostid.rst
 
