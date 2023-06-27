@@ -31,6 +31,8 @@ boot your system in EFI mode.
 
 .. include:: ../_include/create-filesystems.rst
 
+.. include:: ../_include/update-devices.rst
+
 .. include:: _include/bookworm/distro-install.rst
 
 .. include:: _include/zfs-config.rst

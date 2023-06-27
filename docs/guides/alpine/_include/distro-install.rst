@@ -56,5 +56,3 @@ Enable startup targets
   rc-update add hwdrivers sysinit
   rc-update add networking
   rc-update add hostname
-  apk add udev
-  setup-devd udev
