@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "ZFSBOOTMENU" "7" "2023-05-21" "" "ZFSBootMenu"
+.TH "ZFSBOOTMENU" "7" "2023-07-17" "" "ZFSBootMenu"
 .SH NAME
 zfsbootmenu \- System Integration
 .SH SYNOPSIS
@@ -434,6 +434,13 @@ kexec \-\-unload
 .UNINDENT
 .sp
 should be sufficient to return to the main menu. Likewise, the hook may construct and execute its own \fIkexec\fP command to alter boot\-time parameters. This may be useful, for example, to allow ZFSBootMenu to select a boot environment and then restructure the boot process to launch a Xen kernel with the selected environment configured as dom0.
+.UNINDENT
+.UNINDENT
+.sp
+\fBzfsbootmenu_skip_gcc_s=yes\fP
+.INDENT 0.0
+.INDENT 3.5
+The ZFSBootMenu module attempts to detect and install a copy of the library \fBlibgcc_s.so\fP in its initramfs image on glibc systems. Because several executables may have latent dependencies on this library via a \fBdlopen\fP call in glibc itself, a failure to detect and install the library will cause initramfs generation to fail. If the host system has no dependencies on \fBlibgcc_s.so\fP, set \fBzfsbootmenu_skip_gcc_s=yes\fP to avoid this failure. Alternatively, if \fBlibgcc_s.so\fP is present in an undetected location, set this option and configure Dracut to explicitly install the library.
 .UNINDENT
 .UNINDENT
 .SH OPTIONS FOR MKINITCPIO
