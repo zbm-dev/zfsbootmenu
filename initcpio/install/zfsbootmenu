@@ -138,6 +138,22 @@ build() {
     # Binaries required for ZBM operation
     add_zbm_binaries
 
+    # Add libgcc_s as appropriate
+    local _libgcc_s
+    if ! _libgcc_s="$( find_libgcc_s )"; then
+        error "unable to locate libgcc_s.so"
+        exit 1
+    fi
+
+    local _lib
+    while read -r _lib ; do
+        [ -n "${_lib}" ] || continue
+        if ! add_binary "${_lib}"; then
+            error "Failed to install '${_lib}'"
+            exit 1
+        fi
+    done <<< "${_libgcc_s}"
+
     # On-line documentation
     while read -r doc; do
         relative="${doc#"${zfsbootmenu_module_root}/"}"

@@ -184,3 +184,73 @@ create_zbm_traceconf() {
 	export zfsbootmenu_trace_baud=${zfsbootmenu_trace_baud}
 	EOF
 }
+
+find_libgcc_s() {
+  local f libdirs libbase ldir zlibs matched
+
+  # Skip detection if desired
+  # shellcheck disable=SC2154
+  case "${zfsbootmenu_skip_gcc_s,,}" in
+    yes|on|1) return 0 ;;
+  esac
+
+  # This is only required on glibc systems due to a dlopen in pthread_cancel
+  # https://github.com/openzfs/zfs/commit/24554082bd93cb90400c4cb751275debda229009
+  ldconfig -p 2>/dev/null | grep -qF 'libc.so.6' || return 0
+
+  # Build a list of libraries linked by zpool
+  zlibs="$( ldd "$( command -v zpool 2>/dev/null )" )" || zlibs=
+
+  # If zpool links libgcc_s overtly, there is no need for further action
+  if grep -qF 'libgcc_s.so' <<< "${zlibs}"; then
+    return 0
+  fi
+
+  # Query gcc-config for a current runtime profile if possible
+  if command -v gcc-config >/dev/null 2>&1; then
+    local gver
+    if gver="$( gcc-config -c )"; then
+      for f in "/usr/lib/gcc/${gver%-*}/${gver##*-}"/libgcc_s.so*; do
+        [ -e "${f}" ] || continue
+        echo "${f}"
+        matched="yes"
+      done
+      [ -n "${matched}" ] && return 0
+    fi
+  fi
+
+  # Try walking library paths to find libgcc_s
+
+  # Search the system cache (adapted from dracut)
+  libdirs="$( ldconfig -pN 2>/dev/null \
+              | grep -E -v '/(lib|lib64|usr/lib|usr/lib64)/[^/]*$' \
+              | sed -n 's,.* => \(.*\)/.*,\1,p' | sort | uniq )" || libdirs=""
+
+  # Search zpool dependencies to figure out system libdirs
+  if [[ "${zlibs}" == */lib64/* ]]; then
+    libbase="lib64"
+  else
+    libbase="lib"
+  fi
+
+  # Look in all possible system library directories
+  libdirs="/${libbase} /usr/${libbase} ${libdirs}"
+  for ldir in ${libdirs}; do
+    for f in "${ldir}"/libgcc_s.so*; do
+      [ -e "${f}" ] || continue
+      echo "${f}"
+      matched="yes"
+    done
+  done
+  [ -n "${matched}" ] && return 0
+
+  # As a final fallback, just try to grab *any* libgcc_s from GCC
+  for f in /usr/lib/gcc/*/*/libgcc_s.so*; do
+    [ -f "${f}" ] || continue
+    echo "${f}"
+    matched="yes"
+  done
+
+  [ -n "${matched}" ] && return 0
+  return 1
+}

@@ -1679,7 +1679,7 @@ load_key() {
       zinfo "Processing hook: ${_hook}"
       [ -x "${_hook}" ] || continue
       if ! "${_hook}" "${encroot}"; then
-        zwarn "load-key hook failed for '${encroot}', aborting load attempt"
+        zwarn "load-key hook '${_hook}' failed for '${encroot}', aborting load attempt"
         return 1
       fi
     done

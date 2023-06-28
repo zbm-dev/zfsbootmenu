@@ -233,6 +233,15 @@ In addition to standard dracut configuration options, the ZFSBootMenu dracut mod
 
   Any installed hooks are run right before the ZFSBootMenu menu will be presented; ZFS pools will generally have been imported and the default boot environment will be available in the *BOOTFS* environment variable. Hooks will not be run if the countdown timer expires (or was set to zero) and the default boot environment is automatically selected. **Note:** The hooks may be run multiple times if the menu is invoked multiple times, e.g., by dropping to an emergency shell and then returning to the menu. If a script should only run once, the script is responsible for keeping track of this.
 
+<<<<<<< HEAD
+=======
+**zfsbootmenu_load_key=<executable-list>**
+
+  An optional variable specifying a space-separated list of paths to load-key hooks that will be installed in the ZFSBootMenu initramfs. Any path in the list **<executable-list>** that exists and is executable will be installed.
+
+  Any installed hooks are run immediately before ZFSBootMenu menu attempts to load a key for the encryption root of a locked filesystem. Each hook will be run with the name of the encryption root as its sole argument. If any hook exits with a non-zero return code, the load attempt will be aborted and the encryption root will not be unlocked. Hooks can be used to prepare keys needed to unlock the encryption root or may even attempt to unlock the root directly; a filesystem that is unlocked after the hooks have run will be considered to have had its keys successfully loaded. **Note:** The hooks may be run multiple times if keys for a given encryption root need to be loaded multiple times, e.g., by triggering a re-import of the pool. If a script should only run once, the script is responsible for keeping track of this.
+
+>>>>>>> f2ddbec (Update docs/man/zfsbootmenu.7.rst)
 **zfsbootmenu_teardown=<executable-list>**
 
   An optional variable specifying a space-separated list of paths to teardown hooks that will be installed in the ZFSBootMenu initramfs. Any path in the list **<executable-list>** that exists and is executable will be installed.
@@ -260,6 +269,10 @@ In addition to standard dracut configuration options, the ZFSBootMenu dracut mod
     kexec --unload
 
   should be sufficient to return to the main menu. Likewise, the hook may construct and execute its own *kexec* command to alter boot-time parameters. This may be useful, for example, to allow ZFSBootMenu to select a boot environment and then restructure the boot process to launch a Xen kernel with the selected environment configured as dom0.
+
+**zfsbootmenu_skip_gcc_s=yes**
+
+  The ZFSBootMenu module attempts to detect and install a copy of the library **libgcc_s.so** in its initramfs image on glibc systems. Because several executables may have latent dependencies on this library via a **dlopen** call in glibc itself, a failure to detect and install the library will cause initramfs generation to fail. If the host system has no dependencies on **libgcc_s.so**, set **zfsbootmenu_skip_gcc_s=yes** to avoid this failure. Alternatively, if **libgcc_s.so** is present in an undetected location, set this option and configure Dracut to explicitly install the library.
 
 .. _zbm-mkinitcpio-options:
 
