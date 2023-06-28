@@ -68,26 +68,21 @@ install() {
     fi
   done
 
-  # Workaround for zfsonlinux/zfs#4749 by ensuring libgcc_s.so(.1) is included
-  _ret=0
-  # If zpool requires libgcc_s.so*, dracut will track and include it
-  if ! ldd "$( command -v zpool )" | grep -qF 'libgcc_s.so'; then
-    # On systems with gcc-config (Gentoo, Funtoo, etc.), use it to find libgcc_s
-    if command -v gcc-config >/dev/null 2>&1; then
-      dracut_install "/usr/lib/gcc/$(s=$(gcc-config -c); echo "${s%-*}/${s##*-}")/libgcc_s.so.1"
-      _ret=$?
-    # Otherwise, use dracut's library installation function to find the right one
-    elif ! inst_libdir_file "libgcc_s.so*"; then
-      # If all else fails, just try looking for some gcc arch directory
-      dracut_install /usr/lib/gcc/*/*/libgcc_s.so*
-      _ret=$?
-    fi
-  fi
-
-  if [ ${_ret} -ne 0 ]; then
-    dfatal "Unable to install libgcc_s.so"
+  # Add libgcc_s as appropriate
+  local _libgcc_s
+  if ! _libgcc_s="$( find_libgcc_s )"; then
+    dfatal "Unable to locate libgcc_s.so"
     exit 1
   fi
+
+  local _lib
+  while read -r _lib ; do
+    [ -n "${_lib}" ] || continue
+    if ! dracut_install "${_lib}"; then
+      dfatal "Failed to install '${_lib}'"
+      exit 1
+    fi
+  done <<< "${_libgcc_s}"
 
   # shellcheck disable=SC2154
   while read -r doc ; do

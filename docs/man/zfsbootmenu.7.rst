@@ -261,6 +261,10 @@ In addition to standard dracut configuration options, the ZFSBootMenu dracut mod
 
   should be sufficient to return to the main menu. Likewise, the hook may construct and execute its own *kexec* command to alter boot-time parameters. This may be useful, for example, to allow ZFSBootMenu to select a boot environment and then restructure the boot process to launch a Xen kernel with the selected environment configured as dom0.
 
+**zfsbootmenu_skip_gcc_s=yes**
+
+  The ZFSBootMenu module attempts to detect and install a copy of the library **libgcc_s.so** in its initramfs image on glibc systems. Because several executables may have latent dependencies on this library via a **dlopen** call in glibc itself, a failure to detect and install the library will cause initramfs generation to fail. If the host system has no dependencies on **libgcc_s.so**, set **zfsbootmenu_skip_gcc_s=yes** to avoid this failure. Alternatively, if **libgcc_s.so** is present in an undetected location, set this option and configure Dracut to explicitly install the library.
+
 .. _zbm-mkinitcpio-options:
 
 Options for mkinitcpio
