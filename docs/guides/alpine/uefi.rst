@@ -17,8 +17,6 @@ It assumes the following:
 * You're mildly comfortable with ZFS, EFI and discovering system facts on your own (``lsblk``, ``dmesg``, ``gdisk``,
   ...)
 
-.. include:: ../_include/intro.rst
-
 Download the latest `Alpine Extended ISO <https://www.alpinelinux.org/downloads/>`_, write it to USB drive and boot your
 system in EFI mode.
 
@@ -29,6 +27,8 @@ system in EFI mode.
 .. include:: ../_include/define-env.rst
 
 .. include:: ../_include/disk-preparation.rst
+
+.. include:: _include/device-rescan.rst
 
 .. include:: ../_include/pool-creation.rst
 
