@@ -7,17 +7,17 @@ on:
       - '**.sh'
       - 'bin/**'
       - 'initcpio/**'
+      - 'testing/**'
       - 'zfsbootmenu/bin/**'
       - 'zfsbootmenu/libexec/**'
-      - '!testing/**'
   pull_request:
     paths:
       - '**.sh'
       - 'bin/**'
       - 'initcpio/**'
+      - 'testing/**'
       - 'zfsbootmenu/bin/**'
       - 'zfsbootmenu/libexec/**'
-      - '!testing/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -33,5 +33,4 @@ jobs:
     - name: Run ShellCheck
       uses: ludeeus/action-shellcheck@master
       with:
-        ignore_paths: ./testing
         severity: warning

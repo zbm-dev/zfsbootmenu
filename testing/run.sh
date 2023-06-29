@@ -59,7 +59,6 @@ if [ -n "${TESTDIR}" ]; then
   # If a test directory was specified, it must exist
   if [ ! -d "${TESTDIR}" ]; then
     error "test directory '${TESTDIR}' does not exist"
-    exit 1
   fi
 else
   # If a test directory was not specified, try a default
@@ -78,14 +77,14 @@ case "$(uname -m)" in
     BIN="qemu-system-ppc64"
     KERNEL="${TESTDIR}/vmlinux-bootmenu"
     MACHINE="pseries,accel=kvm,kvm-type=HV,cap-hpt-max-page-size=4096"
-    APPEND="loglevel=7 zbm.show"
+    KCL="loglevel=7 zbm.show"
     SERDEV="hvc"
   ;;
   x86_64)
     BIN="qemu-system-x86_64"
     KERNEL="${TESTDIR}/vmlinuz-bootmenu"
     MACHINE="type=q35,accel=kvm"
-    APPEND="loglevel=7 zbm.show"
+    KCL="loglevel=7 zbm.show"
     SERDEV="ttyS"
   ;;
   *)
@@ -122,10 +121,10 @@ OPTIND=1
 while getopts "${CMDOPTS}" opt; do
   case "${opt}" in
     A)
-      AAPPEND+=( "$OPTARG" )
+      APPEND+=( "$OPTARG" )
       ;;
     a)
-      APPEND="${OPTARG}"
+      KCL="${OPTARG}"
       ;;
     d)
       if _dimg="$( realpath -e "${OPTARG}")"; then
@@ -222,7 +221,7 @@ elif ((INITCPIO)); then
   fi
 
   # Directoy initcpio logs to the kernel buffer
-  AAPPEND+=( "rd.log=kmsg" )
+  APPEND+=( "rd.log=kmsg" )
 fi
 
 # Remove any customizations from the last run
@@ -260,15 +259,15 @@ else
 fi
 
 if ((SERIAL)) ; then
-  AAPPEND+=( "console=tty1" "console=${SERDEV}${SERDEV_COUNT},115200n8" )
+  APPEND+=( "console=tty1" "console=${SERDEV}${SERDEV_COUNT},115200n8" )
   ((SERDEV_COUNT++))
   LINES="$( tput lines 2>/dev/null )"
   COLUMNS="$( tput cols 2>/dev/null )"
-  [ -n "${LINES}" ] && AAPPEND+=( "zbm.lines=${LINES}" )
-  [ -n "${COLUMNS}" ] && AAPPEND+=( "zbm.columns=${COLUMNS}" )
+  [ -n "${LINES}" ] && APPEND+=( "zbm.lines=${LINES}" )
+  [ -n "${COLUMNS}" ] && APPEND+=( "zbm.columns=${COLUMNS}" )
   SOPTS+=( "-serial" "mon:stdio" )
 else
-  AAPPEND+=("console=tty1")
+  APPEND+=("console=tty1")
 fi
 
 if ((FLAME)) ; then
@@ -355,7 +354,7 @@ if ((SSH_INCLUDE)); then
 	dropbear_port="22"
 	add_dracutmodules+=" crypt-ssh "
 	EOF
-    AAPPEND+=("ip=dhcp" "rd.neednet")
+    APPEND+=("ip=dhcp" "rd.neednet")
   fi
 else
   if ((DRACUT)); then
@@ -433,7 +432,6 @@ elif [ -n "${INITRD}" ] && [ ! -f "${INITRD}" ] ; then
   error "Missing initramfs: ${INITRD}"
 elif [ -n "${BUNDLE}" ] && [ ! -f "${BUNDLE}" ] ; then
   error "Missing EFI bundle: ${BUNDLE}"
-  exit 1
 fi
 
 if ((EFI)) ; then
@@ -444,8 +442,10 @@ else
   BFILES+=( "-initrd" "${INITRD}" )
 fi
 
-if [ "${#AAPPEND[@]}" -gt 0 ]; then
-  APPEND="${APPEND} ${AAPPEND[*]}"
+if [ "${#APPEND[@]}" -gt 0 ]; then
+  #shellcheck disable=SC2178,SC2128
+  KCL="${KCL} ${APPEND[*]}"
+  true
 fi
 
 # shellcheck disable=SC2086
@@ -461,7 +461,7 @@ fi
   "${DISPLAY_ARGS[@]}" \
   "${SOPTS[@]}" \
   -netdev user,id=n1,hostfwd=tcp::${SSH_PORT}-:22 -device virtio-net-pci,netdev=n1 \
-  -append "${APPEND}" || exit 1
+  -append "${KCL}" || exit 1
 
 if ((SERIAL)) && ((RESET)); then
   reset
@@ -469,14 +469,14 @@ fi
 
 if ((FLAME)) && [ -f "${TESTDIR}/perfdata.log" ] && command -v flamegraph.pl >/dev/null 2>&1 ; then
   perl rollup.pl < "${TESTDIR}/perfdata.log" | flamegraph.pl \
-    --title "${TESTDIR}: ${APPEND}" \
+    --title "${TESTDIR}: ${KCL}" \
     --height 32 \
     --width 1600 \
     --countname microseconds \
     --flamechart > "${TESTDIR}/flamechart.svg" 2>/dev/null
 
   perl rollup.pl < "${TESTDIR}/perfdata.log" | flamegraph.pl \
-    --title "${TESTDIR}: ${APPEND}" \
+    --title "${TESTDIR}: ${KCL}" \
     --height 32 \
     --width 1600 \
     --countname microseconds > "${TESTDIR}/flamegraph.svg" 2>/dev/null

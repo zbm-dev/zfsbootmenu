@@ -1,6 +1,7 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
+#shellcheck disable=2317
 cleanup() {
   if [ -d "${FETCH_DIR}" ]; then
     rm -rf "${FETCH_DIR}"
@@ -22,7 +23,7 @@ fi
 FILENAME=""
 if [ -n "${REMOTE_PATTERN}" ]; then
   # Scrape file name from index page
-  FILENAME="$( curl -L "${REMOTE_URL}" | \
+  FILENAME="$( curl -s -L "${REMOTE_URL}" | \
     grep -o "${REMOTE_PATTERN}" | sort -Vr | head -n1 | tr -d '\n' )"
   # Append file name to URL for fetch
   REMOTE_URL="${REMOTE_URL}/${FILENAME}"
@@ -69,7 +70,7 @@ fi
 
 export FETCH_DIR
 
-if ! curl -L -o "${FETCH_DIR}/${FILENAME}" "${REMOTE_URL}"; then
+if ! curl -L -s -o "${FETCH_DIR}/${FILENAME}" "${REMOTE_URL}"; then
   echo "ERROR: failed to fetch image file ${REMOTE_URL}'"
   exit 1
 fi

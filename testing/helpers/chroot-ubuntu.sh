@@ -8,7 +8,7 @@ deb http://us.archive.ubuntu.com/ubuntu ${RELEASE} ${APT_REPOS}
 deb-src http://us.archive.ubuntu.com/ubuntu ${RELEASE} ${APT_REPOS}
 EOF
 
-cat << EOF > /etc/apt/sources.list.d/${RELEASE}-backports.list
+cat << EOF > "/etc/apt/sources.list.d/${RELEASE}-backports.list"
 deb http://us.archive.ubuntu.com/ubuntu ${RELEASE}-backports ${APT_REPOS}
 deb-src http://us.archive.ubuntu.com/ubuntu ${RELEASE}-backports ${APT_REPOS}
 EOF
