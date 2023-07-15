@@ -1,0 +1,106 @@
+[1mzbm-kcl[0m
+
+  [1mSYNOPSIS[0m
+
+    [1mzbm-kcl[0m [OPTION]... [FILESYSTEM|EFI_EXECUTABLE]
+
+  [1mDESCRIPTION[0m
+
+    The [1mzbm-kcl[0m utility allows review and manipulation of the [33morg.zfsbootmenu:commandline[0m property on ZFS filesystems or the
+    [33m.cmdline[0m section encoded within ZFSBootMenu EFI executables. ZFSBootMenu reads the property [33morg.zfsbootmenu:commandline[0m, as
+    set or inherited on each environment that it recognizes, to set the command line for the kernel that it boots. The
+    ZFSBootMenu EFI executable reads its own [33m.cmdline[0m section to parse options that control the behavior of ZFSBootMenu itself.
+
+    The final argument is treated as a ZFS filesystem as long as one exists with the specified name. If a matching filesystem cannot
+    be found, the argument is treated as an EFI executable. To force [1mzbm-kcl[0m to treat the final argument as a relative path to
+    an EFI executable even when a ZFS filesystem exists with the same name, prefix the path with [33m./[0m.
+
+    When neither a filesystem nor an EFI executable is specified, [1mzbm-kcl[0m will attempt to determine the root filesystem and operate
+    on that.
+
+    If an EFI executable of [33m-[0m is specified, [33mstdin[0m will be read as an EFI executable.
+
+    With no options specified, [1mzbm-kcl[0m will print the current value of [33morg.zfsbootmenu:commandline[0m of the selected filesystem or the
+    [33m.cmdline[0m section of the named EFI executable and exit.
+
+  [1mOPTIONS[0m
+
+    [1m-a[0m [33margument[0m
+
+      Append the value of [33margument[0m to the kernel command line. The value of [33margument[0m can be a simple variable name for Boolean
+      arguments or may take the form [33mvar=value[0m to provide a non-Boolean value. Multiple command-line arguments may be
+      accumulated into a single [33margument[0m. If the value of any variable value contains spaces, it should be surrounded by
+      double quotes. In that case, surround the entire argument in single quotes to ensure that the double quotes are recorded
+      in the property:
+
+      zbm-kcl -a 'variable="some argument with spaces"'
+
+      This argument may be repeated any number of times.
+
+    [1m-r[0m [33margument[0m
+
+      Remove [33margument[0m from the kernel command line. The value of [33margument[0m can be a simple variable name, in which case all arguments
+      of the form [33margument[0m or [33margument=<arbitrary-value>[0m will be stripped. Alternatively, a specific argument may be selected
+      by specifying [33margument=<specific-value>[0m.
+
+      This argument may be repeated any number of times.
+
+      [1mNote[0m
+
+        All removal options are processed [33mbefore[0m any append options are processed, making it possible to replace an existing
+        argument by combining removal and append options into a single invocation of [1mzbm-kcl[0m.
+
+    [1m-e[0m
+
+      Open the contents of the command-line in an interactive editor. If the environment defines [33m$EDITOR[0m, that will be used;
+      otherwise, [1mvi[0m will be used by default. After making changes as desired, overwrite the (temporary) file that was opened
+      and quit the editor. The contents of the saved file will be written by [1mzbm-kcl[0m as the new command line.
+
+    [1m-d[0m
+
+      Delete the command-line property.
+
+      For a ZFS filesystem, this is accomplished by calling
+
+      zfs inherit org.zfsbootmenu:commandline <filesystem>
+
+      to allow the boot environment to inherit any command-line property that may be defined by some parent.
+
+      For a ZFSBootMenu EFI executable, the [33m.cmdline[0m section will be stripped.
+
+    [1m-o[0m [33mdestination[0m
+
+      Save the modified command line to [33mdestination[0m rather than back to the original source. When the source is a ZFS filesystem,
+      the destination must also be a valid ZFS filesystem. When the source is an EFI executable, the destination will be
+      treated as a file; a special EFI [33mdestination[0m of [33m-[0m will cause the file to be written to [33mstdout[0m.
+
+  [1mEXAMPLES[0m
+
+    Change the [33mloglevel[0m value on the currently booted environment by removing any existing value from the command line and appending
+    the desired argument:
+
+    zbm-kcl -a loglevel=7 -r loglevel
+
+    Delete the entire command line from the [33mzroot/ROOT/void[0m boot environment, allowing it to inherit a command line set at [33mzroot[0m or
+    [33mzroot/ROOT[0m if either of these defines a value:
+
+    zbm-kcl -d zroot/ROOT/void
+
+    Allow interactive editing of the command line on the [33mzroot/ROOT[0m filesystem, but save the resulting changes to [33mzroot/ROOT/void[0m
+    rather than back to [33mzroot/ROOT[0m:
+
+    zbm-kcl -e -o zroot/ROOT/void zroot/ROOT
+
+    Review the current command line embedded in the EFI file [33m/boot/efi/EFI/zfsbootmenu/zfsbootmenu.EFI[0m:
+
+    zbm-kcl /boot/efi/EFI/zfsbootmenu/zfsbootmenu.EFI
+
+    Fetch the official ZFSBootMenu release EFI executable, customizing the menu timeout and saving the result to
+    [33mzfsbootmenu-custom.EFI[0m:
+
+    curl -L https://get.zfsbootmenu.org/efi | \
+      zbm-kcl -a zbm.timeout=15 -r zbm.timeout -o zfsbootmenu-slow.EFI -
+
+  [1mSEE ALSO[0m
+
+    zfsbootmenu(7)
