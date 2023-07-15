@@ -113,7 +113,7 @@ install() {
     inst_simple "${_libexec}" "/libexec/$( basename "${_libexec}" )" || _ret=$?
   done
 
-  # User-facing utilities, useful for running in a recover shell
+  # User-facing utilities, useful for running in a recovery shell
   for _bin in "${zfsbootmenu_module_root}"/bin/*; do
     inst_simple "${_bin}" "/bin/$( basename "${_bin}" )" || _ret=$?
   done
