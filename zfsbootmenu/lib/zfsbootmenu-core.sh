@@ -1682,12 +1682,6 @@ Requirements:
 # returns: 0 on success, 1 on failure
 #
 
-# arg1: ZFS filesystem
-# prints: nothing
-# returns: 0 on success, 1 on failure
-#
-# NOTE: this function should *not* be called from a subshell
-
 get_fs_value()
 {
         fs="$1"
@@ -1819,6 +1813,12 @@ load_key_clevis() {
 ######################
 ### end of clevis hook
 ######################
+
+# arg1: ZFS filesystem
+# prints: nothing
+# returns: 0 on success, 1 on failure
+#
+# NOTE: this function should *not* be called from a subshell
 
 load_key() {
   local fs encroot key keypath keyformat keylocation keysource
