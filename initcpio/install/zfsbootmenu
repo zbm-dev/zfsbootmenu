@@ -179,6 +179,12 @@ build() {
     done
 
     # shellcheck disable=SC2154
+    for _file in "${zfsbootmenu_load_key[@]}"; do
+        [ -x "${_file}" ] || continue
+        add_file "${_file}" "/libexec/load_key.d/${_file##*/}"
+    done
+
+    # shellcheck disable=SC2154
     for _file in "${zfsbootmenu_teardown[@]}"; do
         [ -x "${_file}" ] || continue
         add_file "${_file}" "/libexec/teardown.d/${_file##*/}"

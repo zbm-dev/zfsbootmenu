@@ -139,14 +139,16 @@ ZFSBootMenu supports :ref:`custom hooks <zbm-dracut-options>` in three stages:
    any pools.
 2. ``setup`` hooks run after pools are imported, right before ZFSBootMenu will either boot a default environment or
    present a menu.
-3. ``teardown`` hooks run immediately before ZFSBootMenu will ``kexec`` the kernel for the selected environment.
+3. ``load_key`` hooks run immediately before attempting to load a key for a locked filesystem. Each hook is called with the name of the encryption root to be unlocked as its sole argument.
+4. ``teardown`` hooks run immediately before ZFSBootMenu will ``kexec`` the kernel for the selected environment.
 
 When ``zbm-builder.sh`` runs, it will identify custom hooks as executable files in the respective subdirectories of its
 build directory:
 
 1. ``hooks.early_setup.d``
 2. ``hooks.setup.d``
-3. ``hooks.teardown.d``
+3. ``hooks.load_key.d``
+4. ``hooks.teardown.d``
 
 For each hook directory that contains at least one executable file, ``zbm-builder.sh`` will write custom configuration
 snippets for ``dracut`` and ``mkinitcpio`` that will include these files in the output images.

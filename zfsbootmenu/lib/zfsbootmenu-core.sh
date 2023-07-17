@@ -1659,7 +1659,7 @@ cache_key() {
 # NOTE: this function should *not* be called from a subshell
 
 load_key() {
-  local fs encroot key keypath keyformat keylocation keysource
+  local fs encroot key keypath keyformat keylocation keysource _hook
 
   fs="${1}"
   if [ -z "${fs}" ]; then
@@ -1671,6 +1671,19 @@ load_key() {
   # Nothing to do if filesystem is not locked
   if ! encroot="$( be_is_locked "${fs}" )" || [ -z "$encroot" ]; then
     return 0
+  fi
+
+  # Run early load_key hooks, if they exist
+  if [ -d /libexec/load_key.d ]; then
+    for _hook in /libexec/load_key.d/*; do
+      zinfo "Processing hook: ${_hook}"
+      [ -x "${_hook}" ] || continue
+      if ! "${_hook}" "${encroot}"; then
+        zwarn "load-key hook failed for '${encroot}', aborting load attempt"
+        return 1
+      fi
+    done
+    unset _hook
   fi
 
   # Default to 0 when unset

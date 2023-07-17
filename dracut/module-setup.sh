@@ -156,6 +156,18 @@ install() {
     done
   fi
 
+  # Install "load_key" hooks
+  # shellcheck disable=SC2154
+  if [ -n "${zfsbootmenu_load_key}" ]; then
+    for _exec in ${zfsbootmenu_load_key}; do
+      if [ -x "${_exec}" ]; then
+        inst_simple "${_exec}" "/libexec/load_key.d/$(basename "${_exec}")" || _ret=$?
+      else
+        dwarning "load_key script (${_exec}) missing or not executable; cannot install"
+      fi
+    done
+  fi
+
   # Install "teardown" hooks
   # shellcheck disable=SC2154
   if [ -n "${zfsbootmenu_teardown}" ]; then

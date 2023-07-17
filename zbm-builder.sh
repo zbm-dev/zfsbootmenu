@@ -239,7 +239,7 @@ if ! [ -r "${BUILD_DIRECTORY}"/config.yaml ]; then
 fi
 
 # Try to include ZBM hooks in the images by default
-for stage in early_setup setup teardown; do
+for stage in early_setup setup load_key teardown; do
   [ -d "${BUILD_DIRECTORY}/hooks.${stage}.d" ] || continue
 
   # Only executable hooks are added to the image
