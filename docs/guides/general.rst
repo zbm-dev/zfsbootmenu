@@ -8,6 +8,7 @@ General
   general/container-building
   general/native-encryption
   general/uefi-booting
+  general/mkinitcpio
   general/remote-access
   general/portable
 
