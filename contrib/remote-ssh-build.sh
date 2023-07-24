@@ -34,6 +34,7 @@
 # zfs change-key \
 #     -o keylocation=file:///etc/zfs/keys/rpool.key \
 #     -o keyformat=passphrase rpool
+# sed -i '/FILES=/a FILES+=(/etc/zfs/keys/rpool.key) /etc/mkinitcpio.conf
 # update-initramfs -u
 # chmod go= /boot
 # ```
