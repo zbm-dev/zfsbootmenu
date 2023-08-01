@@ -23,10 +23,18 @@ if [ ! -e bin/generate-zbm ] || [ ! -e docs/CHANGELOG.md ]; then
   error "ERROR: run this script from the root of the zfsbootmenu tree"
 fi
 
-# Only tag releases from master
-if [ "$(git rev-parse --abbrev-ref HEAD)" != "master" ]; then
-  error "ERROR: will not tag releases on any branch but master"
-fi
+# Only tag releases from master or a compatible release-tracking branch
+case "$(git rev-parse --abbrev-ref HEAD)" in
+  master)
+    echo "Tagging release from master branch"
+    ;;
+  "v${release%.*}.x"|"v${release%%.*}.x")
+    echo "Tagging release from version-tracking branch"
+    ;;
+  *)
+    error "ERROR: attempt to tag release on incompatible branch"
+    ;;
+esac
 
 # Only allow changes to CHANGELOG.md when tagging releases
 # shellcheck disable=SC2143
