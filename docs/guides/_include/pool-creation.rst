@@ -16,6 +16,7 @@ Create the zpool
        -O xattr=sa \
        -O relatime=on \
        -o autotrim=on \
+       -o compatibility=openzfs-2.1-linux \
        -m none zroot "$POOL_DEVICE"
 
   .. group-tab:: Encrypted
@@ -36,6 +37,7 @@ Create the zpool
        -O keylocation=file:///etc/zfs/zroot.key \
        -O keyformat=passphrase \
        -o autotrim=on \
+       -o compatibility=openzfs-2.1-linux \
        -m none zroot "$POOL_DEVICE"
 
     .. note::
@@ -51,3 +53,9 @@ Create the zpool
       * ``keyformat=passphrase`` - By setting the format to ``passphrase``, we can now force a prompt for this in
         ``zfsbootmenu``. It's critical that your passphrase be something you can type on your keyboard, since you will
         need to type it in to unlock the pool on boot.
+
+.. note::
+
+   The option ``-o compatibility=openzfs-2.1-linux`` ensures that the pool is created only with feature flags supported by the current ZFSBootMenu binary release. If you plan on building a custom ZFSBootMenu image that you will keep synchronized with your host, the compatibility option may be omitted.
+
+   Future releases of ZFSBootMenu may ship a newer version of ZFS which will support a new set of feature flags. Check release notes prior to updating your system.
