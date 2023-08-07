@@ -58,4 +58,4 @@ Create the zpool
 
    The option ``-o compatibility=openzfs-2.1-linux`` ensures that the pool is created only with feature flags supported by the current ZFSBootMenu binary release. If you plan on building a custom ZFSBootMenu image that you will keep synchronized with your host, the compatibility option may be omitted.
 
-   Future releases of ZFSBootMenu may ship a newer version of ZFS which will support a new set of feature flags. Check release notes prior to updating your system.
+   Binary releases of ZFSBootMenu are generally built with the latest stable version of ZFS. Future releases of ZFSBootMenu may therefore support newer feature sets. Check project release notes prior to updating or removing `compatibility` options and upgrading your system pool.
