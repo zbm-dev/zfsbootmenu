@@ -116,6 +116,7 @@ fi
 # If a boot pool is specified, that will be tried first
 try_pool="${boot_pool}"
 zbm_import_attempt=0
+
 while true; do
   if [ -n "${try_pool}" ]; then
     zdebug "attempting to import preferred pool ${try_pool}"
@@ -173,6 +174,7 @@ while true; do
       continue
   fi
 
+  log_unimportable
   # Allow the user to attempt recovery
   emergency_shell "unable to successfully import a pool"
 done

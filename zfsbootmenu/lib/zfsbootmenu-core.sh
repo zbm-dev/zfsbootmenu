@@ -196,6 +196,38 @@ match_hostid() {
   return 1
 }
 
+# args: no arguments
+# prints: nothing
+# returns: nothing
+
+log_unimportable() {
+  local pool id state line error_line
+
+  while read -r line; do
+    case "${line}" in
+      pool*)
+        pool="${line#pool: }"
+        ;;
+      id*)
+        id="${line#id: }"
+        ;;
+      state*)
+        state="${line#state: }"
+        if [ "${state}" == "UNAVAIL" ]; then
+          while read -r error_line; do
+            zerror "${error_line}"
+          done <<<"$( zpool import -N "${id}" 2>&1 )"
+        fi
+        state=
+        pool=
+        id=
+        ;;
+      *)
+        ;;
+    esac
+  done <<<"$( zpool import )"
+}
+
 # args: none
 # prints: nothing
 # returns: 0 if at least one pool is available
@@ -1813,7 +1845,12 @@ emergency_shell() {
 
 	EOF
 
-  command -v efibootmgr >/dev/null 2>&1 && mount_efivarfs "rw"
+  if [ -f "${BASE}/have_errors" ]; then
+    print_kmsg_logs "err"
+    echo ""
+  fi
+
+  command -v efibootmgr >/dev/null 2>&1 && mount_efivarfs "rw" 
 
   # -i (interactive) mode will source $HOME/.bashrc
   /bin/bash -i

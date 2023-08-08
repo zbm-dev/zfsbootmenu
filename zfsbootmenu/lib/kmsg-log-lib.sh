@@ -84,3 +84,58 @@ zerror() {
   : > "${BASE}/have_errors"
   echo "<3>ZFSBootMenu: $1" > /dev/kmsg
 }
+
+# arg1: comma-separated log levels to print
+# prints: all logs at that level
+# returns: nothing
+
+print_kmsg_logs() {
+  local levels levels_array grep_args
+
+  levels="${1}"
+  if [ -z "${levels}" ]; then
+    zerror "levels is undefined"
+    return
+  fi
+
+  # Try to use feature flags found in dmesg from util-linux
+  if output="$( dmesg --notime -f user --color=always -l "${levels}" 2>/dev/null )" ; then
+    echo -e "${output}"
+  else
+    # Both util-linux and Busybox dmesg support the -r flag. However, the log level that is
+    # reported by Busybox dmesg is larger than that reported by util-linux dmesg. Busybox dmesg
+    # is too bare-bones to do much of anything, so we just need to grep for both integers at 
+    # a given log level, then refly on matching ZFSBootMenu for info and lower, and ZBM for debug.
+
+    IFS=',' read -r -a levels_array <<<"${levels}"
+    for level in "${levels_array[@]}"; do
+      case "${level}" in
+        err)
+          grep_args+=( "-e" "^<11>" "-e" "^<3>" )
+          ;;
+        warn)
+          grep_args+=( "-e" "^<12>" "-e" "^<4>" )
+          ;;
+        notice)
+          grep_args+=( "-e" "^<13>" "-e" "^<5>" )
+          ;;
+        info)
+          grep_args+=( "-e" "^<14>" "-e" "^<6>" )
+          ;;
+        debug)
+          grep_args+=( "-e" "^<15>" "-e" "^<7>" )
+          ;;
+        *)
+          grep_args+=( "-e" "." )
+          ;;
+      esac
+    done
+
+    dmesg -r | grep "${grep_args[@]}" \
+      | awk '
+          /ZFSBootMenu:/{ for (i=3; i<=NF; i++){ printf("%s ", $i)}; printf "\n" }
+          /ZBM:/{ for (i=3; i<=NF; i++){ printf("%s ", $i)}; printf "\n" }
+        '
+  fi
+}
+

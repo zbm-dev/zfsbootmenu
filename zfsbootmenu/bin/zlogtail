@@ -2,6 +2,7 @@
 
 # shellcheck disable=SC1091
 source /lib/zfsbootmenu-lib.sh >/dev/null 2>&1 || exit 1
+source /lib/kmsg-log-lib.sh >/dev/null 2>&1 || exit 1
 
 [ -f "${BASE}/have_errors" ] && rm "${BASE}/have_errors"
 [ -f "${BASE}/have_warnings" ] && rm "${BASE}/have_warnings"
@@ -29,10 +30,4 @@ fi
 
 export FZF_DEFAULT_OPTS="${fuzzy_default_options[*]}"
 
-# Try to use feature flags found on dmesg from util-linux
-if output="$( dmesg --notime -f user -l err,warn 2>/dev/null )" ; then
-  echo "${output}" | ${FUZZYSEL}
-else
-  # fall back to manually parsing dmesg output; will show all ZBM generated logs up to zinfo level
-  dmesg | awk '/ZFSBootMenu:/{ for (i=3; i<=NF; i++){ printf("%s ", $i)}; printf "\n" }' | ${FUZZYSEL}
-fi
+print_kmsg_logs "err,warn" | ${FUZZYSEL}
