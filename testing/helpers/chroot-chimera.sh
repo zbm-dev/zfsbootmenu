@@ -22,6 +22,8 @@ for _pool in "$( zpool list -o name -H 2>/dev/null )"; do
 done
 EOF
 
+chmod +x /etc/rc.local
+
 cat << 'EOF' > /usr/share/initramfs-tools/hooks/zfsencryption
 if [ "$1" = "prereqs" ]; then
   exit 0
