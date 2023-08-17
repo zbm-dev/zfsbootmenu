@@ -43,7 +43,7 @@ OPTIONS
   -k  Populate host SSH host and authorized keys
   -E  Add a variable to the image-creation environment
   -o  Distribution to install (may specify more than one)
-      [ void, void-musl, alpine, arch, debian, ubuntu ]
+      [ void, void-musl, alpine, chimera, arch, debian, ubuntu ]
 
 ENVIRONMENT VARIABLES
 
