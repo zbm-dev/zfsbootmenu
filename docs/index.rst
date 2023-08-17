@@ -130,15 +130,17 @@ will prompt the user to enter a passphrase as necessary.
 Distribution Agnostic
 ---------------------
 
-ZFSBootMenu is capable of booting just about any Linux distribution. Major distributions that are known to boot without
+ZFSBootMenu is capable of booting just about any Linux distribution. Distributions that are known to boot without
 requiring any special configuration include:
 
 * Void
-* Arch
+* Chimera
 * Alpine
+* openSUSE (Leap, Tumbleweed)
 * Gentoo
 * Fedora
 * Debian and its descendants (Ubuntu, Linux Mint, Devuan, etc.)
+* Arch
 
 Red Hat and its descendants (RHEL, CentOS, etc.) are expected to work as well but have never been tested.
 
