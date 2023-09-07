@@ -34,7 +34,6 @@ zfsbootmenu_essential_binaries=(
   "lsmod"
   "depmod"
   "dmesg"
-  "less"
   "fzf"
   "setsid"
 )
@@ -43,6 +42,7 @@ zfsbootmenu_essential_binaries=(
 zfsbootmenu_optional_binaries=(
   "mbuffer"
   "column"
+  "less"
 )
 
 # shellcheck disable=SC2034
