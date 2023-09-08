@@ -7,7 +7,7 @@
 # repository you want on /zbm inside the container.
 
 # Use the official Void Linux container
-FROM voidlinux/voidlinux:latest
+FROM ghcr.io/void-linux/void-glibc-full:latest
 ARG ZBM_COMMIT_HASH
 
 # Ensure everything is up-to-date
