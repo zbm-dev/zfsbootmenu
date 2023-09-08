@@ -102,7 +102,7 @@ if [ ! -r "${ZBM_BUILDER}" ]; then
 fi
 
 maintainer="ZFSBootMenu Team, https://zfsbootmenu.org"
-container="$(buildah from ghcr.io/void-linux/void-linux:latest-full-x86_64)"
+container="$(buildah from ghcr.io/void-linux/void-glibc-full:latest)"
 
 buildah config --label author="${maintainer}" "${container}"
 
