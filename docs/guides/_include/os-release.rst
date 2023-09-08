@@ -7,7 +7,7 @@ defined within can be used as a short name for the filesystem that will hold thi
 .. code-block::
 
   source /etc/os-release
-  export ID="$ID"
+  export ID
 
 ..
   vim: softtabstop=2 shiftwidth=2 textwidth=120
