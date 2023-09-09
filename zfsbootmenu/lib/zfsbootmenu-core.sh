@@ -629,8 +629,9 @@ set_default_kernel() {
   set_rw_pool "${pool}" || return 1
   CLEAR_SCREEN=1 load_key "${fs}"
 
-  # Strip /boot/ to list only the file
-  kernel="${2#/boot/}"
+  # Strip leading /boot/ or / to list only the file
+  kernel="${2#/}"
+  kernel="${kernel#boot/}"
 
   # Restore nonspecific default when no kernel specified
   if [ -z "$kernel" ]; then
@@ -682,8 +683,7 @@ set_default_env() {
 
 find_be_kernels() {
   local fs mnt
-  local kernel kernel_base labels version kernel_records
-  local defaults def_kernel def_kernel_file
+  local kpath kdir kernel kernel_base labels version kernel_records
 
   fs="${1}"
   if [ -z "${fs}" ]; then
@@ -698,31 +698,32 @@ find_be_kernels() {
     return 1
   fi
 
-  # Check if /boot even exists in the environment
-  if [ ! -d "${mnt}/boot" ]; then
-    zdebug "${mnt}/boot not present"
-    umount "${mnt}"
-    return 1
-  fi
-
   # Make sure the kernel list starts fresh
-  kernel_records="${mnt/mnt/kernels}"
+  kernel_records="${mnt%/*}/kernels"
   : > "${kernel_records}"
 
-  # shellcheck disable=SC2012,2086
-  for kernel in $( ls \
-      ${mnt}/boot/{{vm,}linu{x,z},kernel}{,-*} 2>/dev/null | sort -V ); do
-    # Pull basename and validate
-    kernel="${kernel##*/}"
-    [ -e "${mnt}/boot/${kernel}" ] || continue
-    zdebug "found ${mnt}/boot/${kernel}"
+  # Look for kernels in / and /boot, sorted in version order
+  while read -r kpath; do
+    # Strip mount point from path
+    kpath="${kpath#"${mnt}"}"
+    # Ensure kpath has leading slash
+    kpath="/${kpath#/}"
+    zdebug "found kernel: ${mnt}${kpath}"
+
+    # Extract base name and kernel directory
+    kernel="${kpath##*/}"
+    kdir="${kpath%"${kernel}"}"
+    # Trim trailing slash (note: kdir will be empty if kernel is at root)
+    kdir="${kdir%/}"
+    zdebug "kernel directory: '${kdir}', file: '${kernel}'"
 
     # Kernel "base" extends to first hyphen
     kernel_base="${kernel%%-*}"
+
     # Kernel "version" is everything after base and may be empty
     version="${kernel#"${kernel_base}"}"
     version="${version#-}"
-    zdebug "kernel version: ${version}"
+    zdebug "kernel base: '${kernel_base}', version: '${version}'"
 
     # initramfs images can take many forms, look for a sensible one
     labels=( "$kernel" )
@@ -730,44 +731,38 @@ find_be_kernels() {
       labels+=( "$version" )
     fi
 
-    local ext pfx lbl i
     # Use a mess of loops instead better brace expansions to control priorities
+    local ext pfx lbl i ipath
     for ext in {.img,""}{"",.{gz,bz2,xz,lzma,lz4,lzo,zstd}}; do
       for pfx in initramfs initrd; do
         for lbl in "${labels[@]}"; do
           for i in "${pfx}-${lbl}${ext}" "${pfx}${ext}-${lbl}"; do
-            if [ -e "${mnt}/boot/${i}" ]; then
-              zdebug "matching ${i} to ${kernel}"
-              echo "${fs} /boot/${kernel} /boot/${i}" >> "${kernel_records}"
-              break 4
-            fi
+            ipath="${kdir}/${i}"
+            [ -e "${mnt}${ipath}" ] || continue
+            zdebug "matching '${i}' to '${kernel}'"
+            echo "${fs} ${kpath} ${ipath}" >> "${kernel_records}"
+            break 4
           done
         done
       done
     done
-  done
+
+  done <<<"$(
+    for k in "${mnt}/boot"/{{vm,}linu{x,z},kernel}{,-*}; do
+      [ -e "${k}" ] && echo "${k}"
+    done | sort -V
+  )"
 
   # No further need for the mount
   umount "${mnt}"
 
-  defaults="$( select_kernel "${fs}" )"
+  # Search was successful if at least one kernel can be selected
+  [ -s "${kernel_records}" ] && select_kernel "${fs}" >/dev/null && return 0
 
-  # shellcheck disable=SC2034
-  IFS=' ' read -r def_fs def_kernel def_initramfs <<<"${defaults}"
-
-  def_kernel_file="${mnt/mnt/default_kernel}"
-
-  # If no default kernel is found, there are no kernels; leave the BE
-  # directory in the same state it would be in had no /boot existed
-  if [ -z "${def_kernel}" ]; then
-    zdebug "no default kernel found for ${fs}"
-    rm -f "${kernel_records}" "${def_kernel_file}"
-    return 1
-  fi
-
-  zdebug "default kernel set to ${def_kernel}"
-  echo "${def_kernel##*/}" > "${def_kernel_file}"
-  return 0
+  # Remove an invalid kernel record if the search failed
+  zerror "failed to find kernels on ${fs}"
+  rm -f "${kernel_records}"
+  return 1
 }
 
 # arg1: ZFS filesystem
@@ -786,8 +781,8 @@ select_kernel() {
 
   kernel_list="$( be_location "${zfsbe}" )/kernels"
 
-  if [ ! -f "${kernel_list}" ]; then
-    zerror "kernel list '${kernel_list}' missing"
+  if [ ! -s "${kernel_list}" ]; then
+    zerror "kernel list '${kernel_list}' missing or empty"
     return 1
   fi
 
@@ -804,9 +799,13 @@ select_kernel() {
       if [[ "${kernel}" =~ ${specific_kernel} ]]; then
         zdebug "matched ${kernel} to ${specific_kernel}"
         kexec_args="${spec_kexec_args}"
-        break
       fi
-    done <<<"$( tac "${kernel_list}" )"
+    done < "${kernel_list}"
+  fi
+
+  if [ -z "${kexec_args}" ]; then
+    zerror "failed to identify kexec arguments for ${fs}"
+    return 1
   fi
 
   zdebug "using kexec args: ${kexec_args}"
