@@ -1802,7 +1802,7 @@ emergency_shell() {
 
 	EOF
 
-  command -v efibootmgr >/dev/null 2>&1 && mount_efivarfs "rw" 
+  command -v efibootmgr >/dev/null 2>&1 && mount_efivarfs "rw"
 
   # -i (interactive) mode will source $HOME/.bashrc
   /bin/bash -i
@@ -1816,7 +1816,7 @@ emergency_shell() {
   done < /proc/self/mounts
 
   # always remount as read-only
-  mount_efivarfs 
+  mount_efivarfs
 }
 
 # prints: zpool list and zfs property list
