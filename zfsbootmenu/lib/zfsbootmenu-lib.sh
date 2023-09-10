@@ -124,7 +124,7 @@ global_header() {
 # returns: 0 on successful selection, 1 if Esc was pressed, 130 if BE list is missing
 
 draw_be() {
-  local env selected header expects kcl_text kcl_bind blank
+  local env selected header expects kcl_text kcl_bind blank sort_key preview_label
 
   env="${1}"
   if [ -z "${env}" ]; then
@@ -157,12 +157,17 @@ draw_be() {
 ^[CTRL+R] recovery shell
 ^[CTRL+H] help" )"
 
+  sort_key="$( get_sort_key )"
+  preview_label="Sorted by: ${sort_key^}"
+
   expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-j,alt-o${kcl_bind:+,${kcl_bind}},right"
 
   # shellcheck disable=SC2086
   if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
       ${HAS_BORDER:+--border-label="$( global_header )"} \
+      ${HAS_BORDER:+--preview-label-pos=2:bottom} \
+      ${HAS_BORDER:+--preview-label="$( colorize orange " ${preview_label} " )"} \
       --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}${HAS_BORDER:+,border-sharp}" \
       --preview="/libexec/zfsbootmenu-preview {} ${BOOTFS}" < "${env}" )"; then
     return 1
@@ -230,7 +235,7 @@ draw_kernel() {
 # returns: 130 on error, 0 otherwise
 
 draw_snapshots() {
-  local benv selected header expects sort_key snapshots
+  local benv selected header expects sort_key snapshots note sorted_by context
 
   benv="${1}"
   if [ -z "${benv}" ]; then
@@ -238,8 +243,6 @@ draw_snapshots() {
     return 130
   fi
   zdebug "using boot environment: ${benv}"
-
-  sort_key="$( get_sort_key )"
 
   header="$( column_wrap "\
 ^[RETURN] duplicate:[CTRL+C] clone only:[CTRL+X] clone and promote
@@ -251,7 +254,54 @@ draw_snapshots() {
 ^[CTRL+D] show diff
 ^[CTRL+H] help" )"
 
-  context="Note: for diff viewer, use tab to select/deselect up to two items"
+  sort_key="$( get_sort_key )"
+
+  sorted_by="Sorted by: ${sort_key^}"
+  note="Note: for diff viewer, use tab to select/deselect up to two items"
+
+  local LEGACY_CONTEXT
+  if [ -n "${HAS_BORDER}" ] ; then
+
+    # Determine how much space should be between the 'sorted by' text and a centered note
+    # Remove 4 extra characters so that we can put a 1 character pad between strings and 
+    # the horizontal box line
+
+    local spacer preview_offset
+
+    spacer=$(( ( ( COLUMNS - ${#note} ) / 2 ) - ${#sorted_by} - 4 ))
+
+    # preview_offset, if defined, controls the initial preview label text position
+    # refer to fzf documentation for the --preview-label-pos flag
+
+    # if spacer length is non-negative, everything fits
+    if [ "${spacer}" -gt 0 ]; then
+      preview_offset="2:"
+      printf -v spacer "%*s" "${spacer}" ""
+      # This is a unicode light solid line, U+2500
+      spacer="${spacer// /─}"
+      note="$( colorize orange "${note}" )"
+      sorted_by="$( colorize orange "${sorted_by}" )"
+      printf -v context " %s %s %s " "${sorted_by}" "${spacer}" "${note}"
+    # fall back to seeing if the note fits in the available columns
+    elif [ ${COLUMNS} -gt $(( ${#note} + 2 )) ]; then
+      printf -v context " %s " "$( colorize orange "${note}" )"
+    # very few screens will be narrower than this ...
+    elif [ ${COLUMNS} -gt $(( ${#sorted_by} +2 )) ]; then
+      preview_offset="2:"
+      printf -v context " %s " "$( colorize orange "${sorted_by}" )"
+    # this is a truly narrow screen, skip all preview label text
+    else
+      context=""
+    fi
+  else
+
+    # when defined this controls passing an additional parameter to zfsbootmenu-preview
+    # as well as extending the preview window height by 1
+    # when undefined, it triggers adding 0 to the window height, leaving it as-is
+
+    LEGACY_CONTEXT=1
+    context="${note}"
+  fi
 
   expects="--expect=alt-x,alt-c,alt-j,alt-o,alt-n,alt-r,left,right"
 
@@ -261,15 +311,6 @@ draw_snapshots() {
 
   zdebug "snapshots: ${snapshots[*]}"
 
-  # when defined this controls passing an additional parameter to zfsbootmenu-preview
-  # as well as extending the preview window height by 1
-  # when undefined, it triggers added 0 to the window height, leaving it as-is
-
-  local LEGACY_CONTEXT
-  if [ -z "${HAS_BORDER}" ]; then
-    LEGACY_CONTEXT=1
-  fi
-
   if ! selected="$(\
       HELP_SECTION=snapshot-management ${FUZZYSEL} \
         --prompt "Snapshot > " --header="${header}" --tac --multi 2 \
@@ -278,8 +319,8 @@ draw_snapshots() {
         --bind="alt-d:execute[ /libexec/zfsbootmenu-diff {+} ]${HAS_REFRESH:++refresh-preview}" \
         --bind="ctrl-d:execute[ /libexec/zfsbootmenu-diff {+} ]${HAS_REFRESH:++refresh-preview}" \
         --bind="ctrl-alt-d:execute[ /libexec/zfsbootmenu-diff {+} ]${HAS_REFRESH:++refresh-preview}" \
-        ${HAS_BORDER:+--preview-label-pos=bottom} \
-        ${HAS_BORDER:+--preview-label="$( colorize orange " ${context} " )"} \
+        ${HAS_BORDER:+--preview-label-pos=${preview_offset:+${preview_offset}}bottom} \
+        ${HAS_BORDER:+--preview-label="${context}"} \
         --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS} ${LEGACY_CONTEXT:+\"${context}\"}" \
         --preview-window="up:$(( PREVIEW_HEIGHT + ${LEGACY_CONTEXT:-0} ))${HAS_BORDER:+,border-sharp}" <<<"${snapshots}" )"
   then
