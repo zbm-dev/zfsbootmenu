@@ -30,6 +30,7 @@ installkernel() {
 
 install() {
   : "${zfsbootmenu_module_root:=/usr/share/zfsbootmenu}"
+  : "${zfsbootmenu_hook_root:=/etc/zfsbootmenu/hooks}"
 
   # shellcheck disable=SC1091
   if ! source "${zfsbootmenu_module_root}/install-helpers.sh" ; then

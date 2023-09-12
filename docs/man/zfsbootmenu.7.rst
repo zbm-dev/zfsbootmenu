@@ -123,7 +123,7 @@ These options are set on the kernel command line when booting the initramfs or U
 
   on the ZFSBootMenu command line. Note that any kernel modules necessary to mount the specified filesystem must be present in the ZFSBootMenu image. (For example, mounting a FAT32 filesystem may require that *vfat.ko*, *fat.ko*, *nls_cp437.ko* and *nls_iso8859_1.ko* be added to the image.)
 
-  Within the hook root, create subdirectories *early-setup.d*, *setup.d* or *teardown.d* to hold hooks for the respective stages of hook execution (early-setup, setup and teardown). ZFSBootMenu will mount the device named by the hook specification, look for the individual hook directories, and copy any files found therein into its own memory-backed root filesystem. The copy is not recursive and further subdirectorie are ignored. Note that, because ZFSBootMenu copies these scripts into its standard hook paths at each boot, it is possible to "mask" a script explicitly included in the ZFSBootMenu image by including an external hook script with the same name in the appropriate directory.
+  Within the hook root, create subdirectories *early-setup.d*, *setup.d*, *load-key.d*, *boot-sel.d* or *teardown.d* to hold hooks for the respective stages of hook execution. ZFSBootMenu will mount the device named by the hook specification, look for the individual hook directories, and copy any files found therein into its own memory-backed root filesystem. The copy is not recursive and further subdirectorie are ignored. Note that, because ZFSBootMenu copies these scripts into its standard hook paths at each boot, it is possible to "mask" a script explicitly included in the ZFSBootMenu image by including an external hook script with the same name in the appropriate directory.
 
 **zbm.kcl_override="boot environment KCL"**
 
@@ -135,12 +135,12 @@ These options are set on the kernel command line when booting the initramfs or U
 
 **zbm.skip_hooks=<hooklist>**
 
-  Skip execution of any early-setup, setup or teardown hooks with file names matching any entry in the comma-separated list *hooklist*. Only base names of hooks (*i.e.*, with any other path component removed) are matched against the *hooklist*.
+  Skip execution of any early-setup, setup, load-key, boot-selection or teardown hooks with file names matching any entry in the comma-separated list *hooklist*. Only base names of hooks (*i.e.*, with any other path component removed) are matched against the *hooklist*.
 
   **NOTE**: The *hooklist* argument **MUST NOT** contain spaces and **MUST NOT** be enclosed in quotes.
 
-Deprecated Command-Line Parameters
-==================================
+Deprecated Parameters
+---------------------
 
 **timeout**
 
@@ -221,31 +221,84 @@ By default, ZFSBootMenu only shows boot environments with the property *mountpoi
   When **org.zfsbootmenu:keysource** is a mountable ZFS filesystem, before prompting for a passphrase when *keylocation* is not set to *prompt*, ZFSBootMenu will attempt to mount **<filesystem>** (unlocking that, if necessary) and search for the key file within **<filesystem>**. When **<filesystem>** specifies a *mountpoint* property that is not *none* or *legacy*, the specified mount point will be stripped (if possible) from the beginning of any *keylocation* property to attempt to identify a key at the point where it would normally be mounted. If no file exists at the stripped path (or the *mountpoint* specifies *none* or *legacy*), keys will be sought at the full path of *keylocation* relative to **<filesystem>**. If a key is found at either location, it will be copied to the initramfs. The copy in the initramfs will be used to decrypt the original boot environment. Copied keys are retained until ZFSBootMenu boots an environment, so a single password prompt can be sufficient to unlock several pools with the same *keysource* or prevent prompts from reappearing when the pool must be exported and reimported (for example, to alter boot parameters from within ZFSBootMenu).
 
 .. _zbm-dracut-options:
+.. _zbm-mkinitcpio-options:
 
-Options for dracut
-==================
+Options for dracut and mkinitcpio
+=================================
 
-In addition to standard dracut configuration options, the ZFSBootMenu dracut module supports addtional options to customize boot behavior.
+In addition to standard configuration options for the dracut or mkinitcpio initramfs image builders, the ZFSBootMenu module for each of these builders supports additional options to customize ZFSBootMenu images.
+
+**zfsbootmenu_module_root=<path>**
+
+  Set this variable to override the default **<path>** where the ZFSBootMenu module expects to find core components that must be installed in the created image. When unspecified, a default of */usr/share/zfsbootmenu* is assumed.
+
+**zfsbootmenu_hook_root=<path>**
+
+  Set this variable to override the default **<path>** where the ZFSBootMenu module expects to find optional user hooks that will be installed in the created image. When unspecified, a default of */etc/zfsbootmenu/hooks* is assumed.
+  
+**zfsbootmenu_skip_gcc_s=yes**
+
+  The ZFSBootMenu module attempts to detect and install a copy of the library **libgcc_s.so** in its initramfs image on glibc systems. Because several executables may have latent dependencies on this library via a **dlopen** call in glibc itself, a failure to detect and install the library will cause initramfs generation to fail. If the host system has no dependencies on **libgcc_s.so**, set **zfsbootmenu_skip_gcc_s=yes** to avoid this failure. Alternatively, if **libgcc_s.so** is present in an undetected location, set this option and configure dracut or mkinitcpio to explicitly install the library.
+
+**zfsbootmenu_miser=yes** (mkinitcpio only)
+
+  By default, **mkinitcpio** uses busybox to populate initramfs images. However, the *zfsbootmenu* hook will install system versions of several utilities that it requires to operate. On most systems, these versions will be provided by util-linux rather than busybox. To prefer busybox for these utilities when possible, set **zfsbootmenu_miser=yes**. Synonyms for *yes* are *1*, *y* or *on*, without regard to letter case.
+
+
+Deprecated Options
+------------------
 
 **zfsbootmenu_early_setup=<executable-list>**
 
-  An optional variable specifying a space-separated list of paths to setup hooks that will be installed in the ZFSBootMenu initramfs. Any path in the list **<executable-list>** that exists and is executable will be installed.
-
-  Any installed early hooks are run after SPL and ZFS kernel modules are loaded and a hostid is configured in */etc/hostid*, but before any zpools have been imported.
+  Deprecated; place early-setup hooks in the directory *${zfsbootmenu_hook_root}/early-setup.d*.
 
 **zfsbootmenu_setup=<executable-list>**
 
-  An optional variable specifying a space-separated list of paths to setup hooks that will be installed in the ZFSBootMenu initramfs. Any path in the list **<executable-list>** that exists and is executable will be installed.
-
-  Any installed hooks are run right before the ZFSBootMenu menu will be presented; ZFS pools will generally have been imported and the default boot environment will be available in the *BOOTFS* environment variable. Hooks will not be run if the countdown timer expires (or was set to zero) and the default boot environment is automatically selected. **Note:** The hooks may be run multiple times if the menu is invoked multiple times, e.g., by dropping to an emergency shell and then returning to the menu. If a script should only run once, the script is responsible for keeping track of this.
+  Deprecated; place setup hooks in the directory *${zfsbootmenu_hook_root}/setup.d*.
 
 **zfsbootmenu_teardown=<executable-list>**
 
-  An optional variable specifying a space-separated list of paths to teardown hooks that will be installed in the ZFSBootMenu initramfs. Any path in the list **<executable-list>** that exists and is executable will be installed.
+  Deprecated; place teardown hooks in the directory *${zfsbootmenu_hook_root}/teardown.d*.
 
-  Some hardware initialized by the kernel used to boot ZFSBootMenu may not be properly reinitialized when a boot environment is launched. Any teardown hooks installed into the ZFSBootMenu initramfs will be run immediately before **kexec** is invoked to jump into the selected kernel. This script can be used, for example, to unbind drivers from hardware or remove kernel modules.
+.. _user-hooks:
 
-  Teardown hooks have access to three environment variables that describe the boot environment that is about to be launched:
+User Hooks
+==========
+
+At various points during operation, ZFSBootMenu will execute optional hooks that allow critical operations to be supplemented with custom behavior. System hooks are provided in the directory *${zfsbootmenu_module_root}/hooks* and are automatically installed in all ZFSBootMenu images. User hooks may be provided in the directory *${zfsbootmenu_hook_root}*.
+
+Hooks should be marked executable and placed in a subdirectory of *${zfsbootmenu_hook_root}* named according to the point at which the hooks are executed:
+
+**early-setup.d**
+
+  Early-setup hooks will be installed from the directory *${zfsbootmenu_hook_root}/early-setup.d*. These hooks will be executed after the SPL and ZFS kernel modules are loaded and a hostid is configured in */etc/hostid*, but before any zpools have been imported.
+
+**setup.d**
+
+  Setup hooks will be installed from the directory *${zfsbootmenu_hook_root}/setup.d*. These hooks will be executed right before the ZFSBootMenu menu will be presented; ZFS pools will generally have been imported and the default boot environment will be available in the *BOOTFS* environment variable. Hooks will not be run if the countdown timer expires (or was set to zero) and the default boot environment is automatically selected. **Note:** The hooks may be run multiple times if the menu is invoked multiple times, e.g., by dropping to an emergency shell and then returning to the menu. If a script should only run once, the script is responsible for keeping track of this.
+
+**load-key.d**
+
+  Load-key hooks will be installed from the directory *${zfsbootmenu_hook_root}/load-key.d*. These hooks will be executed immediately before ZFSBootMenu attempts to unlock an encrypted and locked filesystem. Two environment variables will be exported to describe the filesystem that must be unlocked:
+
+  **ZBM_LOCKED_FS**
+
+    The ZFS filesystem that must be unlocked.
+
+  **ZBM_ENCRYPTION_ROOT**
+
+    The encryption root of the locked filesystem.
+
+  ZFSBootMenu will abandon its attempt to unlock the filesystem and indicate success if the filesystem is not locked after execution of any load-key hook. If the filesystem remains locked after hook execution, ZFSBootMenu will continue with its standard unlocking attempt.
+
+**boot-sel.d**
+**teardown.d**
+
+  Boot-selection hooks will be installed from the directory *${zfsbootmenu_hook_root}/boot-sel.d*. These hooks will be executed after a user has selected a boot environment, but before ZFSBootMenu attempts to load and boot the kernel.
+
+  Teardown hooks will be installed from the directory *${zfsbootmenu_hook_root}/teardown.d*. These hooks will be exectued after the kernel for a selected environment has been loaded and is launching via **kexec** is imminent. Some hardware initialized by the ZFSBootMenu kernel may not be properly reinitialized when a boot environment is launched; teardown hooks may be useful to unbind drivers from problematic hardware or remove associated kernel modules.
+
+  Boot-selection and teardown hooks each have access to three environment variables that describe the boot environment that is about to be launched:
 
   **ZBM_SELECTED_BE**
 
@@ -259,34 +312,10 @@ In addition to standard dracut configuration options, the ZFSBootMenu dracut mod
 
     The path to the initramfs corresponding to the selected kernel, again relative to the root of **ZBM_SELECTED_BE**.
 
-  The hook *must not* assume that the filesystem **ZBM_SELECTED_BE** is currently mounted or that the pool on which it resides is currently imported. However, a teardown hook has the freedom to import a pool (preferably read-only) and mount the boot environment to inject additional processing before boot. To abort a pending boot, invoking
+  No boot-selection or teardown hook should assume that the filesystem named in **ZBM_SELECTED_BE** is currently mounted. In addition, no teardown hook should assume that the ZFSBootMenu environment is in a consistent operating state. ZFSBootMenu may have exported some or all pools prior to executing teardown hooks.
 
-  .. code-block::
+  In general, it is not possible to cleanly abort a boot attempt from boot-selection or teardown hooks. However, a boot-selection or teardown hook may take control of the boot attempt by implementing its own **kexec** load and execution without returning to ZFSBootMenu. This may be useful, for example, to allow ZFSBootMenu to select a boot environment and then restructure the boot process to launch a Xen kernel with the selected environment configured as dom0.
 
-    kexec --unload
-
-  should be sufficient to return to the main menu. Likewise, the hook may construct and execute its own *kexec* command to alter boot-time parameters. This may be useful, for example, to allow ZFSBootMenu to select a boot environment and then restructure the boot process to launch a Xen kernel with the selected environment configured as dom0.
-
-**zfsbootmenu_skip_gcc_s=yes**
-
-  The ZFSBootMenu module attempts to detect and install a copy of the library **libgcc_s.so** in its initramfs image on glibc systems. Because several executables may have latent dependencies on this library via a **dlopen** call in glibc itself, a failure to detect and install the library will cause initramfs generation to fail. If the host system has no dependencies on **libgcc_s.so**, set **zfsbootmenu_skip_gcc_s=yes** to avoid this failure. Alternatively, if **libgcc_s.so** is present in an undetected location, set this option and configure Dracut to explicitly install the library.
-
-.. _zbm-mkinitcpio-options:
-
-Options for mkinitcpio
-======================
-
-The **dracut** options specified above may also be specified in a mkinitcpio configuration file when **generate-zbm** is configured to create images using **mkinitcpio**. However, whereas the **<executable-list>** values in the dracut configuration should be specified as a single, space-separated string; in the mkinitcpio configuration, each **<executable-list>** value must be specified as a Bash array like the standard mkinitcpio arguments.
-
-The following additional arguments may be provided in the mkinitcpio configuration file to further control the creation of ZFSBootMenu images:
-
-**zfsbootmenu_module_root=<path>**
-
-  Set this variable to override the default **<path>** where the mkinitcpio hook looks for the components of ZFSBootMenu that must be installed in the created image.
-
-**zfsbootmenu_miser=yes**
-
-  By default, **mkinitcpio** uses busybox to populate initramfs images. However, the *zfsbootmenu* hook will install system versions of several utilities that it requires to operate. On most systems, these versions will be provided by util-linux rather than busybox. To prefer busybox for these utilities when possible, set **zfsbootmenu_miser=yes**. Synonyms for *yes* are *1*, *y* or *on*, without regard to letter case.
 
 SEE ALSO
 ========

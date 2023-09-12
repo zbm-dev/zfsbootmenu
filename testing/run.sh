@@ -242,7 +242,6 @@ if [ -n "${DISPLAY_TYPE}" ]; then
   # Add release hooks, supported only under Dracut
   if ((DRACUT)); then
     cat <<-EOF >> "${TESTDIR}/dracut.conf.d/testing.conf"
-	zfsbootmenu_early_setup+=" $( realpath -e ../contrib )/10-console-init.sh "
 	zfsbootmenu_early_setup+=" $( realpath -e ../contrib )/20-console-autosize.sh "
 	EOF
   fi
