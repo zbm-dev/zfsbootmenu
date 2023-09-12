@@ -239,32 +239,17 @@ if ! [ -r "${BUILD_DIRECTORY}"/config.yaml ]; then
 fi
 
 # Try to include ZBM hooks in the images by default
-for stage in early_setup setup teardown; do
-  [ -d "${BUILD_DIRECTORY}/hooks.${stage}.d" ] || continue
-
-  # Only executable hooks are added to the image
-  hooks=()
-  for f in "${BUILD_DIRECTORY}/hooks.${stage}.d"/*; do
-    [ -x "${f}" ] || continue
-    hooks+=( "/build/hooks.${stage}.d/${f##*/}" )
-  done
-
-  [ "${#hooks[@]}" -gt 0 ] || continue
-
-  hconf="zbm-builder.${stage}.conf"
-
+if [ -d "${BUILD_DIRECTORY}/hooks" ]; then
   # Write a dracut configuration snippet
   mkdir -p "${BUILD_DIRECTORY}/dracut.conf.d"
-  echo "zfsbootmenu_${stage}+=\" ${hooks[*]} \"" > "${BUILD_DIRECTORY}/dracut.conf.d/${hconf}"
+  echo "zfsbootmenu_hook_root=/build/hooks" \
+    > "${BUILD_DIRECTORY}/dracut.conf.d/user_hooks.conf"
 
   # Write a mkinitcpio configuration snippet
   mkdir -p "${BUILD_DIRECTORY}/mkinitcpio.conf.d"
-  echo "zfsbootmenu_${stage}=(" > "${BUILD_DIRECTORY}/mkinitcpio.conf.d/${hconf}"
-  for hook in "${hooks[@]}"; do
-    echo "  \"${hook}\"" >> "${BUILD_DIRECTORY}/mkinitcpio.conf.d/${hconf}"
-  done
-  echo ")" >> "${BUILD_DIRECTORY}/mkinitcpio.conf.d/${hconf}"
-done
+  echo "zfsbootmenu_hook_root=/build/hooks" \
+    > "${BUILD_DIRECTORY}/mkinitcpio.conf.d/user_hooks.conf"
+fi
 
 # Make `/build` the working directory so relative paths in configs make sense
 exec "${PODMAN}" run \

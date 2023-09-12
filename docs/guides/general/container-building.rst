@@ -133,23 +133,9 @@ The default behavior of ``zbm-builder.sh`` will:
 Custom ZFSBootMenu Hooks
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-ZFSBootMenu supports :ref:`custom hooks <zbm-dracut-options>` in three stages:
-
-1. ``early_setup`` hooks run after the ``zfs`` kernel driver has been loaded, but before ZFSBootMenu attempts to import
-   any pools.
-2. ``setup`` hooks run after pools are imported, right before ZFSBootMenu will either boot a default environment or
-   present a menu.
-3. ``teardown`` hooks run immediately before ZFSBootMenu will ``kexec`` the kernel for the selected environment.
-
-When ``zbm-builder.sh`` runs, it will identify custom hooks as executable files in the respective subdirectories of its
-build directory:
-
-1. ``hooks.early_setup.d``
-2. ``hooks.setup.d``
-3. ``hooks.teardown.d``
-
-For each hook directory that contains at least one executable file, ``zbm-builder.sh`` will write custom configuration
-snippets for ``dracut`` and ``mkinitcpio`` that will include these files in the output images.
+ZFSBootMenu supports :ref:`custom hooks <zbm-dracut-options>` in several stages. When ``zbm-builder.sh`` runs, it will
+configure the subdirectory ``hooks`` of the build directory, if it exists, as the value of ``zfsbootmenu_hook_root`` to
+allow custom hooks to be included in ZFSBootMenu images.
 
 Fully Customizing Images
 ~~~~~~~~~~~~~~~~~~~~~~~~

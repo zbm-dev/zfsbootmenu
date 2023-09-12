@@ -230,7 +230,7 @@ zbm.hookroot=UUID=DEAD\-BEEF//EFI/zfsbootmenu/hooks
 .sp
 on the ZFSBootMenu command line. Note that any kernel modules necessary to mount the specified filesystem must be present in the ZFSBootMenu image. (For example, mounting a FAT32 filesystem may require that \fIvfat.ko\fP, \fIfat.ko\fP, \fInls_cp437.ko\fP and \fInls_iso8859_1.ko\fP be added to the image.)
 .sp
-Within the hook root, create subdirectories \fIearly\-setup.d\fP, \fIsetup.d\fP or \fIteardown.d\fP to hold hooks for the respective stages of hook execution (early\-setup, setup and teardown). ZFSBootMenu will mount the device named by the hook specification, look for the individual hook directories, and copy any files found therein into its own memory\-backed root filesystem. The copy is not recursive and further subdirectorie are ignored. Note that, because ZFSBootMenu copies these scripts into its standard hook paths at each boot, it is possible to \(dqmask\(dq a script explicitly included in the ZFSBootMenu image by including an external hook script with the same name in the appropriate directory.
+Within the hook root, create subdirectories \fIearly\-setup.d\fP, \fIsetup.d\fP, \fIload\-key.d\fP, \fIboot\-sel.d\fP or \fIteardown.d\fP to hold hooks for the respective stages of hook execution. ZFSBootMenu will mount the device named by the hook specification, look for the individual hook directories, and copy any files found therein into its own memory\-backed root filesystem. The copy is not recursive and further subdirectorie are ignored. Note that, because ZFSBootMenu copies these scripts into its standard hook paths at each boot, it is possible to \(dqmask\(dq a script explicitly included in the ZFSBootMenu image by including an external hook script with the same name in the appropriate directory.
 .UNINDENT
 .UNINDENT
 .sp
@@ -254,12 +254,12 @@ zbm.kcl_override=\(dqsome alternate set=\(aqof arguments\(aq\(dq
 \fBzbm.skip_hooks=<hooklist>\fP
 .INDENT 0.0
 .INDENT 3.5
-Skip execution of any early\-setup, setup or teardown hooks with file names matching any entry in the comma\-separated list \fIhooklist\fP\&. Only base names of hooks (\fIi.e.\fP, with any other path component removed) are matched against the \fIhooklist\fP\&.
+Skip execution of any early\-setup, setup, load\-key, boot\-selection or teardown hooks with file names matching any entry in the comma\-separated list \fIhooklist\fP\&. Only base names of hooks (\fIi.e.\fP, with any other path component removed) are matched against the \fIhooklist\fP\&.
 .sp
 \fBNOTE\fP: The \fIhooklist\fP argument \fBMUST NOT\fP contain spaces and \fBMUST NOT\fP be enclosed in quotes.
 .UNINDENT
 .UNINDENT
-.SH DEPRECATED COMMAND-LINE PARAMETERS
+.SS Deprecated Parameters
 .sp
 \fBtimeout\fP
 .INDENT 0.0
@@ -378,34 +378,83 @@ Normally, when ZFSBootMenu attempts to load encryption keys for a boot environme
 When \fBorg.zfsbootmenu:keysource\fP is a mountable ZFS filesystem, before prompting for a passphrase when \fIkeylocation\fP is not set to \fIprompt\fP, ZFSBootMenu will attempt to mount \fB<filesystem>\fP (unlocking that, if necessary) and search for the key file within \fB<filesystem>\fP\&. When \fB<filesystem>\fP specifies a \fImountpoint\fP property that is not \fInone\fP or \fIlegacy\fP, the specified mount point will be stripped (if possible) from the beginning of any \fIkeylocation\fP property to attempt to identify a key at the point where it would normally be mounted. If no file exists at the stripped path (or the \fImountpoint\fP specifies \fInone\fP or \fIlegacy\fP), keys will be sought at the full path of \fIkeylocation\fP relative to \fB<filesystem>\fP\&. If a key is found at either location, it will be copied to the initramfs. The copy in the initramfs will be used to decrypt the original boot environment. Copied keys are retained until ZFSBootMenu boots an environment, so a single password prompt can be sufficient to unlock several pools with the same \fIkeysource\fP or prevent prompts from reappearing when the pool must be exported and reimported (for example, to alter boot parameters from within ZFSBootMenu).
 .UNINDENT
 .UNINDENT
-.SH OPTIONS FOR DRACUT
+.SH OPTIONS FOR DRACUT AND MKINITCPIO
 .sp
-In addition to standard dracut configuration options, the ZFSBootMenu dracut module supports addtional options to customize boot behavior.
+In addition to standard configuration options for the dracut or mkinitcpio initramfs image builders, the ZFSBootMenu module for each of these builders supports additional options to customize ZFSBootMenu images.
+.sp
+\fBzfsbootmenu_module_root=<path>\fP
+.INDENT 0.0
+.INDENT 3.5
+Set this variable to override the default \fB<path>\fP where the ZFSBootMenu module expects to find core components that must be installed in the created image. When unspecified, a default of \fI/usr/share/zfsbootmenu\fP is assumed.
+.UNINDENT
+.UNINDENT
+.sp
+\fBzfsbootmenu_hook_root=<path>\fP
+.INDENT 0.0
+.INDENT 3.5
+Set this variable to override the default \fB<path>\fP where the ZFSBootMenu module expects to find optional user hooks that will be installed in the created image. When unspecified, a default of \fI/etc/zfsbootmenu/hooks\fP is assumed.
+.UNINDENT
+.UNINDENT
+.sp
+\fBzfsbootmenu_skip_gcc_s=yes\fP
+.INDENT 0.0
+.INDENT 3.5
+The ZFSBootMenu module attempts to detect and install a copy of the library \fBlibgcc_s.so\fP in its initramfs image on glibc systems. Because several executables may have latent dependencies on this library via a \fBdlopen\fP call in glibc itself, a failure to detect and install the library will cause initramfs generation to fail. If the host system has no dependencies on \fBlibgcc_s.so\fP, set \fBzfsbootmenu_skip_gcc_s=yes\fP to avoid this failure. Alternatively, if \fBlibgcc_s.so\fP is present in an undetected location, set this option and configure dracut or mkinitcpio to explicitly install the library.
+.UNINDENT
+.UNINDENT
+.sp
+\fBzfsbootmenu_miser=yes\fP (mkinitcpio only)
+.INDENT 0.0
+.INDENT 3.5
+By default, \fBmkinitcpio\fP uses busybox to populate initramfs images. However, the \fIzfsbootmenu\fP hook will install system versions of several utilities that it requires to operate. On most systems, these versions will be provided by util\-linux rather than busybox. To prefer busybox for these utilities when possible, set \fBzfsbootmenu_miser=yes\fP\&. Synonyms for \fIyes\fP are \fI1\fP, \fIy\fP or \fIon\fP, without regard to letter case.
+.UNINDENT
+.UNINDENT
+.SS Deprecated Options
 .sp
 \fBzfsbootmenu_early_setup=<executable\-list>\fP
 .INDENT 0.0
 .INDENT 3.5
-An optional variable specifying a space\-separated list or bash array of paths to setup hooks that will be installed in the ZFSBootMenu initramfs. Any path in the list \fB<executable\-list>\fP that exists and is executable will be installed.
-.sp
-Any installed early hooks are run after SPL and ZFS kernel modules are loaded and a hostid is configured in \fI/etc/hostid\fP, but before any zpools have been imported.
+Deprecated; place early\-setup hooks in the directory \fI${zfsbootmenu_hook_root}/early\-setup.d\fP\&.
 .UNINDENT
 .UNINDENT
 .sp
 \fBzfsbootmenu_setup=<executable\-list>\fP
 .INDENT 0.0
 .INDENT 3.5
-An optional variable specifying a space\-separated list or bash array of paths to setup hooks that will be installed in the ZFSBootMenu initramfs. Any path in the list \fB<executable\-list>\fP that exists and is executable will be installed.
-.sp
-Any installed hooks are run right before the ZFSBootMenu menu will be presented; ZFS pools will generally have been imported and the default boot environment will be available in the \fIBOOTFS\fP environment variable. Hooks will not be run if the countdown timer expires (or was set to zero) and the default boot environment is automatically selected. \fBNote:\fP The hooks may be run multiple times if the menu is invoked multiple times, e.g., by dropping to an emergency shell and then returning to the menu. If a script should only run once, the script is responsible for keeping track of this.
+Deprecated; place setup hooks in the directory \fI${zfsbootmenu_hook_root}/setup.d\fP\&.
 .UNINDENT
 .UNINDENT
 .sp
-\fBzfsbootmenu_load_key=<executable\-list>\fP
+\fBzfsbootmenu_teardown=<executable\-list>\fP
 .INDENT 0.0
 .INDENT 3.5
-An optional variable specifying a space\-separated list or bash array of paths to load\-key hooks that will be installed in the ZFSBootMenu initramfs. Any path in the list \fB<executable\-list>\fP that exists and is executable will be installed.
+Deprecated; place teardown hooks in the directory \fI${zfsbootmenu_hook_root}/teardown.d\fP\&.
+.UNINDENT
+.UNINDENT
+.SH USER HOOKS
 .sp
-Any installed hooks are run immediately before ZFSBootMenu attempts to unlock an encrypted and locked filesystem. Load\-key hooks have access to two environment variables that describe the filesystem that must be unlocked:
+At various points during operation, ZFSBootMenu will execute optional hooks that allow critical operations to be supplemented with custom behavior. System hooks are provided in the directory \fI${zfsbootmenu_module_root}/hooks\fP and are automatically installed in all ZFSBootMenu images. User hooks may be provided in the directory \fI${zfsbootmenu_hook_root}\fP\&.
+.sp
+Hooks should be marked executable and placed in a subdirectory of \fI${zfsbootmenu_hook_root}\fP named according to the point at which the hooks are executed:
+.sp
+\fBearly\-setup.d\fP
+.INDENT 0.0
+.INDENT 3.5
+Early\-setup hooks will be installed from the directory \fI${zfsbootmenu_hook_root}/early\-setup.d\fP\&. These hooks will be executed after the SPL and ZFS kernel modules are loaded and a hostid is configured in \fI/etc/hostid\fP, but before any zpools have been imported.
+.UNINDENT
+.UNINDENT
+.sp
+\fBsetup.d\fP
+.INDENT 0.0
+.INDENT 3.5
+Setup hooks will be installed from the directory \fI${zfsbootmenu_hook_root}/setup.d\fP\&. These hooks will be executed right before the ZFSBootMenu menu will be presented; ZFS pools will generally have been imported and the default boot environment will be available in the \fIBOOTFS\fP environment variable. Hooks will not be run if the countdown timer expires (or was set to zero) and the default boot environment is automatically selected. \fBNote:\fP The hooks may be run multiple times if the menu is invoked multiple times, e.g., by dropping to an emergency shell and then returning to the menu. If a script should only run once, the script is responsible for keeping track of this.
+.UNINDENT
+.UNINDENT
+.sp
+\fBload\-key.d\fP
+.INDENT 0.0
+.INDENT 3.5
+Load\-key hooks will be installed from the directory \fI${zfsbootmenu_hook_root}/load\-key.d\fP\&. These hooks will be executed immediately before ZFSBootMenu attempts to unlock an encrypted and locked filesystem. Two environment variables will be exported to describe the filesystem that must be unlocked:
 .sp
 \fBZBM_LOCKED_FS\fP
 .INDENT 0.0
@@ -425,17 +474,15 @@ ZFSBootMenu will abandon its attempt to unlock the filesystem and indicate succe
 .UNINDENT
 .UNINDENT
 .sp
-\fBzfsbootmenu_boot_env=<executable\-list>\fP
-\fBzfsbootmenu_teardown=<executable\-list>\fP
+\fBboot\-sel.d\fP
+\fBteardown.d\fP
 .INDENT 0.0
 .INDENT 3.5
-Optional variables specifying space\-separated lists or bash arrays of paths to boot\-environment and teardown hooks, respectively, that will be installed in the ZFSBootMenu initramfs. Any path in the list \fB<executable\-list>\fP that exists and is executable will be installed.
+Boot\-selection hooks will be installed from the directory \fI${zfsbootmenu_hook_root}/boot\-sel.d\fP\&. These hooks will be executed after a user has selected a boot environment, but before ZFSBootMenu attempts to load and boot the kernel.
 .sp
-Boot\-environment hooks are run after a user has selected a boot environment, but before ZFSBootMenu attempts to load and boot the kernel.
+Teardown hooks will be installed from the directory \fI${zfsbootmenu_hook_root}/teardown.d\fP\&. These hooks will be exectued after the kernel for a selected environment has been loaded and is launching via \fBkexec\fP is imminent. Some hardware initialized by the ZFSBootMenu kernel may not be properly reinitialized when a boot environment is launched; teardown hooks may be useful to unbind drivers from problematic hardware or remove associated kernel modules.
 .sp
-Teardown hooks are run after the kernel for a selected environment has been loaded and is launching via \fBkexec\fP is imminent. Some hardware initialized by the ZFSBootMenu kernel may not be properly reinitialized when a boot environment is launched; teardown hooks may be useful to unbind drivers from problematic hardware or remove associated kernel modules.
-.sp
-Boot\-envirnment and teardown hooks have access to three environment variables that describe the boot environment that is about to be launched:
+Boot\-selection and teardown hooks each have access to three environment variables that describe the boot environment that is about to be launched:
 .sp
 \fBZBM_SELECTED_BE\fP
 .INDENT 0.0
@@ -458,35 +505,9 @@ The path to the initramfs corresponding to the selected kernel, again relative t
 .UNINDENT
 .UNINDENT
 .sp
-No boot\-environment or teardown hook should assume that the filesystem named in \fBZBM_SELECTED_BE\fP\&. In addition, no teardown hook should assume that the ZFSBootMenu environment is in a consistent operating state. ZFSBootMenu may have exported some or all pools prior to executing teardown hooks.
+No boot\-selection or teardown hook should assume that the filesystem named in \fBZBM_SELECTED_BE\fP is currently mounted. In addition, no teardown hook should assume that the ZFSBootMenu environment is in a consistent operating state. ZFSBootMenu may have exported some or all pools prior to executing teardown hooks.
 .sp
-In general, it is not possible to cleanly abort a boot attempt from boot\-environment or teardown hooks. However, a boot\-environment or teardown hook may take control of the boot attempt by implementing its own \fBkexec\fP load and execution without returning to ZFSBootMenu. This may be useful, for example, to allow ZFSBootMenu to select a boot environment and then restructure the boot process to launch a Xen kernel with the selected environment configured as dom0.
-.UNINDENT
-.UNINDENT
-.sp
-\fBzfsbootmenu_skip_gcc_s=yes\fP
-.INDENT 0.0
-.INDENT 3.5
-The ZFSBootMenu module attempts to detect and install a copy of the library \fBlibgcc_s.so\fP in its initramfs image on glibc systems. Because several executables may have latent dependencies on this library via a \fBdlopen\fP call in glibc itself, a failure to detect and install the library will cause initramfs generation to fail. If the host system has no dependencies on \fBlibgcc_s.so\fP, set \fBzfsbootmenu_skip_gcc_s=yes\fP to avoid this failure. Alternatively, if \fBlibgcc_s.so\fP is present in an undetected location, set this option and configure Dracut to explicitly install the library.
-.UNINDENT
-.UNINDENT
-.SH OPTIONS FOR MKINITCPIO
-.sp
-The \fBdracut\fP options specified above may also be specified in a mkinitcpio configuration file when \fBgenerate\-zbm\fP is configured to create images using \fBmkinitcpio\fP\&. It is generally recommended that any \fB<executable\-list>\fP values for ZFSBootMenu hook options be specified as bash arrays, which is both idiomatic for mkinitcpio configuration and more robust.
-.sp
-The following additional arguments may be provided in the mkinitcpio configuration file to further control the creation of ZFSBootMenu images:
-.sp
-\fBzfsbootmenu_module_root=<path>\fP
-.INDENT 0.0
-.INDENT 3.5
-Set this variable to override the default \fB<path>\fP where the mkinitcpio hook looks for the components of ZFSBootMenu that must be installed in the created image.
-.UNINDENT
-.UNINDENT
-.sp
-\fBzfsbootmenu_miser=yes\fP
-.INDENT 0.0
-.INDENT 3.5
-By default, \fBmkinitcpio\fP uses busybox to populate initramfs images. However, the \fIzfsbootmenu\fP hook will install system versions of several utilities that it requires to operate. On most systems, these versions will be provided by util\-linux rather than busybox. To prefer busybox for these utilities when possible, set \fBzfsbootmenu_miser=yes\fP\&. Synonyms for \fIyes\fP are \fI1\fP, \fIy\fP or \fIon\fP, without regard to letter case.
+In general, it is not possible to cleanly abort a boot attempt from boot\-selection or teardown hooks. However, a boot\-selection or teardown hook may take control of the boot attempt by implementing its own \fBkexec\fP load and execution without returning to ZFSBootMenu. This may be useful, for example, to allow ZFSBootMenu to select a boot environment and then restructure the boot process to launch a Xen kernel with the selected environment configured as dom0.
 .UNINDENT
 .UNINDENT
 .SH SEE ALSO

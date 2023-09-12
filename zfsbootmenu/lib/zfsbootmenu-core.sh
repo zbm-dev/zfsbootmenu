@@ -298,7 +298,7 @@ kexec_kernel() {
   )
 
   # Run boot-environment hooks, if they exist
-  env "${hook_envs[@]}" /libexec/zfsbootmenu-run-hooks "boot-env.d"
+  env "${hook_envs[@]}" /libexec/zfsbootmenu-run-hooks "boot-sel.d"
 
   tput cnorm
   tput clear
@@ -1883,13 +1883,18 @@ import_zbm_hooks() {
     return 1
   fi
 
-  for hdir in early-setup.d setup.d teardown.d; do
-    hsrc="${hook_mount}/${hook_path}/${hdir}"
+  for hsrc in "${hook_mount}/${hook_path}"/*; do
     [ -d "${hsrc}" ] || continue
-    mkdir -p "/libexec/${hdir}"
+    hdir="${hsrc##*/}"
+
+    if ! mkdir -p "/libexec/hooks/${hdir}"; then
+      zwarn "failed to create hook directory ${hdir}"
+      continue;
+    fi
+
     for hfile in "${hsrc}"/*; do
       [ -f "${hfile}" ] || continue
-      if ! cp "${hfile}" "/libexec/${hdir}" >/dev/null 2>&1; then
+      if ! cp "${hfile}" "/libexec/hooks/${hdir}" >/dev/null 2>&1; then
         zwarn "failed to copy user hook ${hfile}"
       fi
     done

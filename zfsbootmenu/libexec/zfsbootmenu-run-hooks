@@ -21,13 +21,13 @@ if [ -z "${hook_stage}" ]; then
   exit 1
 fi
 
-if [ -r "/libexec/${hook_stage}" ]; then
+if [ ! -d "/libexec/hooks/${hook_stage}" ]; then
   zdebug "no hook directory for ${hook_stage}"
   exit 1
 fi
 
 _ran_hook=
-for _hook in /libexec/"${hook_stage}"/*; do
+for _hook in "/libexec/hooks/${hook_stage}"/*; do
   [ -x "${_hook}" ] || continue
   zinfo "processing ${_hook}"
   "${_hook}"

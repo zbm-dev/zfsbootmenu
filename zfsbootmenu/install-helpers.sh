@@ -247,12 +247,12 @@ populate_hook_dir() {
   shift
   [ "$#" -gt 0 ] || return 0
 
-  mkdir -p "${BUILDROOT}/libexec/${hlev}" || return 1
+  mkdir -p "${BUILDROOT}/libexec/hooks/${hlev}" || return 1
 
   ret=0
   for hfile in "$@"; do
     [ -x "${hfile}" ] || continue
-    zbm_install_file "${hfile}" "/libexec/${hlev}/${hfile##*/}" || ret=$?
+    zbm_install_file "${hfile}" "/libexec/hooks/${hlev}/${hfile##*/}" || ret=$?
   done
 
   return $ret
@@ -260,18 +260,21 @@ populate_hook_dir() {
 
 
 install_zbm_hooks() {
-  local hdir hsrc hfile ret
+  local hdir hsrc hfile ret stages
 
   ret=0
 
-  # Install system hooks first
-  for hdir in early-setup.d setup.d load-key.d boot-env.d teardown.d; do
+  stages=( early-setup.d setup.d load-key.d boot-sel.d teardown.d )
+
+  # Install system hooks first so user options can override them
+  for hdir in "${stages[@]}"; do
     hsrc="${zfsbootmenu_module_root}/hooks/${hdir}"
     [ -d "${hsrc}" ] || continue
     populate_hook_dir "${hdir}" "${hsrc}"/* || ret=$?
   done
 
-  # Next, install user hooks to allow them to override system versions
+  # Install user hooks via deprecated syntax first
+
   # shellcheck disable=SC2154
   if [[ "${zfsbootmenu_early_setup@a}" != *a* ]]; then
     # shellcheck disable=SC2086
@@ -289,28 +292,20 @@ install_zbm_hooks() {
   fi
 
   # shellcheck disable=SC2154
-  if [[ "${zfsbootmenu_load_key@a}" != *a* ]]; then
-    # shellcheck disable=SC2086
-    populate_hook_dir "load-key.d" ${zfsbootmenu_load_key} || ret=$?
-  else
-    populate_hook_dir "load-key.d" "${zfsbootmenu_load_key[@]}" || ret=$?
-  fi
-
-  # shellcheck disable=SC2154
-  if [[ "${zfsbootmenu_boot_env@a}" != *a* ]]; then
-    # shellcheck disable=SC2086
-    populate_hook_dir "boot-env.d" ${zfsbootmenu_boot_env} || ret=$?
-  else
-    populate_hook_dir "boot-env.d" "${zfsbootmenu_boot_env[@]}" || ret=$?
-  fi
-
-  # shellcheck disable=SC2154
   if [[ "${zfsbootmenu_teardown@a}" != *a* ]]; then
     # shellcheck disable=SC2086
     populate_hook_dir "teardown.d" ${zfsbootmenu_teardown} || ret=$?
   else
     populate_hook_dir "teardown.d" "${zfsbootmenu_teardown[@]}" || ret=$?
   fi
+
+  # Install user hooks using the preferred zfsbootmenu_hook_root mechanism
+  for hdir in "${stages[@]}"; do
+    # shellcheck disable=SC2154
+    hsrc="${zfsbootmenu_hook_root}/${hdir}"
+    [ -d "${hsrc}" ] || continue
+    populate_hook_dir "${hdir}" "${hsrc}"/* || ret=$?
+  done
 
   return $ret
 }
