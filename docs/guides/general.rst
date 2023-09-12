@@ -10,6 +10,7 @@ General
   general/uefi-booting
   general/mkinitcpio
   general/remote-access
+  general/tailscale
   general/portable
 
 ..
