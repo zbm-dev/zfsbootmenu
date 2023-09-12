@@ -3,8 +3,10 @@
 
 usage() {
   cat <<-EOF
-	USAGE: $0 [-h] [-r <path>] [-R <repo>] [-p <pkg>] <tag> [zbm-commit-like]
+	USAGE: $0 [OPTIONS] <tag> [zbm-commit-like]
 	Create a container image for building ZFSBootMenu
+	
+	OPTIONS
 	
 	-h: Display this message and exit
 	
@@ -16,11 +18,26 @@ usage() {
 	
 	-R <repo>:
 	   Configure XBPS to use the specified Void Linux package repository
+	
+	   Default: https://repo-fastly.voidlinux.org/current/
+	
 	   (One repository per argument; may be repeated as needed)
+	
+	-k <kver>:
+	   Include the specified Void Linux kernel series in the image; kernel
+	   series take the form <major>.<minor> and correspond to Void packages
+	   linux<kver> and linux<kver>-headers
+	
+	   Default: install 5.10, 5.15 and 6.1
+	
+	   (One version per argument; may be repeated as needed)
 	
 	-p <pkg>:
 	   Include the specified Void Linux package in the image
 	   (One package per argument; may be repeated as needed)
+	
+	
+	ARGUMENTS
 	
 	<tag>:
 	   Tag assigned to container image
@@ -35,16 +52,15 @@ set -o errexit
 
 extra_pkgs=()
 
+kern_series=()
+
 host_mounts=()
 host_repos=()
 
 web_repos=()
 
-while getopts "hp:r:R:" opt; do
+while getopts "hr:R:k:p:" opt; do
   case "${opt}" in
-    p)
-      extra_pkgs+=( "${OPTARG}" )
-      ;;
     r)
       target="/pkgs/${#host_repos[@]}"
       host_repos+=( "${target}" )
@@ -62,6 +78,12 @@ while getopts "hp:r:R:" opt; do
       esac
 
       web_repos+=( "${OPTARG}" )
+      ;;
+    k)
+      kern_series+=( "linux${OPTARG}" )
+      ;;
+    p)
+      extra_pkgs+=( "${OPTARG}" )
       ;;
     h)
       usage
@@ -90,6 +112,22 @@ if [ -z "${zbm_commit_hash}" ]; then
     unset zbm_commit_hash
   fi
 fi
+
+# Use default Void repo when nothing was specified
+if [ "${#web_repos[@]}" -lt 1 ]; then
+  web_repos=( "https://repo-fastly.voidlinux.org/current" )
+fi
+
+# Use default kernel series when nothing was specified
+if [ "${#kern_series[@]}" -lt 1 ]; then
+  kern_series=( "linux5.10" "linux5.15" "linux6.1" )
+fi
+
+# Populate the correspoding headers list
+kern_headers=()
+for _kern in "${kern_series[@]}"; do
+  kern_headers+=( "${_kern}-headers" )
+done
 
 if [ -z "${ZBM_BUILDER}" ]; then
   ZBM_BUILDER="./releng/docker/build-init.sh"
@@ -139,18 +177,17 @@ EOF
 # Install ZFSBootMenu dependencies and components necessary to build images
 buildah run "${host_mounts[@]}" "${container}" \
   sh -c 'xbps-query -Rp run_depends zfsbootmenu | xargs xbps-install -y'
+
 buildah run "${host_mounts[@]}" "${container}" \
-  xbps-install -y linux5.10 linux5.10-headers \
-  linux5.15 linux5.15-headers linux6.1 linux6.1-headers zstd \
-  gummiboot-efistub curl yq-go bash kbd terminus-font \
-  dracut mkinitcpio dracut-network gptfdisk iproute2 iputils parted curl \
-  dosfstools e2fsprogs efibootmgr cryptsetup openssh util-linux kpartx
+  xbps-install -y "${kern_series[@]}" "${kern_headers[@]}" \
+  zstd gummiboot-efistub curl yq-go bash kbd terminus-font \
+  dracut mkinitcpio dracut-network gptfdisk iproute2 iputils parted \
+  curl dosfstools e2fsprogs efibootmgr cryptsetup openssh util-linux kpartx
 
 # Remove headers and development toolchain, but keep binutils for objcopy
 buildah run "${container}" sh -c 'echo "ignorepkg=dkms" > /etc/xbps.d/10-nodkms.conf'
 buildah run "${container}" xbps-pkgdb -m manual binutils
-buildah run "${container}" \
-  xbps-remove -Roy linux5.10-headers linux5.15-headers linux6.1-headers dkms
+buildah run "${container}" xbps-remove -Roy dkms "${kern_headers[@]}"
 buildah run "${container}" sh -c 'rm -f /var/cache/xbps/*'
 
 # Record a commit hash if one is available
