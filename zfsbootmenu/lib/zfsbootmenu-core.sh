@@ -273,7 +273,7 @@ mount_zfs() {
 # returns: 1 on error, otherwise does not return
 
 kexec_kernel() {
-  local selected fs kernel initramfs output
+  local selected fs kernel initramfs output hook_envs
 
   selected="${1}"
   if [ -z "${selected}" ]; then
@@ -289,6 +289,16 @@ kexec_kernel() {
   zdebug "fs: ${fs}, kernel: ${kernel}, initramfs: ${initramfs}"
 
   CLEAR_SCREEN=1 load_key "${fs}"
+
+  # Variables to tell user hooks what BE has been selected
+  hook_envs=(
+    ZBM_SELECTED_BE="${fs}"
+    ZBM_SELECTED_KERNEL="${kernel}"
+    ZBM_SELECTED_INITRAMFS="${initramfs}"
+  )
+
+  # Run boot-environment hooks, if they exist
+  env "${hook_envs[@]}" /libexec/zfsbootmenu-run-hooks "boot-env.d"
 
   tput cnorm
   tput clear
@@ -332,10 +342,7 @@ kexec_kernel() {
   done <<<"$( zpool list -H -o name )"
 
   # Run teardown hooks, if they exist
-  env "ZBM_SELECTED_INITRAMFS=${initramfs}" \
-    "ZBM_SELECTED_KERNEL=${kernel}" \
-    "ZBM_SELECTED_BE=${fs}" \
-    /libexec/zfsbootmenu-run-hooks "teardown.d"
+  env "${hook_envs[@]}" /libexec/zfsbootmenu-run-hooks "teardown.d"
 
   if ! output="$( kexec -e -i 2>&1 )"; then
     zerror "kexec -e -i failed!"
@@ -1653,7 +1660,7 @@ cache_key() {
 # NOTE: this function should *not* be called from a subshell
 
 load_key() {
-  local fs encroot key keypath keyformat keylocation keysource
+  local fs encroot key keypath keyformat keylocation keysource hook_envs
 
   fs="${1}"
   if [ -z "${fs}" ]; then
@@ -1663,8 +1670,18 @@ load_key() {
   zdebug "fs set to ${fs}"
 
   # Nothing to do if filesystem is not locked
-  if ! encroot="$( be_is_locked "${fs}" )" || [ -z "$encroot" ]; then
+  if ! encroot="$( be_is_locked "${fs}" )" || [ -z "${encroot}" ]; then
     return 0
+  fi
+
+  # Run load-key hooks, if they exist
+  hook_envs=( ZBM_LOCKED_FS="${fs}" ZBM_ENCRYPTION_ROOT="${encroot}" )
+  if env "${hook_envs[@]}" /libexec/zfsbootmenu-run-hooks "load-key.d"; then
+    # If hooks ran, check if the filesystem has been unlocked
+    if ! be_is_locked "${fs}" >/dev/null; then
+      zdebug "fs ${fs} unlocked by user hooks"
+      return 0
+    fi
   fi
 
   # Default to 0 when unset

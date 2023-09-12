@@ -265,7 +265,7 @@ install_zbm_hooks() {
   ret=0
 
   # Install system hooks first
-  for hdir in early-setup.d setup.d teardown.d; do
+  for hdir in early-setup.d setup.d load-key.d boot-env.d teardown.d; do
     hsrc="${zfsbootmenu_module_root}/hooks/${hdir}"
     [ -d "${hsrc}" ] || continue
     populate_hook_dir "${hdir}" "${hsrc}"/* || ret=$?
@@ -286,6 +286,22 @@ install_zbm_hooks() {
     populate_hook_dir "setup.d" ${zfsbootmenu_setup} || ret=$?
   else
     populate_hook_dir "setup.d" "${zfsbootmenu_setup[@]}" || ret=$?
+  fi
+
+  # shellcheck disable=SC2154
+  if [[ "${zfsbootmenu_load_key@a}" != *a* ]]; then
+    # shellcheck disable=SC2086
+    populate_hook_dir "load-key.d" ${zfsbootmenu_load_key} || ret=$?
+  else
+    populate_hook_dir "load-key.d" "${zfsbootmenu_load_key[@]}" || ret=$?
+  fi
+
+  # shellcheck disable=SC2154
+  if [[ "${zfsbootmenu_boot_env@a}" != *a* ]]; then
+    # shellcheck disable=SC2086
+    populate_hook_dir "boot-env.d" ${zfsbootmenu_boot_env} || ret=$?
+  else
+    populate_hook_dir "boot-env.d" "${zfsbootmenu_boot_env[@]}" || ret=$?
   fi
 
   # shellcheck disable=SC2154

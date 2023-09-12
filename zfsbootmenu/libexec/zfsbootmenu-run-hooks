@@ -21,11 +21,18 @@ if [ -z "${hook_stage}" ]; then
   exit 1
 fi
 
-if [ -d "/libexec/${hook_stage}" ]; then
-  for _hook in /libexec/"${hook_stage}"/*; do
-    if [ -x "${_hook}" ]; then
-      zinfo "processing ${_hook}"
-      "${_hook}"
-    fi
-  done
+if [ -r "/libexec/${hook_stage}" ]; then
+  zdebug "no hook directory for ${hook_stage}"
+  exit 1
 fi
+
+_ran_hook=
+for _hook in /libexec/"${hook_stage}"/*; do
+  [ -x "${_hook}" ] || continue
+  zinfo "processing ${_hook}"
+  "${_hook}"
+  _ran_hook="yes"
+done
+
+# Return success if at least one hook ran
+[ -n "${_ran_hook}" ]
