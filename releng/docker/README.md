@@ -78,6 +78,19 @@ chosen as encoded in the container image.) Any pre-existing and non-empty
 is useful, *e.g.*, to bind-mount a local clone of the repository into the
 container.
 
+# Special NFS bind mount consideration
+
+Certain initramfs generators, like Dracut, have problems when the source of
+your bind mounts are NFS shares. This usually manifests as an error message 
+saying like `error: preserving permissions` when copying from the NFS bind 
+mount. This container allows you to workaround this providing special treatment
+for the `/alt` directory. Anything that is bind-mounted within this folder will 
+be copied to the containers root filesystem, preserving the path. For example, 
+instead of binding to `/zbm` you could bind to `/alt/zbm` and the container will 
+recursively copy all the files under `/alt/zbm` to `/zbm`. This is one of the first
+things tha happens when starting this container, and occurs before 
+any other symlinking or copying occurs. 
+
 ## Command-Line Arguments and Environment Variables
 
 The build script accepts several command-line arguments or environment

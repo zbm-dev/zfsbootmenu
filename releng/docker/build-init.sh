@@ -109,6 +109,15 @@ if [ "${#PACKAGES[@]}" -gt 0 ]; then
   xbps-install -Sy "${PACKAGES[@]}"
 fi
 
+if [ -d /alt ]; then
+  # Anything you mount here will be copied to /, using the same path structure. 
+  # Usage: you may be having problems with initramfs generators if the sources
+  # that are bind-mounted to this container are on a NFS share. Copying files
+  # from a NFS share has additional permissions that can not be stored on tmpfs
+  # filesystems within the container. 
+  (cd /alt && find . -type f -exec cp -v --parents {} / \;)
+fi
+
 # shellcheck disable=SC2010
 if [ ! -d /zbm ] || ! ls -Aq /zbm 2>/dev/null | grep -q . >/dev/null 2>&1; then
   # /zbm is empty or does not exist, attempt to fetch the desired tag
