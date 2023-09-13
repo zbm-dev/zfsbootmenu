@@ -125,7 +125,7 @@ install() {
 
   # vdev_id.conf and hostid files are host-specific
   # and do not belong in public release images
-  if [ -z "${release_build}" ]; then
+  if [ -z "${zfsbootmenu_release_build}" ]; then
     if [ -e /etc/zfs/vdev_id.conf ]; then
       inst /etc/zfs/vdev_id.conf
       type mark_hostonly >/dev/null 2>&1 && mark_hostonly /etc/zfs/vdev_id.conf
@@ -172,7 +172,7 @@ install() {
 
   # Force rd.hostonly=0 in the KCL for releases, this will purge itself after 99base/init.sh runs
   # shellcheck disable=SC2154
-  if [ -n "${release_build}" ]; then
+  if [ -n "${zfsbootmenu_release_build}" ]; then
     echo "rd.hostonly=0" > "${initdir}/etc/cmdline.d/hostonly.conf"
   fi
 

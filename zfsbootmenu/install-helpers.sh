@@ -100,6 +100,15 @@ create_zbm_conf() {
     has_column=1
   fi
 
+  case "${zfsbootmenu_release_build,,}" in
+    yes|y|on|1)
+      zfsbootmenu_release_build=1
+      ;;
+    *)
+      zfsbootmenu_release_build=
+      ;;
+  esac
+
   # Normalize ZBM_BUILDSTYLE, if set
   case "${ZBM_BUILDSTYLE,,}" in
     mkinitcpio) ZBM_BUILDSTYLE="mkinitcpio" ;;
@@ -113,12 +122,14 @@ create_zbm_conf() {
 	readonly _ETC_ZFSBOOTMENU_CONF=1
 	EOF
 
+  # shellcheck disable=SC2154
   cat >> "${BUILDROOT}/etc/zfsbootmenu.conf" <<-EOF
 	export HAS_REFRESH="${has_refresh}"
 	export HAS_DISABLED="${has_disabled}"
 	export HAS_BORDER="${has_border}"
 	export HAS_COLUMN="${has_column}"
 	export ZBM_BUILDSTYLE="${ZBM_BUILDSTYLE}"
+	export ZBM_RELEASE_BUILD="${zfsbootmenu_release_build}"
 	EOF
 }
 
