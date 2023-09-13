@@ -139,6 +139,10 @@ These options are set on the kernel command line when booting the initramfs or U
 
   **NOTE**: The *hooklist* argument **MUST NOT** contain spaces and **MUST NOT** be enclosed in quotes.
 
+**zbm.autosize**
+
+  Enable automatic font resizing of the kernel console to normalize the apparent resolution for both low resolution and high resolution displays. This option is enabled by default.
+
 Deprecated Parameters
 ---------------------
 

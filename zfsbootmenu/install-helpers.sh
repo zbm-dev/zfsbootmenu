@@ -245,6 +245,16 @@ install_zbm_docs() {
   return $ret
 }
 
+install_zbm_fonts() {
+
+  [ -d "${zfsbootmenu_module_root}/fonts" ] || return 1 
+
+  # Install into a non-standard path so that the Dracut i18n module doesn't stomp over our custom fonts
+
+  for font in "${zfsbootmenu_module_root}/fonts"/*.psf; do
+    [ -f "${font}" ] && zbm_install_file "${font}" "/usr/share/zfsbootmenu/fonts/${font##*/}"
+  done
+}
 
 populate_hook_dir() {
   local hfile ret hlev
