@@ -184,8 +184,10 @@ match_hostid() {
     if read_write='' import_pool "${pool}"; then
       zdebug "successfully imported ${pool}"
 
-      zwarn "imported ${pool} with assumed hostid ${hostid}"
-      zwarn "set spl_hostid=${hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
+      if [ -z "${ZBM_RELEASE_BUILD}" ]; then
+        zwarn "imported ${pool} with assumed hostid ${hostid}"
+        zwarn "set spl_hostid=${hostid} on ZBM KCL or regenerate with corrected /etc/hostid"
+      fi
 
       echo "${pool};${hostid}"
       return 0
