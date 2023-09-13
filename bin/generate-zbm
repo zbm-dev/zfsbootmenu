@@ -15,6 +15,7 @@ use File::stat;
 use File::Path qw(make_path remove_tree);
 use File::Glob qw(:globally :nocase);
 use Sort::Versions;
+use IPC::Open3;
 
 use Pod::Usage qw(pod2usage);
 
@@ -36,6 +37,7 @@ sub latestKernel;
 sub createInitramfs;
 sub createUEFIBundle;
 sub execute;
+sub executeStdio;
 sub safeCopy;
 sub nonempty;
 sub cleanupMount;
@@ -71,6 +73,7 @@ GetOptions(
   "hookd|H=s@"  => \$runConf{cpio_hookd},
   "debug|d"     => \$runConf{debug},
   "showver|V"   => \$runConf{showver},
+  "monitor|m"   => \$runConf{monitor},
   "help|h"      => sub {
     pod2usage( -verbose => 2 );
     exit;
@@ -858,8 +861,14 @@ sub createInitramfs {
   my $command = join( ' ', @cmd );
   Log("Executing: $command");
 
-  my @output = execute(@cmd);
-  my $status = pop(@output);
+  my @output;
+  my $status;
+  if ( $runConf{monitor} ) {
+    $status = executeStdio($command)
+  } else {
+    @output = execute(@cmd);
+    $status = pop(@output);
+  }
   if ( $status eq 0 ) {
     foreach my $line (@output) {
       Log($line);
@@ -876,6 +885,12 @@ sub createInitramfs {
 
 sub execute {
   ( @_ = qx{@_ 2>&1}, $? >> 8 );
+}
+
+sub executeStdio {
+  my $pid = open3( '<&STDIN', '>&STDOUT', '>&STDERR', @_ );
+  waitpid( $pid, 0 );
+  return $? >> 8;
 }
 
 sub safeCopy {
@@ -1133,6 +1148,10 @@ Enable debug output
 =item B<--showver|V>
 
 Print ZFSBootMenu version and quit.
+
+=item B<--monitor|m>
+
+Stream the initramfs generator input/output to the terminal.
 
 =back
 
