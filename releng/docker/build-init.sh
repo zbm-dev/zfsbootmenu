@@ -109,6 +109,12 @@ if [ "${#PACKAGES[@]}" -gt 0 ]; then
   xbps-install -Sy "${PACKAGES[@]}"
 fi
 
+# If a custom rc.pre.d exists, run every executable file therein
+for rfile in "${BUILDROOT}"/rc.pre.d/*; do
+  [ -x "${rfile}" ] || continue
+  "${rfile}" || error "failed to run RC script ${rfile##*/}"
+done
+
 # shellcheck disable=SC2010
 if [ ! -d /zbm ] || ! ls -Aq /zbm 2>/dev/null | grep -q . >/dev/null 2>&1; then
   # /zbm is empty or does not exist, attempt to fetch the desired tag

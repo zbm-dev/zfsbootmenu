@@ -38,9 +38,7 @@ location of the `build-init.sh` script to use.
 For those without access to `buildah`, the `Dockerfile` will also create of a
 ZFSBootMenu builder image. From this directory, simply run
 
-```sh
-podman build --squash -t zbm .
-```
+    podman build --squash -t zbm .
 
 to create an image named `zbm`. (Podman automatically prepends `localhost` and
 appends `:latest` to unqualified tags, so the full image name will be
@@ -98,7 +96,7 @@ options. The options are:
   directory; these products will be copied to `$ZBMOUTPUT` after successful
   image creation. The value of `$ZBMOUTPUT` is `${BUILDROOT}/build` by default.
 
-  The environment variable or default can be overridded with the `-o` option.
+  The environment variable or default can be overridden with the `-o` option.
 
 - `$ZBMTAG` specifies any "commit-ish" label recognized by `git` as a pointer
   to a specific git commit. This can be a branch name (to grab the head of that
@@ -109,7 +107,7 @@ options. The options are:
   default is `master`. The tag is ignored if `/zbm` in the container is not
   empty.
 
-  The environment variable or default can be overridded with the `-t` option.
+  The environment variable or default can be overridden with the `-t` option.
 
 A couple of additional arguments may only be set from the command line:
 
@@ -189,9 +187,13 @@ In addition, the hostid file is linked if it exists:
 
     /etc/hostid -> ${BUILDROOT}/hostid
 
-When launched, the container entrypoint will run any executable files it finds
-in `${BUILDROOT}/rc.d`. This provides a means to "terraform" the build
-container before running `generate-zbm` and can be a useful way to, *e.g.*:
+## Container Customization
+
+When launched, the container entrypoint will run any executable "hook" files it
+finds in either of the directories `${BUILDROOT}/rc.pre.d` or
+`${BUILDROOT}/rc.d`. These hooks provide a means to "terraform" the build
+container before producing a ZFSBootMenu image. For example, hooks might be
+used to
 
 - Modify the `FONT` variable defined in `/etc/rc.conf`, which will be parsed by
   `mkinitcpio` to set a default console font in ZFSBootMenu images.
@@ -207,14 +209,24 @@ container before running `generate-zbm` and can be a useful way to, *e.g.*:
   to provide host keys and configuration for the `dropbear` `mkinitcpio`
   module.
 
+The `rc.pre.d` hooks will execute after installing any requested packages in
+the container, but before confirming the existence of (or populating) a
+ZFSBootMenu repository at `/zbm`. These early hooks provide a means for,
+*e.g.*, overriding the standard process for fetching ZFSBootMenu source
+archives.
+
+The `rc.d` hooks will execute after completion of the ZFSBootMenu setup process
+described in the preceding section, but before the standard configuration is
+modified according to any `-e` arguments provided to the container and
+`generate-zbm` is execute. These late hooks provide a last-minute opportunity
+to customize ZFSBootMenu configuration before creating an image.
+
 ## Build Examples
 
 To use the previously created `zbm` image to produce ZFSBootMenu files from the
 default configuration, simply run
 
-```sh
-podman run -v .:/build zbm
-```
+    podman run -v .:/build zbm
 
 After some console output, the container should terminate and the directory
 `./build` should contain the UEFI bundle `vmlinuz.EFI` as well as the
@@ -225,17 +237,13 @@ To provide the hostid and pool cache files to the build container and run from
 the `/etc/zfsbootmenu/build` directory, copy the desired files and run the
 container with the appropriate volume mount:
 
-```sh
-cp /etc/hostid /etc/zfsbootmenu/build
-podman run -v /etc/zfsbootmenu/build:/build zbm
-```
+    cp /etc/hostid /etc/zfsbootmenu/build
+    podman run -v /etc/zfsbootmenu/build:/build zbm
 
 To create an image from a local repository available at `/sw/zfsbootmenu` and
 again use a build root of `/etc/zfsbootmenu/build`, run
 
-```sh
-podman run -v /etc/zfsbootmenu/build:/build -v /sw/zfsbootmenu:/zbm:ro zbm
-```
+    podman run -v /etc/zfsbootmenu/build:/build -v /sw/zfsbootmenu:/zbm:ro zbm
 
 Because the build container does not modify the repository found in `/zbm`, it
 is possible to mount that volume read-only (as indicated by the `:ro` suffix)
