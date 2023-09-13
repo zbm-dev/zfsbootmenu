@@ -179,4 +179,8 @@ install() {
   create_zbm_conf
   create_zbm_profiles
   create_zbm_traceconf
+
+  if command -v setfont >/dev/null 2>&1; then
+    install_zbm_fonts && dracut_install setfont
+  fi
 }

@@ -180,7 +180,7 @@ buildah run "${host_mounts[@]}" "${container}" \
 
 buildah run "${host_mounts[@]}" "${container}" \
   xbps-install -y "${kern_series[@]}" "${kern_headers[@]}" \
-  zstd gummiboot-efistub curl yq-go bash kbd terminus-font \
+  zstd gummiboot-efistub curl yq-go bash kbd \
   dracut mkinitcpio dracut-network gptfdisk iproute2 iputils parted \
   curl dosfstools e2fsprogs efibootmgr cryptsetup openssh util-linux kpartx
 

@@ -198,6 +198,10 @@ build() {
     create_zbm_traceconf
     create_zbm_entrypoint
 
+    if command -v setfont >/dev/null 2>&1; then
+      install_zbm_fonts && add_binary setfont
+    fi
+
     add_runscript
 }
 
