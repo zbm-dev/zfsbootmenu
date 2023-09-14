@@ -251,6 +251,11 @@ of the kernel list. That BE should be selected when entering the list.
   in GTK mode. This can be verified by dropping to the recovery shell and typing
   qwerty.
 
+- [ ] User hooks are installed from `$zfsbootmenu_hook_root` as defined in the
+  dracut or mkinitcpio configuration used by `generate-zbm`.
+
+- [ ] Any hooks installed in a ZFSBootMenu image execute at expected points.
+
 ## Recovery Shell and SSH Access
 
 - [ ] Basic tab completion for some internal functions is available in the
