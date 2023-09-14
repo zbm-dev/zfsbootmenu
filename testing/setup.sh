@@ -202,6 +202,7 @@ if [ "${DRACUT}" = "yes" ]; then
 
     cat >> "${TESTDIR}/dracut.conf.d/zfsbootmenu.conf" <<-EOF
 	zfsbootmenu_module_root="$( realpath -e ../zfsbootmenu )"
+	zfsbootmenu_hook_root="${TESTDIR}/hooks"
 	EOF
   fi
 
@@ -248,6 +249,10 @@ if ((MKINITCPIO)) ; then
 
   cat <<-EOF > "${MKINITCPIOD}/modroot.conf"
 	zfsbootmenu_module_root="$( realpath -e ../zfsbootmenu )"
+	EOF
+
+  cat <<-EOF > "${MKINITCPIOD}/hooks.conf"
+	zfsbootmenu_hook_root="${TESTDIR}/hooks"
 	EOF
 fi
 
