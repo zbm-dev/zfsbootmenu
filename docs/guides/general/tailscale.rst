@@ -12,7 +12,9 @@ Presently, the only known and recommended initramfs module for Tailscale integra
 `mkinitcpio-tailscale <https://github.com/classabbyamp/mkinitcpio-tailscale>`_, so this guide requires using
 :doc:`mkinitcpio <mkinitcpio>` to generate the ZFSBootMenu image.
 
-:doc:`Remote access <remote-access>` should also be set up before following this guide.
+:doc:`Remote access <remote-access>` should also be set up before following this guide, though the SSH server can
+be either Dropbear from that guide or `Tailscale's built-in SSH server <https://tailscale.com/kb/1193/tailscale-ssh/>`_.
+Note that if using Tailscale's SSH server, remote access will only be possible via Tailscale, not the local network.
 
 Because the Tailscale node key is stored in the initramfs, it should not use the same one as the host system. To ensure
 this key is useless to anyone trying to access the connected Tailnet,
@@ -71,8 +73,13 @@ the ``HOOKS`` array, or by running::
 
   sed -e '/HOOKS.*dropbear/a HOOKS+=(tailscale)' -i /etc/zfsbootmenu/mkinitcpio.conf
 
+If using Tailscale SSH instead of Dropbear, add the necessary flags to ``/etc/tailscale/tailscaled.conf``::
+
+  tailscale_args="--ssh"
+
 With the above configuration complete, running ``generate-zbm`` should produce a ZFSBootMenu image that contains the
 necessary components to enable SSH access over Tailscale in your bootloader.
 
 After rebooting, ZFSBootMenu should configure the network interface, launch an SSH server, and connect to Tailscale.
-Connection to ZFSBootMenu should be possible using either the local IP, Tailscale IP, or Tailscale hostname.
+Connection to ZFSBootMenu should be possible using either the local IP (if using Dropbear), Tailscale IP, or Tailscale
+hostname.
