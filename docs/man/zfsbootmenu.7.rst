@@ -296,7 +296,7 @@ Hooks should be marked executable and placed in a subdirectory of *${zfsbootmenu
 
   Boot-selection hooks will be installed from the directory *${zfsbootmenu_hook_root}/boot-sel.d*. These hooks will be executed after a user has selected a boot environment, but before ZFSBootMenu attempts to load and boot the kernel.
 
-  Teardown hooks will be installed from the directory *${zfsbootmenu_hook_root}/teardown.d*. These hooks will be exectued after the kernel for a selected environment has been loaded and is launching via **kexec** is imminent. Some hardware initialized by the ZFSBootMenu kernel may not be properly reinitialized when a boot environment is launched; teardown hooks may be useful to unbind drivers from problematic hardware or remove associated kernel modules.
+  Teardown hooks will be installed from the directory *${zfsbootmenu_hook_root}/teardown.d*. These hooks will be executed after the kernel for a selected environment has been loaded and is launching via **kexec** is imminent. Some hardware initialized by the ZFSBootMenu kernel may not be properly reinitialized when a boot environment is launched; teardown hooks may be useful to unbind drivers from problematic hardware or remove associated kernel modules.
 
   Boot-selection and teardown hooks each have access to three environment variables that describe the boot environment that is about to be launched:
 
@@ -312,7 +312,13 @@ Hooks should be marked executable and placed in a subdirectory of *${zfsbootmenu
 
     The path to the initramfs corresponding to the selected kernel, again relative to the root of **ZBM_SELECTED_BE**.
 
-  No boot-selection or teardown hook should assume that the filesystem named in **ZBM_SELECTED_BE** is currently mounted. In addition, no teardown hook should assume that the ZFSBootMenu environment is in a consistent operating state. ZFSBootMenu may have exported some or all pools prior to executing teardown hooks.
+  Additionally, boot-selection hooks will have access to a fourth environment variable:
+
+  **ZBM_SELECTED_MOUNTPOINT**
+
+    The path where the selected boot environment is currently mounted, which is the root relative to which ZFSBootMenu will attempt to load the selected kernel and initramfs.
+
+  Teardown hooks should never assume that the filesystem named in **ZBM_SELECTED_BE** is currently mounted. In addition, no teardown hook should assume that the ZFSBootMenu environment is in a consistent operating state. ZFSBootMenu may have exported some or all pools prior to executing teardown hooks.
 
   In general, it is not possible to cleanly abort a boot attempt from boot-selection or teardown hooks. However, a boot-selection or teardown hook may take control of the boot attempt by implementing its own **kexec** load and execution without returning to ZFSBootMenu. This may be useful, for example, to allow ZFSBootMenu to select a boot environment and then restructure the boot process to launch a Xen kernel with the selected environment configured as dom0.
 

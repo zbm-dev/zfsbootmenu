@@ -290,6 +290,14 @@ kexec_kernel() {
 
   CLEAR_SCREEN=1 load_key "${fs}"
 
+  tput cnorm
+  tput clear
+
+  if ! mnt=$( mount_zfs "${fs}" ); then
+    emergency_shell "unable to mount $( colorize cyan "${fs}" )"
+    return 1
+  fi
+
   # Variables to tell user hooks what BE has been selected
   hook_envs=(
     ZBM_SELECTED_BE="${fs}"
@@ -298,15 +306,9 @@ kexec_kernel() {
   )
 
   # Run boot-environment hooks, if they exist
-  env "${hook_envs[@]}" /libexec/zfsbootmenu-run-hooks "boot-sel.d"
-
-  tput cnorm
-  tput clear
-
-  if ! mnt=$( mount_zfs "${fs}" ); then
-    emergency_shell "unable to mount $( colorize cyan "${fs}" )"
-    return 1
-  fi
+  env "${hook_envs[@]}" \
+    ZBM_SELECTED_MOUNTPOINT="${mnt}" \
+    /libexec/zfsbootmenu-run-hooks "boot-sel.d"
 
   cli_args="$( load_be_cmdline "${fs}" )"
   root_prefix="$( find_root_prefix "${fs}" "${mnt}" )"
