@@ -3,41 +3,59 @@
 use strict;
 use warnings;
 use Data::Dumper;
+use Getopt::Long;
 
-my ($stack, $source, $time, $prev_time, $diff);
+my ( $mode, $stack, $source, $line, $time, $prev_time, $diff );
+
+GetOptions(
+    "mode|m=s" => sub {
+        ( undef, $mode ) = @_;
+    }
+);
 
 foreach (<>) {
-  chomp;
+    chomp;
+    my ( @trace, @line );
 
-  # trapdebug kexec_kernel main;/lib/profiling-lib.sh /lib/zfsbootmenu-core.sh /libexec/zfsbootmenu-init;1641848253.018649
-  ($stack, $source, $time) = split(/;/, $_);
+# trapdebug find_be_kernels populate_be_list main;/lib/profiling-lib.sh /lib/zfsbootmenu-core.sh /lib/zfsbootmenu-lib.sh /bin/zfsbootmenu;734 641 85 0;1695169626.438117
+    @line = split( /;/, $_ );
 
-  # the first line is free, there are no previous timestamps to use
-  $prev_time //= $time;
+    my @sstack  = split( / /, $line[0] );
+    my @ssource = split( / /, $line[1] );
+    my @slineno = split( / /, $line[2] );
+    $time = $line[3];
 
-  my @sstack = split(/ /, $stack);
-  my @ssource = split(/ /, $source);
+    # the first line is free, there are no previous timestamps to use
+    $prev_time //= $time;
 
-  my @trace;
+    if ( $mode =~ m/chart/ ) {
 
-  # Start at 1, removing trapdebug from the stack
-  foreach my $i (1 .. $#sstack) {
-    unshift (@trace, "$sstack[$i]\@$ssource[$i]");
-  }
+        # Start at 1, removing trapdebug from the stack
+        foreach my $i ( 1 .. $#sstack ) {
+            unshift( @trace, "$sstack[$i]\@$ssource[$i]#$slineno[$i]" );
+        }
+    }
+    elsif ( $mode =~ m/graph/ ) {
 
-  $stack = join(';', @trace);
+        # Start at 1, removing trapdebug from the stack
+        foreach my $i ( 1 .. $#sstack ) {
+            unshift( @trace, "$sstack[$i]\@$ssource[$i]" );
+        }
+    }
 
-  # reset prev_time to make this a no-op
-  # time spent sourcing the unguarded library is unknowable to flamegraph.pl
-  if ( $stack =~ m,source@/lib/profiling-lib.sh, ) {
+    $stack = join( ';', @trace );
+
+    # reset prev_time to make this a no-op
+    # time spent sourcing the unguarded library is unknowable to flamegraph.pl
+    if ( $stack =~ m,source@/lib/profiling-lib.sh, ) {
+        $prev_time = $time;
+    }
+
+# flamegraph doesn't care about units, but it does round non-integers to the nearest integer
+# prefer microsecond precision so that we have sub-ms granularity
+    $diff = int( ( ( $time - $prev_time ) * 1000000 ) + 1 / 2 );
+
     $prev_time = $time;
-  }
 
-  # flamegraph doesn't care about units, but it does round non-integers to the nearest integer
-  # prefer microsecond precision so that we have sub-ms granularity
-  $diff = int((( $time - $prev_time ) * 1000000 ) + 1/2);
-
-  $prev_time = $time;
-
-  print "$stack $diff\n";
+    print "$stack $diff\n";
 }

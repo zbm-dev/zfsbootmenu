@@ -460,14 +460,14 @@ if ((SERIAL)) && ((RESET)); then
 fi
 
 if ((FLAME)) && [ -f "${TESTDIR}/perfdata.log" ] && command -v flamegraph.pl >/dev/null 2>&1 ; then
-  perl rollup.pl < "${TESTDIR}/perfdata.log" | flamegraph.pl \
+  perl rollup.pl -m chart < "${TESTDIR}/perfdata.log" | flamegraph.pl \
     --title "${TESTDIR}: ${KCL}" \
     --height 32 \
     --width 1600 \
     --countname microseconds \
     --flamechart > "${TESTDIR}/flamechart.svg" 2>/dev/null
 
-  perl rollup.pl < "${TESTDIR}/perfdata.log" | flamegraph.pl \
+  perl rollup.pl -m graph < "${TESTDIR}/perfdata.log" | flamegraph.pl \
     --title "${TESTDIR}: ${KCL}" \
     --height 32 \
     --width 1600 \
