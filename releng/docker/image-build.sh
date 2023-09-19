@@ -54,7 +54,9 @@ extra_pkgs=()
 
 kern_series=()
 
-host_mounts=()
+# By default, mount tmpfs on /var/cache/xbps
+host_mounts=( --mount "type=tmpfs,dst=/var/cache/xbps" )
+
 host_repos=()
 
 web_repos=()
@@ -188,7 +190,6 @@ buildah run "${host_mounts[@]}" "${container}" \
 buildah run "${container}" sh -c 'echo "ignorepkg=dkms" > /etc/xbps.d/10-nodkms.conf'
 buildah run "${container}" xbps-pkgdb -m manual binutils
 buildah run "${container}" xbps-remove -Roy dkms "${kern_headers[@]}"
-buildah run "${container}" sh -c 'rm -f /var/cache/xbps/*'
 
 # Record a commit hash if one is available
 if [ -n "${zbm_commit_hash}" ]; then
