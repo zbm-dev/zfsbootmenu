@@ -715,13 +715,82 @@ set_default_env() {
   fi
 }
 
+# arg1: path of the kernel for which the initramfs is sought
+# prints: path of a matching initramfs
+# returns: 0 if initramfs was found, 1 otherwise
+
+find_be_initramfs() {
+  local kpath
+  local kdir kern kver ifile candidates
+
+  kpath="$1"
+  if [ ! -r "${kpath}" ]; then
+    zerror "specified kernel does not exist"
+    return 1
+  fi
+
+  # Split kernel path into file and directory
+  kern="${kpath##*/}"
+  kdir="${kpath%"${kern}"}"
+  kdir="${kdir%/}"
+  zdebug "kernel path: '${kpath}', directory: '${kdir}', file: '${kern}'"
+
+  # Kernel "base" extends to first hyphen, "version" follows and may be empty
+  kver="${kern#"${kern%%-*}"}"
+  zdebug "kernel version: '${kver}'"
+
+  # Try some common cases before doing an exhaustive search
+
+  candidates=(
+    # Void, Arch
+    "initramfs-${kern}.img"
+    "initramfs${kver}.img"
+
+    # Debian and other initramfs-tools users
+    "initrd.img-${kern}"
+    "initrd.img${kver}"
+
+    # Alpine
+    "initramfs-${kern}"
+    "initramfs${kver}"
+  )
+
+  for ifile in "${candidates[@]}"; do
+    if [ -e "${kdir}/${ifile}" ]; then
+      zdebug "short-matching '${ifile}' to '${kern}'"
+      echo "${kdir}/${ifile}"
+      return 0
+    fi
+  done
+
+  # Common cases have failed, try a more exhaustive search
+
+  local ext pfx lbl ifile
+
+  # Use loops instead of a clever brace-expansion for clarity and control
+  for ext in {.img,""}{"",.{gz,bz2,xz,lzma,lz4,lzo,zstd}}; do
+    for pfx in initramfs initrd; do
+      for lbl in "${kern}" "${kver}"; do
+        for ifile in "${pfx}${lbl}${ext}" "${pfx}${ext}${lbl}"; do
+          [ -e "${kdir}/${ifile}" ] || continue
+          zdebug "matching '${ifile}' to '${kern}'"
+          echo "${kdir}/${ifile}"
+          return 0
+        done
+      done
+    done
+  done
+
+  return 1
+}
+
 # arg1: ZFS filesystem
 # prints: nothing
 # returns: 0 if kernels were found, 1 otherwise
 
 find_be_kernels() {
   local fs mnt
-  local kpath kdir kernel kernel_base labels version kernel_records
+  local kpath ipath kernel_records
 
   fs="${1}"
   if [ -z "${fs}" ]; then
@@ -740,51 +809,21 @@ find_be_kernels() {
   kernel_records="${mnt%/*}/kernels"
   : > "${kernel_records}"
 
-  # Look for kernels in / and /boot, sorted in version order
+  # Look for kernels and matching initramfs, sorted in version order
   while read -r kpath; do
     # Strip mount point from path
+    [ -n "${kpath}" ] || continue;
     kpath="${kpath#"${mnt}"}"
-    # Ensure kpath has leading slash
     kpath="/${kpath#/}"
-    zdebug "found kernel: ${mnt}${kpath}"
 
-    # Extract base name and kernel directory
-    kernel="${kpath##*/}"
-    kdir="${kpath%"${kernel}"}"
-    # Trim trailing slash (note: kdir will be empty if kernel is at root)
-    kdir="${kdir%/}"
-    zdebug "kernel directory: '${kdir}', file: '${kernel}'"
-
-    # Kernel "base" extends to first hyphen
-    kernel_base="${kernel%%-*}"
-
-    # Kernel "version" is everything after base and may be empty
-    version="${kernel#"${kernel_base}"}"
-    version="${version#-}"
-    zdebug "kernel base: '${kernel_base}', version: '${version}'"
-
-    # initramfs images can take many forms, look for a sensible one
-    labels=( "$kernel" )
-    if [ -n "$version" ]; then
-      labels+=( "$version" )
+    if ipath="$( find_be_initramfs "${mnt}${kpath}" )"; then
+      zdebug "found kernel: ${mnt}${kpath}, initramfs ${mnt}${ipath}"
+      ipath="${ipath#"${mnt}"}"
+      ipath="/${ipath#/}"
+      echo "${fs} ${kpath} ${ipath}" >> "${kernel_records}"
+    else
+      zdebug "kernel ${mnt}${kpath} has no initramfs"
     fi
-
-    # Use a mess of loops instead better brace expansions to control priorities
-    local ext pfx lbl i ipath
-    for ext in {.img,""}{"",.{gz,bz2,xz,lzma,lz4,lzo,zstd}}; do
-      for pfx in initramfs initrd; do
-        for lbl in "${labels[@]}"; do
-          for i in "${pfx}-${lbl}${ext}" "${pfx}${ext}-${lbl}"; do
-            ipath="${kdir}/${i}"
-            [ -e "${mnt}${ipath}" ] || continue
-            zdebug "matching '${i}' to '${kernel}'"
-            echo "${fs} ${kpath} ${ipath}" >> "${kernel_records}"
-            break 4
-          done
-        done
-      done
-    done
-
   done <<<"$(
     for k in "${mnt}/boot"/{{vm,}linu{x,z},kernel}{,-*}; do
       [ -e "${k}" ] && echo "${k}"
