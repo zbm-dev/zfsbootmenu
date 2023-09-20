@@ -6,7 +6,7 @@ sources=(
   /lib/profiling-lib.sh
   /etc/zfsbootmenu.conf
   /lib/zfsbootmenu-core.sh
-  /lib/zfsbootmenu-lib.sh
+  /lib/zfsbootmenu-ui.sh
   /lib/kmsg-log-lib.sh
   /etc/profile
   /lib/fzf-defaults.sh

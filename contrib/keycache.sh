@@ -40,7 +40,7 @@
 ##    If you use different keys, just give them unique paths.)
 
 # shellcheck disable=SC1091
-[ -r /lib/zfsbootmenu-lib.sh ] && . /lib/zfsbootmenu-lib.sh
+[ -r /lib/zfsbootmenu-core.sh ] && . /lib/zfsbootmenu-core.sh
 
 # Make sure key environment variables are defined
 [ -n "${BOOTFS}" ] || exit 0

@@ -2,11 +2,23 @@
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
 # shellcheck disable=SC1091
-source /lib/profiling-lib.sh >/dev/null 2>&1 || true
-source /etc/zfsbootmenu.conf >/dev/null 2>&1 || exit 1
-source /lib/kmsg-log-lib.sh >/dev/null 2>&1 || exit 1
-source /lib/zfsbootmenu-core.sh >/dev/null 2>&1 || exit 1
-source /lib/zfsbootmenu-lib.sh >/dev/null 2>&1 || exit 1
+sources=(
+  /lib/profiling-lib.sh
+  /etc/zfsbootmenu.conf
+  /lib/kmsg-log-lib.sh
+  /lib/zfsbootmenu-core.sh
+  /lib/zfsbootmenu-ui.sh
+)
+
+for src in "${sources[@]}"; do
+  # shellcheck disable=SC1090
+  if ! source "${src}" >/dev/null 2>&1 ; then
+    echo "<3>ZFSBootMenu: unable to source '${src}' in $0" > /dev/kmsg
+    exit 1
+  fi
+done
+
+unset src sources
 
 # prevent ctrl-c from killing us, so that zfs diff can exit cleanly
 trap '' SIGINT

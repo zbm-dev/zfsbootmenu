@@ -5,7 +5,7 @@ sources=(
   /etc/zfsbootmenu.conf
   /lib/kmsg-log-lib.sh
   /lib/zfsbootmenu-core.sh
-  /lib/zfsbootmenu-lib.sh
+  /lib/zfsbootmenu-ui.sh
   /lib/fzf-defaults.sh
 )
 
@@ -13,9 +13,11 @@ for src in "${sources[@]}"; do
   # shellcheck disable=SC1090
   if ! source "${src}" >/dev/null 2>&1 ; then
     echo -e "\033[0;31mWARNING: ${src} was not sourced; unable to proceed\033[0m"
-    exit
+    exit 1
   fi
 done
+
+unset src sources
 
 # Replace the global_header function with a stub
 global_header() {
