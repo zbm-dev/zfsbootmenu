@@ -1,8 +1,8 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
-[ -n "${_ZFSBOOTMENU_LIB}" ] && return
-readonly _ZFSBOOTMENU_LIB=1
+[ -n "${_ZFSBOOTMENU_UI}" ] && return
+readonly _ZFSBOOTMENU_UI=1
 
 # shellcheck disable=SC1091
 source /lib/zfsbootmenu-core.sh >/dev/null 2>&1 || exit 1

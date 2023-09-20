@@ -1,8 +1,20 @@
 #!/bin/bash
 
 # shellcheck disable=SC1091
-source /lib/zfsbootmenu-lib.sh >/dev/null 2>&1 || exit 1
-source /lib/kmsg-log-lib.sh >/dev/null 2>&1 || exit 1
+sources=(
+  /lib/kmsg-log-lib.sh
+  /lib/zfsbootmenu-ui.sh
+)
+
+for src in "${sources[@]}"; do
+  # shellcheck disable=SC1090
+  if ! source "${src}" >/dev/null 2>&1 ; then
+    echo "<3>ZFSBootMenu: unable to source '${src}' in $0" > /dev/kmsg
+    exit 1
+  fi
+done
+
+unset src sources
 
 [ -f "${BASE}/have_errors" ] && rm "${BASE}/have_errors"
 [ -f "${BASE}/have_warnings" ] && rm "${BASE}/have_warnings"
