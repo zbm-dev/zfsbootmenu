@@ -69,5 +69,8 @@ $(VENV)/req_done: requirements.txt $(VENV)/success
 		$(VENV)/bin/pip install $(PIP_FLAGS) -U -r requirements.txt
 	@touch $(VENV)/req_done
 
+# Man-page generation fails unless HTML documentation is built first
+man:: html
+
 %:: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS)
