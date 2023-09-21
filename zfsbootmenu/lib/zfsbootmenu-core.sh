@@ -1896,7 +1896,7 @@ emergency_shell() {
   command -v efibootmgr >/dev/null 2>&1 && mount_efivarfs "rw" 
 
   # -i (interactive) mode will source $HOME/.bashrc
-  /bin/bash -i
+  ( trap - SIGINT; exec /bin/bash -i )
 
   # shellcheck disable=SC2034
   while read -r skip mp fs skip ; do
