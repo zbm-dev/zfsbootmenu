@@ -51,3 +51,11 @@ Common Commands
 **logs**
 
   View warning/error/debug logs.
+
+**shutdown**|**poweroff**
+
+  Shutdown the system using a SysRq magic invocation.
+
+**reboot**
+
+  Reboot the system using a SysRq magic invocation.

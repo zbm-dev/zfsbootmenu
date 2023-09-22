@@ -274,6 +274,14 @@
       spaces and [1mMUST NOT[0m be enclosed in
       quotes.
 
+    [1mzbm.autosize[0m
+
+      Enable automatic font resizing of the kernel
+      console to normalize the apparent
+      resolution for both low resolution and
+      high resolution displays. This option is
+      enabled by default.
+
     [1mDeprecated Parameters[0m
 
       [1mtimeout[0m
@@ -596,7 +604,7 @@
 
       Teardown hooks will be installed from the
       directory [33m${zfsbootmenu_hook_root}/-
-      teardown.d[0m. These hooks will be exectued
+      teardown.d[0m. These hooks will be executed
       after the kernel for a selected
       environment has been loaded and is
       launching via [1mkexec[0m is imminent. Some
@@ -630,11 +638,22 @@
         the selected kernel, again relative
         to the root of [1mZBM_SELECTED_BE[0m.
 
-      No boot-selection or teardown hook should
-      assume that the filesystem named in
-      [1mZBM_SELECTED_BE[0m is currently mounted. In
-      addition, no teardown hook should assume
-      that the ZFSBootMenu environment is in a
+      Additionally, boot-selection hooks will have
+      access to a fourth environment variable:
+
+      [1mZBM_SELECTED_MOUNTPOINT[0m
+
+        The path where the selected boot environment
+        is currently mounted, which is the
+        root relative to which ZFSBootMenu
+        will attempt to load the selected
+        kernel and initramfs.
+
+      Teardown hooks should never assume that the
+      filesystem named in [1mZBM_SELECTED_BE[0m is
+      currently mounted. In addition, no
+      teardown hook should assume that the
+      ZFSBootMenu environment is in a
       consistent operating state. ZFSBootMenu
       may have exported some or all pools
       prior to executing teardown hooks.
