@@ -1,0 +1,42 @@
+#!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
+
+# shellcheck disable=SC1091
+sources=(
+  /lib/kmsg-log-lib.sh
+  /lib/zfsbootmenu-core.sh
+)
+
+for src in "${sources[@]}"; do
+  # shellcheck disable=SC1090
+  if ! source "${src}" >/dev/null 2>&1 ; then
+    echo -e "\033[0;31mWARNING: ${src} was not sourced; unable to proceed\033[0m"
+    exit 1
+  fi
+done
+
+unset src sources
+
+case "${0##*/}" in
+  reboot)
+    trigger="b"
+    ;;
+  shutdown|poweroff)
+    trigger="o"
+    ;;
+  *)
+    exit
+    ;;
+esac
+
+while read -r _pool; do
+  is_writable "${_pool}" && export_pool "${_pool}"
+done <<<"$( zpool list -H -o name )"
+
+sysrq="/proc/sysrq-trigger"
+if [ -e  "${sysrq}" ] && [ -w "${sysrq}" ]; then
+  echo "${trigger}" > /proc/sysrq-trigger
+else
+  echo "${sysrq} does not exist, hard reset system"
+  exit 1
+fi

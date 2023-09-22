@@ -62,3 +62,13 @@
   [1mlogs[0m
 
     View warning/error/debug logs.
+
+  [1mshutdown**|**poweroff[0m
+
+    Shutdown the system using a SysRq magic
+    invocation.
+
+  [1mreboot[0m
+
+    Reboot the system using a SysRq magic
+    invocation.
