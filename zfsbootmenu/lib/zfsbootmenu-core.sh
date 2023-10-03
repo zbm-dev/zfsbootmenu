@@ -154,7 +154,7 @@ match_hostid() {
         state*)
           state="${line#state: }"
           # shellcheck disable=SC2154
-          if [ "${state}" == "ONLINE" ] && [ -n "${pool}" ] && [ "${pool}" != "${root}" ]; then
+          if [ "${state}" == "ONLINE" ] && [ -n "${pool}" ] && [ "${pool}" != "${zbm_prefer_pool}" ]; then
             importable+=("${pool}")
             pool=""
           fi

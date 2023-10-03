@@ -199,11 +199,6 @@ else
   zinfo "disabling automatic replacement of spl_hostid"
 fi
 
-# rewrite root=
-if prefer=$( get_zbm_arg zbm.prefer ) ; then
-  root="zfsbootmenu:POOL=${prefer}"
-fi
-
 if kcl_override=$( get_zbm_arg zbm.kcl_override ) ; then
   # Remove the leading /  trailing quote to "unpack" this argument
   kcl_override="${kcl_override#\"}"
@@ -224,46 +219,33 @@ if kcl_override=$( get_zbm_arg zbm.kcl_override ) ; then
   zinfo "overriding all BE KCLs with: '$( kcl_assemble < "${BASE}/cmdline" )'"
 fi
 
-wait_for_zfs=0
-case "${root}" in
-  zfsbootmenu:POOL=*)
-    # Prefer a specific pool for bootfs value, root=zfsbootmenu:POOL=zroot
-    root="${root#zfsbootmenu:POOL=}"
-    # shellcheck disable=SC2034
-    rootok=1
-    wait_for_zfs=1
-
-    zinfo "preferring ${root} for bootfs"
-    ;;
-  *)
-    root="zfsbootmenu"
-    # shellcheck disable=SC2034
-    rootok=1
-    wait_for_zfs=1
-
-    zinfo "enabling menu after udev settles"
-  ;;
-esac
+zbm_prefer_pool=
+if zbm_prefer_pool=$( get_zbm_arg zbm.prefer ) ; then
+  # shellcheck disable=SC2034
+  zbm_prefer_pool="${zbm_prefer_pool%%/*}"
+  zinfo "preferring ${zbm_prefer_pool} for bootfs"
+fi
 
 # pool! : this pool must be imported before all others
 # pool!!: this pool, and no others, must be imported
 
 # shellcheck disable=SC2034
-case "${root}" in
+case "${zbm_prefer_pool}" in
   *!!)
-    zbm_require_bpool="only"
-    root="${root%!!}"
+    zbm_require_pool="only"
+    zbm_prefer_pool="${zbm_prefer_pool%!!}"
     ;;
   *!)
-    zbm_require_bpool="yes"
-    root="${root%!}"
+    zbm_require_pool="yes"
+    zbm_prefer_pool="${zbm_prefer_pool%!}"
     ;;
   *)
-    zbm_require_bpool=""
+    zbm_require_pool=""
     ;;
 esac
 
 # Make sure Dracut is happy that we have a root
-if [ ${wait_for_zfs} -eq 1 ]; then
-  ln -s /dev/null /dev/root 2>/dev/null
-fi
+
+# shellcheck disable=SC2034
+rootok=1
+ln -s /dev/null /dev/root 2>/dev/null
