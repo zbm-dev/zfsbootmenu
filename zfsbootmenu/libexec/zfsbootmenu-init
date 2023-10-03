@@ -105,16 +105,9 @@ fi
 tput clear
 /libexec/zfsbootmenu-run-hooks "early-setup.d"
 
-# Prefer a specific pool when checking for a bootfs value
-# shellcheck disable=SC2154
-if [ "${root}" = "zfsbootmenu" ]; then
-  boot_pool=
-else
-  boot_pool="${root}"
-fi
-
 # If a boot pool is specified, that will be tried first
-try_pool="${boot_pool}"
+# shellcheck disable=SC2154
+try_pool="${zbm_prefer_pool}"
 zbm_import_attempt=0
 
 while true; do
@@ -126,7 +119,7 @@ while true; do
 
   # shellcheck disable=SC2154
   if check_for_pools; then
-    if [ "${zbm_require_bpool}" = "only" ]; then
+    if [ "${zbm_require_pool}" = "only" ]; then
       zdebug "only importing ${try_pool}"
       break
     elif [ -n "${try_pool}" ]; then
@@ -148,15 +141,15 @@ while true; do
     echo -n "$spl_hostid" > "${BASE}/spl_hostid"
 
     # If match_hostid succeeds, it has imported *a* pool...
-    if [ -n "${try_pool}" ] && [ "${zbm_require_bpool}" = "only" ]; then
-      # In "only" bpool mode, the import was the sole pool desired; nothing more to do
+    if [ -n "${try_pool}" ] && [ "${zbm_require_pool}" = "only" ]; then
+      # In "only" pool mode, the import was the sole pool desired; nothing more to do
       break
     else
       # Otherwise, try one more pass to pick up other pools matching this hostid
       try_pool=""
       continue
     fi
-  elif [ -n "${try_pool}" ] && [ -z "${zbm_require_bpool}" ]; then
+  elif [ -n "${try_pool}" ] && [ -z "${zbm_require_pool}" ]; then
     # If a specific pool was tried unsuccessfully but is not a requirement,
     # allow another pass to try any other importable pools
     try_pool=""
@@ -186,6 +179,7 @@ while IFS=$'\t' read -r _pool _health; do
     zerror "prohibiting read/write operations on ${_pool}"
   fi
 done <<<"$( zpool list -H -o name,health )"
+unset _pool _health
 
 zdebug && zdebug "$( zreport )"
 
@@ -205,17 +199,19 @@ if [ "${unsupported}" -ne 0 ]; then
   timed_prompt -m "$( colorize red 'Unsupported features detected')" \
     -m "$( colorize red 'Upgrade ZFS modules in ZFSBootMenu with generate-zbm')"
 fi
+unset unsupported
 
 # Attempt to find the bootfs property
 # shellcheck disable=SC2086
-while read -r line; do
-  if [ "${line}" = "-" ]; then
+while read -r _bootfs; do
+  if [ "${_bootfs}" = "-" ]; then
     BOOTFS=
   else
-    BOOTFS="${line}"
+    BOOTFS="${_bootfs}"
     break
   fi
-done <<<"$( zpool list -H -o bootfs ${boot_pool} )"
+done <<<"$( zpool list -H -o bootfs "${zbm_prefer_pool:---}" )"
+unset _bootfs
 
 if [ -n "${BOOTFS}" ]; then
   export BOOTFS
