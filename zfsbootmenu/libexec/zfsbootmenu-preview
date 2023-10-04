@@ -11,7 +11,7 @@ ENV="${1}"
 BOOTFS="${2}"
 
 # shellcheck disable=SC2034
-IFS=' ' read -r _fs selected_kernel _initramfs <<<"$( select_kernel "${ENV}" || echo "- missing -" )"
+IFS=$'\t' read -r _fs selected_kernel _initramfs <<<"$( select_kernel "${ENV}" || echo "- missing -" )"
 selected_kernel="${selected_kernel##*/}"
 
 if [ "${BOOTFS}" = "${ENV}" ]; then

@@ -169,7 +169,7 @@ draw_be() {
       ${HAS_BORDER:+--preview-label-pos=2:bottom} \
       ${HAS_BORDER:+--preview-label="$( colorize orange " ${preview_label} " )"} \
       --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}${HAS_BORDER:+,border-sharp}" \
-      --preview="/libexec/zfsbootmenu-preview {} ${BOOTFS}" < "${env}" )"; then
+      --preview="/libexec/zfsbootmenu-preview {} '${BOOTFS}'" < "${env}" )"; then
     return 1
   fi
 
@@ -214,10 +214,10 @@ draw_kernel() {
   expects="--expect=alt-d,alt-u,left,right"
 
   if ! selected="$( HELP_SECTION=kernel-management ${FUZZYSEL} \
-      --prompt "${benv} > " --tac --with-nth=2 --header="${header}" \
-      ${HAS_BORDER:+--border-label="$( global_header )"} \
+      --prompt "${benv} > " --tac --delimiter=$'\t' --with-nth=2 \
+      --header="${header}" ${HAS_BORDER:+--border-label="$( global_header )"} \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
-      --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS}"  \
+      --preview="/libexec/zfsbootmenu-preview '${benv}' '${BOOTFS}'"  \
       --preview-window="up:${PREVIEW_HEIGHT}${HAS_BORDER:+,border-sharp}" < "${_kernels}" )"; then
     return 1
   fi
@@ -321,7 +321,7 @@ draw_snapshots() {
         --bind="ctrl-alt-d:execute[ /libexec/zfsbootmenu-diff {+} ]${HAS_REFRESH:++refresh-preview}" \
         ${HAS_BORDER:+--preview-label-pos=${preview_offset:+${preview_offset}}bottom} \
         ${HAS_BORDER:+--preview-label="${context}"} \
-        --preview="/libexec/zfsbootmenu-preview ${benv} ${BOOTFS} ${LEGACY_CONTEXT:+\"${context}\"}" \
+        --preview="/libexec/zfsbootmenu-preview '${benv}' '${BOOTFS}' ${LEGACY_CONTEXT:+\"${context}\"}" \
         --preview-window="up:$(( PREVIEW_HEIGHT + ${LEGACY_CONTEXT:-0} ))${HAS_BORDER:+,border-sharp}" <<<"${snapshots}" )"
   then
     return 1
