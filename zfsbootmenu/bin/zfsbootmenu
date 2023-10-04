@@ -131,7 +131,7 @@ while true; do
       zdebug "selected kernel: ${selected_kernel}"
 
       # shellcheck disable=SC2034
-      IFS=' ' read -r fs kpath initrd <<< "${selected_kernel}"
+      IFS=$'\t' read -r fs kpath initrd <<< "${selected_kernel}"
 
       case "${subkey}" in
         "enter")

@@ -318,7 +318,7 @@ kexec_kernel() {
   # zfs filesystem
   # kernel
   # initramfs
-  IFS=' ' read -r fs kernel initramfs <<<"${selected}"
+  IFS=$'\t' read -r fs kernel initramfs <<<"${selected}"
 
   zdebug "fs: ${fs}, kernel: ${kernel}, initramfs: ${initramfs}"
 
@@ -820,7 +820,7 @@ find_be_kernels() {
       zdebug "found kernel: ${mnt}${kpath}, initramfs ${mnt}${ipath}"
       ipath="${ipath#"${mnt}"}"
       ipath="/${ipath#/}"
-      echo "${fs} ${kpath} ${ipath}" >> "${kernel_records}"
+      printf "%s\t%s\t%s\n" "${fs}" "${kpath}" "${ipath}" >> "${kernel_records}"
     else
       zdebug "kernel ${mnt}${kpath} has no initramfs"
     fi
@@ -872,7 +872,7 @@ select_kernel() {
     zdebug "org.zfsbootmenu:kernel set to ${specific_kernel}"
     while read -r spec_kexec_args; do
       local fs kernel initramfs
-      IFS=' ' read -r fs kernel initramfs <<<"${spec_kexec_args}"
+      IFS=$'\t' read -r fs kernel initramfs <<<"${spec_kexec_args}"
       if [[ "${kernel}" =~ ${specific_kernel} ]]; then
         zdebug "matched ${kernel} to ${specific_kernel}"
         kexec_args="${spec_kexec_args}"
