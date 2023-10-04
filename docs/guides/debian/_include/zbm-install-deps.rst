@@ -8,6 +8,7 @@ Install all packages required to build a ZFSBootMenu image on Debian:
     libyaml-pp-perl \
     git \
     fzf \
+    curl \
     mbuffer \
     kexec-tools \
     dracut-core \
