@@ -65,7 +65,7 @@ These options are set on the kernel command line when booting the initramfs or U
 
     .. code-block::
 
-      echo 0 > /sys/module/spl/paramters/spl_hostid
+      echo 0 > /sys/module/spl/parameters/spl_hostid
 
 **zbm.sort_key**
 

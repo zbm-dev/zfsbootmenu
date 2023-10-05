@@ -95,7 +95,7 @@
         ZFS kernel modules [1mignore[0m any value set in [33m/etc/hostid[0m. To restore standard
         ZFS behavior on a running system, execute
 
-        echo 0 > /sys/module/spl/paramters/spl_hostid
+        echo 0 > /sys/module/spl/parameters/spl_hostid
 
     [1mzbm.sort_key[0m
 
