@@ -45,8 +45,8 @@ if ! is_snapshot "${selected}" && ! is_writable "${pool}" ; then
   fi
 fi
 
-reset
-clear
+tput reset
+tput clear
 
 if ! mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
   zerror "failed to mount ${selected}"
