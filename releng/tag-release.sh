@@ -24,7 +24,8 @@ if [ ! -e bin/generate-zbm ] || [ ! -e docs/CHANGELOG.md ]; then
 fi
 
 # Only tag releases from master or a compatible release-tracking branch
-case "$(git rev-parse --abbrev-ref HEAD)" in
+release_branch="$(git rev-parse --abbrev-ref HEAD)" || release_branch=""
+case "${release_branch}" in
   master)
     echo "Tagging release from master branch"
     ;;
@@ -190,7 +191,8 @@ if ! git push; then
 fi
 
 if ! gh release create "${tag}" "${prerelease[@]}" \
-    -F "${relnotes}" -t "ZFSBootMenu ${tag}" "${asset_files[@]}"; then
+    --target "${release_branch}" -F "${relnotes}" \
+    -t "ZFSBootMenu ${tag}" "${asset_files[@]}"; then
   error "ERROR: release creation failed"
 fi
 
