@@ -1,5 +1,21 @@
 # Changelog
 
+## ZFSBootMenu v2.2.1 (2023-10-13)
+
+ZFSBootMenu v2.2.1 offers a few minor bug fixes over the prior release. More significantly, the build-container images and release assets for this version include OpenZFS 2.2.0 to provide access to upgraded pools.
+
+All users of the binary releases or the ZFSBootMenu build container are encouraged to update to ZFSBootMenu v2.2.1 before upgrading any ZFS pools.
+
+### Significant commits in this release
+* e4102ee - zfs-chroot: load keys again after setting pool r/w (Zach Dykstra)
+* 7b3dcc1 - zfs-chroot: add read-write prompt (Zach Dykstra)
+* 09e4d76 - docs/man/zfsbootmenu: fix typo (Wesley H. Gimenes)
+* 7532d1f - zfsbootmenu: protect stdout of main interface (Zach Dykstra)
+* 6528649 - zfsbootmenu-help: use cat in place of less (Zach Dykstra)
+* bf20728 - zfsbootmenu: make 'less' an optional binary (Zach Dykstra)
+* d03f9de - Add dm-crypt to recovery images, so cryptsetup works (Andrew J. Hesford)
+* b212b23 - zbm-builder.sh: add mount-options argument, document use (Andrew Gunnerson)
+
 ## ZFSBootMenu v2.2.0 (2023-05-21)
 
 Perhaps the most significant change in ZFSBootMenu v2.2.0 is an overhaul of the project documentation. We are thrilled to welcome new member @classabbyamp to the project, who oversaw this substantial effort. Disparate documentation previously stored in Markdown files, the GitHub Wiki, POD files, and another git repository have now been combined into a single tree that is published on Read The Docs. The documentation is now maintained as an integral part of this repository and is published at https://docs.zfsbootmenu.org/. This includes:
