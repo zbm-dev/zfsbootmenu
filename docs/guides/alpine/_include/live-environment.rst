@@ -19,7 +19,7 @@ Setup additional tools
 
 .. code-block::
 
-  apk add zfs sgdisk wipefs
+  apk add zfs zfs-scripts sgdisk wipefs
   modprobe zfs
 
 .. include:: ../_include/zgenhostid.rst
