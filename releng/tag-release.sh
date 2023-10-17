@@ -171,13 +171,13 @@ sed -i '1,/^$/d' "${relnotes}"
 
 echo "Release ${release} ready to push and tag"
 while true; do
-  echo "Continue? [Yes]/No"
+  echo "Continue? Yes/[No]"
   read -r response
   case "${response,,}" in
-    yes|y|"")
+    yes|y)
       break
       ;;
-    no|n)
+    no|n|"")
       error "Release aborted by user request; clean up your local branch!"
       ;;
     *)
