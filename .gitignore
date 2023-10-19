@@ -3,6 +3,7 @@
 */*.swp
 .vscode/
 releases/*
+testing/stubs/local.*
 build
 hostid
 zpool.cache

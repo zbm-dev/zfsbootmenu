@@ -35,10 +35,11 @@ Usage: $0 [options]
   -M  Set the amount of memory for the virtual machine
   -C  Set the number of CPUs for the virtual machine
   -B  Use Busybox for mkinitcpio miser mode
+  -S  Use alternate EFI stub file at specified path
 EOF
 }
 
-CMDOPTS="D:A:a:d:fsv:hineM:C:FEGcrB"
+CMDOPTS="D:A:a:d:fsv:hineS:M:C:FEGcrB"
 
 # First-pass option parsing just looks for test directory
 while getopts "${CMDOPTS}" opt; do
@@ -107,6 +108,7 @@ EFI=0
 SERDEV_COUNT=0
 GENZBM_FLAGS=()
 MISER=0
+EFISTUB="$( realpath -e stubs/linuxx64.efi.stub )"
 
 # Defer a choice on initramfs generator until options are parsed
 DRACUT=0
@@ -163,6 +165,9 @@ while getopts "${CMDOPTS}" opt; do
           echo "EFI bundles unsupported on $(uname -m)"
           ;;
         esac
+      ;;
+    S)
+      EFISTUB="$( realpath -e "${OPTARG}" )"
       ;;
     M)
       MEMORY="${OPTARG}"
@@ -381,14 +386,13 @@ fi
 
 if ((CREATE)) ; then
   yamlconf="${TESTDIR}/local.yaml"
-  STUBS="$(realpath -e stubs)"
 
   if ((EFI)) ; then
     # toggle only EFI bundle creation
     [ -f "${BUNDLE}" ] && rm "${BUNDLE}"
     yq-go eval ".EFI.Enabled = true" -i "${yamlconf}"
     yq-go eval ".Components.Enabled = false" -i "${yamlconf}"
-    yq-go eval ".EFI.Stub = \"${STUBS}/linuxx64.efi.stub\"" -i "${yamlconf}"
+    yq-go eval ".EFI.Stub = \"${EFISTUB}\"" -i "${yamlconf}"
   else
     # toggle only component creation
     [ -f "${KERNEL}" ] && rm "${KERNEL}"
