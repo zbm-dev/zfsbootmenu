@@ -181,9 +181,9 @@ In addition, ``generate-zbm`` requires a few Perl modules:
   * `perl boolean <https://metacpan.org/pod/boolean>`_
 
 If you will create unified EFI executables (which bundles the kernel, initramfs and command line), you will also need a
-an EFI stub loader, which is typically included with
-`systemd-boot <https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/>`_ or
-`gummiboot <https://pkgs.alpinelinux.org/package/edge/main/x86/gummiboot>`_.
+an EFI stub loader. ZFSBootMenu includes a version of the stub loader from
+`gummiboot <https://pkgs.alpinelinux.org/package/edge/main/x86/gummiboot>`_, but other loaders may be used (for example,
+the stub included with `systemd-boot <https://www.freedesktop.org/wiki/Software/systemd/systemd-boot/>`_).
 
 Most or all of these software components may be available as packages in your distribution.
 

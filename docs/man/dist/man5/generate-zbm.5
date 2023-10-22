@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GENERATE-ZBM" "5" "2023-10-13" "" "ZFSBootMenu"
+.TH "GENERATE-ZBM" "5" "2023-10-22" "" "ZFSBootMenu"
 .SH NAME
 generate-zbm \- configuration file for generate-zbm
 .SH SYNOPSIS
@@ -211,7 +211,7 @@ Behaves similarly to \fIComponents.Versions\fP, but acts on files matching the U
 \fBStub\fP
 .INDENT 0.0
 .INDENT 3.5
-The path to the EFI stub loader used to boot the unified bundle. If not set, a default of \fB/usr/lib/gummiboot/linuxx64.efi.stub\fP is assumed.
+The path to the EFI stub loader used to boot the unified bundle. If not set, \fBgenerate\-zbm\fP will try to find the stub loader included with ZFSBootMenu or provided by either gummiboot or systemd\-boot.
 .UNINDENT
 .UNINDENT
 .SH EXAMPLE

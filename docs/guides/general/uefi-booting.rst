@@ -120,9 +120,10 @@ The remaining keys in the ``EFI`` section allow control over where and how UEFI 
   replacing its ``.EFI`` extension with ``-backup.EFI`` to provide a fallback.
 * ``Stub`` specifies the location of the UEFI stub loader required when creating a bundled executable. Both ``gummiboot``
   and its descendant ``systemd-boot`` provide stub loaders; ``gummiboot``, for example, tends to store the loader at
-  ``/usr/lib/gummiboot/linuxx64.efi.stub``. If this key is omitted (as it is by default), ``dracut`` will attempt to
-  find either the ``systemd-boot`` or ``gummiboot`` version at their expected locations. This key is useful when
-  automatic detection fails.
+  ``/usr/lib/gummiboot/linuxx64.efi.stub``. If this key is omitted (as it is by default), ``generate-zbm`` will attempt
+  to first find a copy of the stub loader shipped and installed with ZFSBootMenu, falling back to either of the
+  ``systemd-boot`` or ``gummiboot`` versions at their expected locations. This key is useful when automatic detection
+  fails.
 
 In addition, two options in the ``Kernel`` section of the configuration file are used during bundle creation:
 

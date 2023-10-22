@@ -16,6 +16,8 @@ use File::Path qw(make_path remove_tree);
 use File::Glob qw(:globally :nocase);
 use Sort::Versions;
 
+use Cwd qw(getcwd abs_path);
+
 use Pod::Usage qw(pod2usage);
 
 use Data::Dumper;
@@ -734,13 +736,23 @@ sub createUEFIBundle {
       exit 1;
     }
   } else {
-    # For now, default stub locations are x86_64 only
-    my @uefi_stub_defaults = qw(
-      /usr/lib/gummiboot/linuxx64.efi.stub
-      /usr/lib/systemd/boot/efi/linuxx64.efi.stub
-    );
+    my @uefi_stub_locations;
 
-    foreach my $stubloc (@uefi_stub_defaults) {
+    # Default stub locations come from ZFSBootMenu module root
+    foreach my $bpath ( ( getcwd, dirname(__FILE__) ) ) {
+      foreach my $broot (qw(. .. ../share)) {
+        my $rpath = join( '/', $bpath, $broot, 'zfsbootmenu', 'stub' );
+        my $apath = abs_path( $rpath );
+        push( @uefi_stub_locations, $apath ) if ( defined $apath and -d $apath );
+      }
+    }
+
+    # Fallback stub locations come from gummiboot or systemd-boot
+    push( @uefi_stub_locations, qw(/usr/lib/gummiboot /usr/lib/systemd/boot/efi) );
+
+    # For now, default stub locations are x86_64 only
+    foreach my $stubdir (@uefi_stub_locations) {
+      my $stubloc = join( '/', $stubdir, 'linuxx64.efi.stub' );
       if ( -f $stubloc ) {
         $uefi_stub = $stubloc;
         last;
@@ -749,7 +761,7 @@ sub createUEFIBundle {
 
     unless ( defined $uefi_stub and -f $uefi_stub ) {
       print "Unable to find UEFI stub loader at default locations:\n";
-      foreach my $stubloc (@uefi_stub_defaults) {
+      foreach my $stubloc (@uefi_stub_locations) {
         print " $stubloc\n";
       }
       exit 1;

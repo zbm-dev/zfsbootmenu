@@ -131,7 +131,7 @@ EFI
 
 **Stub**
 
-  The path to the EFI stub loader used to boot the unified bundle. If not set, a default of ``/usr/lib/gummiboot/linuxx64.efi.stub`` is assumed.
+  The path to the EFI stub loader used to boot the unified bundle. If not set, **generate-zbm** will try to find the stub loader included with ZFSBootMenu or provided by either gummiboot or systemd-boot.
 
 EXAMPLE
 =======

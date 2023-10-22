@@ -108,7 +108,7 @@ EFI=0
 SERDEV_COUNT=0
 GENZBM_FLAGS=()
 MISER=0
-EFISTUB="$( realpath -e stubs/linuxx64.efi.stub )"
+EFISTUB="$( realpath -e ../zfsbootmenu/stub/linuxx64.efi.stub )"
 
 # Defer a choice on initramfs generator until options are parsed
 DRACUT=0
