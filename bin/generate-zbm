@@ -841,8 +841,10 @@ sub createUEFIBundle {
     $uki_offset = addBundleSection( \@cmd, ".cmdline", $cmdline, $uki_offset, $uki_alignment );
   }
 
-  $uki_offset = addBundleSection( \@cmd, ".linux",  $kernel,    $uki_offset, $uki_alignment );
   $uki_offset = addBundleSection( \@cmd, ".initrd", $initramfs, $uki_offset, $uki_alignment );
+
+  # Add the kernel last, so that it can decompress without overflowing other sections
+  $uki_offset = addBundleSection( \@cmd, ".linux",  $kernel,    $uki_offset, $uki_alignment );
 
   push( @cmd, ( $uefi_stub, $output_file ) );
 
