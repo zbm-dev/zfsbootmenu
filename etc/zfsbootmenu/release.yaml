@@ -11,4 +11,4 @@ EFI:
   Versions: false
   Enabled: true
 Kernel:
-  CommandLine: quiet loglevel=4 nomodeset
+  CommandLine: quiet loglevel=0 nomodeset
