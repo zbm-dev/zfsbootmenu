@@ -144,14 +144,14 @@ Booting the Bundled Executable
 The `efibootmgr`_ utility provides a means to configure your firmware to
 boot the bundled executable. For example::
 
-  efibootmgr -c -d /dev/sda -p 1 -L "ZFSBootMenu" -l \\EFI\\VOID\\VMLINUZ.EFI
+  efibootmgr -c -d /dev/sda -p 1 -L "ZFSBootMenu" -l '\EFI\VOID\VMLINUZ.EFI'
 
 will create a new entry that will boot the executable written to ``/boot/efi/EFI/void/vmlinuz.EFI`` if your EFI system
 partition is ``/dev/sda1`` and is mounted at ``/boot/efi``. (Remember that the EFI system partition should be a FAT
 volume, so the path separators are backslashes and paths should be case-insensitive.) For good measure, create an
 alternative entry that points at the backup image::
 
-  efibootmgr -c -d /dev/sda -p 1 -L "ZFSBootMenu (Backup)" -l \\EFI\\VOID\\VMLINUZ-BACKUP.EFI
+  efibootmgr -c -d /dev/sda -p 1 -L "ZFSBootMenu (Backup)" -l '\EFI\VOID\VMLINUZ-BACKUP.EFI'
 
 The firmware should provide some means to select between these alternatives.
 
