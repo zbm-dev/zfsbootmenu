@@ -1,5 +1,13 @@
 # Changelog
 
+## ZFSBootMenu v2.2.2 (2023-10-24)
+
+ZFSBootMenu v2.2.2 contains no runtime changes relative to v2.2.1. The creation of UEFI bundles (so-called unified kernel images, or UKIs) in `generate-zbm` has been updated to properly support newer UEFI stub loaders that were known to cause boot failures in the past. These changes were inspired by similar functionality in mkinitcpio and the `ukify` utility included with systemd.
+
+### Significant commits in this release
+* 9424356 - bin/generate-zbm: add .linux section last (Zach Dykstra)
+* 36a0a66 - bin/generate-zbm: use mkinitcpio method to calc offsets (Zach Dykstra)
+
 ## ZFSBootMenu v2.2.1 (2023-10-13)
 
 ZFSBootMenu v2.2.1 offers a few minor bug fixes over the prior release. More significantly, the build-container images and release assets for this version include OpenZFS 2.2.0 to provide access to upgraded pools.
