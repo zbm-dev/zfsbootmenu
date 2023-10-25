@@ -212,17 +212,95 @@ save_kcl_zfs() {
   return 0
 }
 
-save_kcl_efi() {
-  local kcl efi kclfile
-  efi="${1}"
+find_cmdline_gap() {
+  local file
+  file="${1}"
 
-  if [ ! -r "${efi}" ]; then
-    zerror "unable to read EFI excutable '${efi}'"
+  if [ ! -r "${file}" ]; then
+    zerror "unable to read object file '${file}'"
     return 1
   fi
 
-  if ! objout="$(objcopy --remove-section .cmdline "${efi}" 2>&1)"; then
-    zerror "failed to clear existing KCL from EFI executable"
+  if ! OBJDATA="$(objdump -h -w "$1")"; then
+    zerror "failed to parse object file; is objdump available?"
+    return 1
+  fi
+
+  local ready idx name size vma rem offsets cmdoff
+  offsets=( )
+  cmdoff=
+  ready=
+  # shellcheck disable=SC2034
+  while read -r idx name size vma rem; do
+    # Object header table begins with header labeling columns
+    if [ "${idx,,}" = "idx" ] && [ "${vma,,}" = "vma" ]; then
+      ready="yes"
+      continue
+    fi
+
+    # Ignore all lines until the header line has been encountered
+    [ -n "${ready}" ] || continue
+
+    # Make sure the index field is integral
+    [ "${idx}" -eq "${idx}" ] >/dev/null 2>&1 || continue
+
+    # Validate the VMA field, which should be hex
+    vma="${vma,,}"
+    # Field should not start with 0x, but tolerate it anyway
+    vma="${vma#0x}"
+
+    if ! vma="$(( "0x${vma}" ))"; then
+      zerror "invalid VMA for section '${name}'"
+      return 1
+    fi
+
+    if [ "${name,,}" = ".cmdline" ]; then
+      cmdoff="${vma}"
+    else
+      offsets+=( "${vma}" )
+    fi
+  done <<< "${OBJDATA}"
+
+  if [ -z "${cmdoff}" ]; then
+    zerror "file '${file}' contains no .cmdline section"
+    return 1
+  fi
+
+  local gap mingap
+  gap=
+  mingap=
+  for vma in "${offsets[@]}"; do
+    [ "${vma}" -gt "${cmdoff}" ] >/dev/null 2>&1 || continue;
+    gap="$(( vma - cmdoff ))"
+    if [ -z "${mingap}" ] || [ "${gap}" -lt "${mingap}" ]; then
+      mingap="${gap}"
+    fi
+  done
+
+  if [ -z "${mingap}" ]; then
+    zerror "unable to determine .cmdline gap size"
+    return 1
+  fi
+
+  printf "%X %X\n" "${cmdoff}" "${mingap}"
+  return 0
+}
+
+save_kcl_efi() {
+  local kcl efi kclfile kcloff kclgap kclsize
+  efi="${1}"
+
+  # Find offset and space available for the cmdline to replace;
+  # this seems to be 4 kB with the x86_64 stub loader alignment
+  if ! kclsize="$(find_cmdline_gap "${efi}")"; then
+    zerror "failed to determine offset data for KCL"
+    return 1
+  fi
+
+  read -r kcloff kclgap <<< "${kclsize}"
+
+  if [ -z "${kcloff}" ] || [ -z "${kclgap}" ]; then
+    zerror "offset data for KCL appears invalid; aborting"
     return 1
   fi
 
@@ -239,14 +317,27 @@ save_kcl_efi() {
   # Dracut also adds a null terminator
   echo -ne "\x00" >> "${kclfile}"
 
-  if [ -s "${kclfile}" ]; then
-    local objargs
-    objargs=( --add-section ".cmdline=${kclfile}"
-              --change-section-vma ".cmdline=0x30000" )
-    if ! objout="$(objcopy "${objargs[@]}" "${efi}" 2>&1)"; then
-      zerror "failed to write new KCL to EFI executable"
-      return 1
-    fi
+  if ! kclsize="$(stat -c %s "${kclfile}")"; then
+    zerror "failed to determine new KCL size; is stat available?"
+    return 1
+  fi
+
+  if ! [ "${kclsize}" -le "$(( "0x${kclgap}" ))" ] >/dev/null 2>&1; then
+    zerror "new KCL size exceeds space available in EFI file '${efi}'; aborting"
+    return 1
+  fi
+
+  if ! objout="$(objcopy --remove-section .cmdline "${efi}" 2>&1)"; then
+    zerror "failed to clear existing KCL from EFI executable"
+    return 1
+  fi
+
+  local objargs
+  objargs=( --add-section ".cmdline=${kclfile}"
+            --change-section-vma ".cmdline=0x${kcloff}" )
+  if ! objout="$(objcopy "${objargs[@]}" "${efi}" 2>&1)"; then
+    zerror "failed to write new KCL to EFI executable"
+    return 1
   fi
 
   return 0
