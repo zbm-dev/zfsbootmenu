@@ -142,9 +142,7 @@ See :doc:`generate-zbm(5) </man/generate-zbm.5>` for more details.
 Configure syslinux
 ~~~~~~~~~~~~~~~~~~
 
-The ``generate-zbm`` image-creation utility includes now-deprecated support for managing a syslinux configuration.
-Because this capability is slated for removal and was not reliable in the first place, it is better to create a static
-syslinux configuration. The ZFSBootMenu configuration described above disables explicit image versioning, which means
+The ZFSBootMenu configuration described above disables explicit image versioning, which means
 that each invocation of ``generate-zbm`` will produce two output files at a predictable location:
 
 * ``/boot/syslinux/zfsbootmenu/vmlinuz-bootmenu``
@@ -183,6 +181,9 @@ images::
 Consult the `syslinux documentation <https://wiki.syslinux.org/wiki/index.php?title=Config>`_ for more details on the
 contents of the ``syslinux.cfg`` configuration file. To alter the command-line arguments passed to the ZFSBootMenu
 image, adjust the contents of the ``APPEND`` lines in the configuration.
+
+Alternatively, the :zbm:`contrib/syslinux-update.sh` ``generate-zbm`` hook can be used to automatically recreate
+``syslinux.cfg``.
 
 .. include:: _include/gen-initramfs.rst
 

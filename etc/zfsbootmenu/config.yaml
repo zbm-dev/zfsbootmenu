@@ -9,9 +9,6 @@ Components:
   ImageDir: /boot/efi/EFI/zbm
   Versions: 3
   Enabled: true
-  syslinux:
-    Config: /boot/syslinux/syslinux.cfg
-    Enabled: false
 EFI:
   ImageDir: /boot/efi/EFI/zbm
   Versions: false
