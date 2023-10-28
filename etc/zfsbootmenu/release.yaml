@@ -5,8 +5,6 @@ Global:
 Components:
   Versions: false
   Enabled: true
-  syslinux:
-    Enabled: false
 EFI:
   Versions: false
   Enabled: true

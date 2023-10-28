@@ -70,7 +70,7 @@ Kernel
 
 **CommandLine**
 
-  If you're making a unified EFI file or a syslinux configuration, this is the command line passed to the boot image.
+  If you're making a unified EFI file, this is the command line passed to the boot image.
 
 **Path**
 
@@ -102,17 +102,6 @@ Components
   When *false* or *0*, image versioning will be disabled; **generate-zbm** will not use its *Global.Version* parameter to name outputs, and will keep exactly one backup copy of any image it would overwrite.
 
   When *true* (which behaves as *1*) or any positive integer, **generate-zbm** will append the value of *Global.Version* to every image it produces, followed by a revision as *_$revision*. **generate-zbm** will save *Components.Versions* revisions of all images with versions matching the current value of *Global.Version*. In addition, **generate-zbm** will save the highest revision of the most recent *Components.Versions* image versions distinct from *Global.Version*.
-
-Components.syslinux
--------------------
-
-**Enabled**
-
-  When *true*, syslinux configuration generation is enabled. The default value is *false*.
-
-**Config**
-
-  The path of the syslinux configuration file to produce.
 
 EFI
 ---
@@ -148,9 +137,6 @@ The following example will write separate, unversioned ZFSBootMenu kernel and in
     ImageDir: /boot/efi/EFI/zbm
     Versions: false
     Enabled: true
-    syslinux:
-      Config: /boot/syslinux/syslinux.cfg
-      Enabled: false
   EFI:
     ImageDir: /boot/efi/EFI/zbm
     Versions: 2
