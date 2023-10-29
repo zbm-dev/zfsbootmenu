@@ -19,7 +19,8 @@ core:
 	install -m 0644 -t "$(DESTDIR)$(MANDIR)/man5" -D docs/man/dist/man5/*.5
 	install -m 0644 -t "$(DESTDIR)$(MANDIR)/man7" -D docs/man/dist/man7/*.7
 	install -m 0644 -t "$(DESTDIR)$(MANDIR)/man8" -D docs/man/dist/man8/*.8
-	install -m 0755 -t "$(DESTDIR)$(EXAMPLES)" -D contrib/*
+	install -m 0755 -t "$(DESTDIR)$(EXAMPLES)/hooks" -D contrib/*
+	install -m 0755 -t "$(DESTDIR)$(EXAMPLES)" -D examples/*
 
 dracut:
 	./install-tree.sh dracut "$(DESTDIR)$(DRACUTDIR)/90zfsbootmenu"
