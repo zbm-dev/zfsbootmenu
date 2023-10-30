@@ -248,4 +248,8 @@ esac
 
 # shellcheck disable=SC2034
 rootok=1
+
+# Dracut requires root to be defined
+# shellcheck disable=SC2034
+root=zfsbootmenu
 ln -s /dev/null /dev/root 2>/dev/null
