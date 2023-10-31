@@ -1351,7 +1351,7 @@ resume_prompt() {
 
 	Type $( colorize "red" "DANGEROUS" ) to proceed with the import without allowing
 	ZFSBootMenu to modify your kernel command line. Make sure to
-	add the "noresume" argument yourself if necesary.
+	add the "noresume" argument yourself if necessary.
 
 	Type any other text, or just press enter, to abort.
 
