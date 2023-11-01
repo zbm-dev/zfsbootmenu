@@ -67,8 +67,8 @@ partitions for boot files as well as the ZFSBootMenu.
 
 .. include:: _include/zfs-config.rst
 
-Install and configure ZFSBootMenu
----------------------------------
+Install and configure syslinux
+------------------------------
 
 Create a ext4 boot filesystem
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
