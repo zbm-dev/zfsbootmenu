@@ -170,6 +170,9 @@ build() {
     # Install online documentation if possible
     install_zbm_docs
 
+    # Install an os-release, if one is available
+    install_zbm_osver
+
     # Install pre-init scripts
     for _file in "${zfsbootmenu_module_root}"/pre-init/*; do
         add_file "${_file}" "/lib/${_file##*/}" && continue;

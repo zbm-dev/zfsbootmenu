@@ -256,6 +256,19 @@ install_zbm_fonts() {
   done
 }
 
+install_zbm_osver() {
+  local build_date
+  [ -r "${zfsbootmenu_module_root}/zbm-release" ] || return 0
+  zbm_install_file "${zfsbootmenu_module_root}/zbm-release" "/etc/zbm-release"
+  if build_date="$(date %Y-%m-%d)"; then
+    cat >> "${BUILDROOT}/etc/zbm-release" <<-EOF
+	BUILD_ID="${build_date}"
+	EOF
+  fi
+
+  ln -Tsf zbm-release "${BUILDROOT}/etc/os-release"
+}
+
 populate_hook_dir() {
   local hfile ret hlev
 

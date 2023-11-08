@@ -118,6 +118,9 @@ install() {
   # Install online documentation if possible
   install_zbm_docs
 
+  # Install an os-release, if one is available
+  install_zbm_osver
+
   # optionally enable early Dracut profiling
   if [ -n "${dracut_trace_enable}" ]; then
     inst_hook cmdline 00 "${zfsbootmenu_module_root}/profiling/profiling-lib.sh"
