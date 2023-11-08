@@ -113,10 +113,16 @@ if ! (head -n 1 "${relnotes}" | grep -q "ZFSBootMenu ${tag}\b"); then
 fi
 
 # Update version in generate-zbm
-sed -i bin/generate-zbm -e "s/our \$VERSION.*/our \$VERSION = '${release}';/"
+if [ -x releng/version.sh ]; then
+  error "ERROR: unable to update release version"
+fi
+
+if ! out="$( releng/version.sh -v "${release}" -u )"; then
+  error "ERROR: ${out}"
+fi
 
 # Push updates for the release
-git add bin/generate-zbm docs/ zfsbootmenu/help-files/
+git add bin/generate-zbm docs/ zfsbootmenu/zbm-release zfsbootmenu/help-files/
 git commit -m "Bump to version ${release}"
 
 # Publish release, as prerelease if version contains alphabetics
@@ -197,3 +203,14 @@ if ! gh release create "${tag}" "${prerelease[@]}" \
 fi
 
 echo "Pushed and tagged release ${release}"
+
+# Bump the verson to a development tag
+dver="${release}+dev"
+if ! (
+  releng/version.sh -v "${dver}" -u || exit 1
+  git add bin/generate-zbm zfsbootmenu/zbm-release || exit 1
+  git commit -m "Bump to version ${dver}" || exit 1
+  git push
+); then
+  error "ERROR: failed to update to development version"
+fi

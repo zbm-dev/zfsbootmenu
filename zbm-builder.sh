@@ -68,7 +68,12 @@ OPTIONS:
      (Default: ghcr.io/zbm-dev/zbm-builder:latest)
 
   -l <path>
-     Build from ZFSBootMenu source tree at <path>
+     Build from ZFSBootMenu source tree at <path>, mounted read-only
+     (Default: fetch upstream source tree inside container)
+
+  -L <path>
+     Build from ZFSBootMenu source tree at <path>, with a temporary
+     read-write overlay atop the tree
      (Default: fetch upstream source tree inside container)
 
   -R Remove any existing hostid in the build directory
@@ -96,8 +101,9 @@ BUILD_IMG="ghcr.io/zbm-dev/zbm-builder:latest"
 # By default, build from the current directory
 BUILD_DIRECTORY="${PWD}"
 
-# By default, there is no local repo
+# By default, there is no local repo and it is not overlaid
 BUILD_REPO=
+BUILD_OVERLAY=
 
 # Arguments to the build script
 BUILD_ARGS=()
@@ -114,7 +120,7 @@ else
   PODMAN="docker"
 fi
 
-CMDOPTS="b:dhi:l:c:M:O:HR"
+CMDOPTS="b:dhi:l:L:c:M:O:HR"
 
 # First pass to get build directory and configuration file
 while getopts "${CMDOPTS}" opt; do
@@ -168,6 +174,11 @@ while getopts "${CMDOPTS}" opt; do
       ;;
     l)
       BUILD_REPO="${OPTARG}"
+      BUILD_OVERLAY=""
+      ;;
+    L)
+      BUILD_REPO="${OPTARG}"
+      BUILD_OVERLAY="yes"
       ;;
     M)
       MOUNT_FLAGS="${OPTARG}"
@@ -206,7 +217,14 @@ if [ -n "${BUILD_REPO}" ]; then
     exit 1
   fi
 
-  RUNTIME_ARGS+=( "-v" "${BUILD_REPO}:/zbm:ro${MOUNT_FLAGS:+,${MOUNT_FLAGS}}" )
+  mntopt=""
+  case "${BUILD_OVERLAY,,}" in
+    yes) mntopt="O" ;;
+    *) mntopt="ro" ;;
+  esac
+
+  RUNTIME_ARGS+=( "-v" "${BUILD_REPO}:/zbm:${mntopt}${MOUNT_FLAGS:+,${MOUNT_FLAGS}}" )
+  unset mntopt
 fi
 
 # Remove existing hostid
