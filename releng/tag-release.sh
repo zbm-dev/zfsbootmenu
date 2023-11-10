@@ -113,7 +113,13 @@ if ! (head -n 1 "${relnotes}" | grep -q "ZFSBootMenu ${tag}\b"); then
 fi
 
 # Update version in generate-zbm
-sed -i bin/generate-zbm -e "s/our \$VERSION.*/our \$VERSION = '${release}';/"
+if [ -x releng/version.sh ]; then
+  error "ERROR: unable to update release version"
+fi
+
+if ! out="$( releng/version.sh -v "${release}" -u )"; then
+  error "ERROR: ${out}"
+fi
 
 # Push updates for the release
 git add bin/generate-zbm docs/ zfsbootmenu/help-files/

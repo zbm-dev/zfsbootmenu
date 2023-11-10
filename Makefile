@@ -8,14 +8,11 @@ MANDIR=$(PREFIX)/share/man
 BINDIR=$(PREFIX)/bin
 EXAMPLES=$(PREFIX)/share/examples/zfsbootmenu
 
-VERSION=$(shell grep 'our $$VERSION' bin/generate-zbm | \
-	head -n 1 | sed -e "s/.*=[[:space:]]*'//" -e "s/'.*//" )
-
 .PHONY: install core dracut initcpio zbm-release show-version
 
 install: core dracut initcpio zbm-release
 
-core:
+core: zbm-release
 	./install-tree.sh zfsbootmenu "$(DESTDIR)/$(MODDIR)/zfsbootmenu"
 	install -m 0644 -t "$(DESTDIR)/$(CONFDIR)" -D etc/zfsbootmenu/config.yaml
 	install -m 0755 -t "$(DESTDIR)/$(BINDIR)" -D bin/*
@@ -36,8 +33,7 @@ initcpio:
 	install -m 0644 -t "$(DESTDIR)/$(CONFDIR)" -D etc/zfsbootmenu/mkinitcpio.conf
 
 zbm-release:
-	[ -n "$(VERSION)" ] && sed -e 's/@@VERSION@@/$(VERSION)/' \
-		zfsbootmenu/zbm-release > "$(DESTDIR)/$(MODDIR)/zfsbootmenu/zbm-release"
+	./releng/version.sh -u
 
 show-version:
-	@echo $(VERSION)
+	@ ./releng/version.sh
