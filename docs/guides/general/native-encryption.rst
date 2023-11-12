@@ -60,7 +60,7 @@ running the commands::
   chmod 000 /etc/zfs/keys/zroot.key
   zfs set keylocation=file:///etc/zfs/keys/zroot.key zroot
   zfs set org.zfsbootmenu:keysource=zroot/keystore zroot
-  echo install_optional_items+=" /etc/zfs/keys/zroot.key " >> /etc/dracut.conf.d/zol.conf
+  echo 'install_optional_items+=" /etc/zfs/keys/zroot.key "' >> /etc/dracut.conf.d/zol.conf
 
 will cause ZFSBootMenu to attempt to cache the key ``file:///etc/zfs/keys/zroot.key`` from ``zroot/keystore`` when
 unlocking the ``zroot`` pool. Because ``zroot/keystore`` specifies ``mountpoint=/etc/zfs/keys``, ZFSBootMenu will first
