@@ -1,0 +1,58 @@
+name: Bug Report
+description: File a bug report
+labels: [ "bug " ]
+body:
+  - type: markdown
+    attributes:
+      value: >
+        ### This form is for bug reports only. Questions and feature requests are part of Discussions.
+        Wrap text output and commands with triple backticks (```) for proper formatting.
+  - id: zfsbootmenu_source
+    type: dropdown
+    attributes:
+      label: ZFSBootMenu build source
+      description: ZFSBootMenu build source (binary, local, etc)
+      options:
+        - "Release EFI"
+        - "Release components"
+        - "Recovery EFI"
+        - "Recovery components"
+        - "Local build, dracut"
+        - "Local build, mkinitcpio"
+        - "Container build, dracut"
+        - "Container build, mkinitcpio"
+    validations:
+      required: true
+  - id: zfsbootmenu_version
+    type: input
+    attributes:
+      label: ZFSBootMenu version
+      description: ZFSBootMenu version or commit sha
+      placeholder: 2.2.2
+    validations:
+      required: true
+  - id: distribution
+    type: input
+    attributes:
+      label: Boot environment distribution
+      description: Relevant boot environment distribution
+      placeholder: Void Linux
+  - id: description
+    type: textarea
+    attributes:
+      label: Problem description
+      description: A clear and concise description of what the bug is
+      placeholder: I hit enter and my computer hacked the Gibson
+    validations:
+      required: true
+  - id: steps
+    type: textarea
+    attributes:
+      label: Steps to reproduce 
+      description: Clear steps to reproduce the bug
+      placeholder: |
+        1. Hit escape on main screen
+        2. Hit CTRL-H
+        3. Hack The Planet
+    validations:
+      required: true
