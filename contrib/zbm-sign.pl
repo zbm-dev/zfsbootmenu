@@ -41,12 +41,12 @@ my $EFI_Enabled = $EFI->{Enabled};
 if ( !$EFI_Enabled ) {
   die "EFI images are disabled! Nothing to sign!";
 }
+my $ZBM    = $EFI->{ImageDir};
 
 my $Global = $config->{Global};
 my $ESP    = $Global->{BootMountPoint};
 
 my $SecureBoot     = $config->{SecureBoot} or die "No config found, please edit /etc/zfsbootmenu/config.yaml";
-my $ZBM            = "$ESP/EFI/zbm";
 my $KeyDir         = $SecureBoot->{KeyDir};
 my $DeleteUnsigned = $SecureBoot->{DeleteUnsigned};
 my $SignBackups    = $SecureBoot->{SignBackup};
