@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: ZFSBootMenu questions
+    url: https://github.com/zbm-dev/zfsbootmenu/discussions/categories/questions
+    about: Ask the community for help
+  - name: ZFSBootMenu feature requests
+    url: https://github.com/zbm-dev/zfsbootmenu/discussions/categories/feature-requests
+    about: Suggest a feature for ZFSBootMenu
+  - name: ZFSBootMenu on IRC
+    url: https://web.libera.chat/#zfsbootmenu
+    about: Use IRC to get community support for ZFSBootMenu
