@@ -1,0 +1,17 @@
+* /zbm/bin/zbm-kcl
+* /etc/zbm-commit-hash
+* /bin/gdisk
+* /bin/parted
+* /bin/wipefs
+* /bin/kpartx
+* /bin/sgdisk
+* /bin/mkfs.vfat
+* /bin/mkfs.ext4
+* /bin/efibootmgr
+* /bin/cryptsetup
+* /bin/ip
+* /bin/curl
+* /bin/dhclient
+* /sbin/dhclient-script
+* /bin/ssh
+* /etc/ssl/certs/ca-certificates.crt

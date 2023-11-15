@@ -55,6 +55,7 @@
   guides/fedora
   guides/opensuse
   guides/third-party
+  guides/binary-releases
 
 .. toctree::
   :caption: Runtime Help
