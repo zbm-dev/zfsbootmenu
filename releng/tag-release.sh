@@ -76,6 +76,10 @@ if ! out="$( releng/rst2help.sh )" ; then
   error "ERROR: ${out}"
 fi
 
+if ! out="$( releng/update-includes.sh )" ; then
+  error "ERROR: ${out}"
+fi
+
 if ! out="$( cd docs && make gen-man SPHINXOPTS='-t manpages' )" ; then
   error "ERROR: ${out}"
 fi
