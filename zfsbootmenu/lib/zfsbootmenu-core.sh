@@ -1356,6 +1356,11 @@ set_rw_pool() {
   fi
   zdebug "pool set to ${pool}"
 
+  if [ -w /sys/module/zfs/parameters/zfs_bclone_enabled ] ; then
+    zdebug "disabling block cloning on writeable pools"
+    echo 0 > /sys/module/zfs/parameters/zfs_bclone_enabled
+  fi
+
   # If force_export is set, skip evaluating if the pool is already read-write
   # shellcheck disable=SC2154
   [ -n "${force_export}" ] || ! is_writable "${pool}" || return 0
