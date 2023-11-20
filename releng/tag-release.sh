@@ -122,7 +122,7 @@ if ! out="$( releng/version.sh -v "${release}" -u )"; then
 fi
 
 # Push updates for the release
-git add bin/generate-zbm docs/ zfsbootmenu/help-files/
+git add bin/generate-zbm docs/ zfsbootmenu/zbm-release zfsbootmenu/help-files/
 git commit -m "Bump to version ${release}"
 
 # Publish release, as prerelease if version contains alphabetics
@@ -203,3 +203,14 @@ if ! gh release create "${tag}" "${prerelease[@]}" \
 fi
 
 echo "Pushed and tagged release ${release}"
+
+# Bump the verson to a development tag
+dver="${release}+dev"
+if ! (
+  releng/version.sh -v "${dver}" -u || exit 1
+  git add bin/generate-zbm zfsbootmenu/zbm-release || exit 1
+  git commit -m "Bump to version ${dver}" || exit 1
+  git push
+); then
+  error "ERROR: failed to update to development version"
+fi
