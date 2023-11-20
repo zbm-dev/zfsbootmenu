@@ -38,6 +38,9 @@ Usage: $0 [options]
      Specify specific tag or commit hash to fetch
      (Ignored if /zbm already contains a ZFSBootMenu tree)
 
+  -V
+     Do not attempt to update the version recorded in the source tree
+
   -e <statement>
      Specify a yq-go statement that will be evaluated as
 
@@ -54,7 +57,10 @@ EOF
 PACKAGES=()
 CONFIGEVALS=()
 GENARGS=()
-while getopts "hb:o:t:e:p:" opt; do
+
+SKIP_VERSIONING=
+
+while getopts "hb:o:t:e:p:V" opt; do
   case "${opt}" in
     b)
       BUILDROOT="${OPTARG}"
@@ -70,6 +76,9 @@ while getopts "hb:o:t:e:p:" opt; do
       ;;
     e)
       CONFIGEVALS+=( "${OPTARG}" )
+      ;;
+    V)
+      SKIP_VERSIONING="yes"
       ;;
     h)
       usage
@@ -227,5 +236,10 @@ for ceval in "${CONFIGEVALS[@]}"; do
   yq-go eval "${ceval}" -i "${ZBMCONF}" \
     || error "failed to apply '${ceval}' to config"
 done
+
+# If possible, update the version recorded in the ZFSBootMenu repository
+if [ "${SKIP_VERSIONING,,}" != "yes" ] && [ -x /zbm/releng/version.sh ]; then
+  ( cd /zbm && ./releng/version.sh -u ) || true
+fi
 
 exec /zbm/bin/generate-zbm "${GENARGS[@]}"
