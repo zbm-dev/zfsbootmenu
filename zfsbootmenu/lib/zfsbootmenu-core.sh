@@ -1924,20 +1924,43 @@ emergency_shell() {
 # returns: nothing
 
 zreport() {
-  local ZBMTAG
-  if [ -r "/etc/zbm-commit-hash" ]; then
-    read -r ZBMTAG < /etc/zbm-commit-hash
-    echo -e "ZFSBootMenu version: ${ZBMTAG}\n"
-  fi
-  uname -a
-  echo -e "\n# modinfo"
+  colorize white "System Report\n\n"
+
+  (
+    VERSION="unknown"
+    PRETTY_NAME="ZFSBootMenu"
+    UNAME="$( uname -srm )"
+
+    # shellcheck disable=SC1091
+    [ -f /etc/zbm-release ] && source /etc/zbm-release
+
+    if [[ "${VERSION}" =~ dev$ ]]; then
+      VERSION="$( colorize red "${VERSION}" )"
+    else
+      VERSION="$( colorize green "${VERSION}" )"
+    fi
+
+    if [[ "${PRETTY_NAME}" == "ZFSBootMenu" ]]; then
+      PRETTY_NAME="$( colorize orange ZFS )$( colorize lightgray BootMenu )"
+    fi
+
+    echo -e "${PRETTY_NAME} ${VERSION} (${UNAME})"
+  )
+
+  colorize orange "\n>> ZFSBootMenu commandline\n"
+  get_zbm_kcl | kcl_assemble
+
+  colorize orange "\n\n>> ZFS/SPL module information\n"
   echo "$( modinfo -F filename spl ): $( modinfo -F version spl )"
   echo "$( modinfo -F filename zfs ): $( modinfo -F version zfs )"
-  echo -e "\n# zfs version"
+
+  colorize orange "\n>> ZFS version\n"
   zfs version
-  echo -e "\n# zpool list"
+
+  colorize orange "\n>> Imported zpools\n"
   zpool list
-  echo -e "\n# zfs list"
+
+  colorize orange "\n>> ZFS datasets\n"
   zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource
 }
 
