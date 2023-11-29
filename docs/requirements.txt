@@ -1,6 +1,6 @@
 sphinx
 sphinx-tabs
-sphinx-rtd-theme>=1.1.1
+sphinx-book-theme
 sphinx-copybutton
 recommonmark
 setuptools
