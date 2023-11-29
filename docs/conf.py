@@ -18,7 +18,6 @@ release = '2.2.2'
 extensions = [
     'sphinx.ext.extlinks',
     'sphinx_tabs.tabs',
-    'sphinx_rtd_theme',
     'sphinx_copybutton',
     'recommonmark',
 ]
@@ -39,15 +38,15 @@ extlinks = {
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'sphinx_book_theme'
 html_static_path = ['_static']
 html_favicon = '_static/favicon.ico'
 smartquotes = False
 html_logo = '_static/logo.svg'
 html_theme_options = {
-    'style_external_links': True,
     'collapse_navigation': False,
-    'titles_only': True,
+    'repository_url': 'https://github.com/zbm-dev/zfsbootmenu',
+    'use_repository_button': True,
 }
 html_baseurl = 'https://docs.zfsbootmenu.org'
 html_css_files = ['custom.css']
