@@ -16,6 +16,13 @@ if [ -f /etc/zfsbootmenu/config.yaml ]; then
       -e 's@ImageDir:.*@ImageDir: /zfsbootmenu/build@' \
       -e '/BootMountPoint:/d' -i /etc/zfsbootmenu/config.yaml
 
+  # Build the EFI executable if the stub is available
+  for stubdir in /usr/lib/gummiboot /usr/lib/systemd/boot/efi; do
+    [ -r "${stubdir}/linuxx64.efi.stub" ] || continue
+    sed -e 's/Enabled:.*/Enabled: true/' -i /etc/zfsbootmenu/config.yaml
+    break
+  done
+
   case "${INITCPIO,,}" in
     yes|y|on|1)
       sed -e "s/InitCPIO:.*/InitCPIO: true/" -i /etc/zfsbootmenu/config.yaml

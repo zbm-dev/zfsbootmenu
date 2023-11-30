@@ -24,8 +24,10 @@ fi
 
 export DEBROOT
 
-(cd "${DEBROOT}" && \
-  git clone --depth=1 https://salsa.debian.org/installer-team/debootstrap.git)
+archive="https://salsa.debian.org/installer-team/debootstrap/-/archive/master/debootstrap-master.tar.gz"
+( cd "${DEBROOT}" && \
+  curl -L "${archive}" | tar zxvf - && \
+  mv debootstrap-master debootstrap )
 
 if [ ! -x "${DEBROOT}/debootstrap/debootstrap" ]; then
   echo "ERROR: unable to find local clone of debootstrap"

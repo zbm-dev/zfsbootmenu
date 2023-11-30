@@ -15,29 +15,66 @@ error() {
 }
 
 usage() {
-  cat <<EOF
-Usage: $0 [options]
-  -a  Set kernel command line
-  -A+ Append additional arguments to kernel command line
-  -d+ Set one or more non-standard disk images
+  cat <<-EOF
+Usage: $0 [OPTIONS] [FLAGS]
+
+  Run a ZFSBootMenu testbed
+
+OPTIONS
+  -a  <cmdline>
+      Set kernel command line
+
+  -A <argument> (May be repeated)
+     Append additional argument to kernel command line
+
+  -C <cpus>
+     Set the number of CPUs in the virtual machine
+
+  -d <image> (May be repeated)
+     Attach the specified disk image to the test VM
+
+  -D <testbed-path>
+     Boot the testbed contained in the given directory
+
+  -M <memory>
+     Set the amount of memory in the virtual machine
+
+  -o <distro>
+     Attempt to boot image for a specific distribution;
+     requires boot files with a ".<distro>" extension
+
+  -S <efi-stub>
+     When creating EFI bundles, use the stub at the given path
+
+  -v <display>
+     Select the qemu display type
+
+FLAGS
   -f  Force recreation of the initramfs
-  -s  Enable serial console on stdio
-  -v  Set type of qemu display to use
-  -D  Set test directory
-  -c  Enable dropbear remote access via crypt-ssh
-  -n  Do not reset the controlling terminal after the VM exits
-  -e  Boot the VM with an EFI bundle
-  -F  Generate a flamegraph/flamechart using tracing data from ZBM
-  -E  Enable early initramfs tracing
+
   -i  Use mkinitcpio to generate the testing initramfs
+  -B  Use Busybox for mkinitcpio miser mode
+
   -r  Use Dracut to generate the testing initramfs
+
+  -e  Boot the VM with an EFI bundle
+  -p  Boot the VM with the kernel/initramfs pair
+
+  -E  Enable early initramfs tracing
+  -F  Generate a flamegraph/flamechart using tracing data from ZBM
   -G  Enable debug output for generate-zbm
-  -M  Set the amount of memory for the virtual machine
-  -C  Set the number of CPUs for the virtual machine
+
+  -c  Enable dropbear remote access via crypt-ssh
+
+  -n  Do not reset the controlling terminal after the VM exits
+
+  -s  Enable serial console on stdio
+
+  -h  Show this message and exit
 EOF
 }
 
-CMDOPTS="D:A:a:d:fsv:hineM:C:FEGcr"
+CMDOPTS="a:A:C:d:D:M:o:S:v:fiBrepEFGcnsh"
 
 # First-pass option parsing just looks for test directory
 while getopts "${CMDOPTS}" opt; do
@@ -58,7 +95,6 @@ if [ -n "${TESTDIR}" ]; then
   # If a test directory was specified, it must exist
   if [ ! -d "${TESTDIR}" ]; then
     error "test directory '${TESTDIR}' does not exist"
-    exit 1
   fi
 else
   # If a test directory was not specified, try a default
@@ -71,31 +107,20 @@ else
   done
 fi
 
-# Support x86_64 and ppc64(le)
+# Support x86_64 for now
 case "$(uname -m)" in
-  ppc64*)
-    BIN="qemu-system-ppc64"
-    KERNEL="${TESTDIR}/vmlinux-bootmenu"
-    MACHINE="pseries,accel=kvm,kvm-type=HV,cap-hpt-max-page-size=4096"
-    APPEND="loglevel=7 zbm.show"
-    SERDEV="hvc"
-  ;;
   x86_64)
-    BIN="qemu-system-x86_64"
-    KERNEL="${TESTDIR}/vmlinuz-bootmenu"
+    QEMU_BIN="qemu-system-x86_64"
     MACHINE="type=q35,accel=kvm"
-    APPEND="loglevel=7 zbm.show"
     SERDEV="ttyS"
-  ;;
+    ;;
   *)
     error "Unknown machine type '$(uname -m)', please add it to run.sh"
-  ;;
+    ;;
 esac
 
+APPEND="loglevel=7 zbm.show"
 DRIVE=()
-BFILES=()
-INITRD="${TESTDIR}/initramfs-bootmenu.img"
-OVMF="stubs/OVMF_CODE.fd"
 MEMORY="2048M"
 SMP="2"
 CREATE=0
@@ -103,9 +128,14 @@ SERIAL=0
 DISPLAY_TYPE=
 SSH_INCLUDE=0
 RESET=1
-EFI=0
-SERDEV_COUNT=0
+EFI=
 GENZBM_FLAGS=()
+MISER=0
+EFISTUB=
+SUFFIX=
+
+FLAME=0
+EARLY_TRACING=0
 
 # Defer a choice on initramfs generator until options are parsed
 DRACUT=0
@@ -152,16 +182,15 @@ while getopts "${CMDOPTS}" opt; do
       ;;
     e)
       case "$(uname -m)" in
-        x86_64)
-          BUNDLE="${TESTDIR}/vmlinuz.EFI"
-          KERNEL=
-          INITRD=
-          EFI=1
-          ;;
-        *)
-          echo "EFI bundles unsupported on $(uname -m)"
-          ;;
-        esac
+        x86_64) EFI=1 ;;
+        *) echo "EFI bundles unsupported on $(uname -m)" ;;
+      esac
+      ;;
+    p)
+      EFI=0
+      ;;
+    S)
+      EFISTUB="$( realpath -e "${OPTARG}" )"
       ;;
     M)
       MEMORY="${OPTARG}"
@@ -186,6 +215,12 @@ while getopts "${CMDOPTS}" opt; do
     r)
       DRACUT=1
       INITCPIO=0
+      ;;
+    B)
+      MISER=1
+      ;;
+    o)
+      SUFFIX=".${OPTARG}"
       ;;
     *)
       ;;
@@ -253,6 +288,8 @@ else
 	EOF
   fi
 fi
+
+SERDEV_COUNT=0
 
 if ((SERIAL)) ; then
   AAPPEND+=( "console=tty1" "console=${SERDEV}${SERDEV_COUNT},115200n8" )
@@ -367,29 +404,51 @@ if ((DRACUT)); then
 	EOF
 fi
 
+# Enable initcpio miser mode, using Busybox where possible
+if ((INITCPIO)) && ((MISER)); then
+  cat <<-EOF >> "${TESTDIR}/mkinitcpio.d/testing.conf"
+  zfsbootmenu_miser=yes
+	EOF
+fi
+
+# Image files the testbed may need to boot
+BUNDLE="${TESTDIR}/vmlinuz.EFI${SUFFIX}"
+KERNEL="${TESTDIR}/vmlinuz-bootmenu${SUFFIX}"
+INITRD="${TESTDIR}/initramfs-bootmenu.img${SUFFIX}"
+
+if [ -z "${EFI}" ]; then
+  # If an EFI option was not chosen, select a workable default
+  EFI=0
+  [ -f "${BUNDLE}" ] && EFI=1
+fi
+
 # Creation is required if either kernel or initramfs is missing
 if ((EFI)) ; then
-  [ ! -f "${BUNDLE}" ] && CREATE=1
+  [ -f "${BUNDLE}" ] || CREATE=1
 else
-  if [ -n "${KERNEL}" ] && [ ! -f "${KERNEL}" ] || [ -n "${INITRD}" ] && [ ! -f "${INITRD}" ]; then
-    CREATE=1
-  fi
+
+  [ -f "${KERNEL}" ] || CREATE=1
+  [ -f "${INITRD}" ] || CREATE=1
+fi
+
+if ((CREATE)) && [ -n "${SUFFIX}" ]; then
+  error "distribution-specific images do not exist and will not be created"
 fi
 
 if ((CREATE)) ; then
   yamlconf="${TESTDIR}/local.yaml"
-  STUBS="$(realpath -e stubs)"
 
   if ((EFI)) ; then
     # toggle only EFI bundle creation
-    [ -f "${BUNDLE}" ] && rm "${BUNDLE}"
+    rm -f "${BUNDLE}"
     yq-go eval ".EFI.Enabled = true" -i "${yamlconf}"
     yq-go eval ".Components.Enabled = false" -i "${yamlconf}"
-    yq-go eval ".EFI.Stub = \"${STUBS}/linuxx64.efi.stub\"" -i "${yamlconf}"
+
+    [ -n "${EFISTUB}" ] || EFISTUB="$( realpath -e stubs/linuxx64.efi.stub )"
+    yq-go eval ".EFI.Stub = \"${EFISTUB}\"" -i "${yamlconf}"
   else
     # toggle only component creation
-    [ -f "${KERNEL}" ] && rm "${KERNEL}"
-    [ -f "${INITRD}" ] && rm "${INITRD}"
+    rm -f "${KERNEL}" "${INITRD}"
     yq-go eval ".EFI.Enabled = false" -i "${yamlconf}"
     yq-go eval ".Components.Enabled = true" -i "${yamlconf}"
   fi
@@ -414,22 +473,19 @@ if ((CREATE)) ; then
   fi
 fi
 
-# Ensure kernel and initramfs exist
-if [ -n "${KERNEL}" ] && [ ! -f "${KERNEL}" ] ; then
-  error "Missing kernel: ${KERNEL}"
-elif [ -n "${INITRD}" ] && [ ! -f "${INITRD}" ] ; then
-  error "Missing initramfs: ${INITRD}"
-elif [ -n "${BUNDLE}" ] && [ ! -f "${BUNDLE}" ] ; then
-  error "Missing EFI bundle: ${BUNDLE}"
-  exit 1
-fi
-
+# Ensure ZBM image exists
 if ((EFI)) ; then
-  BFILES+=( "-bios" "${OVMF}" )
-  BFILES+=( "-kernel" "${BUNDLE}" )
+  [ -f "${BUNDLE}" ] || error "Missing EFI bundle: ${BUNDLE}"
+
+  OVMF="stubs/OVMF_CODE.fd"
+  [ -f "${OVMF}" ] || error "Missing OVMF firmware: ${OVMF}"
+
+  BFILES=( "-bios" "${OVMF}" "-kernel" "${BUNDLE}" )
 else
-  BFILES+=( "-kernel" "${KERNEL}" )
-  BFILES+=( "-initrd" "${INITRD}" )
+  [ -f "${KERNEL}" ] || error "Missing kernel: ${KERNEL}"
+  [ -f "${INITRD}" ] || error "Missing initramfs: ${INITRD}"
+
+  BFILES=( "-kernel" "${KERNEL}" "-initrd" "${INITRD}" )
 fi
 
 if [ "${#AAPPEND[@]}" -gt 0 ]; then
@@ -437,7 +493,7 @@ if [ "${#AAPPEND[@]}" -gt 0 ]; then
 fi
 
 # shellcheck disable=SC2086
-"${BIN}" \
+"${QEMU_BIN}" \
   "${BFILES[@]}" \
   "${DRIVE[@]}" \
   -m "${MEMORY}" \

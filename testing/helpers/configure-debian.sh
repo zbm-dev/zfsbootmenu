@@ -11,6 +11,9 @@ echo 'root:zfsbootmenu' | chpasswd -c SHA256
 if [ -x /root/zbm-populate.sh ]; then
   apt-get install --yes --no-install-recommends \
     git dracut-core fzf kexec-tools cpanminus gcc make
+  if [[ "$0" =~ "debian" ]]; then
+    apt-get install --yes --no-install-recommends systemd-boot-efi
+  fi
   /root/zbm-populate.sh
   rm /root/zbm-populate.sh
 fi

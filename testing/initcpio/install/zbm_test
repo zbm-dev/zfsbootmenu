@@ -1,0 +1,59 @@
+#!/bin/bash
+
+add_networking() {
+    # Add the necessary bits for networking
+    add_module virtio_net
+
+    # dhclient requires a binary, a script, and a state directory
+    add_binary dhclient
+    if script="$(command -v dhclient-script 2>/dev/null)"; then
+        add_file "${script}"
+    fi
+
+    mkdir -p "${BUILDROOT}/var/lib/dhclient"
+}
+
+add_9p() {
+    # Add the necessary bits for 9p support
+    map add_module 9p 9pnet 9pnet_virtio netfs fscache virtio_pci
+}
+
+add_utils() {
+    # Add utilities necessary for distribution installation
+
+    # Need curl to fetch things
+    add_binary curl
+    add_file /etc/ssl/certs/ca-certificates.crt
+
+    # Add binaries to manipulate hostid
+    map add_binary zgenhostid hostid
+
+    # Need to be able to format and enumerate disks
+    map add_binary sfdisk lsblk
+
+    # Mount utilities from coreutils are used in the installers
+    map add_binary mountpoint umount realpath
+
+    # Add dependencies for debootstrap
+    map add_binary perl ar zstd unzstd zstdcat
+
+    # ZFS compatibility files may be used during pool creation
+    map add_file /usr/share/zfs/compatibility.d/*
+}
+
+build() {
+    # Make sure bash is available
+    add_binary bash
+
+    add_9p
+    add_utils
+    add_networking
+
+    add_runscript
+}
+
+help() {
+    echo "This hook turns the initramfs into a ZFSBootMenu testbed creator"
+}
+
+# vim: set ts=4 sw=4 ft=sh et:

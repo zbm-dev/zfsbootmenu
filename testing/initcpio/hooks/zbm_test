@@ -1,0 +1,143 @@
+#!/bin/sh
+
+option_enabled() {
+	case "${1}" in
+		[Yy]|[Yy][Ee][Ss]|[Oo][Nn]|1) return 0;;
+		*) return 1;;
+	esac
+}
+
+terminate_vm() {
+	[ -w /proc/sysrq-trigger ] && echo "o" > /proc/sysrq-trigger
+	while true; do sleep 60; done
+}
+
+mount_requisites() {
+	# Mount the host filesystems
+	mkdir -p /helpers /testbed
+	mount -t 9p -o trans=virtio helpers /helpers || return 1
+	mount -t 9p -o trans=virtio testbed /testbed || return 1
+	return 0
+}
+
+mount_optionals() {
+	if option_enabled "${USE_HOST_CACHE}"; then
+		mkdir -p /cache
+		if ! mount -t 9p -o trans=virtio cache /cache; then
+			echo "WARNING: failed to mount host cache; ignoring"
+			sleep 60
+		fi
+	fi
+
+	if option_enabled "${USE_HOST_KEYS}"; then
+		mkdir -p /keys
+		if ! mount -t 9p -o trans=virtio keys /keys; then
+			echo "WARNING: failed to mount host keys; ignoring"
+			sleep 60
+		fi
+	fi
+}
+
+mount_if_missing() {
+	typ="${1?type is required}"
+	dev="${2?device is required}"
+	mnt="${3?mountpoint is required}"
+
+	mountpoint -q "${mnt}" && return
+	mkdir -p "${mnt}"
+	mount -t "${typ}" "${dev}" "${mnt}"
+}
+
+confirm_set() {
+	[ -n "${1}" ] && return 0
+	echo "ERROR: required variable ${2:-(unknown)} not set"
+	sleep 60 || interactive_shell
+	terminate_vm
+	return 1
+}
+
+console_dev() {
+	if [ -n "${console}" ]; then
+		console="${console%,*}"
+		console="${console#/dev}"
+		console="${console#/}"
+		echo "/dev/${console}"
+		return 0
+	fi
+
+	[ -r /init_functions ] || return 1
+	[ -r /proc/cmdline ] || return 1
+
+	(
+		# shellcheck disable=SC1091
+		. /init_functions || exit 1
+		parse_cmdline < /proc/cmdline || exit 1
+
+		[ -n "${console}" ] || exit 1
+
+		console="${console%,*}"
+		console="${console#/dev}"
+		console="${console#/}"
+		echo "/dev/${console}"
+		exit 0
+	)
+}
+
+interactive_shell() {
+	cdev="$(console_dev)" || cdev=
+	[ -n "${cdev}" ] || exec bash
+
+	# shellcheck disable=SC2094
+	exec setsid bash 0<"${cdev}" 1>"${cdev}" 2>"${cdev}"
+}
+
+run_hook() {
+	if ! mount_requisites; then
+		echo "ERROR: failed to mount required 9p filesystems"
+		echo "Press enter to teriminate VM"
+		read -r _
+		terminate_vm
+	fi
+
+	# Source the installation configuration
+	# shellcheck disable=SC1091
+	[ -r /testbed/install.env ] && . /testbed/install.env
+
+	mount_optionals
+
+	# Some installers require these be mounted
+	mount_if_missing devpts devpts /dev/pts
+	mount_if_missing tmpfs shm /dev/shm
+
+	# Set the path for non-usrmerge installations
+	export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+	# Make sure ZFS is loaded
+	modprobe zfs
+
+	# Enable networking for the installers
+	dhclient -v eth0
+
+	# Just drop to a shell if the user requests it
+	option_enabled "${ZBM_INTERACTIVE}" && interactive_shell
+
+	# Make sure the environment was properly configured
+	confirm_set "${DISTRIBUTION}" DISTRIBUTION
+	confirm_set "${ZPOOL_NAME}" ZPOOL_NAME
+
+	# Create the pool, if needed
+	if ! option_enabled "${USE_EXISTING_POOL}"; then
+		if ! /helpers/pool-create.sh "${ZPOOL_NAME}"; then
+			echo "ERROR: failed to create pool"
+			sleep 60 || interactive_shell
+			terminate_vm
+			return
+		fi
+	fi
+
+	# Set up the distribution
+	/helpers/pool-setup.sh "${DISTRIBUTION}" "${ZPOOL_NAME}" /testbed
+
+	# All done; kill the VM
+	terminate_vm
+}
