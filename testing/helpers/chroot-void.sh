@@ -38,18 +38,9 @@ done
 
 xbps-install -y "${KERNEL}" "${KERNEL}-headers" dracut zfs
 
-# Set kernel commandline
-case "$(uname -m)" in
-  ppc64*)
-    consoles="console=tty1 console=hvc0"
-    ;;
-  x86_64)
-    consoles="console=tty1 console=ttyS0"
-    ;;
-esac
-
 if [ -n "${ZBM_POOL}" ]; then
-  cmdline="spl_hostid=$( hostid ) rw loglevel=4 ${consoles}"
+  # Set kernel commandline
+  cmdline="spl_hostid=$( hostid ) rw loglevel=4 console=tty1 console=ttyS0"
   zfs set org.zfsbootmenu:commandline="${cmdline}" "${ZBM_POOL}/ROOT"
 fi
 

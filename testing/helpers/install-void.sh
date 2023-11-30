@@ -30,7 +30,6 @@ REPO="https://mirrors.servercentral.com/voidlinux/current"
 # Custom overrrides for specific archictures
 case "${XBPS_ARCH}" in
   aarch64*) REPO_SUFFIX="/aarch64" ;;
-  ppc*) REPO="https://mirrors.servercentral.com/void-ppc/current" ;;
   *) ;;
 esac
 
