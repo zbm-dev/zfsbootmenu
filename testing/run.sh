@@ -72,31 +72,20 @@ else
   done
 fi
 
-# Support x86_64 and ppc64(le)
+# Support x86_64 for now
 case "$(uname -m)" in
-  ppc64*)
-    BIN="qemu-system-ppc64"
-    KERNEL="${TESTDIR}/vmlinux-bootmenu"
-    MACHINE="pseries,accel=kvm,kvm-type=HV,cap-hpt-max-page-size=4096"
-    KCL="loglevel=7 zbm.show"
-    SERDEV="hvc"
-  ;;
   x86_64)
-    BIN="qemu-system-x86_64"
-    KERNEL="${TESTDIR}/vmlinuz-bootmenu"
+    QEMU_BIN="qemu-system-x86_64"
     MACHINE="type=q35,accel=kvm"
-    KCL="loglevel=7 zbm.show"
     SERDEV="ttyS"
-  ;;
+    ;;
   *)
     error "Unknown machine type '$(uname -m)', please add it to run.sh"
-  ;;
+    ;;
 esac
 
+KCL="loglevel=7 zbm.show"
 DRIVE=()
-BFILES=()
-INITRD="${TESTDIR}/initramfs-bootmenu.img"
-OVMF="stubs/OVMF_CODE.fd"
 MEMORY="2048M"
 SMP="2"
 CREATE=0
@@ -105,10 +94,12 @@ DISPLAY_TYPE=
 SSH_INCLUDE=0
 RESET=1
 EFI=0
-SERDEV_COUNT=0
 GENZBM_FLAGS=()
 MISER=0
-EFISTUB="$( realpath -e stubs/linuxx64.efi.stub )"
+EFISTUB=
+
+FLAME=0
+EARLY_TRACING=0
 
 # Defer a choice on initramfs generator until options are parsed
 DRACUT=0
@@ -155,16 +146,9 @@ while getopts "${CMDOPTS}" opt; do
       ;;
     e)
       case "$(uname -m)" in
-        x86_64)
-          BUNDLE="${TESTDIR}/vmlinuz.EFI"
-          KERNEL=
-          INITRD=
-          EFI=1
-          ;;
-        *)
-          echo "EFI bundles unsupported on $(uname -m)"
-          ;;
-        esac
+        x86_64) EFI=1 ;;
+        *) echo "EFI bundles unsupported on $(uname -m)" ;;
+      esac
       ;;
     S)
       EFISTUB="$( realpath -e "${OPTARG}" )"
@@ -254,6 +238,8 @@ else
 	EOF
   fi
 fi
+
+SERDEV_COUNT=0
 
 if ((SERIAL)) ; then
   APPEND+=( "console=tty1" "console=${SERDEV}${SERDEV_COUNT},115200n8" )
@@ -377,11 +363,14 @@ fi
 
 # Creation is required if either kernel or initramfs is missing
 if ((EFI)) ; then
-  [ ! -f "${BUNDLE}" ] && CREATE=1
+  BUNDLE="${TESTDIR}/vmlinuz.EFI"
+  [ -f "${BUNDLE}" ] || CREATE=1
 else
-  if [ -n "${KERNEL}" ] && [ ! -f "${KERNEL}" ] || [ -n "${INITRD}" ] && [ ! -f "${INITRD}" ]; then
-    CREATE=1
-  fi
+  KERNEL="${TESTDIR}/vmlinuz-bootmenu"
+  [ -f "${KERNEL}" ] || CREATE=1
+
+  INITRD="${TESTDIR}/initramfs-bootmenu.img"
+  [ -f "${INITRD}" ] || CREATE=1
 fi
 
 if ((CREATE)) ; then
@@ -389,14 +378,15 @@ if ((CREATE)) ; then
 
   if ((EFI)) ; then
     # toggle only EFI bundle creation
-    [ -f "${BUNDLE}" ] && rm "${BUNDLE}"
+    rm -f "${BUNDLE}"
     yq-go eval ".EFI.Enabled = true" -i "${yamlconf}"
     yq-go eval ".Components.Enabled = false" -i "${yamlconf}"
+
+    [ -n "${EFISTUB}" ] || EFISTUB="$( realpath -e stubs/linuxx64.efi.stub )"
     yq-go eval ".EFI.Stub = \"${EFISTUB}\"" -i "${yamlconf}"
   else
     # toggle only component creation
-    [ -f "${KERNEL}" ] && rm "${KERNEL}"
-    [ -f "${INITRD}" ] && rm "${INITRD}"
+    rm -f "${KERNEL}" "${INITRD}"
     yq-go eval ".EFI.Enabled = false" -i "${yamlconf}"
     yq-go eval ".Components.Enabled = true" -i "${yamlconf}"
   fi
@@ -421,21 +411,19 @@ if ((CREATE)) ; then
   fi
 fi
 
-# Ensure kernel and initramfs exist
-if [ -n "${KERNEL}" ] && [ ! -f "${KERNEL}" ] ; then
-  error "Missing kernel: ${KERNEL}"
-elif [ -n "${INITRD}" ] && [ ! -f "${INITRD}" ] ; then
-  error "Missing initramfs: ${INITRD}"
-elif [ -n "${BUNDLE}" ] && [ ! -f "${BUNDLE}" ] ; then
-  error "Missing EFI bundle: ${BUNDLE}"
-fi
-
+# Ensure ZBM image exists
 if ((EFI)) ; then
-  BFILES+=( "-bios" "${OVMF}" )
-  BFILES+=( "-kernel" "${BUNDLE}" )
+  [ -f "${BUNDLE}" ] || error "Missing EFI bundle: ${BUNDLE}"
+
+  OVMF="stubs/OVMF_CODE.fd"
+  [ -f "${OVMF}" ] || error "Missing OVMF firmware: ${OVMF}"
+
+  BFILES=( "-bios" "${OVMF}" "-kernel" "${BUNDLE}" )
 else
-  BFILES+=( "-kernel" "${KERNEL}" )
-  BFILES+=( "-initrd" "${INITRD}" )
+  [ -f "${KERNEL}" ] || error "Missing kernel: ${KERNEL}"
+  [ -f "${INITRD}" ] || error "Missing initramfs: ${INITRD}"
+
+  BFILES=( "-kernel" "${KERNEL}" "-initrd" "${INITRD}" )
 fi
 
 if [ "${#APPEND[@]}" -gt 0 ]; then
@@ -445,7 +433,7 @@ if [ "${#APPEND[@]}" -gt 0 ]; then
 fi
 
 # shellcheck disable=SC2086
-"${BIN}" \
+"${QEMU_BIN}" \
   "${BFILES[@]}" \
   "${DRIVE[@]}" \
   -m "${MEMORY}" \

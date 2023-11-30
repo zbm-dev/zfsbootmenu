@@ -27,6 +27,7 @@ USAGE: $0 [options]
 
 OPTIONS
 
+  -h  Display this message and exit
   -y  Create local.yaml
   -g  Create a generate-zbm symlink
   -c  Create dracut.conf.d (if dracut is enabled)
@@ -41,6 +42,7 @@ OPTIONS
   -r  Use a randomized pool name
   -x  Use an existing pool image
   -k  Populate host SSH host and authorized keys
+  -M  Build the test image on bare metal rather than a VM
   -E  Add a variable to the image-creation environment
   -o  Distribution to install (may specify more than one)
       [ void, void-musl, alpine, chimera, arch, debian, ubuntu ]
@@ -60,8 +62,8 @@ ENVIRONMENT VARIABLES
   KERNEL (Void)
   Set KERNEL to the Void kernel series to use (e.g., "linux5.10", "linux6.1")
 
-  POOL_COMPAT (All)
-  Set POOL_COMPAT to one of the ZFS pool compatiblity targets listed below.
+  ZPOOL_COMPAT (All)
+  Set ZPOOL_COMPAT to one of the ZFS pool compatiblity targets listed below.
 
 $( find "${compat_dir}" -type f | sort | sed "s|${compat_dir}||" | column | sed 's/^/\t/' )
 EOF
@@ -82,15 +84,15 @@ if [ $# -eq 0 ]; then
   exit
 fi
 
-# Environment variables to set for the image mage creation
+# Environment variables to set for the image creation
 ENVIRONS=(
-  PATH="/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin"
+  PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 )
 
-while getopts "heycgdaiD:s:o:lp:rxkmE:" opt; do
+while getopts "heycgdaiD:s:o:lp:rxkmE:M" opt; do
   case "${opt}" in
     e)
-      ENVIRONS+=( "ENCRYPT=1" )
+      ENCRYPT=1
       ;;
     y)
       YAML=1
@@ -145,9 +147,17 @@ while getopts "heycgdaiD:s:o:lp:rxkmE:" opt; do
     E)
       ENVIRONS+=( "${OPTARG}" )
       ;;
+    M)
+      BARE_METAL=1
+      ;;
+    h)
+      usage
+      exit 0
+      ;;
     *)
       usage
-      exit
+      exit 1
+      ;;
   esac
 done
 
@@ -326,43 +336,54 @@ fi
 # Create image(s) for each specified distro
 if ((IMAGE)); then
   for DISTRO in "${DISTROS[@]}"; do
-    IMAGE_SCRIPT="./helpers/image-${DISTRO}.sh"
-    if [ ! -x "${IMAGE_SCRIPT}" ]; then
-      IMAGE_SCRIPT="./helpers/image.sh"
-    fi
-
-    AUTO_POOL_COMPAT=1
+    builder_args=( )
     for environ in "${ENVIRONS[@]}"; do
-      if [[ "${environ}" =~ "^POOL_COMPAT=" ]]; then
-        AUTO_POOL_COMPAT=0
-      fi
+      builder_args+=( "-E" "${environ}" )
     done
 
-    if ((AUTO_POOL_COMPAT)); then
-      case "${DISTRO}" in
-        debian)
-          ENVIRONS+=( POOL_COMPAT="openzfs-2.0-linux" )
-          ;;
-        ubuntu)
-          ENVIRONS+=( POOL_COMPAT="openzfs-2.0-linux" )
-          ;;
-        *)
-          ;;
-      esac
-    fi
-
-    if command -v doas >/dev/null 2>&1; then
-      SUDO=doas
-    elif command -v sudo >/dev/null 2>&1; then
-      SUDO=sudo
+    if ((EXISTING_POOL)); then
+      builder_args+=( "-x" )
     else
-      echo "ERROR: unable to elevate user privileges, install sudo or doas"
-      exit 1
+      if ! qemu-img create "${TESTDIR}/${POOL_NAME}-pool.img" "${SIZE}"; then
+        echo "ERROR: failed to create pool image"
+        exit 1
+      fi
+
+      AUTO_POOL_COMPAT=1
+      for environ in "${ENVIRONS[@]}"; do
+        [[ "${environ}" =~ "^ZPOOL_COMPAT=" ]] || continue
+        AUTO_POOL_COMPAT=0
+        break
+      done
+
+      if ((AUTO_POOL_COMPAT)); then
+        case "${DISTRO}" in
+          debian|ubuntu) builder_args+=( -c "openzfs-2.0-linux" ) ;;
+        esac
+      fi
     fi
 
-    "${SUDO}" unshare --fork --pid --mount env \
-      EXISTING_POOL="${EXISTING_POOL}" "${ENVIRONS[@]}" \
-      "${IMAGE_SCRIPT}" "${TESTDIR}" "${SIZE}" "${DISTRO}" "${POOL_NAME}"
+    if ((ENCRYPT)); then
+      builder_args+=( -e "${TESTDIR}/${POOL_NAME}.key" )
+    fi
+
+    builder_args+=( "${DISTRO}" "${POOL_NAME}" "${TESTDIR}" )
+
+    if ((BARE_METAL)); then
+      if command -v doas >/dev/null 2>&1; then
+        SUDO=doas
+      elif command -v sudo >/dev/null 2>&1; then
+        SUDO=sudo
+      else
+        echo "ERROR: unable to elevate user privileges, install sudo or doas"
+        exit 1
+      fi
+
+      "${SUDO}" unshare --fork --pid --mount \
+        ./helpers/builder-host.sh "${builder_args[@]}"
+    else
+      ./helpers/builder-qemu.sh "${builder_args[@]}"
+    fi
 
     # All subsequent distros use the same pool
     EXISTING_POOL=1

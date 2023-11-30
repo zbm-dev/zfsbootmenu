@@ -1,0 +1,101 @@
+#!/bin/sh
+
+option_enabled() {
+	case "${1}" in
+		[Yy]|[Yy][Ee][Ss]|[Oo][Nn]|1) return 0;;
+		*) return 1;;
+	esac
+}
+
+terminate_vm() {
+	[ -w /proc/sysrq-trigger ] && echo "o" > /proc/sysrq-trigger
+	while true; do sleep 60; done
+}
+
+mount_requisites() {
+	# Mount the host filesystems
+	mkdir -p /helpers /testbed
+	mount -t 9p -o trans=virtio helpers /helpers || return 1
+	mount -t 9p -o trans=virtio testbed /testbed || return 1
+	return 0
+}
+
+mount_optionals() {
+	if option_enabled "${USE_HOST_CACHE}"; then
+		mkdir -p /cache
+		if ! mount -t 9p -o trans=virtio cache /cache; then
+			echo "WARNING: failed to mount host cache; ignoring"
+			sleep 60
+		fi
+	fi
+
+	if option_enabled "${USE_HOST_KEYS}"; then
+		mkdir -p /keys
+		if ! mount -t 9p -o trans=virtio keys /keys; then
+			echo "WARNING: failed to mount host keys; ignoring"
+			sleep 60
+		fi
+	fi
+}
+
+mount_if_missing() {
+	typ="${1?type is required}"
+	dev="${2?device is required}"
+	mnt="${3?mountpoint is required}"
+
+	mountpoint -q "${mnt}" && return
+	mkdir -p "${mnt}"
+	mount -t "${typ}" "${dev}" "${mnt}"
+}
+
+confirm_set() {
+	[ -n "${1}" ] && return 0
+	echo "ERROR: required variable ${2:-(unknown)} not set"
+	sleep 60 || exec bash
+	terminate_vm
+	return 1
+}
+
+run_hook() {
+	if ! mount_requisites; then
+		echo "ERROR: failed to mount required 9p filesystems"
+		echo "Press enter to teriminate VM"
+		read -r _
+		terminate_vm
+	fi
+
+	# Source the installation configuration
+	[ -r /testbed/install.env ] && . /testbed/install.env
+
+	mount_optionals
+
+	# Some installers require these be mounted
+	mount_if_missing devpts devpts /dev/pts
+	mount_if_missing tmpfs shm /dev/shm
+
+	# Set the path for non-usrmerge installations
+	export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+	# Enable networking for the installers
+	dhclient -v eth0
+
+	# Make sure the environment was properly configured
+	confirm_set "${DISTRIBUTION}" DISTRIBUTION
+	confirm_set "${ZPOOL_NAME}" ZPOOL_NAME
+
+	# Create the pool, if needed
+	if ! option_enabled "${USE_EXISTING_POOL}"; then
+		if ! /helpers/pool-create.sh "${ZPOOL_NAME}"; then
+			echo "ERROR: failed to create pool"
+			sleep 60 || exec bash
+			terminate_vm
+			return
+		fi
+	fi
+
+	# Set up the distribution
+	/helpers/pool-setup.sh "${DISTRIBUTION}" "${ZPOOL_NAME}" /testbed
+
+	# All done; kill the VM
+	terminate_vm
+}
