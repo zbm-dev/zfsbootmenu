@@ -23,3 +23,35 @@ li>ul {
     background-color: #3f8dc0;
     color: white;
 }
+
+html[data-theme="light"] {
+    --tabs-bg: white;
+    --tabs-fg: #1d5c87;
+    --tabs-border: #a0b3bf;
+}
+
+html[data-theme="dark"] {
+    --tabs-bg: #222832;
+    --tabs-fg: #f3f4f5;
+    --tabs-border: #222832;
+}
+
+[role="tablist"] {
+    border-bottom: 1px solid var(--tabs-border);
+}
+
+.sphinx-tabs-panel {
+    background: var(--tabs-bg);
+    border: 1px solid var(--tabs-border);
+    border-top: 0;
+}
+
+.sphinx-tabs-tab {
+    color: var(--tabs-fg);
+}
+
+.sphinx-tabs-tab[aria-selected="true"] {
+    background: var(--tabs-bg);
+    border: 1px solid var(--tabs-border);
+    border-bottom: 1px solid var(--tabs-bg);
+}
