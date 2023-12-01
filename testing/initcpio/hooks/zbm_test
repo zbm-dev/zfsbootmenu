@@ -76,6 +76,9 @@ run_hook() {
 	# Set the path for non-usrmerge installations
 	export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
+	# Make sure ZFS is loaded
+	modprobe zfs
+
 	# Enable networking for the installers
 	dhclient -v eth0
 
