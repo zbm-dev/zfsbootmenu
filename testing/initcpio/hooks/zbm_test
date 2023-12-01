@@ -51,9 +51,44 @@ mount_if_missing() {
 confirm_set() {
 	[ -n "${1}" ] && return 0
 	echo "ERROR: required variable ${2:-(unknown)} not set"
-	sleep 60 || exec bash
+	sleep 60 || interactive_shell
 	terminate_vm
 	return 1
+}
+
+console_dev() {
+	if [ -n "${console}" ]; then
+		console="${console%,*}"
+		console="${console#/dev}"
+		console="${console#/}"
+		echo "/dev/${console}"
+		return 0
+	fi
+
+	[ -r /init_functions ] || return 1
+	[ -r /proc/cmdline ] || return 1
+
+	(
+		# shellcheck disable=SC1091
+		. /init_functions || exit 1
+		parse_cmdline < /proc/cmdline || exit 1
+
+		[ -n "${console}" ] || exit 1
+
+		console="${console%,*}"
+		console="${console#/dev}"
+		console="${console#/}"
+		echo "/dev/${console}"
+		exit 0
+	)
+}
+
+interactive_shell() {
+	cdev="$(console_dev)" || cdev=
+	[ -n "${cdev}" ] || exec bash
+
+	# shellcheck disable=SC2094
+	exec setsid bash 0<"${cdev}" 1>"${cdev}" 2>"${cdev}"
 }
 
 run_hook() {
@@ -65,6 +100,7 @@ run_hook() {
 	fi
 
 	# Source the installation configuration
+	# shellcheck disable=SC1091
 	[ -r /testbed/install.env ] && . /testbed/install.env
 
 	mount_optionals
@@ -82,6 +118,9 @@ run_hook() {
 	# Enable networking for the installers
 	dhclient -v eth0
 
+	# Just drop to a shell if the user requests it
+	option_enabled "${ZBM_INTERACTIVE}" && interactive_shell
+
 	# Make sure the environment was properly configured
 	confirm_set "${DISTRIBUTION}" DISTRIBUTION
 	confirm_set "${ZPOOL_NAME}" ZPOOL_NAME
@@ -90,7 +129,7 @@ run_hook() {
 	if ! option_enabled "${USE_EXISTING_POOL}"; then
 		if ! /helpers/pool-create.sh "${ZPOOL_NAME}"; then
 			echo "ERROR: failed to create pool"
-			sleep 60 || exec bash
+			sleep 60 || interactive_shell
 			terminate_vm
 			return
 		fi

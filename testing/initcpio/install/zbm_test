@@ -35,7 +35,7 @@ add_utils() {
     map add_binary mountpoint umount realpath
 
     # Add dependencies for debootstrap
-    map add_binary perl ar
+    map add_binary perl ar zstd unzstd zstdcat
 
     # ZFS compatibility files may be used during pool creation
     map add_file /usr/share/zfs/compatibility.d/*
