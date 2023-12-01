@@ -306,7 +306,7 @@ draw_snapshots() {
   expects="--expect=alt-x,alt-c,alt-j,alt-o,alt-n,alt-r,left,right"
 
   # ${snapshots} must always be defined so that the mod-n handler can be executed
-  snapshots="$( zfs list -t snapshot -H -o name "${benv}" -S "${sort_key}" )"
+  snapshots="$( zfs list -t snapshot -H -o name -S "${sort_key}" "${benv}" )"
   snapshots="${snapshots:-No snaphots available}"
 
   zdebug "snapshots: ${snapshots[*]}"
