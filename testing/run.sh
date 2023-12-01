@@ -15,31 +15,67 @@ error() {
 }
 
 usage() {
-  cat <<EOF
-Usage: $0 [options]
-  -a  Set kernel command line
-  -A+ Append additional arguments to kernel command line
-  -d+ Set one or more non-standard disk images
+  cat <<-EOF
+Usage: $0 [OPTIONS] [FLAGS]
+
+  Run a ZFSBootMenu testbed
+
+OPTIONS
+  -a  <cmdline>
+      Set kernel command line
+
+  -A <argument> (May be repeated)
+     Append additional argument to kernel command line
+
+  -C <cpus>
+     Set the number of CPUs in the virtual machine
+
+  -d <image> (May be repeated)
+     Attach the specified disk image to the test VM
+
+  -D <testbed-path>
+     Boot the testbed contained in the given directory
+
+  -M <memory>
+     Set the amount of memory in the virtual machine
+
+  -o <distro>
+     Attempt to boot image for a specific distribution;
+     requires boot files with a ".<distro>" extension
+
+  -S <efi-stub>
+     When creating EFI bundles, use the stub at the given path
+
+  -v <display>
+     Select the qemu display type
+
+FLAGS
   -f  Force recreation of the initramfs
-  -s  Enable serial console on stdio
-  -v  Set type of qemu display to use
-  -D  Set test directory
-  -c  Enable dropbear remote access via crypt-ssh
-  -n  Do not reset the controlling terminal after the VM exits
-  -e  Boot the VM with an EFI bundle
-  -F  Generate a flamegraph/flamechart using tracing data from ZBM
-  -E  Enable early initramfs tracing
+
   -i  Use mkinitcpio to generate the testing initramfs
-  -r  Use Dracut to generate the testing initramfs
-  -G  Enable debug output for generate-zbm
-  -M  Set the amount of memory for the virtual machine
-  -C  Set the number of CPUs for the virtual machine
   -B  Use Busybox for mkinitcpio miser mode
-  -S  Use alternate EFI stub file at specified path
+
+  -r  Use Dracut to generate the testing initramfs
+
+  -e  Boot the VM with an EFI bundle
+  -p  Boot the VM with the kernel/initramfs pair
+
+  -E  Enable early initramfs tracing
+  -F  Generate a flamegraph/flamechart using tracing data from ZBM
+  -G  Enable debug output for generate-zbm
+
+  -c  Enable dropbear remote access via crypt-ssh
+
+  -n  Do not reset the controlling terminal after the VM exits
+
+  -s  Enable serial console on stdio
+
+  -h  Show this message and exit
 EOF
 }
 
-CMDOPTS="D:A:a:d:fsv:hineS:M:C:FEGcrB"
+CMDOPTS="a:A:C:d:D:M:o:S:v:fiBrepEFGcnsh"
+
 
 # First-pass option parsing just looks for test directory
 while getopts "${CMDOPTS}" opt; do
@@ -93,10 +129,11 @@ SERIAL=0
 DISPLAY_TYPE=
 SSH_INCLUDE=0
 RESET=1
-EFI=0
+EFI=
 GENZBM_FLAGS=()
 MISER=0
 EFISTUB=
+SUFFIX=
 
 FLAME=0
 EARLY_TRACING=0
@@ -150,6 +187,9 @@ while getopts "${CMDOPTS}" opt; do
         *) echo "EFI bundles unsupported on $(uname -m)" ;;
       esac
       ;;
+    p)
+      EFI=0
+      ;;
     S)
       EFISTUB="$( realpath -e "${OPTARG}" )"
       ;;
@@ -179,6 +219,9 @@ while getopts "${CMDOPTS}" opt; do
       ;;
     B)
       MISER=1
+      ;;
+    o)
+      SUFFIX=".${OPTARG}"
       ;;
     *)
       ;;
@@ -361,16 +404,28 @@ if ((INITCPIO)) && ((MISER)); then
 	EOF
 fi
 
+# Image files the testbed may need to boot
+BUNDLE="${TESTDIR}/vmlinuz.EFI${SUFFIX}"
+KERNEL="${TESTDIR}/vmlinuz-bootmenu${SUFFIX}"
+INITRD="${TESTDIR}/initramfs-bootmenu.img${SUFFIX}"
+
+if [ -z "${EFI}" ]; then
+  # If an EFI option was not chosen, select a workable default
+  EFI=0
+  [ -f "${BUNDLE}" ] && EFI=1
+fi
+
 # Creation is required if either kernel or initramfs is missing
 if ((EFI)) ; then
-  BUNDLE="${TESTDIR}/vmlinuz.EFI"
   [ -f "${BUNDLE}" ] || CREATE=1
 else
-  KERNEL="${TESTDIR}/vmlinuz-bootmenu"
-  [ -f "${KERNEL}" ] || CREATE=1
 
-  INITRD="${TESTDIR}/initramfs-bootmenu.img"
+  [ -f "${KERNEL}" ] || CREATE=1
   [ -f "${INITRD}" ] || CREATE=1
+fi
+
+if ((CREATE)) && [ -n "${SUFFIX}" ]; then
+  error "distribution-specific images do not exist and will not be created"
 fi
 
 if ((CREATE)) ; then

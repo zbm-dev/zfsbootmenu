@@ -206,16 +206,16 @@ fi
 # Pre-populate the test environment with ZBM from the testbed
 if [ -d "${CHROOT_MNT}/zfsbootmenu" ]; then
   if chroot "${CHROOT_MNT}" /usr/bin/generate-zbm --prefix vmlinuz; then
-    for f in vmlinuz-bootmenu initramfs-bootmenu.img; do
+    for f in vmlinuz-bootmenu initramfs-bootmenu.img vmlinuz.EFI; do
       file="${CHROOT_MNT}/zfsbootmenu/build/${f}"
       [ -f "${file}" ] || continue
 
       if [ -d "${TESTDIR}" ]; then
-        mv "${file}" "${TESTDIR}/${f}.${DISTRO}"
+        cp "${file}" "${TESTDIR}/${f}.${DISTRO}"
         chmod 644 "${TESTDIR}/${f}.${DISTRO}"
 
         if [ ! -e "${TESTDIR}/${f}" ] || [ -L "${TESTDIR}/${f}" ]; then
-          ln -sf "${f}.${DISTRO}" "${TESTDIR}/${f}"
+          ln -Tsf "${f}.${DISTRO}" "${TESTDIR}/${f}"
         fi
       fi
     done

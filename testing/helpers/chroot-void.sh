@@ -69,7 +69,7 @@ sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 # Pre-install zfsbootmenu
 if [ -x /root/zbm-populate.sh ]; then
   xbps-query -Rp run_depends zfsbootmenu | xargs xbps-install -y
-  xbps-install -y git
+  xbps-install -y git gummiboot-efistub
   SKIP_PERL=yes /root/zbm-populate.sh
   rm /root/zbm-populate.sh
 fi
