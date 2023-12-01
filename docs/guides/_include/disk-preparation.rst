@@ -12,6 +12,8 @@ Wipe partitions
   sgdisk --zap-all "$POOL_DISK"
   sgdisk --zap-all "$BOOT_DISK"
 
+  zpool labelclear -f "$POOL_DISK"
+
 Create EFI boot partition
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
