@@ -21,19 +21,19 @@ export BASE="/zfsbootmenu"
 # shellcheck disable=SC2154
 cat >> "/etc/zfsbootmenu.conf" <<EOF
 # BEGIN additions by zfsbootmenu-preinit.sh
-export BASE="${BASE}"
-export spl_hostid="${spl_hostid}"
-export import_policy="${import_policy}"
-export menu_timeout="${menu_timeout}"
-export loglevel="${loglevel}"
-export zbm_prefer_pool="${zbm_prefer_pool}"
-export zbm_require_pool="${zbm_require_pool}"
+export BASE='${BASE}'
+export spl_hostid='${spl_hostid}'
+export import_policy='${import_policy}'
+export menu_timeout='${menu_timeout}'
+export loglevel='${loglevel}'
+export zbm_prefer_pool='${zbm_prefer_pool}'
+export zbm_require_pool='${zbm_require_pool}'
 export default_hostid=00bab10c
-export zbm_sort="${zbm_sort}"
-export zbm_set_hostid="${zbm_set_hostid}"
-export zbm_import_delay="${zbm_import_delay}"
-export zbm_hook_root="${zbm_hook_root}"
-export control_term="${control_term}"
+export zbm_sort='${zbm_sort}'
+export zbm_set_hostid='${zbm_set_hostid}'
+export zbm_import_delay='${zbm_import_delay}'
+export zbm_hook_root='${zbm_hook_root}'
+export control_term='${control_term}'
 # END additions by zfsbootmenu-preinit.sh
 EOF
 
