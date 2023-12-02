@@ -90,7 +90,7 @@ if zbm_skip_hooks="$( get_zbm_arg zbm.skip_hooks )" && [ -n "${zbm_skip_hooks}" 
   for _skip in "${zbm_skip_hooks[@]}"; do
     [ -n "${_skip}" ] || continue
 
-    for _hook in /libexec/{early-setup,setup,teardown}.d/*; do
+    for _hook in /libexec/hooks/{early-setup,setup,teardown}.d/*; do
       [ -e "${_hook}" ] || continue
       if [ "${_skip}" = "${_hook##*/}" ]; then
         zinfo "Disabling hook: ${_hook}"
