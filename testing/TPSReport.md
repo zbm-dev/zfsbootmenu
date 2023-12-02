@@ -256,6 +256,9 @@ of the kernel list. That BE should be selected when entering the list.
 
 - [ ] Any hooks installed in a ZFSBootMenu image execute at expected points.
 
+- [ ] Installed hooks cam be properly skipped by specifying their names in the
+  `zbm.skip_hooks` kernel command-line parameter.
+
 ## Recovery Shell and SSH Access
 
 - [ ] Basic tab completion for some internal functions is available in the
