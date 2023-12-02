@@ -32,3 +32,32 @@ if [ -f /etc/zfsbootmenu/config.yaml ]; then
       ;;
   esac
 fi
+
+case "${SKIP_ZBM_HOOKS,,}" in
+  yes|y|on|true|1) exit 0 ;;
+esac
+
+zbm_hook_root=/etc/zfsbootmenu/hooks
+mkdir -p "${zbm_hook_root}"
+
+cat > "${zbm_hook_root}/echo-hook.sh" <<-'EOF'
+	#/bin/sh
+	echo "$0"
+	sleep 2
+	EOF
+
+chmod 755 "${zbm_hook_root}/echo-hook.sh"
+
+for hookdir in early-setup.d setup.d load-key.d boot-sel.d teardown.d; do
+  mkdir -p "${zbm_hook_root}/${hookdir}"
+  ln -Tsf ../echo-hook.sh "${zbm_hook_root}/${hookdir}/00-echo-hook.sh"
+done
+
+if [ -w /etc/zfsbootmenu/mkinitcpio.conf ]; then
+  echo "zfsbootmenu_hook_root='${zbm_hook_root}'" >> /etc/zfsbootmenu/mkinitcpio.conf
+fi
+
+if [ -d /etc/zfsbootmenu/dracut.conf.d ]; then
+  echo "zfsbootmenu_hook_root='${zbm_hook_root}'" \
+    > /etc/zfsbootmenu/dracut.conf.d/hooks.conf
+fi
