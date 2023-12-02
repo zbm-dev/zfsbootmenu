@@ -216,13 +216,17 @@ get_zbm_arg() {
   [ -n "${1}" ] || return 1
   [ -d "${BASE}/cmdline.d" ] || make_cmdline_dir
 
-  local kopt
+  local kopt kval
   for kopt in "$@"; do
-    if [ -f "${BASE}/cmdline.d/${kopt}" ] ; then
-      head -1 < "${BASE}/cmdline.d/${kopt}"
-      [ "${kopt}" = "${1}" ] || zwarn "using deprecated arg '${kopt}' when '${1}' is preferred"
-      return 0
+    [ -r "${BASE}/cmdline.d/${kopt}" ] || continue
+
+    if [ "${kopt}" != "${1}" ]; then
+      zwarn "using deprecated arg '${kopt}' when '${1}' is preferred"
     fi
+
+    read -r kval < "${BASE}/cmdline.d/${kopt}"
+    echo "${kval}"
+    return 0
   done
 
   return 1
