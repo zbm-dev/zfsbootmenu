@@ -155,10 +155,8 @@ create_zbm_profiles() {
 
 	alias clear="tput clear"
 	alias reset="tput reset"
-	alias zbm="zfsbootmenu"
 	alias logs="ztrace"
 	alias trace="ztrace"
-	alias debug="ztrace"
 	alias help="/libexec/zfsbootmenu-help -L recovery-shell"
 
 	zdebug "sourced /root/.bashrc" || true
