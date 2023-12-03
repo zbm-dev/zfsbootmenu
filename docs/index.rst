@@ -81,7 +81,7 @@ In essence, ZFSBootMenu is a small, self-contained Linux system that knows how t
 images within ZFS filesystems. When a suitable kernel and initramfs are identified (either through an automatic process
 or direct user selection), ZFSBootMenu launches that kernel using the ``kexec`` command.
 
-.. image:: /media/v2.1.0-multi-be.png
+.. image:: /media/v2.3.0-multi-be.png
   :alt: ZFSBootMenu screenshot
   :align: center
 
