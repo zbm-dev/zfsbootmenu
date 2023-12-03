@@ -6,9 +6,9 @@
 
   <br>
   <div class="dl-links">
-    <a class="dl-button" href="https://get.zfsbootmenu.org/efi"><i class="icon fa-download"></i> x86_64 EFI Image</a>
-    <a class="dl-button" href="https://get.zfsbootmenu.org/efi/recovery"><i class="icon fa-download"></i> x86_64 Recovery Image</a>
-    <a class="dl-button" href="https://github.com/zbm-dev/zfsbootmenu"><i class="icon icon-github"></i> View on GitHub</a>
+    <a class="dl-button" href="https://get.zfsbootmenu.org/efi"><i class="fa-solid fa-download"></i> x86_64 EFI Image</a>
+    <a class="dl-button" href="https://get.zfsbootmenu.org/efi/recovery"><i class="fa-solid fa-download"></i> x86_64 Recovery Image</a>
+    <a class="dl-button" href="https://github.com/zbm-dev/zfsbootmenu"><i class="fa-brands fa-github"></i> View on GitHub</a>
   </div>
   <br>
   <div class="dl-links">

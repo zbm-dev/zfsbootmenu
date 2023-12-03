@@ -19,7 +19,7 @@ li>ul {
     border-radius: 5px;
 }
 
-.dl-button:hover, .dl-button:active, .dl-button:focus {
+.dl-button:hover, .dl-button:visited:hover, .dl-button:active, .dl-button:focus {
     background-color: #3f8dc0;
     color: white;
 }
