@@ -42,6 +42,12 @@ mkdir -p "${zbm_hook_root}"
 
 cat > "${zbm_hook_root}/echo-hook.sh" <<-'EOF'
 	#/bin/sh
+	
+	if [ -r /lib/kmsg-log-lib.sh ] && . /lib/kmsg-log-lib.sh; then
+		zinfo "running hook $0"
+		exit
+	fi
+
 	echo "$0"
 	sleep 2
 	EOF
