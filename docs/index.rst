@@ -1,6 +1,7 @@
 .. image:: logos/Logo_TextOnly_Color.svg
    :alt: ZFSBootMenu logo
    :align: center
+   :class: dark-light
 
 .. raw:: html
 
