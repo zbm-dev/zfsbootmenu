@@ -33,7 +33,7 @@ html[data-theme="light"] {
 html[data-theme="dark"] {
     --tabs-bg: #222832;
     --tabs-fg: #f3f4f5;
-    --tabs-border: #222832;
+    --tabs-border: var(--pst-color-border);
 }
 
 [role="tablist"] {
