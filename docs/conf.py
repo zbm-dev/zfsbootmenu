@@ -42,11 +42,14 @@ html_theme = 'sphinx_book_theme'
 html_static_path = ['_static']
 html_favicon = '_static/favicon.ico'
 smartquotes = False
-html_logo = '_static/logo.svg'
 html_theme_options = {
-    'collapse_navigation': False,
     'repository_url': 'https://github.com/zbm-dev/zfsbootmenu',
     'use_repository_button': True,
+    'use_fullscreen_button': False,
+    'logo': {
+        'image_light': '_static/logo-light.svg',
+        'image_dark': '_static/logo-dark.svg',
+    },
 }
 html_baseurl = 'https://docs.zfsbootmenu.org'
 html_css_files = ['custom.css']
