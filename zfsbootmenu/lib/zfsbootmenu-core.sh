@@ -1961,7 +1961,7 @@ zreport() {
   zpool list
 
   colorize orange "\n>> ZFS datasets\n"
-  zfs list -o name,mountpoint,encroot,keystatus,keylocation,org.zfsbootmenu:keysource
+  zfs list -o name,mountpoint,canmount,encroot,keystatus,keylocation,org.zfsbootmenu:keysource
 }
 
 # arg1: hook root spec, as <device>//<path>
