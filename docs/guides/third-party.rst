@@ -24,7 +24,7 @@ Arch Linux
 * `Arch User Repository: ZFSBootMenu EFI binaries <https://aur.archlinux.org/packages/zfsbootmenu-efi-bin>`_
 * `Arch Linux ZFSBootMenu install scripts <https://github.com/eoli3n/arch-config/tree/master/scripts/zfs/install>`_
 
-Fedora
+Gentoo
 ------
 
-* `Install and boot Fedora with ZFSBootMenu <https://ociaw.com/posts/install-fedora-zfs-boot-menu>`_
+* `Gentoo Wiki: root on ZFS <https://wiki.gentoo.org/wiki/ZFS/rootfs>
