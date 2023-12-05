@@ -27,4 +27,4 @@ Arch Linux
 Gentoo
 ------
 
-* `Gentoo Wiki: root on ZFS <https://wiki.gentoo.org/wiki/ZFS/rootfs>
+* `Gentoo Wiki: root on ZFS <https://wiki.gentoo.org/wiki/ZFS/rootfs>`_
