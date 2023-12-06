@@ -1924,6 +1924,8 @@ emergency_shell() {
 # returns: nothing
 
 zreport() {
+  local hook
+
   colorize white "System Report\n\n"
 
   (
@@ -1948,9 +1950,21 @@ zreport() {
   )
 
   colorize orange "\n>> ZFSBootMenu commandline\n"
-  get_zbm_kcl | kcl_assemble
+  get_zbm_kcl | kcl_assemble ; echo
 
-  colorize orange "\n\n>> ZFS/SPL module information\n"
+  colorize orange "\n>> Enabled hooks\n"
+  for hook in /libexec/hooks/*.d/*; do
+    [ -x "${hook}" ] && echo "* $( colorize green "${hook}")"
+  done
+
+  colorize orange "\n>> Disabled hooks\n"
+  for hook in /libexec/hooks/*.d/*; do
+    [ -f "${hook}" ] || continue
+    [ -x "${hook}" ] && continue
+    echo "* $( colorize red "${hook}")"
+  done
+
+  colorize orange "\n>> ZFS/SPL module information\n"
   echo "$( modinfo -F filename spl ): $( modinfo -F version spl )"
   echo "$( modinfo -F filename zfs ): $( modinfo -F version zfs )"
 
