@@ -213,6 +213,10 @@ of the kernel list. That BE should be selected when entering the list.
 - [ ] Pressing the left/right arrow keys moves to the next/previous screen shown
   in the header. Screens will not wrap around.
 
+- [ ] When booting a test VM with GTK output and efifb, the font will be resized
+  to change the apparent resolution of the console. Successful font changes are
+  logged via `zinfo()`.
+
 ## General Testing
 
 - [ ] If every encryption root specifies an `org.zfsbootmenu:keysource`
