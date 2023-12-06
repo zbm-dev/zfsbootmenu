@@ -26,7 +26,7 @@ tty_re='/dev/tty[0-9]'
 if get_zbm_bool 1 zbm.autosize && ! font=$( get_zbm_arg rd.vconsole.font ) ; then
   cd /usr/share/zfsbootmenu/fonts/ || exit 0
   for font in ter-v32b ter-v28b ter-v24b ter-v20b ter-v14b ter-v12n; do
-    [ -f "${font}.psf" ] && setfont "${font}" >/dev/null 2>&1
+    [ -f "${font}.psf" ] && setfont "${font}.psf" >/dev/null 2>&1
 
     # 110 columns is the current minimum to show both the sort key and a note on the snapshot screen
     if [ "${COLUMNS}" -ge 110 ]; then
