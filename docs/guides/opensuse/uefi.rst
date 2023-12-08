@@ -1,4 +1,4 @@
-Leap 15.4 UEFI
+Leap 15.5 UEFI
 ==============
 
 .. |distribution| replace:: leap
@@ -8,9 +8,6 @@ Leap 15.4 UEFI
   :local:
   :backlinks: none
 
-Preparation
------------
-
 This guide can be used to install openSUSE Leap onto a single disk with or without ZFS encryption.
 
 It assumes the following:
@@ -19,7 +16,7 @@ It assumes the following:
 * Your system is x86_64
 * You're mildly comfortable with ZFS, EFI and discovering system facts on your own (``lsblk``, ``dmesg``, ``gdisk``, ...)
 
-Download `openSUSE Leap 15.4 <https://download.opensuse.org/distribution/leap/15.4/appliances/iso/openSUSE-Leap-15.4-GNOME-Live-x86_64-Media.iso>`_
+Download `openSUSE Leap 15.5 <https://download.opensuse.org/distribution/leap/15.4/appliances/iso/openSUSE-Leap-15.4-GNOME-Live-x86_64-Media.iso>`_
 , write it to a USB drive and boot your system in EFI mode.
 
 .. include:: ../_include/efi-boot-check.rst
