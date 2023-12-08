@@ -3,6 +3,13 @@ Configure Live Environment
 
 .. include:: ../_include/os-release.rst
 
+Configure Networking
+~~~~~~~~~~~~~~~~~~~~
+
+.. code-block::
+
+  setup-interfaces -r
+
 Add package repositories
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
