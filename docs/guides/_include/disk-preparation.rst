@@ -6,13 +6,13 @@ Wipe partitions
 
 .. code-block:: bash
 
+  zpool labelclear -f "$POOL_DISK"
+
   wipefs -a "$POOL_DISK"
   wipefs -a "$BOOT_DISK"
 
   sgdisk --zap-all "$POOL_DISK"
   sgdisk --zap-all "$BOOT_DISK"
-
-  zpool labelclear -f "$POOL_DISK"
 
 Create EFI boot partition
 ~~~~~~~~~~~~~~~~~~~~~~~~~
