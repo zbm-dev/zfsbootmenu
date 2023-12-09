@@ -24,6 +24,8 @@ done
 
 unset src sources
 
+trap cleanup EXIT INT TERM
+
 # zfsbootmenu-help invokes itself, so the value of $WIDTH depends
 # on if $0 is launching fzf (-L) or is being launched inside
 # fzf (-s).
@@ -112,8 +114,6 @@ while getopts "lL:s:" opt; do
       ;;
   esac
 done
-
-trap cleanup EXIT INT TERM
 
 # No options detected, show the main help section
 help_pager "main-screen"
