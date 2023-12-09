@@ -1,9 +1,15 @@
 #!/bin/bash
 
+cleanup() {
+  tput clear
+}
+
 # Unusable for now with busybox-provided dmesg/less
 if ! dmesg -T --time-format reltime -f user -l 7 >/dev/null 2>&1 ; then
   exit 0
 fi
+
+trap cleanup EXIT INT TERM
 
 r="\033[0;31m"
 g="\033[0;32m"
