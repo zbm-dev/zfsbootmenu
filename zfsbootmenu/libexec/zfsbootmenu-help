@@ -1,6 +1,10 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
+cleanup() {
+  tput clear
+}
+
 # shellcheck disable=SC1091
 sources=(
   /lib/profiling-lib.sh
@@ -59,7 +63,7 @@ help_pager() {
     ${HAS_BORDER:+--border=top} \
     ${HAS_BORDER:+--color=border:white} \
     ${HAS_BORDER:+--border-label="$( global_header )"} \
-    --tac --inline-info --ansi --layout="reverse-list"
+    --tac --inline-info --ansi --layout="reverse-list" || true
 }
 
 doc_base="/usr/share/docs/help-files"
@@ -108,6 +112,8 @@ while getopts "lL:s:" opt; do
       ;;
   esac
 done
+
+trap cleanup EXIT INT TERM
 
 # No options detected, show the main help section
 help_pager "main-screen"
