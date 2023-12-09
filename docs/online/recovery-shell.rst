@@ -52,7 +52,7 @@ Common Commands
 
   View warning/error/debug logs.
 
-**shutdown**|**poweroff**
+**shutdown|poweroff**
 
   Shutdown the system using a SysRq magic invocation.
 

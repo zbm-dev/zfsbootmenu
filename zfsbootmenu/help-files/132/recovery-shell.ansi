@@ -52,7 +52,7 @@
 
     View warning/error/debug logs.
 
-  [1mshutdown**|**poweroff[0m
+  [1mshutdown|poweroff[0m
 
     Shutdown the system using a SysRq magic invocation.
 
