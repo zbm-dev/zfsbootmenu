@@ -279,6 +279,11 @@ of the kernel list. That BE should be selected when entering the list.
     - Until the running instance is stopped, the new invocation will spin with
       a timed message until it succeeds or the user cancels the attempt.
 
+- [ ] In the recovery shell, in a recovery image, verify networking:
+    - `dhclient` should successfully configure a network interface.
+    - `curl` should successfully retrieve https://get.zfsboot.menu/efi
+    - `mbuffer -I 1234` should start and listen on port 1234, accepting traffic
+
 ## OS-Specific Image Creation
 
 - [ ] For each supported distribution [Void, Void Musl, Arch, Ubuntu, Debian],
