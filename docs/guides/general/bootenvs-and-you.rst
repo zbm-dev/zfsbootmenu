@@ -1,6 +1,11 @@
 Boot Environments and You: A Primer
 ===================================
 
+.. image:: /media/no-bpool.png
+   :alt: no bpools! these are not made, they should never be made, we will not make them, we will not help make them
+   :align: center
+   :class: dark-light
+
 ZFSBootMenu adapts to a wide range of system configurations by making as few assumptions about filesystem layout as
 possible. When looking for Linux kernels to boot, the *only* requirements are that:
 
