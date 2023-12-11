@@ -343,7 +343,7 @@ save_kcl_efi() {
   return 0
 }
 
-# Assmeble and allow the user to edit an already tokenized KCL and, if it has
+# Assemble and allow the user to edit an already tokenized KCL and, if it has
 # changed, tokenize the edited version and save back to the input file.
 #
 # ARGUMENTS
