@@ -303,7 +303,7 @@ if ((FLAME)) ; then
   [ -e "${FIFO}.in" ] || mkfifo "${FIFO}.in"
 
   #shellcheck disable=SC2034
-  coproc perf_data ( cat "${FIFO}.out" > "${TESTDIR}/perfdata.log" )
+  coproc perf_data ( sed 's,^.*\(trapdebug*\),\1,g' < "${FIFO}.out" > "${TESTDIR}/perfdata.log" )
   trap cleanup EXIT INT TERM
 
   for _cdir in "dracut.conf.d" "mkinitcpio.d"; do

@@ -20,6 +20,8 @@ foreach (<>) {
 # trapdebug find_be_kernels populate_be_list main;/lib/profiling-lib.sh /lib/zfsbootmenu-core.sh /lib/zfsbootmenu-lib.sh /bin/zfsbootmenu;734 641 85 0;1695169626.438117
     @line = split( /;/, $_ );
 
+    next unless scalar(@line) == 4;
+
     my @sstack  = split( / /, $line[0] );
     my @ssource = split( / /, $line[1] );
     my @slineno = split( / /, $line[2] );
