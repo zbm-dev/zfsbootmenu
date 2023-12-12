@@ -1,5 +1,83 @@
 # Changelog
 
+## ZFSBootMenu v2.3.0 (2023-12-12)
+
+ZFSBootMenu v2.3.0 introduces a few new capabilities and refactors some existing features.
+
+### New features
+
+The ZFSBootMenu hook system has been enhanced. In addition to "early setup", "setup" and "teardown" hooks, users can install "load-key" and "boot-selection" hooks to better control the unlocking of ZFS filesystems and the process of booting a selected environment. Hook installation and management has been simplified: the `zfsbootmenu_{early_setup,setup,teardown}` variables in `dracut` and `mkinitcpio` configurations have been deprecated in favor of `zfsbootmenu_hook_root`, which points to a directory containing subdirectories that correspond to each hook stage. ZFSBootMenu now includes "system" hooks that are automatically installed in every generated image; the USB-teardown and font-resizing hooks provided as `contrib` scripts are now installed as system hooks. A new command-line argument, `zbm.skip_hooks`, allows individual hooks to be skipped at runtime.
+
+When ZFSBootMenu is unable to import any ZFS pools, it will capture and display import errors when entering an emergency shell.
+
+The commands `reboot`, `poweroff` and `shutdown` are provided in ZFSBootMenu images, providing a convenient means to interrupt or restart the boot process from an emergency shell.
+
+Various UI and UX enhancements improve the user experience within ZFSBootMenu:
+
+* The `zreport` utility provides more information about the environment
+* Online help now includes a "System Report" tab that displays the output of `zreport`
+* Pre-built ZFSBootMenu images will no longer complain on hostid mismatches
+* The main menu now shows the key on which entries are sorted
+
+### Fixes
+
+Chimera Linux boot environments are now properly recognized and will receive the appropriate root prefix by default.
+
+Pre-built recovery images now include `sgdisk` and SSL certificates that will allow `curl` to communicate with HTTPS servers. The pre-built release and recovery images both include the `zbm-kcl` utility to allow convenient editing of command-line arguments for boot environments as well as ZFSBootMenu EFI bundles.
+
+The `zbm` and `debug` commands, previously shell aliases, are now symlinks; this makes these commands accessible to users of images built with `mkinitcpio`.
+
+Searches for kernels and initramfs images in boot environments have been improved. Although results of searches should be the same, the searches should happen slightly faster.
+
+The `contrib/zbm-sign.pl` script now respects the `EFI.ImageDir` variable in the `generate-zbm` configuration file.
+
+### Removal
+
+Support for managing `syslinux` configurations with `generate-zbm`, long deprecated, has been removed. Users must now manage syslinux configurations manually.
+
+### Significant commits in this release
+
+* cb8dfaa - zfsbootmenu-core: show enabled/disabled hooks in zreport (Zach Dykstra)
+* 3739e89 - zreport: show canmount dataset property (Zach Dykstra)
+* efea0c1 - zfsbootmenu: use symlinks for two useful aliases (Zach Dykstra)
+* 0d29988 - lib/zfsbootmenu-kcl: clean up argument reading (Andrew J. Hesford)
+* 07d6e73 - zfsbootmenu-preinit: single-quote values written to /etc/zfsbootmenu.conf (Andrew J. Hesford)
+* 23bdb71 - zfsbootmenu-ui: fix argument order when listing snapshots (Andrew J. Hesford)
+* 14fb79f - zfsbootmenu-core: use new zbm-release file, make zreport pretty (Zach Dykstra)
+* 691e332 - zfsbootmenu-help: add system report section to online help (Zach Dykstra)
+* 9d7eba4 - Improve version handling in the repository and ZBM images (Andrew J. Hesford)
+* 8f1570f - contrib/zbm-sign.pl: respect EFI.ImageDir (John Zimmermann)
+* d7ebc84 - examples: modernize, install (Zach Dykstra)
+* 55f08b9 - generate-zbm: remove integrated syslinux support (Zach Dykstra)
+* f23fc69 - zfsbootmenu-core: fix typo in warning text (Zach Dykstra)
+* 9588659 - zfsbootmenu/: tab-delimit kernel lists for boot environments (Andrew J. Hesford)
+* 831d55a - releng/docker: Dockerfile parity with image-build.sh (Min Idzelis)
+* 57b5572 - zfsbootmenu: remove legacy root= usage/design (Zach Dykstra)
+* e93de79 - zfsbootmenu: add sysrq-based reboot/poweroff (Zach Dykstra)
+* 6afe2ff - zfsbootmenu-core: remove SIGINT trap when launching e-shell (Min Idzelis)
+* abf9649 - zfsbootmenu: rename UI library, normalize imports (Zach Dykstra)
+* 40f7928 - zfsbootmenu-core: optimize initramfs search (Andrew J. Hesford)
+* d7caa8c - releng/docker/image-build.sh: use tmpfs for XBPS cache (Andrew J. Hesford)
+* 3f3e831 - zfsbootmenu: make zbm.autosize a system hook (Zach Dykstra)
+* 9b348b4 - zfsbootmenu-core: disable spl_hostid warnings (Zach Dykstra)
+* bd1319f - zfsbootmenu: log errors for unimportable pools (Zach Dykstra)
+* 2762b7e - zfsbootmenu-core: run boot environment hooks after environment mount (Agorgianitis Loukas)
+* 9524215 - releng/docker/build-init.sh: add rc.pre.d hooks (Andrew J. Hesford)
+* 640af57 - Refactor user runtime hooks installation and processing (Andrew J. Hesford)
+* 7045d1f - zfsbootmenu-lib: show sort key where needed (Zach Dykstra)
+* ff59562 - zfsbootmenu: refactor installation, support system and user runtime hooks (Zach Dykstra)
+* e5cfb46 - releng/docker/image-build.sh: improve repo and kernel selection (Andrew J. Hesford)
+* 1526bb8 - zfsbootmenu-core: improve kernel searches (Andrew J. Hesford)
+* 955ac2f - zfsbootmenu-core: remove trailing whitespace (Andrew J. Hesford)
+* e7a3b89 - releng/docker: update Void base images (Andrew J. Hesford)
+* 3682393 - releng/docker/image-build.sh: support custom XBPS repositories (Andrew J. Hesford)
+* c8c9e8d - contrib/remote-ssh-build.sh: Add pool key to system mkinitcpio config (Emad Elsaid)
+* 56cbbe8 - dracut, initcpio: make libgcc_s search universal (Andrew J. Hesford)
+* deefabd - release,recovery: add tools to images (Zach Dykstra)
+* 2431eff - zfsbootmenu-core: log error when be is locked in mount_zfs (Zach Dykstra)
+* 3616009 - zfsbootmenu: add default Chimera Linux KCL (Zach Dykstra)
+* 9343eb5 - zfs-chroot: small visual fixes/improvements (Zach Dykstra)
+
 ## ZFSBootMenu v2.2.2 (2023-10-24)
 
 ZFSBootMenu v2.2.2 contains no runtime changes relative to v2.2.1. The creation of UEFI bundles (so-called unified kernel images, or UKIs) in `generate-zbm` has been updated to properly support newer UEFI stub loaders that were known to cause boot failures in the past. These changes were inspired by similar functionality in mkinitcpio and the `ukify` utility included with systemd.
