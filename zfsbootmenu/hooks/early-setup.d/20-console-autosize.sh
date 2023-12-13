@@ -20,6 +20,11 @@ fi
 tty_re='/dev/tty[0-9]'
 [[ ${control_term} =~ ${tty_re} ]] || exit 1
 
+# Respect custom fonts set by the 'consolefont' mkinitcpio module
+if [ -e /consolefont.psfu ] || [ -e /consolefont.psf ]; then
+  exit 1
+fi
+
 # rd.vconsole.font is consumed by the Dracut i18n module, which is forced to run before this hook
 # If the user has specified a specific font/size, do not attempt to override it
 
