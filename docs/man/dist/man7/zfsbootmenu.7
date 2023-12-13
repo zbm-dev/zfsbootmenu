@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "ZFSBOOTMENU" "7" "2023-10-24" "" "ZFSBootMenu"
+.TH "ZFSBOOTMENU" "7" "2023-12-12" "" "ZFSBootMenu"
 .SH NAME
 zfsbootmenu \- System Integration
 .SH SYNOPSIS
@@ -257,6 +257,13 @@ zbm.kcl_override=\(dqsome alternate set=\(aqof arguments\(aq\(dq
 Skip execution of any early\-setup, setup, load\-key, boot\-selection or teardown hooks with file names matching any entry in the comma\-separated list \fIhooklist\fP\&. Only base names of hooks (\fIi.e.\fP, with any other path component removed) are matched against the \fIhooklist\fP\&.
 .sp
 \fBNOTE\fP: The \fIhooklist\fP argument \fBMUST NOT\fP contain spaces and \fBMUST NOT\fP be enclosed in quotes.
+.UNINDENT
+.UNINDENT
+.sp
+\fBzbm.autosize\fP
+.INDENT 0.0
+.INDENT 3.5
+Enable automatic font resizing of the kernel console to normalize the apparent resolution for both low resolution and high resolution displays. This option is enabled by default.
 .UNINDENT
 .UNINDENT
 .SS Deprecated Parameters

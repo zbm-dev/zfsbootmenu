@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "GENERATE-ZBM" "5" "2023-10-24" "" "ZFSBootMenu"
+.TH "GENERATE-ZBM" "5" "2023-12-12" "" "ZFSBootMenu"
 .SH NAME
 generate-zbm \- configuration file for generate-zbm
 .SH SYNOPSIS
@@ -122,7 +122,7 @@ The path of the directory containing executables that should be executed after a
 \fBCommandLine\fP
 .INDENT 0.0
 .INDENT 3.5
-If you\(aqre making a unified EFI file or a syslinux configuration, this is the command line passed to the boot image.
+If you\(aqre making a unified EFI file, this is the command line passed to the boot image.
 .UNINDENT
 .UNINDENT
 .sp
@@ -170,21 +170,6 @@ When \fIfalse\fP or \fI0\fP, image versioning will be disabled; \fBgenerate\-zbm
 When \fItrue\fP (which behaves as \fI1\fP) or any positive integer, \fBgenerate\-zbm\fP will append the value of \fIGlobal.Version\fP to every image it produces, followed by a revision as \fI_$revision\fP\&. \fBgenerate\-zbm\fP will save \fIComponents.Versions\fP revisions of all images with versions matching the current value of \fIGlobal.Version\fP\&. In addition, \fBgenerate\-zbm\fP will save the highest revision of the most recent \fIComponents.Versions\fP image versions distinct from \fIGlobal.Version\fP\&.
 .UNINDENT
 .UNINDENT
-.SS Components.syslinux
-.sp
-\fBEnabled\fP
-.INDENT 0.0
-.INDENT 3.5
-When \fItrue\fP, syslinux configuration generation is enabled. The default value is \fIfalse\fP\&.
-.UNINDENT
-.UNINDENT
-.sp
-\fBConfig\fP
-.INDENT 0.0
-.INDENT 3.5
-The path of the syslinux configuration file to produce.
-.UNINDENT
-.UNINDENT
 .SS EFI
 .sp
 \fBEnabled\fP
@@ -230,9 +215,6 @@ Components:
   ImageDir: /boot/efi/EFI/zbm
   Versions: false
   Enabled: true
-  syslinux:
-    Config: /boot/syslinux/syslinux.cfg
-    Enabled: false
 EFI:
   ImageDir: /boot/efi/EFI/zbm
   Versions: 2
