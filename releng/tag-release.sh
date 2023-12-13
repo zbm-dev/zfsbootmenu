@@ -76,12 +76,12 @@ if ! out="$( releng/rst2help.sh )" ; then
   error "ERROR: ${out}"
 fi
 
-if ! out="$( cd docs ; make gen-man SPHINXOPTS='-t manpages' )" ; then
+if ! out="$( cd docs && make gen-man SPHINXOPTS='-t manpages' )" ; then
   error "ERROR: ${out}"
 fi
 
-if ! out="$( rm -r docs/man/dist/_static )"; then
-  error "ERROR: ${out}"
+if [ -d docs/man/dist/_static ] && ! out="$( rm -r docs/man/dist/_static )"; then
+  error "ERROR: failed to remove docs/man/dist/_static"
 fi
 
 # Generate a short history for CHANGELOG.md
@@ -113,7 +113,7 @@ if ! (head -n 1 "${relnotes}" | grep -q "ZFSBootMenu ${tag}\b"); then
 fi
 
 # Update version in generate-zbm
-if [ -x releng/version.sh ]; then
+if [ ! -x releng/version.sh ]; then
   error "ERROR: unable to update release version"
 fi
 
