@@ -41,8 +41,10 @@ extlinks = {
 html_theme = 'sphinx_book_theme'
 html_static_path = ['_static']
 html_favicon = '_static/favicon.ico'
-smartquotes = False
+html_baseurl = 'https://docs.zfsbootmenu.org'
+html_css_files = ['custom.css']
 html_theme_options = {
+    'announcement': (f'Release v{release} is EOL. Refer to <a href="{html_baseurl}">{html_baseurl}</a> for current documentation.'),
     'repository_url': 'https://github.com/zbm-dev/zfsbootmenu',
     'use_repository_button': True,
     'use_fullscreen_button': False,
@@ -51,8 +53,7 @@ html_theme_options = {
         'image_dark': '_static/logo-dark.svg',
     },
 }
-html_baseurl = 'https://docs.zfsbootmenu.org'
-html_css_files = ['custom.css']
+smartquotes = False
 
 # -- Options for linkcheck output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-linkcheck-builder
