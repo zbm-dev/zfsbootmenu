@@ -69,6 +69,10 @@ zfsbootmenu_essential_modules=(
 zfsbootmenu_optional_modules=(
   "zlib_deflate"
   "zlib_inflate"
+  "fat"
+  "vfat"
+  "nls_iso8859_1"
+  "nls_cp437"
 )
 
 create_zbm_conf() {

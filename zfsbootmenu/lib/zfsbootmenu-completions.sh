@@ -71,6 +71,23 @@ _mount_zfs() {
 }
 complete -F _mount_zfs mount_zfs
 
+_mount_esp() {
+  local ESP dev uuid
+  COMPREPLY=()
+
+  [ "${#COMP_WORDS[@]}" != "2" ] && return
+  
+  while IFS=' ' read -r dev uuid; do
+    # magic uuid for an ESP
+    [ "${uuid,,}" == "c12a7328-f81f-11d2-ba4b-00a0c93ec93b" ] || continue
+    is_mounted "${dev}" >/dev/null 2>&1 || ESP+=( "${dev}" )
+  done <<<"$( lsblk -ln -o PATH,PARTTYPE )"
+
+  COMPREPLY=( $( compgen -W "${ESP[*]}" -- "${COMP_WORDS[1]}" ) )
+}
+  
+complete -F _mount_esp mount_esp
+
 _zsnapshots() {
   local ZFS
   COMPREPLY=()
