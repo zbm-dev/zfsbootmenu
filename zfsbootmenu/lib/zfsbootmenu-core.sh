@@ -244,6 +244,49 @@ check_for_pools() {
   return 1
 }
 
+# arg1: device name
+# prints: mountpoint
+# returns: 0 on success
+
+mount_block() {
+  local device mnt output
+
+  device="${1}"
+
+  if [ -z "${device}" ]; then
+    zerror "device is undefined"
+    return 1
+  fi
+
+  if [ ! -b "${device}" ]; then
+    zerror "device does not exist or is not a block device"
+    return 1
+  fi
+
+  if mnt="$( is_mounted "${device}" )"; then
+    echo "${mnt}"
+    return 0
+  fi
+
+  mnt="/mnt/${device##*/}"
+
+  if [ -d "${mnt}" ] && is_mountpoint "${mnt}"; then
+    zerror "mountpoint '${mnt}' already in use"
+    return 1
+  fi
+
+  mkdir -p "${mnt}" || return 1
+
+  if output="$( mount "${device}" "${mnt}" 2>&1 )"; then
+    echo "${mnt}"
+    return 0
+  else
+    zerror "unable to mount '${device}' at '${mnt}'"
+    zerror "${output}"
+    return 1
+  fi
+}
+
 # arg1: ZFS filesystem name
 # prints: mountpoint
 # returns: 0 on success
@@ -2058,6 +2101,36 @@ is_mountpoint() {
   while read -r dev path opts; do
     path="$(readlink -f "${path}")" || continue
     [ "${path}" = "${mount_path}" ] && return 0
+  done < /proc/self/mounts
+
+  return 1
+}
+
+# arg1: device or dataset name
+# prints: mountpoint if mounted 
+# returns: 0 if the device is mounted, 1 if not
+
+is_mounted() {
+  local mount_path dev path opts
+
+  mount_dev="${1}"
+
+  if [ -z "${mount_dev}" ]; then
+    zerror "mount_dev undefined"
+    return 1
+  fi
+
+  if [ ! -r /proc/self/mounts ]; then
+    zerror "unable to read mount database"
+    return 1
+  fi
+
+  # shellcheck disable=SC2034
+  while read -r dev path opts; do
+    if [ "${dev}" = "${mount_dev}" ]; then
+      echo "${path}"
+      return 0
+    fi
   done < /proc/self/mounts
 
   return 1

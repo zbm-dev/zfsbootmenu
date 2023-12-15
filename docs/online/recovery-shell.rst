@@ -40,6 +40,10 @@ Common Commands
 
   Mount the filesystem at a unique location and print the mount point.
 
+**mount_esp** *device*
+
+  Mount an EFI System Partition at a unique location and print the mount point.
+
 **mount_efivarfs** *mode*
 
   Mount or remount *efivarfs* as read-write or read-only.
