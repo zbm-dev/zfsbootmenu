@@ -1,0 +1,17 @@
+#!/bin/bash
+
+PROMPT_TS_FILE="${BASE}/.errors_since"
+
+[ -f "${PROMPT_TS_FILE}" ] && read -r prompt_ts < "${PROMPT_TS_FILE}"
+
+# shellcheck disable=SC1091
+source /lib/kmsg-log-lib.sh || exit 0
+
+if [ -f "${BASE}/have_errors" ]; then 
+  echo
+  print_kmsg_logs "err" ${prompt_ts:+${prompt_ts}}
+  echo
+  rm "/zfsbootmenu/have_errors" 
+fi
+
+printf '%(%Y-%m-%dT%H:%M:%S)T' > "${PROMPT_TS_FILE}"
