@@ -2072,7 +2072,6 @@ is_efi_system() {
   return 1
 }
 
-
 # arg1: 'ro' or 'rw' to mount or remount efivarfs in that desired mode
 # arg2: optional mountpoint
 # prints: nothing
@@ -2095,4 +2094,22 @@ mount_efivarfs() {
     zdebug "mounting '${efivar_location}' '${efivar_state}'"
     mount -t efivarfs efivarfs "${efivar_location}" -o "${efivar_state}"
   fi
+}
+
+# arg1: zfs dataset name
+# returns: 0 if filesystem
+
+is_zfs_filesystem() {
+  local dataset
+
+  dataset="${1}"
+
+  if [ -z "${dataset}" ]; then
+    zerror "dataset undefined"
+    return 1
+  fi
+
+  zfs list -H -o name -t filesystem "${dataset}" >/dev/null 2>&1 && return 0
+
+  return 1
 }

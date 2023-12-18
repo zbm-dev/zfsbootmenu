@@ -31,6 +31,11 @@ fi
 
 fs="${1}"
 
+if ! is_zfs_filesystem "${fs}" ; then
+  zerror "'${fs}' is not a ZFS filesystem"
+  exit 1
+fi
+
 COLUMNS="$( tput cols )"
 
 while true; do
