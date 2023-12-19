@@ -50,3 +50,10 @@ Install required packages
 .. note::
 
   The ``updates`` repository is temporarily disabled to ensure that the correct kernel-headers package can be located and installed.
+
+Regenerate initramfs
+~~~~~~~~~~~~~~~~~~~~
+
+.. code-block::
+
+  dracut --force --regenerate-all
