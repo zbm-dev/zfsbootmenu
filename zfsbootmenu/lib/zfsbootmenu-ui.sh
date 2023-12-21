@@ -106,7 +106,7 @@ global_header() {
       header="\\033[0;37m Help \\033[0m"
       tab="Help"
       ;;
-    zlogtail)
+    zlogtail|logs)
       header="\\033[0;37m Logs \\033[0m"
       tab="Logs"
       ;;
