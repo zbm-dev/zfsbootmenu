@@ -31,12 +31,15 @@ Usage: $0 [options]
   -p <package>
      Install the named Void Linux package in the container
      before building. May be specified more than once to
-     install more than one package. (This triggers a full
-     XBPS package upgrade before installation.)
+     install more than one package.
 
   -t <tag>
      Specify specific tag or commit hash to fetch
      (Ignored if /zbm already contains a ZFSBootMenu tree)
+
+  -u
+    Update all Void packages, except kernels and zfs, in the container
+    (Specify more than once to attempt kernel and zfs updates as well)
 
   -V
      Do not attempt to update the version recorded in the source tree
@@ -54,13 +57,43 @@ Usage: $0 [options]
 EOF
 }
 
+hold_kern_zfs() {
+  local kernels zpkg
+
+  # Hold all kernel packages
+  kernels="$(xbps-query -p pkgname --regex -s 'linux[0-9]+\.[0-9]')" || kernels=
+  if [ -n "${kernels}" ]; then
+    cut -d' ' -f2 <<< "${kernels}" | xargs xbps-pkgdb -m hold
+  fi
+
+  # Hold ZFS packages
+  for zpkg in zfs libzfs zfs-lts libzfs-lts; do
+    xbps-query -p pkgname "${zpkg}" >/dev/null 2>&1 || continue
+    xbps-pkgdb -m hold "${zpkg}"
+  done
+}
+
+update_packages() {
+  case "${1,,}" in
+    full) ;;
+    *) hold_kern_zfs ;;
+  esac
+
+  # Attempt to update xbps first
+  xbps-install -Syu xbps || return 1
+
+  # Update all other packages
+  xbps-install -Syu || return 1
+}
+
 PACKAGES=()
 CONFIGEVALS=()
 GENARGS=()
 
+UPDATE=
 SKIP_VERSIONING=
 
-while getopts "hb:o:t:e:p:V" opt; do
+while getopts "hb:o:t:e:p:uV" opt; do
   case "${opt}" in
     b)
       BUILDROOT="${OPTARG}"
@@ -76,6 +109,13 @@ while getopts "hb:o:t:e:p:V" opt; do
       ;;
     e)
       CONFIGEVALS+=( "${OPTARG}" )
+      ;;
+    u)
+      if [ -n "${UPDATE}" ]; then
+        UPDATE="full"
+      else
+        UPDATE="yes"
+      fi
       ;;
     V)
       SKIP_VERSIONING="yes"
@@ -110,12 +150,14 @@ if [ -z "${ZBMTAG}" ]; then
   fi
 fi
 
-if [ "${#PACKAGES[@]}" -gt 0 ]; then
-  # Trigger a sync and upgrade to make sure the package is installable
-  xbps-install -Syu xbps
+# Update packages, if desired
+if [ -n "${UPDATE}" ]; then
+  update_packages "${UPDATE}" || error "failed to update packages"
+fi
 
+if [ "${#PACKAGES[@]}" -gt 0 ]; then
   # Install all requested packages
-  xbps-install -Sy "${PACKAGES[@]}"
+  xbps-install -Sy "${PACKAGES[@]}" || error "failed to install requested packages"
 fi
 
 # If a custom rc.pre.d exists, run every executable file therein
