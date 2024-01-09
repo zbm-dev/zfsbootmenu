@@ -262,7 +262,7 @@ install_zbm_osver() {
   local build_date
   [ -r "${zfsbootmenu_module_root}/zbm-release" ] || return 0
   zbm_install_file "${zfsbootmenu_module_root}/zbm-release" "/etc/zbm-release"
-  if build_date="$(date %Y-%m-%d)"; then
+  if build_date="$(date '+%Y-%m-%d')"; then
     cat >> "${BUILDROOT}/etc/zbm-release" <<-EOF
 	BUILD_ID="${build_date}"
 	EOF
