@@ -143,6 +143,14 @@ These options are set on the kernel command line when booting the initramfs or U
 
   Enable automatic font resizing of the kernel console to normalize the apparent resolution for both low resolution and high resolution displays. This option is enabled by default.
 
+**zbm.waitfor=device,device,...**
+
+  Ensure that one or more devices are present before starting the pool import process. Devices may be specified as full paths to device nodes (*e.g.*, **/dev/sda** or **/dev/disk/by-id/wwn-0x500a07510ee65912**) or, for convenience, as a typed indicator of the form **TYPE=VALUE**, which will be expanded internally as
+  
+    **/dev/disk/by-TYPE/VALUE**
+
+  The use of full device paths other than descendants of **/dev/disk/** is fragile and should be avoided.
+
 Deprecated Parameters
 ---------------------
 
