@@ -78,6 +78,60 @@ elif [ ! -e /etc/hostid ]; then
   write_hostid "${default_hostid}"
 fi
 
+# Wait for devices to show up
+
+if [ -n "${zbm_waitfor_devices}" ]; then
+  IFS=',' read -r -a user_devices <<<"${zbm_waitfor_devices}"
+  while true; do
+    FOUND=0
+    EXPECTED=0
+    missing=()
+
+    for device in "${user_devices[@]}"; do
+      case "${device}" in
+        /dev/*)
+          ((EXPECTED=EXPECTED+1))
+          if [ -e "${device}" ] ; then
+           ((FOUND=FOUND+1))
+          else
+            missing+=( "$device" )
+          fi
+          ;;
+        *=*)
+          ((EXPECTED=EXPECTED+1))
+          path_prefix="/dev/disk/by-${device%=*}"
+          checkfor="${path_prefix,,}/${device##*=}"
+          if [ -e "${checkfor}" ] ; then
+            ((FOUND=FOUND+1))
+          else
+            missing+=( "$device" )
+          fi
+          ;;
+        *)
+          zerror "malformed device: '${device}'"
+          ;;
+      esac
+    done
+
+    if [ ${FOUND} -eq ${EXPECTED} ]; then
+      break
+    else
+      if ! timed_prompt -d 3 -e "to cancel" \
+          -m "" \
+          -m "$( colorize red "One or more required devices are missing" )" \
+          -p "retrying in $( colorize yellow "%0.2d" ) seconds" ; then
+        for dev in "${missing[@]}" ; do
+          zerror "required device '${dev}' not found"
+        done
+
+        break
+      fi
+    fi
+  done
+
+  unset FOUND EXPECTED device path_prefix checkfor
+fi
+
 # Import ZBM hooks from an external root, if they exist
 if [ -n "${zbm_hook_root}" ]; then
   import_zbm_hooks "${zbm_hook_root}"

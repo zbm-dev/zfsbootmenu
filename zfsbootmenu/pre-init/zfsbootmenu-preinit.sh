@@ -33,6 +33,7 @@ export zbm_sort='${zbm_sort}'
 export zbm_set_hostid='${zbm_set_hostid}'
 export zbm_import_delay='${zbm_import_delay}'
 export zbm_hook_root='${zbm_hook_root}'
+export zbm_waitfor_devices='${zbm_waitfor_devices}'
 export control_term='${control_term}'
 # END additions by zfsbootmenu-preinit.sh
 EOF

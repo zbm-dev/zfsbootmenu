@@ -226,6 +226,11 @@ if zbm_prefer_pool=$( get_zbm_arg zbm.prefer ) ; then
   zinfo "preferring ${zbm_prefer_pool} for bootfs"
 fi
 
+zbm_waitfor_devices=
+if zbm_waitfor_devices=$( get_zbm_arg zbm.waitfor ) ; then
+  zinfo "system will wait for ${zbm_waitfor_devices}"
+fi
+
 # pool! : this pool must be imported before all others
 # pool!!: this pool, and no others, must be imported
 
