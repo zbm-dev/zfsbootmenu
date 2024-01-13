@@ -1943,7 +1943,8 @@ emergency_shell() {
 
   if [ -f "${BASE}/have_errors" ]; then
     print_kmsg_logs "err"
-    echo ""
+    echo
+    rm "${BASE}/have_errors"
   fi
 
   command -v efibootmgr >/dev/null 2>&1 && mount_efivarfs "rw" 

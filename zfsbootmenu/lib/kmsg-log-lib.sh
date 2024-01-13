@@ -104,6 +104,7 @@ print_kmsg_logs() {
   # dmesg from dmesg-util can helpfully do --since, but only if it's also allowed to print the time out
   # so always print the time, optionally set --since, and filter the timestamp after
   if output="$( dmesg -f user --color=never -l "${levels}" ${since:+--since ${since}} 2>/dev/null )" ; then
+    # shellcheck disable=SC2001
     echo "${output}" | sed 's/^\[.*\]\ //'
   else
     # Both util-linux and Busybox dmesg support the -r flag. However, the log level that is
