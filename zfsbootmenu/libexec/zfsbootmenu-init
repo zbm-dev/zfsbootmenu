@@ -80,8 +80,8 @@ fi
 
 # Wait for devices to show up
 
-if [ -n "${zbm_waitfor_devices}" ]; then
-  IFS=',' read -r -a user_devices <<<"${zbm_waitfor_devices}"
+if [ -n "${zbm_wait_for_devices}" ]; then
+  IFS=',' read -r -a user_devices <<<"${zbm_wait_for_devices}"
   while true; do
     FOUND=0
     EXPECTED=0
@@ -116,8 +116,8 @@ if [ -n "${zbm_waitfor_devices}" ]; then
     if [ ${FOUND} -eq ${EXPECTED} ]; then
       break
     else
-      if ! timed_prompt -d 3 -e "to cancel" \
-          -m "" \
+      if ! timed_prompt -d "${zbm_retry_delay:-5}" \
+          -e "to cancel" -m "" \
           -m "$( colorize red "One or more required devices are missing" )" \
           -p "retrying in $( colorize yellow "%0.2d" ) seconds" ; then
         for dev in "${missing[@]}" ; do
@@ -214,7 +214,7 @@ while true; do
   zinfo "unable to import a pool on attempt ${zbm_import_attempt}"
 
   # Just keep retrying after a delay until the user presses ESC
-  if timed_prompt -d "${zbm_import_delay:-5}" \
+  if timed_prompt -d "${zbm_retry_delay:-5}" \
     -p "Unable to import $( colorize magenta "${try_pool:-pool}" ), retrying in $( colorize yellow "%0.2d" ) seconds" \
     -r "to retry immediately" \
     -e "for a recovery shell"; then

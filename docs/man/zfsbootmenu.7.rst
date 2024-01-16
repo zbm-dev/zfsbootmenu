@@ -35,9 +35,9 @@ These options are set on the kernel command line when booting the initramfs or U
     If a literal *!!* has been appended to the pool name, ZFSBootMenu will insist on successfully importing the named pool and no others.
 
 
-**zbm.import_delay=<time>**
+**zbm.retry_delay=<time>**
 
-  Should ZFSBootMenu fail to successfully import any pool, it will repeat import attempts indefinitely until at least one pool can be imported or the user chooses to drop to a recovery shell. Each subsequent attempt will proceed after a delay of **<time>** seconds. When **<time>** is unspecified or is anything other than a positive integer, a default value of 5 seconds will be used.
+  This option determines the interval between repeated attempts of required steps. When **<time>** is unspecified or is anything other than a positive integer, a default value of 5 seconds will be used. Should ZFSBootMenu fail to successfully import any pool, it will repeat import attempts indefinitely until at least one pool can be imported or the user chooses to drop to a recovery shell. Additionally, should any required devices be configured via **zbm.wait_for**, device checks will repeat on this interval.
 
 **zbm.import_policy**
 
@@ -143,13 +143,13 @@ These options are set on the kernel command line when booting the initramfs or U
 
   Enable automatic font resizing of the kernel console to normalize the apparent resolution for both low resolution and high resolution displays. This option is enabled by default.
 
-**zbm.waitfor=device,device,...**
+**zbm.wait_for=device,device,...**
 
   Ensure that one or more devices are present before starting the pool import process. Devices may be specified as full paths to device nodes (*e.g.*, **/dev/sda** or **/dev/disk/by-id/wwn-0x500a07510ee65912**) or, for convenience, as a typed indicator of the form **TYPE=VALUE**, which will be expanded internally as
   
     **/dev/disk/by-TYPE/VALUE**
 
-  The use of full device paths other than descendants of **/dev/disk/** is fragile and should be avoided.
+  The use of full device paths other than descendants of **/dev/disk/** is fragile and should be avoided. The delay interval between device checks can be controlled by **zbm.retry_delay**.
 
 Deprecated Parameters
 ---------------------
@@ -170,6 +170,9 @@ Deprecated Parameters
 
   Deprecated; use **zbm.import_policy=force**.
 
+**zbm.import_delay**
+
+  Deprecated; use **zbm.retry_delay**
 
 .. _zfs-properties:
 
