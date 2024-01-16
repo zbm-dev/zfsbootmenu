@@ -127,11 +127,11 @@ else
   zinfo "defaulting menu timeout to ${menu_timeout}"
 fi
 
-if zbm_import_delay=$( get_zbm_arg zbm.import_delay ) && [ "${zbm_import_delay:-0}" -gt 0 ] 2>/dev/null ; then
-  # Again, this validates that zbm_import_delay is numeric in addition to logging
-  zinfo "import retry delay is ${zbm_import_delay} seconds"
+if zbm_retry_delay=$( get_zbm_arg zbm.retry_delay zbm.import_delay ) && [ "${zbm_retry_delay:-0}" -gt 0 ] 2>/dev/null ; then
+  # Again, this validates that zbm_retry_delay is numeric in addition to logging
+  zinfo "import/waitfor retry delay is ${zbm_retry_delay} seconds"
 else
-  zbm_import_delay=5
+  zbm_retry_delay=5
 fi
 
 # Allow setting of console size; ensure lines/columns are integers > 0
@@ -226,9 +226,9 @@ if zbm_prefer_pool=$( get_zbm_arg zbm.prefer ) ; then
   zinfo "preferring ${zbm_prefer_pool} for bootfs"
 fi
 
-zbm_waitfor_devices=
-if zbm_waitfor_devices=$( get_zbm_arg zbm.waitfor ) ; then
-  zinfo "system will wait for ${zbm_waitfor_devices}"
+zbm_wait_for_devices=
+if zbm_wait_for_devices=$( get_zbm_arg zbm.wait_for ) ; then
+  zinfo "system will wait for ${zbm_wait_for_devices}"
 fi
 
 # pool! : this pool must be imported before all others
