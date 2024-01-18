@@ -26,11 +26,7 @@ esac
 
 buildtag="${2:-ghcr.io/zbm-dev/zbm-builder:$(date '+%Y%m%d')}"
 if ! podman inspect "${buildtag}" >/dev/null 2>&1; then
-  build_args=( "${buildtag}" )
-
-  if [ -n "${ZBM_COMMIT_HASH}" ]; then
-    build_args+=( "${ZBM_COMMIT_HASH}" )
-  fi
+  build_args=( "${buildtag}" "${ZBM_COMMIT_HASH:-"v${release}"}" )
 
   if ! ./releng/docker/image-build.sh "${build_args[@]}"; then
     error "failed to create builder image"
