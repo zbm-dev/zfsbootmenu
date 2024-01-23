@@ -21,7 +21,7 @@ and populating a simple ``config.yaml`` for container builds::
     CommandLine: zfsbootmenu ro quiet loglevel=4 nomodeset
   EOF
 
-  curl -L -O /etc/zfsbootmenu/zbm-builder.sh https://raw.githubusercontent.com/zbm-dev/zfsbootmenu/master/zbm-builder.sh
+  curl -L -o /etc/zfsbootmenu/zbm-builder.sh https://raw.githubusercontent.com/zbm-dev/zfsbootmenu/master/zbm-builder.sh
   chmod 755 /etc/zfsbootmenu/zbm-builder.sh
 
 In this configuration, ``mkinitcpio`` will be used instead of ``dracut``. Component generation is disabled, so
