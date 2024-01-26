@@ -82,25 +82,19 @@ while true; do
   if [ "${BE_SELECTED}" -eq 0 ]; then
     # Populate the BE list, load any keys as necessary
     # If no BEs were found, remove the empty environment file
-    populate_be_list "${BASE}/bootenvs" || rm -f "${BASE}/bootenvs"
+    if ! populate_be_list "${BASE}/bootenvs" ; then
+      rm -f "${BASE}/bootenvs"
 
-    bootenv="$( draw_be "${BASE}/bootenvs" )"
-    ret=$?
-
-    if [ "${ret}" -eq 130 ]; then
-      # No BEs were found, so print a warning and drop to the emergency shell
       timed_prompt -d 10 \
         -m "$( colorize red "No boot environments with kernels found" )" \
         -m "$( colorize red "Dropping to an emergency shell to allow recovery attempts" )"
       tput clear
       tput cnorm
       exit 1
-    elif [ "${ret}" -ne 0 ]; then
-      # Esc was pressed
-      continue
     fi
 
-    # A selection was made, so split "key,selected_be" pair
+    bootenv="$( draw_be "${BASE}/bootenvs" )" || continue
+
     # shellcheck disable=SC2162
     IFS=, read key selected_be <<<"${bootenv}"
     zdebug "selected key: ${key}"
