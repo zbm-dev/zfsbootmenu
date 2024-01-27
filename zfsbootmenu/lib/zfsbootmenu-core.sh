@@ -160,7 +160,7 @@ match_hostid() {
           fi
           ;;
       esac
-    done <<<"$( zpool import )"
+    done <<<"$( zpool import 2>/dev/null)"
   fi
 
   zdebug "importable pools: ${importable[*]}"
@@ -227,7 +227,7 @@ log_unimportable() {
       *)
         ;;
     esac
-  done <<<"$( zpool import )"
+  done <<<"$( zpool import 2>/dev/null)"
 }
 
 # args: none
