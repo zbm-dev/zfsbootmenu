@@ -118,6 +118,9 @@ fi
 notices+=( "\n$(colorize white "*" ) $( colorize orange "/tmp" ) is mounted $( colorize red "read/write")" )
 echo -e "${notices[*]}\n"
 
+# will point to a script that doesn't exist in the chroot
+unset PROMPT_COMMAND
+
 # regardless of shell, set PS1
 # shellcheck disable=SC2086
 if ! env "PS1=\[\033[0;33m\]${selected}\[\033[0m\] \w > " chroot ${mountpoint} ${_SHELL} ${chroot_extra} ; then
