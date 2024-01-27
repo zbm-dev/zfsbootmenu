@@ -160,7 +160,7 @@ match_hostid() {
           fi
           ;;
       esac
-    done <<<"$( zpool import )"
+    done <<<"$( zpool import 2>/dev/null )"
   fi
 
   zdebug "importable pools: ${importable[*]}"
@@ -227,7 +227,7 @@ log_unimportable() {
       *)
         ;;
     esac
-  done <<<"$( zpool import )"
+  done <<<"$( zpool import 2>/dev/null )"
 }
 
 # args: none
@@ -239,7 +239,7 @@ check_for_pools() {
 
   while read -r pool ; do
     [ -n "${pool}" ] && return 0
-  done <<<"$( zpool list -H -o name )"
+  done <<<"$( zpool list -H -o name 2>/dev/null )"
 
   return 1
 }
@@ -612,7 +612,7 @@ create_snapshot() {
   load_key "${selected}"
 
   zdebug "creating snapshot ${selected}@${target}"
-  if ! output="$( zfs snapshot "${selected}@${target}" )" ; then
+  if ! output="$( zfs snapshot "${selected}@${target}" 2>&1 )" ; then
     zdebug "unable to create snapshot: ${output}"
     return 1
   fi
@@ -677,7 +677,7 @@ rollback_snapshot() {
   CLEAR_SCREEN=1 load_key "${snap}"
 
   zdebug "will roll back ${snap}"
-  if ! output="$( zfs rollback -r "${snap}" )"; then
+  if ! output="$( zfs rollback -r "${snap}" 2>&1 )"; then
     zerror "failed to roll back snapshot ${snap}"
     zerror "${output}"
     return 1
@@ -843,7 +843,7 @@ find_be_kernels() {
   zdebug "fs set to ${fs}"
 
   # Try to mount, just skip the list otherwise
-  if ! mnt="$( mount_zfs "${fs}" )"; then
+  if ! mnt="$( mount_zfs "${fs}" 2>&1 )"; then
     zerror "unable to mount ${fs}"
     return 1
   fi
@@ -910,7 +910,7 @@ select_kernel() {
   kexec_args="$( tail -1 "${kernel_list}" )"
 
   # If a specific kernel is listed, prefer it when possible
-  specific_kernel="$( zfs get -H -o value org.zfsbootmenu:kernel "${zfsbe}" )"
+  specific_kernel="$( zfs get -H -o value org.zfsbootmenu:kernel "${zfsbe}" 2>/dev/null )"
   if [ "${specific_kernel}" != "-" ]; then
     zdebug "org.zfsbootmenu:kernel set to ${specific_kernel}"
     while read -r spec_kexec_args; do
@@ -954,7 +954,7 @@ find_root_prefix() {
   zdebug "zfsbe_mnt set to ${zfsbe_mnt}"
 
   # Grab the root prefix from a property if possible
-  if prefix="$( zfs get -H -o value org.zfsbootmenu:rootprefix "${zfsbe_fs}" )"; then
+  if prefix="$( zfs get -H -o value org.zfsbootmenu:rootprefix "${zfsbe_fs}" 2>/dev/null )"; then
     if [ "${prefix}" != "-" ]; then
       zdebug "using org.zfsbootmenu:rootprefix: ${prefix}"
       echo "${prefix}"
@@ -1211,7 +1211,7 @@ rewind_checkpoint() {
         checkpoint="${line#checkpoint: }"
         ;;
     esac
-  done <<<"$( zpool status "${pool}" )"
+  done <<<"$( zpool status "${pool}" 2>/dev/null )"
 
   [ -z "${checkpoint}" ] && return 1
   tput clear
@@ -1557,7 +1557,7 @@ be_has_encroot() {
 
   pool="${fs%%/*}"
 
-  if [ "$( zpool list -H -o feature@encryption "${pool}" )" != "active" ]; then
+  if [ "$( zpool list -H -o feature@encryption "${pool}" 2>/dev/null )" != "active" ]; then
     zdebug "feature@encryption not active on ${pool}"
     echo ""
     return 1
@@ -1591,7 +1591,7 @@ be_is_locked() {
 
   if encroot="$( be_has_encroot "${fs}" )"; then
     zdebug "${encroot} discovered as encryption root for ${fs}"
-    keystatus="$( zfs get -H -o value keystatus "${encroot}" )"
+    keystatus="$( zfs get -H -o value keystatus "${encroot}" 2>&1 )"
     zdebug "${encroot} keystatus: ${keystatus}"
     case "${keystatus}" in
       unavailable)
@@ -1621,7 +1621,7 @@ be_keysource() {
   fi
   zdebug "fs set to ${fs}"
 
-  if ! keysrc="$( zfs get -H -o value org.zfsbootmenu:keysource "${fs}" )"; then
+  if ! keysrc="$( zfs get -H -o value org.zfsbootmenu:keysource "${fs}" 2>/dev/null )"; then
     zwarn "failed to read org.zfsbootmenu:keysource on ${fs}"
     echo ""
     return 1
@@ -1720,7 +1720,7 @@ cache_key() {
   fi
 
   relkeyloc=""
-  if ksmount="$(zfs get -o value -H mountpoint "${keysrc}" )"; then
+  if ksmount="$(zfs get -o value -H mountpoint "${keysrc}" 2>/dev/null )"; then
     case "${ksmount}" in
       none|legacy)
         zdebug "no discernable mountpoint for ${keysrc}, using only absolute key path"
@@ -1817,7 +1817,7 @@ load_key() {
   [ -n "${NO_CACHE}" ] || NO_CACHE=0
 
   # If something goes wrong discovering key location, just prompt
-  if ! keylocation="$( zfs get -H -o value keylocation "${encroot}" )"; then
+  if ! keylocation="$( zfs get -H -o value keylocation "${encroot}" 2>/dev/null )"; then
     zdebug "failed to read keylocation on ${encroot}"
     keylocation="prompt"
   fi
@@ -1866,7 +1866,7 @@ load_key() {
   fi
 
   # Otherwise, try to prompt for "passphrase" keys
-  keyformat="$( zfs get -H -o value keyformat "${encroot}" )" || keyformat=""
+  keyformat="$( zfs get -H -o value keyformat "${encroot}" 2>/dev/null )" || keyformat=""
   if [ "${keyformat}" != "passphrase" ]; then
     zdebug "unable to load key with format ${keyformat} for ${encroot}"
     return 1
