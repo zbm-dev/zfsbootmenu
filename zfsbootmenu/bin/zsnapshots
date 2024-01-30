@@ -1,4 +1,5 @@
 #!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
 
 sources=(
   /lib/profiling-lib.sh
@@ -24,12 +25,39 @@ global_header() {
   echo -n -e "\\033[1;33m[ Recover from snapshot ]"
 }
 
-if [ $# -ne 1 ] ; then
- echo "Usage: $0 filesystem"
- exit
-fi
+fs_header() {
+  echo -n -e "\\033[1;33m[ Select a filesystem ]"
+}
 
 fs="${1}"
+
+if [ -z "${fs}" ]; then
+  if ! candidates="$( find_be_candidates 2>/dev/null )"; then
+    zerror "no root candidates found; specify a filesystem manually"
+    exit 1
+  fi
+
+  header="$( column_wrap "^[RETURN] select:[ESCAPE] cancel" )"
+  sort_key="$( get_sort_key )"
+  preview_label="Sorted by: ${sort_key^}"
+
+  if ! fs="$(
+      fzf --header="${header}" --prompt "Filesystem > " \
+        ${HAS_BORDER:+--border-label="$( fs_header )"} \
+        ${HAS_BORDER:+--preview-label-pos=2:bottom} \
+        ${HAS_BORDER:+--preview-label="$( colorize orange " ${preview_label} " )"} \
+        --preview-window="up:${PREVIEW_HEIGHT}${HAS_BORDER:+,border-sharp}" \
+        --preview="/libexec/zfsbootmenu-preview {} '${BOOTFS}'" <<< "${candidates}"
+  )"; then
+    tput clear
+    exit 0;
+  fi
+fi
+
+if [ -z "${fs}" ]; then
+  zerror "a filesystem must be selected to browse snapshots"
+  exit 1
+fi
 
 if ! is_zfs_filesystem "${fs}" ; then
   zerror "'${fs}' is not a ZFS filesystem"
