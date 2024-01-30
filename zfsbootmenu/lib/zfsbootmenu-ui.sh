@@ -582,26 +582,17 @@ get_sort_key() {
   echo -n "${sort_key:-name}"
 }
 
-# arg1: path to BE list
-# prints: nothing
-# returns: 0 iff at least one valid BE was found
+# prints: potential boot environments, one per line
+# returns: 0 if any candidate was found, 1 otherwise
 
-populate_be_list() {
-  local be_list fs canmount mnt active candidates ret sort_key
+find_be_candidates() {
+  local fs mnt active ret sort_key list_fields have_bootfs
 
-  be_list="${1}"
-  if [ -z "${be_list}" ]; then
-    zerror "be_list is undefined"
-    return 1
-  fi
-  zdebug "be_list set to ${be_list}"
-
+  list_fields="name,canmount,mountpoint,org.zfsbootmenu:active"
   sort_key="$( get_sort_key )"
 
-  # Truncate the list to avoid stale entries
-  : > "${be_list}"
-
-  # Find valid BEs
+  ret=1
+  have_bootfs=
   while IFS=$'\t' read -r fs canmount mnt active; do
     if [ "${mnt}" = "/" ]; then
       # When mountpoint=/, BE is a candidate unless org.zfsbootmenu:active=off
@@ -613,8 +604,10 @@ populate_be_list() {
       # All other datasets are ignored
       continue
     fi
+
+    # If BOOTFS is defined, we'll manually append it to the array
     if [ "${BOOTFS}" = "${fs}" ] ; then
-      # If BOOTFS is defined, we'll manually append it to the array
+      have_bootfs="yes"
       continue
     fi
 
@@ -623,14 +616,38 @@ populate_be_list() {
       zwarn "canmount=on set for '${fs}', should be canmount=noauto"
     fi
 
-    candidates+=( "${fs}" )
-  done <<< "$(zfs list -H -o name,canmount,mountpoint,org.zfsbootmenu:active -S "${sort_key}")"
+    echo "${fs}"
+    ret=0
+  done <<< "$( zfs list -H -o "${list_fields}" -S "${sort_key}" )"
 
-  # put bootfs on the end, so it is shown first with --tac
-  [ -n "${BOOTFS}" ] && candidates+=( "${BOOTFS}" )
+  # put bootfs at the end
+  if [ -n "${BOOTFS}" ] && [ -n "${have_bootfs}" ]; then
+    echo "${BOOTFS}"
+    ret=0
+  fi
+
+  return "${ret}"
+}
+
+# arg1: path to BE list
+# prints: nothing
+# returns: 0 iff at least one valid BE was found
+
+populate_be_list() {
+  local be_list fs ret
+
+  be_list="${1}"
+  if [ -z "${be_list}" ]; then
+    zerror "be_list is undefined"
+    return 1
+  fi
+  zdebug "be_list set to ${be_list}"
+
+  # Truncate the list to avoid stale entries
+  : > "${be_list}"
 
   ret=1
-  for fs in "${candidates[@]}"; do
+  while read -r fs; do
     # Remove any existing cmdline cache
     rm -f "$( be_location "${fs}" )/cmdline"
 
@@ -642,6 +659,6 @@ populate_be_list() {
       echo "${fs}" >> "${be_list}"
       ret=0
     fi
-  done
+  done <<< "$( find_be_candidates 2>/dev/null )"
   return $ret
 }
