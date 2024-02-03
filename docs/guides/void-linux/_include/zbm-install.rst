@@ -15,7 +15,7 @@ Install ZFSBootMenu
 
     .. code-block::
 
-      xbps-install -S zfsbootmenu gummiboot-efistub
+      xbps-install -S zfsbootmenu systemd-boot-efistub
 
     .. include:: ../_include/configure-gen-zbm.rst
 

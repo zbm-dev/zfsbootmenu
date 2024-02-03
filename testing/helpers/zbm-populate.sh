@@ -17,7 +17,7 @@ if [ -f /etc/zfsbootmenu/config.yaml ]; then
       -e '/BootMountPoint:/d' -i /etc/zfsbootmenu/config.yaml
 
   # Build the EFI executable if the stub is available
-  for stubdir in /usr/lib/gummiboot /usr/lib/systemd/boot/efi; do
+  for stubdir in /usr/lib/systemd/boot/efi /usr/lib/gummiboot; do
     [ -r "${stubdir}/linuxx64.efi.stub" ] || continue
     sed -e 's/Enabled:.*/Enabled: true/' -i /etc/zfsbootmenu/config.yaml
     break
