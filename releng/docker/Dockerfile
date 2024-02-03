@@ -56,7 +56,7 @@ RUN --mount=type=cache,target=/var/cache/xbps <<-EOF
 	# Install ZFSBootMenu dependencies and components necessary to build images
 	zbm_deps="$(xbps-query -Rp run_depends zfsbootmenu)"
 	xbps-install -y ${KERNELS} ${kern_headers} ${zbm_deps} \
-		zstd gummiboot-efistub curl yq-go bash kbd \
+		zstd systemd-boot-efistub curl yq-go bash kbd \
 		dracut mkinitcpio dracut-network gptfdisk iproute2 iputils parted \
 		dosfstools e2fsprogs efibootmgr cryptsetup openssh util-linux kpartx
 
