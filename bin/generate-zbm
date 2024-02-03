@@ -762,6 +762,12 @@ sub createUEFIBundle {
     $uki_offset = addBundleSection( \@cmd, ".cmdline", $cmdline, $uki_offset, $uki_alignment );
   }
 
+  if ( nonempty $config{EFI}{SplashImage} and -f $config{EFI}{SplashImage} ) {
+    # only supported with systemd-boot's efistub,
+    # but gummiboot doesn't care if the section exists
+    $uki_offset = addBundleSection( \@cmd, ".splash", $config{EFI}{SplashImage}, $uki_offset, $uki_alignment );
+  }
+
   $uki_offset = addBundleSection( \@cmd, ".initrd", $initramfs, $uki_offset, $uki_alignment );
 
   # Add the kernel last, so that it can decompress without overflowing other sections
