@@ -13,5 +13,6 @@ EFI:
   ImageDir: /boot/efi/EFI/zbm
   Versions: false
   Enabled: false
+  SplashImage: /etc/zfsbootmenu/splash.bmp
 Kernel:
   CommandLine: ro quiet loglevel=0

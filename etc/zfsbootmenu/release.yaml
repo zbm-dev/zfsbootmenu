@@ -8,5 +8,6 @@ Components:
 EFI:
   Versions: false
   Enabled: true
+  SplashImage: /etc/zfsbootmenu/splash.bmp
 Kernel:
   CommandLine: quiet loglevel=0 nomodeset

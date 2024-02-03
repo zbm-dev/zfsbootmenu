@@ -122,6 +122,10 @@ EFI
 
   The path to the EFI stub loader used to boot the unified bundle. If not set, a default of either ``/usr/lib/systemd/boot/efi/linuxx64.efi.stub`` or ``/usr/lib/gummiboot/linuxx64.efi.stub`` is assumed.
 
+**SplashImage**
+
+  The path to a bitmap image file (BMP) to use as a splash image before ZFSBootMenu loads. Only works if using systemd-boot's EFI stub loader. The ZFSBootMenu logo is available in BMP format at ``/usr/share/examples/zfsbootmenu/splash.bmp``.
+
 EXAMPLE
 =======
 
