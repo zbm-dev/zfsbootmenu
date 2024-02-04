@@ -18,7 +18,11 @@ usage() {
 	EOF
 }
 
-detect_version() {
+# This should always run in a subshell because it manipulates the environment
+detect_version() (
+  # Do not allow git to walk past the ZFSBootMenu tree to find a repository
+  export GIT_CEILING_DIRECTORIES="${PWD}/.."
+
   # If git-describe does the job, the job is done
   version="$(git describe --tags HEAD 2>/dev/null)" || version=""
 
@@ -32,7 +36,7 @@ detect_version() {
   fi
 
   # Otherwise, use git-rev-parse if possible
-  if branch="$(git rev-parse --abbrev-rev HEAD 2>/dev/null)"; then
+  if branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"; then
     case "${branch}" in
       v[0-9]*) branch="${branch#v}"
     esac
@@ -75,7 +79,7 @@ detect_version() {
   # There is apparently no version
   echo "UNKNOWN"
   return 1
-}
+)
 
 update_version() {
   version="${1?a version is required}"
