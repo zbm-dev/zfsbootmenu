@@ -634,7 +634,7 @@ find_be_candidates() {
 # returns: 0 iff at least one valid BE was found
 
 populate_be_list() {
-  local be_list fs ret
+  local be_list fs ret candidates
 
   be_list="${1}"
   if [ -z "${be_list}" ]; then
@@ -646,8 +646,10 @@ populate_be_list() {
   # Truncate the list to avoid stale entries
   : > "${be_list}"
 
+  readarray -t candidates <<< "$( find_be_candidates 2>/dev/null )"
+
   ret=1
-  while read -r fs; do
+  for fs in "${candidates[@]}"; do
     # Remove any existing cmdline cache
     rm -f "$( be_location "${fs}" )/cmdline"
 
@@ -659,6 +661,6 @@ populate_be_list() {
       echo "${fs}" >> "${be_list}"
       ret=0
     fi
-  done <<< "$( find_be_candidates 2>/dev/null )"
+  done
   return $ret
 }
