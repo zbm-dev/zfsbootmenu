@@ -8,29 +8,30 @@ The `Makefile` alongside this document provides several targets to prepare the S
 
 ### Prerequisites
 
-Python 3 and several Python 3 packages are needed:
+Python 3 and several Python 3 packages are needed (see `requirements.txt` for a complete list). These packages can be
+installed through your system package manager or via pip in a virtual environment with `make setup`.
 
-- rst2ansi
-- sphinx
-- sphinx-tabs
-- sphinx_rtd_theme
-- recommonmark
+Some make targets require further programs: `watchexec` for `make serve` and `rst2ansi` for `make gen-man`.
 
-On Void Linux, these can be installed with `make setup-void`. Otherwise, these packages can be installed through your
-system package manager or via pip in a virtual environment with `make setup`.
-
-If using the virtual environment method, you will then need to activate this environment with `source env/bin/activate`
-(may be different for some shells) before running a build command.
+On Void Linux, `make setup-void` will install these programs and set up the virtual environment.
 
 ### Generating Documentation
 
 Generally, the commands to build the documentation are `make html` (to build the web documentation) and `make man` (to
 build the manpages).
 
-Several special targets exist too. `make serve` can be used to build and locally serve the web documentation using
-Python's built-in webserver. `make gen-man` can be used to build the manpages and update them in `/docs/man/dist`.
+Several special targets exist too:
+
+- `make serve` can be used to build and locally serve the web documentation using Python's built-in webserver.
+- `make gen-man` can be used to build the manpages and update them in `/docs/man/dist`.
 
 See `make help` for a list of all possible targets.
+
+### Cleaning up
+
+- `make clean` will clean up the generated documentation.
+- `make envclean` will clean up the virtual environment.
+- `make clean-void` will clean up the virtual environment and remove any installed packages.
 
 ## Organisation
 
