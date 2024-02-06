@@ -10,7 +10,7 @@ INSTALLOPTS   ?= -Su
 SOURCEDIR     = .
 BUILDDIR      = _build
 
-VOID_PKGS     = python3-rst2ansi python3-sphinx-tabs python3-sphinx_rtd_theme python3-recommonmark python3-sphinx-copybutton watchexec
+VOID_PKGS     = python3-rst2ansi watchexec
 
 # Use the virtual environment if it exists
 ifneq ("$(wildcard $(VENV)/bin/sphinx-build)","")
@@ -40,6 +40,7 @@ gen-man: man
 
 setup-void:
 	@$(SUDO) xbps-install $(INSTALLOPTS) $(VOID_PKGS)
+	@$(MAKE) $(MAKEFLAGS) setup
 
 setup: $(VENV)/req_done
 
@@ -52,7 +53,7 @@ watch:
 envclean:
 	@rm -rf $(VENV)
 
-clean-void:
+clean-void: envclean
 	@$(SUDO) xbps-remove -R $(VOID_PKGS)
 
 $(VENV)/success:
