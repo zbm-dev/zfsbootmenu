@@ -20,6 +20,7 @@ extensions = [
     'sphinx_tabs.tabs',
     'sphinx_copybutton',
     'recommonmark',
+    'sphinx_reredirects',
 ]
 
 templates_path = ['_templates']
@@ -33,6 +34,22 @@ manpages_url = 'https://man.voidlinux.org/{page}.{section}'
 # https://www.sphinx-doc.org/en/master/usage/extensions/extlinks.html
 extlinks = {
     'zbm': (f'https://github.com/zbm-dev/zfsbootmenu/blob/v{release}/%s', '%s'),
+}
+
+# https://documatt.com/sphinx-reredirects/usage.html
+# the target should be relative to ensure it works on RTD
+redirects = {
+    # source : target
+    "guides/binary-releases": "../../general/binary-releases.html",
+    "guides/general/bootenvs-and-you": "../../general/bootenvs-and-you.html",
+    "guides/general/container-building": "../../general/container-building.html",
+    "guides/general/container-example": "../../general/container-building/example.html",
+    "guides/general/mkinitcpio": "../../general/mkinitcpio.html",
+    "guides/general/native-encryption": "../../general/native-encryption.html",
+    "guides/general/portable": "../../general/portable.html",
+    "guides/general/remote-access": "../../general/remote-access.html",
+    "guides/general/tailscale": "../../general/tailscale.html",
+    "guides/general/uefi-booting": "../../general/uefi-booting.html",
 }
 
 # -- Options for HTML output -------------------------------------------------

@@ -38,10 +38,11 @@ See `make help` for a list of all possible targets.
 - `conf.py`: the Sphinx configuration file
 - `index.rst`: the main page, and where the primary `toctree`s are listed
 - `CHANGELOG.md`: the changelog for ZFSBootMenu
-- `guides`: where most documentation should reside. Documents about various topics, including installation on various
-  distros and various configuration options
-  + guides/_include/ contains distribution agonostic snippets
-  + guides/*distro*/_include/ contains distribution specific snippets
+- `general`: where most documentation should reside. Documents about various topics, including various configuration options
+  + `general/_include/` contains various documentation snippets
+- `guides`: Documents about installation on various distros
+  + `guides/_include/` contains distribution agonostic snippets
+  + `guides/<distro>/_include/` contains distribution specific snippets
 - `man`: manpages
 - `online`: documentation primarily to be shown within ZFSBootMenu's help system
 - `_static`: various static files for use within the documentation

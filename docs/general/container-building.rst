@@ -4,7 +4,7 @@ ZFSBootMenu Build Containers
 .. toctree::
   :hidden:
 
-  container-example
+  container-building/example
 
 .. contents:: Contents
   :depth: 2

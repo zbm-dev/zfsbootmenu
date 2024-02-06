@@ -1,4 +1,5 @@
 sphinx
+sphinx-reredirects
 sphinx-tabs
 sphinx-book-theme
 sphinx-copybutton
