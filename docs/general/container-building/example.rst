@@ -155,10 +155,10 @@ Adding Remote Access Capabilities
 
 The process for including ``dropbear`` for remote access to container-built
 ZFSBootMenu images is largely the same as the
-:doc:`process for host-built images </guides/general/remote-access>`, but care must be taken to ensure that all
+:doc:`process for host-built images </general/remote-access>`, but care must be taken to ensure that all
 necessary components are available within the build directory.
 
-- The :doc:`core configuration changes <mkinitcpio>` should be **ignored**. They are unnecessary with the
+- The :doc:`core configuration changes </general/mkinitcpio>` should be **ignored**. They are unnecessary with the
   container configuration described above.
 
 - The :ref:`basic network access <remote-mkinitcpio-net>` and :ref:`dropbear <remote-mkinitcpio-dropbear>` instructions

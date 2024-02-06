@@ -41,13 +41,28 @@
   man/zbm-kcl.8
 
 .. toctree::
-  :caption: Guides
+  :caption: General Information
   :maxdepth: 3
   :titlesonly:
   :includehidden:
   :hidden:
 
-  guides/general
+  general/bootenvs-and-you
+  general/container-building
+  general/mkinitcpio
+  general/native-encryption
+  general/portable
+  general/remote-access
+  general/tailscale
+  general/uefi-booting
+
+.. toctree::
+  :caption: Installation Guides
+  :maxdepth: 3
+  :titlesonly:
+  :includehidden:
+  :hidden:
+
   guides/void-linux
   guides/alpine
   guides/debian
@@ -157,7 +172,7 @@ image that are suitable for use on both UEFI and legacy BIOS systems. Users of o
 configurations can build local images, running the ZFSBootMenu image generator either in a host installation or in the
 controlled environment of an OCI (Docker) container.
 
-Modern UEFI platforms provide a wide range of :doc:`options for launching ZFSBootmenu </guides/general/uefi-booting>`.
+Modern UEFI platforms provide a wide range of :doc:`options for launching ZFSBootmenu </general/uefi-booting>`.
 For legacy BIOS systems, ``syslinux`` is a convenient choice. A
 :doc:`syslinux guide for Void Linux </guides/void-linux/syslinux-mbr>` describes the ``syslinux``
 installation and configuration process in the context of a broader Void Linux installation.
@@ -216,7 +231,7 @@ Building in a Container
 The official ZFSBootMenu release images are built in a standard Void Linux OCI container that provides a predictable
 environment that is known to be supported with ZFSBootMenu. The container entrypoint provides full access to all of the
 configurability of ZFSBootMenu, and a helper script simplifies the process or running the container and managing the
-images that it produces. The :doc:`ZFSBootMenu container guide </guides/general/container-building>` provides a detailed
+images that it produces. The :doc:`ZFSBootMenu container guide </general/container-building>` provides a detailed
 description of the containerized build process as well as a straightforward example of local image management using the
 helper script.
 
@@ -225,7 +240,7 @@ ZFS Boot Environments
 
 The concept of a "boot environment" is very loosely defined in ZFSBootMenu. Fundamentally, ZFSBootMenu treats any
 filesystem that appears to be an operating system root and contains an identifiable Linux kernel and initramfs as a boot
-environment. A :doc:`primer </guides/general/bootenvs-and-you>` provides more details about the identification process.
+environment. A :doc:`primer </general/bootenvs-and-you>` provides more details about the identification process.
 
 Command-Line Arguments
 ~~~~~~~~~~~~~~~~~~~~~~
