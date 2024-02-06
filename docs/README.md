@@ -44,7 +44,6 @@ See `make help` for a list of all possible targets.
   + guides/*distro*/_include/ contains distribution specific snippets
 - `man`: manpages
 - `online`: documentation primarily to be shown within ZFSBootMenu's help system
-- `logos`: various versions of the ZFSBootMenu logo
 - `_static`: various static files for use within the documentation
 
 ## Formatting
