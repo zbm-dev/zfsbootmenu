@@ -38,6 +38,15 @@ extlinks = {
 
 # https://documatt.com/sphinx-reredirects/usage.html
 # the target should be relative to ensure it works on RTD
+# this is a fallback in case the redirects in the RTD settings are lost or no longer work
+# RTD redirects should be:
+# - Type: page redirect
+# - From URL: /old/absolute/path/to/page.html
+# - To URL: /new/absolute/path/to/page.html
+# - HTTP status code: 301 Permanent
+# - Force redirect: yes
+# - Enabled: yes
+# use manage-redirects.py to copy the config here to RTD
 redirects = {
     # source : target
     "guides/binary-releases": "../../general/binary-releases.html",
@@ -90,5 +99,9 @@ man_pages = [
     ('man/zfsbootmenu.7', 'zfsbootmenu', 'System Integration', man_author, '7'),
 ]
 
-if tags.has('manpages'):
-    exclude_patterns += ['guides/**']
+try:
+    # tags is set by sphinx when interpreting the config
+    if tags.has('manpages'):
+        exclude_patterns += ['guides/**']
+except NameError:
+    ...
