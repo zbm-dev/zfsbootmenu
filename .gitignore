@@ -2,6 +2,7 @@
 *.swp
 */*.swp
 .vscode/
+__pycache__/
 releases/*
 build
 hostid
