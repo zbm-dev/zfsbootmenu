@@ -11,7 +11,7 @@ In essence, ZFSBootMenu is a small, self-contained Linux system that knows how t
 ### For more details, see:
 
 - [Documentation](https://docs.zfsbootmenu.org)
-- [Boot Environments and You: A Primer](https://docs.zfsbootmenu.org/en/latest/guides/general/bootenvs-and-you.html)
+- [Boot Environments and You: A Primer](https://docs.zfsbootmenu.org/en/latest/general/bootenvs-and-you.html)
 
 ### Join us on IRC
 
