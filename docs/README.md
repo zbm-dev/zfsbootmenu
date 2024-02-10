@@ -13,7 +13,7 @@ installed through your system package manager or via pip in a virtual environmen
 
 Some make targets require further programs: `watchexec` for `make serve` and `rst2ansi` for `make gen-man`.
 
-If on Void Linux, `make setup-void` will install these programs and set up the virtual environment.
+On Void Linux, `make setup-void` will install these programs and set up the virtual environment.
 
 ### Generating Documentation
 
