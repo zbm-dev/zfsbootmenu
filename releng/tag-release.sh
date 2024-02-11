@@ -147,14 +147,6 @@ if ! releng/make-binary.sh "${release}"; then
   error "ERROR: unable to make release assets, exiting!"
 fi
 
-# Copy in any extra assets/files, relative to the project root
-# shellcheck disable=SC2043
-for extra in bin/zbm-kcl ; do
-  [ -f "${extra}" ] || error "ERROR: missing ${extra}"
-  cp "${extra}" "${asset_dir}/"
-  assets+=( "${extra##*/}" )
-done
-
 # Sign the binary assets
 if ! releng/sign-assets.sh "${release}"; then
   error "ERROR: unable to sign release assets, exiting!"
