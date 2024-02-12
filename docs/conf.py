@@ -76,6 +76,7 @@ html_theme_options = {
         'image_light': '_static/logo-light.svg',
         'image_dark': '_static/logo-dark.svg',
     },
+    "primary_sidebar_end": [ "version-switcher" ],
 }
 html_baseurl = 'https://docs.zfsbootmenu.org'
 html_css_files = ['custom.css']
