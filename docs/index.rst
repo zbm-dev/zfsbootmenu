@@ -66,10 +66,11 @@
 
   guides/void-linux
   guides/alpine
+  guides/chimera
   guides/debian
-  guides/ubuntu
   guides/fedora
   guides/opensuse
+  guides/ubuntu
   guides/third-party
 
 .. toctree::
