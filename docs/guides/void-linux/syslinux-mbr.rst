@@ -169,13 +169,13 @@ images::
     MENU LABEL ZFSBootMenu
     KERNEL /zfsbootmenu/vmlinuz-bootmenu
     INITRD /zfsbootmenu/initramfs-bootmenu.img
-    APPEND zfsbootmenu quiet loglevel=4
+    APPEND zfsbootmenu quiet
 
   LABEL zfsbootmenu-backup
     MENU LABEL ZFSBootMenu (Backup)
     KERNEL /zfsbootmenu/vmlinuz-bootmenu-backup
     INITRD /zfsbootmenu/initramfs-bootmenu-backup.img
-    APPEND zfsbootmenu quiet loglevel=4
+    APPEND zfsbootmenu quiet
   EOF
 
 Consult the `syslinux documentation <https://wiki.syslinux.org/wiki/index.php?title=Config>`_ for more details on the
