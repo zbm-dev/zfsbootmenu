@@ -19,7 +19,7 @@ Update package repositories
 
 .. code-block::
 
-  apk add --no-interactive chimera-repo-contrib chimera-repo-user
+  apk add --no-interactive chimera-repo-contrib
   apk update
 
 Setup additional tools 
