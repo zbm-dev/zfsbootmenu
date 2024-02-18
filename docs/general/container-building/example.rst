@@ -18,7 +18,7 @@ and populating a simple ``config.yaml`` for container builds::
     Versions: false
   Kernel:
     Prefix: zfsbootmenu
-    CommandLine: zfsbootmenu ro quiet loglevel=4 nomodeset
+    CommandLine: zfsbootmenu ro quiet loglevel=0 nomodeset
   EOF
 
   curl -L -o /etc/zfsbootmenu/zbm-builder.sh https://raw.githubusercontent.com/zbm-dev/zfsbootmenu/master/zbm-builder.sh
