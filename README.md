@@ -1,4 +1,4 @@
-[![ZFSBootMenu Logo](docs/logos/Logo_TextOnly_Color.svg)](https://zfsbootmenu.org)
+[![ZFSBootMenu Logo](media/logos/Logo_TextOnly_Color.svg)](https://zfsbootmenu.org)
 
 [![Build Check](https://github.com/zbm-dev/zfsbootmenu/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/zbm-dev/zfsbootmenu/actions/workflows/build.yml) [![Documentation Status](https://readthedocs.org/projects/zfsbootmenu/badge/?version=latest)](https://docs.zfsbootmenu.org/en/latest/?badge=latest) [![Latest Packaged Version(s)](https://repology.org/badge/latest-versions/zfsbootmenu.svg)](https://repology.org/project/zfsbootmenu/versions)
 
