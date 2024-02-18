@@ -1,4 +1,4 @@
-[![ZFSBootMenu Logo](docs/logos/Logo_TextOnly_Color.svg)](https://zfsbootmenu.org)
+[![ZFSBootMenu Logo](media/logos/Logo_TextOnly_Color.svg)](https://zfsbootmenu.org)
 
 [![Build Check](https://github.com/zbm-dev/zfsbootmenu/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/zbm-dev/zfsbootmenu/actions/workflows/build.yml) [![Documentation Status](https://readthedocs.org/projects/zfsbootmenu/badge/?version=latest)](https://docs.zfsbootmenu.org/en/latest/?badge=latest) [![Latest Packaged Version(s)](https://repology.org/badge/latest-versions/zfsbootmenu.svg)](https://repology.org/project/zfsbootmenu/versions)
 
@@ -6,7 +6,7 @@ ZFSBootMenu is a Linux bootloader that attempts to provide an experience similar
 
 In essence, ZFSBootMenu is a small, self-contained Linux system that knows how to find other Linux kernels and initramfs images within ZFS filesystems. When a suitable kernel and initramfs are identified (either through an automatic process or direct user selection), ZFSBootMenu launches that kernel using the `kexec` command.
 
-![screenshot](/media/v2.1.0-multi-be.png)
+![screenshot](/media/v2.3.0-multi-be.png)
 
 ### For more details, see:
 
