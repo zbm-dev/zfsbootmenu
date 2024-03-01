@@ -1,0 +1,117 @@
+#!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
+
+[ "${ZFSBOOTMENU_INITIALIZATION}" = "yes" ] || return 0
+
+# If a boot pool is specified, that will be tried first
+# shellcheck disable=SC2154
+try_pool="${zbm_prefer_pool}"
+zbm_import_attempt=0
+
+while true; do
+  if [ -n "${try_pool}" ]; then
+    zdebug "attempting to import preferred pool ${try_pool}"
+  fi
+
+  read_write='' import_pool "${try_pool}"
+
+  # shellcheck disable=SC2154
+  if check_for_pools; then
+    if [ "${zbm_require_pool}" = "only" ]; then
+      zdebug "only importing ${try_pool}"
+      break
+    elif [ -n "${try_pool}" ]; then
+      # If a single pool was requested and imported, try importing others
+      try_pool=""
+      continue
+    else
+      # Otherwise, all possible pools were imported, nothing more to try
+      break
+    fi
+  elif [ "${import_policy}" == "hostid" ] && poolmatch="$( match_hostid "${try_pool}" )"; then
+    zdebug "match_hostid returned: ${poolmatch}"
+
+    spl_hostid="${poolmatch##*;}"
+
+    export spl_hostid
+
+    # Store the hostid to use for for KCL overrides
+    echo -n "$spl_hostid" > "${BASE}/spl_hostid"
+
+    # If match_hostid succeeds, it has imported *a* pool...
+    if [ -n "${try_pool}" ] && [ "${zbm_require_pool}" = "only" ]; then
+      # In "only" pool mode, the import was the sole pool desired; nothing more to do
+      break
+    else
+      # Otherwise, try one more pass to pick up other pools matching this hostid
+      try_pool=""
+      continue
+    fi
+  elif [ -n "${try_pool}" ] && [ -z "${zbm_require_pool}" ]; then
+    # If a specific pool was tried unsuccessfully but is not a requirement,
+    # allow another pass to try any other importable pools
+    try_pool=""
+    continue
+  fi
+
+  zbm_import_attempt="$((zbm_import_attempt + 1))"
+  zinfo "unable to import a pool on attempt ${zbm_import_attempt}"
+
+  # Just keep retrying after a delay until the user presses ESC
+  if timed_prompt -d "${zbm_retry_delay:-5}" \
+    -p "Unable to import $( colorize magenta "${try_pool:-pool}" ), retrying in $( colorize yellow "%0.2d" ) seconds" \
+    -r "to retry immediately" \
+    -e "for a recovery shell"; then
+      continue
+  fi
+
+  log_unimportable
+  # Allow the user to attempt recovery
+  emergency_shell "unable to successfully import a pool"
+done
+
+# restrict read-write access to any unhealthy pools
+while IFS=$'\t' read -r _pool _health; do
+  if [ "${_health}" != "ONLINE" ]; then
+    echo "${_pool}" >> "${BASE}/degraded"
+    zerror "prohibiting read/write operations on ${_pool}"
+  fi
+done <<<"$( zpool list -H -o name,health )"
+unset _pool _health
+
+zdebug && zdebug "$( zreport )"
+
+unsupported=0
+while IFS=$'\t' read -r _pool _property; do
+  if [[ "${_property}" =~ "unsupported@" ]]; then
+    zerror "unsupported property: ${_property}"
+    if ! grep -q "${_pool}" "${BASE}/degraded" >/dev/null 2>&1 ; then
+      echo "${_pool}" >> "${BASE}/degraded"
+    fi
+    unsupported=1
+  fi
+done <<<"$( zpool get all -H -o name,property )"
+
+if [ "${unsupported}" -ne 0 ]; then
+  zerror "Unsupported features detected, Upgrade ZFS modules in ZFSBootMenu with generate-zbm"
+  timed_prompt -m "$( colorize red 'Unsupported features detected')" \
+    -m "$( colorize red 'Upgrade ZFS modules in ZFSBootMenu with generate-zbm')"
+fi
+unset unsupported
+
+# Attempt to find the bootfs property
+# shellcheck disable=SC2086
+while read -r _bootfs; do
+  if [ "${_bootfs}" = "-" ]; then
+    BOOTFS=
+  else
+    BOOTFS="${_bootfs}"
+    break
+  fi
+done <<<"$( zpool list -H -o bootfs "${zbm_prefer_pool:---}" )"
+unset _bootfs
+
+if [ -n "${BOOTFS}" ]; then
+  export BOOTFS
+  echo "${BOOTFS}" > "${BASE}/bootfs"
+fi

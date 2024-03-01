@@ -1,0 +1,36 @@
+#!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
+
+[ "${ZFSBOOTMENU_INITIALIZATION}" = "yes" ] || return 0
+
+# Attempt to load spl normally
+if ! _modload="$( modprobe spl 2>&1 )" ; then
+  zdebug "${_modload}"
+
+  # Capture the filename for spl.ko
+  _modfilename="$( modinfo -F filename spl )"
+
+  if [ -n "${_modfilename}" ] ; then
+    zinfo "loading ${_modfilename}"
+
+    # Load with a hostid of 0, so that /etc/hostid takes precedence and
+    # invalid spl.spl_hostid values are ignored
+
+    # There's a race condition between udev and insmod spl
+    # insmod failures are no longer a hard failure - they can be because
+    #  1. spl.ko is already loaded because of the race condition
+    #  2. there's an invalid parameter or value for spl.ko
+
+    if ! _modload="$( insmod "${_modfilename}" "spl_hostid=0" 2>&1 )" ; then
+      zwarn "${_modload}"
+      zwarn "unable to load SPL kernel module; attempting to load ZFS anyway"
+    fi
+  fi
+fi
+
+if ! _modload="$( modprobe zfs 2>&1 )" ; then
+  zerror "${_modload}"
+  emergency_shell "unable to load ZFS kernel modules"
+fi
+
+udevadm settle

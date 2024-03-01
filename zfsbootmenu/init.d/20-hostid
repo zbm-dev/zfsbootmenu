@@ -1,0 +1,21 @@
+#!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
+
+[ "${ZFSBOOTMENU_INITIALIZATION}" = "yes" ] || return 0
+
+# Write out a default or overridden hostid
+if [ -n "${spl_hostid}" ] ; then
+  if write_hostid "${spl_hostid}" ; then
+    zinfo "writing /etc/hostid from command line: ${spl_hostid}"
+  else
+    # write_hostid logs an error for us, just note the new value
+    # shellcheck disable=SC2154
+    write_hostid "${default_hostid}"
+    zinfo "defaulting hostid to ${default_hostid}"
+  fi
+elif [ ! -e /etc/hostid ]; then
+  zinfo "no hostid found on kernel command line or /etc/hostid"
+  # shellcheck disable=SC2154
+  zinfo "defaulting hostid to ${default_hostid}"
+  write_hostid "${default_hostid}"
+fi
