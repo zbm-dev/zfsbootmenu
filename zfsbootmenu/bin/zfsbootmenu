@@ -28,14 +28,19 @@ unset src sources
 mkdir -p "${BASE:=/zfsbootmenu}"
 
 while [ ! -e "${BASE}/initialized" ]; do
-  if ! timed_prompt -d 5 -e "to cancel" \
-    -p "Waiting for ZFSBootMenu initialization"; then
-
-    zdebug "exited while waiting for initialization"
+  if ! timed_prompt -d 0 \
+      -m "$( colorize red "ZFSBootMenu must be initialized to continue" )" \
+      -r "initialize" \
+      -e "abort     "; then
+    zdebug "aborted while waiting for initialization"
     tput cnorm
     tput clear
     exit
   fi
+
+  tput cnorm
+  tput clear
+  [ -e "${BASE}/initialized" ] || /libexec/zfsbootmenu-init
 done
 
 [ -e "${BASE}/active" ] && takeover
@@ -43,8 +48,7 @@ done
 # If the takeover fails for some reason, spin until it ends
 while [ -e "${BASE}/active" ]; do
   if ! timed_prompt -d 1 -e "to cancel" \
-    -p "Waiting for other ZFSBootMenu instance to terminate"; then
-
+      -p "Waiting for other ZFSBootMenu instance to terminate"; then
     zdebug "exited while waiting to own ${BASE}/active"
     tput cnorm
     tput clear
