@@ -14,6 +14,12 @@ for src in "${sources[@]}"; do
   source "${src}" >/dev/null 2>&1 || exit 1
 done
 
+ONE_SHOT_HOOKS=0
+if [ "${1}" = "-once" ]; then
+  ONE_SHOT_HOOKS=1
+  shift
+fi
+
 hook_stage="${1}"
 
 if [ -z "${hook_stage}" ]; then
@@ -32,6 +38,11 @@ for _hook in "/libexec/hooks/${hook_stage}"/*; do
   zinfo "processing ${_hook}"
   "${_hook}"
   _ran_hook="yes"
+
+  if [ "${ONE_SHOT_HOOKS}" -eq 1 ] >/dev/null 2>&1; then
+    zinfo "Disabling hook after execution: ${_hook}"
+    chmod 000 "${_hook}"
+  fi
 done
 
 # Return success if at least one hook ran

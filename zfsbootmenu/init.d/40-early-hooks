@@ -1,0 +1,31 @@
+#!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
+
+[ "${ZFSBOOTMENU_INITIALIZATION}" = "yes" ] || return 0
+
+# Import ZBM hooks from an external root, if they exist
+if [ -n "${zbm_hook_root}" ]; then
+  import_zbm_hooks "${zbm_hook_root}"
+fi
+
+# Remove the executable bit from any hooks in the skip list
+if zbm_skip_hooks="$( get_zbm_arg zbm.skip_hooks )" && [ -n "${zbm_skip_hooks}" ]; then
+  zdebug "processing hook skip directives: ${zbm_skip_hooks}"
+  IFS=',' read -r -a zbm_skip_hooks <<<"${zbm_skip_hooks}"
+  for _skip in "${zbm_skip_hooks[@]}"; do
+    [ -n "${_skip}" ] || continue
+
+    for _hook in /libexec/hooks/*.d/*; do
+      [ -e "${_hook}" ] || continue
+      if [ "${_skip}" = "${_hook##*/}" ]; then
+        zinfo "Disabling hook: ${_hook}"
+        chmod 000 "${_hook}"
+      fi
+    done
+  done
+  unset _hook _skip
+fi
+
+# Run early setup hooks, if they exist
+tput clear
+/libexec/zfsbootmenu-run-hooks -once "early-setup.d"

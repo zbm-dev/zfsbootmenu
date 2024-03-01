@@ -229,6 +229,10 @@ install_zbm_core() {
     done
   done
 
+  for cfile in "${zfsbootmenu_module_root}/init.d"/*; do
+    zbm_install_file "${cfile}" "/libexec/init.d/${cfile##*/}" || ret=$?
+  done
+
   return $ret
 }
 

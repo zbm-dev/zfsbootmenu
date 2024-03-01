@@ -1,0 +1,57 @@
+#!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
+
+[ "${ZFSBOOTMENU_INITIALIZATION}" = "yes" ] || return 0
+
+# Wait for devices to show up
+if [ -n "${zbm_wait_for_devices}" ]; then
+  IFS=',' read -r -a user_devices <<<"${zbm_wait_for_devices}"
+  while true; do
+    FOUND=0
+    EXPECTED=0
+    missing=()
+
+    for device in "${user_devices[@]}"; do
+      case "${device}" in
+        /dev/*)
+          ((EXPECTED=EXPECTED+1))
+          if [ -e "${device}" ] ; then
+           ((FOUND=FOUND+1))
+          else
+            missing+=( "$device" )
+          fi
+          ;;
+        *=*)
+          ((EXPECTED=EXPECTED+1))
+          path_prefix="/dev/disk/by-${device%=*}"
+          checkfor="${path_prefix,,}/${device##*=}"
+          if [ -e "${checkfor}" ] ; then
+            ((FOUND=FOUND+1))
+          else
+            missing+=( "$device" )
+          fi
+          ;;
+        *)
+          zerror "malformed device: '${device}'"
+          ;;
+      esac
+    done
+
+    if [ ${FOUND} -eq ${EXPECTED} ]; then
+      break
+    else
+      if ! timed_prompt -d "${zbm_retry_delay:-5}" \
+          -e "to cancel" -m "" \
+          -m "$( colorize red "One or more required devices are missing" )" \
+          -p "retrying in $( colorize yellow "%0.2d" ) seconds" ; then
+        for dev in "${missing[@]}" ; do
+          zerror "required device '${dev}' not found"
+        done
+
+        break
+      fi
+    fi
+  done
+
+  unset FOUND EXPECTED device path_prefix checkfor
+fi
