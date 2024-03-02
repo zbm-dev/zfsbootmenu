@@ -1261,22 +1261,31 @@ has_resume_device() {
 }
 
 # getopts arguments:
-# -d  prompt countdown/delay
-# -p  prompt with countdown timer (%0.xd)
+# -d  prompt countdown/delay; non-positive values will wait forever
+# -p  prompt with countdown timer (use %0.Xd as a placeholder for time)
 # -m+ message to be printed above the prompt, usable multiple times
 # -r  message to be prefixed with [RETURN] (accept)
 # -e  message to be prefixed with [ESCAPE] (reject)
 #
-# -m, -r, -e are print in the order they are passed into the function
+# -m, -r, -e are printed in the order they are passed to the function
 
 timed_prompt() {
-  local prompt delay message opt OPTIND
+  local prompt delay message infinite opt OPTIND
 
+  infinite=
   while getopts "d:p:m:r:e:" opt; do
     case "${opt}" in
       d)
-        delay="${OPTARG}"
-        [ "${delay}" -gt 0 ] || return 0
+        delay="${OPTARG:-0}"
+        if [ "${delay}" -gt 0 ] >/dev/null 2>&1; then
+          :
+        elif [ "${delay}" -le 0 ] >/dev/null 2>&1; then
+          delay="30"
+          infinite="yes"
+        else
+          zdebug "delay argument for timed_prompt is not numeric"
+          return 0
+        fi
         ;;
       p)
         prompt="${OPTARG}"
@@ -1295,8 +1304,12 @@ timed_prompt() {
     esac
   done
 
-  [ -n "${delay}" ] || delay="30"
-  [ -n "${prompt}" ] || prompt="Press $( colorize green "[RETURN]") or wait $( colorize yellow "%0.${#delay}d" ) seconds to continue"
+  [ "${delay:-0}" -gt 0 ] >/dev/null 2>&1 || delay="30"
+
+  if [ -z "${prompt}" ]; then
+    prompt="Press $( colorize green "[RETURN]") to continue"
+    [ -z "${infinite}" ] && prompt+=" or wait $( colorize yellow "%0.${#delay}d" ) seconds"
+  fi
 
   # Add a blank line between any messages and the prompt
   message+=( "" )
@@ -1325,6 +1338,10 @@ timed_prompt() {
     shift
   done
 
+  local readargs
+  readargs=( -s -N 1 )
+  [ -z "${infinite}" ] && readargs+=( -t 1 )
+
   for (( i=delay; i>0; i-- )); do
     # shellcheck disable=SC2059
     mes="$( printf "${prompt}" "${i}" )"
@@ -1335,7 +1352,7 @@ timed_prompt() {
     echo -ne "${mes}"
 
     # shellcheck disable=SC2162
-    IFS='' read -s -N 1 -t 1 key
+    IFS='' read "${readargs[@]}" key
     # escape key
     if [ "$key" = $'\e' ]; then
       return 1
@@ -1343,6 +1360,9 @@ timed_prompt() {
     elif [ "$key" = $'\x0a' ]; then
       return 0
     fi
+
+    # If delay is infinite, don't let it tick down
+    [ -n "${infinite}" ] && i=$(( i + 1 ))
   done
 
   return 0
