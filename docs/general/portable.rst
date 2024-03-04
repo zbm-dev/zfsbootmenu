@@ -31,7 +31,7 @@ Procedure
 
    .. code-block:: sh
 
-     curl -LJO https://get.zfsbootmenu.org/efi
+     curl -LJO https://get.zfsbootmenu.org/efi/recovery
 
 5. Save the resulting download as ``EFI/BOOT/BOOTX64.EFI`` within the EFI
    system partiton.
