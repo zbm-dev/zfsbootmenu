@@ -57,6 +57,7 @@
   general/tailscale
   general/uefi-booting
   general/grub-migration
+  general/mdraid-esp
 
 .. toctree::
   :caption: Installation Guides
