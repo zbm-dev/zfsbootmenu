@@ -56,6 +56,7 @@
   general/remote-access
   general/tailscale
   general/uefi-booting
+  general/grub-migration
 
 .. toctree::
   :caption: Installation Guides
