@@ -28,7 +28,7 @@ body:
     attributes:
       label: ZFSBootMenu version
       description: ZFSBootMenu version or commit sha
-      placeholder: 2.2.2
+      placeholder: 2.3.0
     validations:
       required: true
   - id: distribution
