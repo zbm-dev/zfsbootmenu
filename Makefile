@@ -10,6 +10,9 @@ EXAMPLES=$(PREFIX)/share/examples/zfsbootmenu
 
 .PHONY: install core dracut initcpio zbm-release show-version
 
+zbm-release:
+	./releng/version.sh -u
+
 install: core dracut initcpio zbm-release
 
 core: zbm-release
@@ -32,9 +35,6 @@ dracut:
 initcpio:
 	./install-tree.sh initcpio "$(DESTDIR)/$(INITCPIODIR)"
 	install -m 0644 -t "$(DESTDIR)/$(CONFDIR)" -D etc/zfsbootmenu/mkinitcpio.conf
-
-zbm-release:
-	./releng/version.sh -u
 
 show-version:
 	@ ./releng/version.sh
