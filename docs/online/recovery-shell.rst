@@ -63,3 +63,7 @@ Common Commands
 **reboot**
 
   Reboot the system using a SysRq magic invocation.
+
+**firmware-setup**
+
+  Reboot the system into the UEFI Firmware Setup interface (if available).

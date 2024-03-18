@@ -4,6 +4,7 @@
 # shellcheck disable=SC1091
 sources=(
   /lib/kmsg-log-lib.sh
+  /lib/efi-firmware-lib.sh
   /lib/zfsbootmenu-core.sh
 )
 
@@ -24,6 +25,13 @@ case "${0##*/}" in
   shutdown|poweroff)
     trigger="o"
     ;;
+  firmware-setup)
+    if ! check_fw_setup || ! set_fw_setup; then
+      echo -e "\033[0;31mWARNING: Reboot to UEFI firmware UI unsupported; unable to proceed\033[0m"
+      exit 1
+    fi
+    trigger="b"
+    ;;
   *)
     exit
     ;;
@@ -34,7 +42,7 @@ while read -r _pool; do
 done <<<"$( zpool list -H -o name )"
 
 sysrq="/proc/sysrq-trigger"
-if [ -e  "${sysrq}" ] && [ -w "${sysrq}" ]; then
+if [ -e "${sysrq}" ] && [ -w "${sysrq}" ]; then
   echo "${trigger}" > /proc/sysrq-trigger
 else
   echo "${sysrq} does not exist, hard reset system"
