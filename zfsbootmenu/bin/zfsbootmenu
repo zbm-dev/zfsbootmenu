@@ -282,5 +282,8 @@ while true; do
     "mod-o")
       change_sort
       ;;
+    "mod-x")
+      /libexec/zpowermenu
+      ;;
   esac
 done

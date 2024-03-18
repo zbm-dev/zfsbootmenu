@@ -148,10 +148,10 @@ draw_be() {
   fi
 
   header="$( column_wrap "\
-^[RETURN] boot:[ESCAPE] refresh view:[CTRL+P] pool status
-^[CTRL+D] set bootfs:[CTRL+S] snapshots:[CTRL+K] kernels
-^[CTRL+E] edit kcl:[CTRL+J] jump into chroot:[CTRL+R] recovery shell
-^${kcl_text:+${kcl_text}:}[CTRL+L] view logs:${blank}[CTRL+H] help" \
+^[RETURN] boot:[CTRL+K] kernels:[CTRL+P] pool status
+^[CTRL+D] set bootfs:[CTRL+J] jump into chroot:[CTRL+L] view logs
+^[CTRL+S] snapshots:[CTRL+R] recovery shell:[CTRL+X] power menu
+^[CTRL+E] edit kcl${kcl_text:+:${kcl_text}}:${blank}[CTRL+H] help" \
 "\
 ^[RETURN] boot
 ^[CTRL+R] recovery shell
@@ -160,7 +160,7 @@ draw_be() {
   sort_key="$( get_sort_key )"
   preview_label="Sorted by: ${sort_key^}"
 
-  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-j,alt-o${kcl_bind:+,${kcl_bind}},right"
+  expects="--expect=alt-e,alt-k,alt-d,alt-s,alt-c,alt-r,alt-p,alt-w,alt-j,alt-o,alt-x${kcl_bind:+,${kcl_bind}},right"
 
   # shellcheck disable=SC2086
   if ! selected="$( ${FUZZYSEL} -0 --prompt "BE > " \
