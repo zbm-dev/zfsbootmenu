@@ -664,3 +664,53 @@ populate_be_list() {
   done
   return $ret
 }
+
+# arg1: header/title text
+# arg2..N: prompt options in the form "action:display text"
+# prints: selected action
+# returns: nothing
+
+draw_modal_prompt() {
+  local -i ROWS COLS LMARGIN TMARGIN maxlen=10 nopts=0
+  local PROMPT="" OUTPUT TITLE disp action text
+
+  TITLE=" ${1} "
+  if (( "${#TITLE}" > maxlen )); then
+    maxlen="${#TITLE}"
+  fi
+  shift
+
+  for itm; do
+    disp="${itm#*:}"
+    if (( "${#disp}" > maxlen )); then
+      maxlen="${#disp}"
+    fi
+    PROMPT+="${itm}"$'\n'
+    nopts=$(( nopts + 1 ))
+  done
+  PROMPT+=":Cancel"
+  nopts=$(( nopts + 1 ))
+
+  ROWS="$(tput lines)"
+  COLS="$(tput cols)"
+
+  LMARGIN=$(( (COLS - maxlen - 6) / 2 ))
+  TMARGIN=$(( (ROWS - nopts - 3) / 2 ))
+
+  if OUTPUT="$(echo -e "${PROMPT}" | \
+    fzf --no-info \
+      --with-nth="2.." \
+      --delimiter=":" \
+      --no-multi \
+      --no-sort \
+      ${HAS_BORDER:+--border=sharp} \
+      ${HAS_BORDER:+--border-label="${TITLE}"} \
+      --prompt="> " \
+      --layout=default \
+      --no-scrollbar \
+      --margin "${TMARGIN},${LMARGIN}")"; then
+    # shellcheck disable=SC2034
+    IFS=":" read -r action text <<< "${OUTPUT}"
+    printf "%s" "$action"
+  fi
+}
