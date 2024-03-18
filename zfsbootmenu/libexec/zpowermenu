@@ -1,0 +1,14 @@
+#!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
+
+source /lib/efi-firmware-lib.sh >/dev/null 2>&1 || exit 1
+source /lib/zfsbootmenu-ui.sh >/dev/null 2>&1 || exit 1
+
+PROMPT=("/bin/poweroff:Shutdown" "/bin/reboot:Reboot")
+if check_fw_setup; then
+    PROMPT+=("/bin/firmware-setup:Reboot to UEFI Firmware")
+fi
+
+if execute="$(draw_modal_prompt "Power Menu" "${PROMPT[@]}")" && [ -x "$execute" ]; then
+    exec "$execute"
+fi

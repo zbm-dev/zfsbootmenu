@@ -66,3 +66,7 @@ Keyboard Shortcuts
 *[MOD+L]* **view logs**
 
   View logs, as indicated by *[!]*. The indicator will be yellow for warning conditions and red for errors.
+
+*[MOD+X]* **power menu**
+
+  Show menu with options to shutdown, reboot, or reboot to UEFI firmware setup (if available).
