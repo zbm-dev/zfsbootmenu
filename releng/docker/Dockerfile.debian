@@ -1,0 +1,86 @@
+# syntax=docker/dockerfile:1.4
+#
+# This Dockerfile creates a container that will create an EFI executable and
+# separate kernel/initramfs components from a ZFSBootMenu repository. The
+# container will pre-populate its /zbm directory with a clone of the master
+# branch of the upstream ZFSBootMenu branch and build the images from that.
+#
+# To use a different ZFSBootMenu repository or version, bind-mound the
+# repository you want on /zbm inside the container.
+#
+# Note - this Dockerfile depends on Docker >= 23 and the docker buildx plugin.
+
+# Use the official Debian container. Allow to customize tag,so different Debian
+# version could be used.
+ARG DEBIAN_TAG=bookworm-slim
+FROM debian:$DEBIAN_TAG
+LABEL org.opencontainers.image.authors="ZFSBootMenu Team, https://zfsbootmenu.org"
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN --mount=type=cache,target=/var/lib/apt/lists \
+	set -eux; \
+	sed -i 's/Components: main/Components: main contrib non-free/' /etc/apt/sources.list.d/debian.sources && \
+	apt-get update && \
+	apt-get install --no-install-recommends -y \
+	bash \
+	ca-certificates \
+	cryptsetup \
+	curl \
+	dosfstools \
+	dracut \
+	dracut-network \
+	e2fsprogs \
+	efibootmgr \
+	fzf \
+	gdisk \ 
+	iproute2 \
+	iputils-arping \
+	iputils-clockdiff \
+	iputils-ping \
+	iputils-tracepath \
+	kbd \
+	kexec-tools \
+	kpartx \
+	less \
+	libboolean-perl \
+	libsort-versions-perl \
+	libyaml-pp-perl \
+	linux-headers-amd64 \
+	linux-image-amd64 \
+	mbuffer \
+	ncurses-base \
+	openssh-server \ 
+	parted \
+	pigz \
+	procps \ 
+	systemd-boot-efi \
+	util-linux \
+	zfs-dracut \
+	zfsutils-linux \
+	zstd \
+	&& \
+	curl -L -o /usr/bin/yq-go https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && \
+	chmod +x /usr/bin/yq-go
+
+ARG ZFSBOOTMENU_VERSION="2.3.0"
+
+# ZFSBootMenu commit hash, tag or branch name used by
+# default to build ZFSBootMenu images (default: master)
+ARG ZBM_COMMIT_HASH=
+# Record a commit hash if one was provided
+RUN [ -z "${ZBM_COMMIT_HASH}" ] || echo "${ZBM_COMMIT_HASH}" > /etc/zbm-commit-hash
+
+# Include the specified Debian package in the image
+# (multiple entries must be seperated by spaces)
+ARG PACKAGES=
+# Run ${PACKAGES} install in seperate layer so that the zfs dkms packages
+# are not rebuilt when ${PACKAGES} change. reuse.
+# Install ZFSBootMenu dependencies and components necessary to build images
+RUN --mount=type=cache,target=/var/lib/apt/lists \
+	[ -z "${PACKAGES}" ] || apt-get update && apt-get install -y ${PACKAGES}
+
+RUN rm -rf /var/lib/apt/lists/*
+
+COPY --chmod=755 build-init.sh /
+# Run the build script with no arguments by default
+ENTRYPOINT [ "/build-init.sh", "-m", "apt" ]

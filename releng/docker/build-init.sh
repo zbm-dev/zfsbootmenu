@@ -29,9 +29,14 @@ Usage: $0 [options]
      (Default: \${BUILDROOT}/build)
 
   -p <package>
-     Install the named Void Linux package in the container
-     before building. May be specified more than once to
-     install more than one package.
+     Install the named package in the container before building.
+     May be specified more than once to install more than one
+     package.
+
+  -m <package manager>
+     Specify a different package manager backend.
+     Supported backends: xbps, apt
+     (Default: xbps)
 
   -t <tag>
      Specify specific tag or commit hash to fetch
@@ -79,11 +84,18 @@ update_packages() {
     *) hold_kern_zfs ;;
   esac
 
-  # Attempt to update xbps first
-  xbps-install -Syu xbps || return 1
+  if [ "${PACKAGE_MANAGER}" == "xbps" ]; then
+    # Attempt to update xbps first
+    xbps-install -Syu xbps || return 1
 
-  # Update all other packages
-  xbps-install -Syu || return 1
+    # Update all other packages
+    xbps-install -Syu || return 1
+  elif [ "${PACKAGE_MANAGER}" == "apt" ]; then
+    apt-get update
+    apt-get upgrade
+  else
+    error "unsupported package manager backend: ${PACKAGE_MANAGER}"
+  fi
 }
 
 PACKAGES=()
@@ -93,7 +105,7 @@ GENARGS=()
 UPDATE=
 SKIP_VERSIONING=
 
-while getopts "hb:o:t:e:p:uV" opt; do
+while getopts "hb:o:t:e:p:m:uV" opt; do
   case "${opt}" in
     b)
       BUILDROOT="${OPTARG}"
@@ -106,6 +118,9 @@ while getopts "hb:o:t:e:p:uV" opt; do
       ;;
     p)
       PACKAGES+=( "${OPTARG}" )
+      ;;
+    m)
+      PACKAGE_MANAGER="${OPTARG}"
       ;;
     e)
       CONFIGEVALS+=( "${OPTARG}" )
@@ -155,9 +170,15 @@ if [ -n "${UPDATE}" ]; then
   update_packages "${UPDATE}" || error "failed to update packages"
 fi
 
+# Install all requested packages
 if [ "${#PACKAGES[@]}" -gt 0 ]; then
-  # Install all requested packages
-  xbps-install -Sy "${PACKAGES[@]}" || error "failed to install requested packages"
+  if [ "${PACKAGE_MANAGER}" == "xbps" ]; then
+    xbps-install -Sy "${PACKAGES[@]}" || error "failed to install requested packages"
+  elif [ "${PACKAGE_MANAGER}" == "apt" ]; then
+    apt-get update && apt-get install -y "${PACKAGES[@]}" || error "failed to install requested packages"
+  else
+    error "unsupported package manager backend: ${PACKAGE_MANAGER}"
+  fi
 fi
 
 # If a custom rc.pre.d exists, run every executable file therein
