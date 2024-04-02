@@ -42,5 +42,5 @@ EOF
 echo "ZFSBootMenu" > /proc/sys/kernel/hostname
 
 # https://busybox.net/FAQ.html#job_control
-ZFSBOOTMENU_CONSOLE=yes exec setsid \
+ZFSBOOTMENU_CONSOLE=yes setsid \
     bash -c "exec /libexec/zfsbootmenu-init <${control_term} >${control_term} 2>&1"

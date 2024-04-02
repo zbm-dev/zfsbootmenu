@@ -79,6 +79,9 @@ else
   zinfo "defaulting controlling terminal to: ${control_term}"
 fi
 
+# Make sure control_term is available for zfsbootmenu-preinit.sh
+export control_term
+
 # hostid - discover the hostid used to import a pool on failure, assume it
 # force  - append -f to zpool import
 # strict - legacy behavior, drop to an emergency shell on failure
