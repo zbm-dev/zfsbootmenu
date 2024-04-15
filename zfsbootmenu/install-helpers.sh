@@ -170,7 +170,42 @@ create_zbm_profiles() {
   ln -s "/root/.bashrc" "${BUILDROOT}/root/.profile"
 }
 
+zbm_install_symlink() {
+  [ -L "${1}" ] || return 1
+
+  # shellcheck disable=SC2154
+  case "${1}" in
+    "${zfsbootmenu_module_root}"/*) ;;
+    *) return 1 ;;
+  esac
+
+  local dest src
+
+  dest="$(readlink "${1}")" || dest=
+  [ -n "${dest}" ] || return 1
+
+  case "${dest}" in
+    /*) return 1 ;;
+  esac
+
+  src="${2:-"${1}"}"
+
+  # Attempt to install the target of the symlink
+  local rpath
+  if rpath="$(realpath -f "${1}")"; then
+    if [ -e "${rpath}" ] && [ ! -L "${rpath}" ]; then
+      zbm_install_file "${rpath}" "$(dirname "${src}")/${dest}" || return 1
+    fi
+  fi
+
+  ln -Ts "${dest}" "${BUILDROOT}/${src}" || return 1
+  return 0
+}
+
 zbm_install_file() {
+  # All symlinks in the ZBM module root should be relative
+  zbm_install_symlink "$@" && return 0
+
   case "${ZBM_BUILDSTYLE,,}" in
     mkinitcpio)
       if ! add_file "${1}" "${2}"; then
@@ -253,7 +288,7 @@ install_zbm_docs() {
 
 install_zbm_fonts() {
 
-  [ -d "${zfsbootmenu_module_root}/fonts" ] || return 1 
+  [ -d "${zfsbootmenu_module_root}/fonts" ] || return 1
 
   # Install into a non-standard path so that the Dracut i18n module doesn't stomp over our custom fonts
 
