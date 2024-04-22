@@ -20,7 +20,7 @@ Configure mkinitfs to load ZFS support
     .. code-block::
 
       echo "/etc/hostid" >> /etc/mkinitfs/features.d/zfshost.files
-      echo 'features="ata base keymap kms mmc scsi usb virtio zfs zfshost"' > /etc/mkinitfs/mkinitfs.conf
+      echo 'features="ata base keymap kms mmc scsi usb virtio nvme zfs zfshost"' > /etc/mkinitfs/mkinitfs.conf
 
   .. group-tab:: Encrypted
 
