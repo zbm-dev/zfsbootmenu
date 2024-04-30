@@ -192,7 +192,7 @@ custom modules:
 
 .. code-block:: yaml
 
-  General:
+  Global:
     InitCPIOHookDirs:
       - /build/initcpio
       - /usr/lib/initcpio
