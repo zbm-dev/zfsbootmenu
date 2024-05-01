@@ -14,15 +14,6 @@ ZFSBootMenu images.
 Brief descriptions of contributed scripts appear below for convenience. Please
 review the scripts themselves for more thorough descriptions of their use.
 
-- `10-console-init.sh` - In some configurations, the dracut event loop that
-  configures the ZFSBootMenu environment will fail to initialize the console
-  with desired font and keymap settings. This script can be added as an "early
-  setup" hook to force console initialization.
-
-- `20-console-autosize.sh` - This early-setup hook will run through a set of
-  fonts, selecting the largest font that guarantees a console with at least 100
-  columns. This should ensure a usable default font even on high-DPI displays.
-
 - `esp-sync.sh` - This script can run as a "post-image" hook to `generate-zbm`
   to synchronize the contents of one EFI system partition with others, providing
   tolerance against disk failures.
@@ -49,13 +40,6 @@ review the scripts themselves for more thorough descriptions of their use.
   `generate-zbm` to construct a configuration file for syslinux. This provides
   an extension to basic functionality that was originally built into
   `generate-zbm` itself.
-
-- `xhci-teardown.sh` - ZFSBootMenu relies on `kexec` to launch kernels
-  within boot environments. Some hardware, including certain XHCI USB
-  controllers, cannot be properly re-initialized after `kexec` jumps into the
-  new kernel. This teardown hook unbinds all detected XHCI controllers from the
-  ZFSBootMenu kernel before jumping into the new kernel, allowing devices to be
-  properly initialized.
 
 - `zbm-sign.pl` - A Perl script, suitable for use as a generate-zbm post-run
   hook, that will sign ZFSBootMenu EFI images for use with Secure Boot.
