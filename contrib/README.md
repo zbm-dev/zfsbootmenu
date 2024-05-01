@@ -28,6 +28,10 @@ review the scripts themselves for more thorough descriptions of their use.
   early-setup hook, this facilitates, *e.g.*, multiple-slot keys for ZFS pools
   that use native encryption.
 
+- `megaraid-teardown.sh` - Unbind drivers for `megaraid_sas` devices, so that
+  they're available after a kexec. This is patterned after the XHCI teardown
+  script.
+
 - `remote-ssh-build.sh` - This is a standalone script intended to wrap the
   `zbm-builder.sh` image-builder script, incorporating a dropbear SSH server,
   host keys and an `authorized_keys` file that permit remote access and pool
