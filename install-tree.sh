@@ -16,7 +16,5 @@ if ! dst="$(realpath -m "${dst}")"; then
   exit 1
 fi
 
-cd "${src}"
-
-find . -type f -perm /111 -exec install -Dm 0755 "{}" "${dst}/{}" \;
-find . -type f -not -perm /111 -exec install -Dm 0644 "{}" "${dst}/{}" \;
+mkdir -p "${dst}"
+( cd "${src}" && tar -cf - . ) | tar -xvf - -C "${dst}" --no-same-owner
