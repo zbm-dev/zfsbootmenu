@@ -10,6 +10,20 @@ cleanup() {
   exit
 }
 
+untar() {
+  local fname="${1?a file name is required}"
+  shift
+
+  case "${fname}" in
+    *.zstd|*.zst)
+      zstdcat "${fname}" | tar -x -f - "$@"
+      ;;
+    *)
+      tar -x -f "${fname}" "$@"
+      ;;
+  esac
+}
+
 REMOTE_URL="${1?A remote URL is required}"
 TARGET_DIR="${2?A target directory is required}"
 
@@ -53,7 +67,7 @@ if [ -d "${CACHEDIR}" ]; then
 
   # If the file is already cached, just extract it if possible
   if [ -r "${CACHEDIR}/fetch/${FILENAME}" ]; then
-    if ! tar xf "${CACHEDIR}/fetch/${FILENAME}" -C "${TARGET_DIR}"; then
+    if ! untar "${CACHEDIR}/fetch/${FILENAME}" -C "${TARGET_DIR}"; then
       echo "ERROR: extraction of cached file '${CACHEDIR}/fetch/${FILENAME}' failed"
     else
       exit 0
@@ -75,7 +89,7 @@ if ! curl -L -s -o "${FETCH_DIR}/${FILENAME}" "${REMOTE_URL}"; then
   exit 1
 fi
 
-if ! tar xf "${FETCH_DIR}/${FILENAME}" -C "${TARGET_DIR}"; then
+if ! untar "${FETCH_DIR}/${FILENAME}" -C "${TARGET_DIR}"; then
   echo "ERROR: extraction of fetched file '${REMOTE_URL}' failed"
   exit 1
 fi

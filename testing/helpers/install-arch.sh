@@ -41,7 +41,7 @@ fi
 trap cleanup EXIT INT TERM
 
 MIRROR="https://mirrors.edge.kernel.org/archlinux/iso/latest"
-PATTERN="archlinux-bootstrap-[-_.A-Za-z0-9]\+-x86_64\.tar\.gz"
+PATTERN="archlinux-bootstrap-[-_.A-Za-z0-9]\+-x86_64\.tar\.zst"
 if ! ./helpers/extract_remote.sh "${MIRROR}" "${PACROOT}" "${PATTERN}"; then
   echo "ERROR: could not fetch and extract Arch bootstrap image"
   exit 1
