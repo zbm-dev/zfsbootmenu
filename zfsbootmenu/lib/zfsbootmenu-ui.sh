@@ -307,7 +307,7 @@ draw_snapshots() {
 
   # ${snapshots} must always be defined so that the mod-n handler can be executed
   snapshots="$( zfs list -t snapshot -H -o name -S "${sort_key}" "${benv}" )"
-  snapshots="${snapshots:-No snaphots available}"
+  snapshots="${snapshots:-No snapshots available}"
 
   zdebug "snapshots: ${snapshots[*]}"
 
