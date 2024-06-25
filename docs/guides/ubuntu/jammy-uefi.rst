@@ -19,7 +19,7 @@ It assumes the following:
 * Your system is x86_64
 * You're mildly comfortable with ZFS, EFI and discovering system facts on your own (``lsblk``, ``dmesg``, ``gdisk``, ...)
 
-Download the latest `Ubuntu Desktop Jammy (22.04) Live image <https://ubuntu.com/download/desktop/>`_, write it to a USB drive and
+Download the latest `Ubuntu Desktop Jammy (22.04) Live image <https://www.releases.ubuntu.com/22.04/>`_, write it to a USB drive and
 boot your system in EFI mode. You can use the server installation media if you want, although instructions are provided for
 installation using the desktop installer live session.
 
