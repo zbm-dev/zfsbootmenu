@@ -15,6 +15,33 @@ cleanup() {
   exit
 }
 
+fixup_debootstrap() {
+  # Recent ubstream releases dropped a bunch of Ubuntu symlinks
+  # These all seemed to point to the "gutsy" script, so restore them
+
+  local rel releases root
+
+  root="${1}"
+
+  if [ ! -e "${root}/debootstrap" ] || [ ! -e "${root}/scripts/gutsy" ]; then
+    echo "ERROR: debootstrap root appears malformed"
+    return 1
+  fi
+
+  chmod a+x "${root}/debootstrap"
+
+  releases=(
+    artful bionic cosmic disco eoan focal groovy
+    hirsute impish jammy kinetic lunar mantic noble
+  )
+
+  for rel in "${releases[@]}"; do
+    ln -Tsf "gutsy" "${root}/scripts/${rel}"
+  done
+
+  return 0
+}
+
 trap cleanup EXIT INT TERM
 
 if ! DEBROOT="$( mktemp -d )"; then
@@ -29,12 +56,15 @@ archive="https://salsa.debian.org/installer-team/debootstrap/-/archive/master/de
   curl -L "${archive}" | tar zxvf - && \
   mv debootstrap-master debootstrap )
 
-if [ ! -x "${DEBROOT}/debootstrap/debootstrap" ]; then
+export DEBOOTSTRAP_DIR="${DEBROOT}/debootstrap"
+
+fixup_debootstrap "${DEBOOTSTRAP_DIR}"
+
+if [ ! -x "${DEBOOTSTRAP_DIR}/debootstrap" ]; then
   echo "ERROR: unable to find local clone of debootstrap"
   exit 1
 fi
 
-export DEBOOTSTRAP_DIR="${DEBROOT}/debootstrap"
 
 DEBARCH=
 case "$(uname -m)" in
