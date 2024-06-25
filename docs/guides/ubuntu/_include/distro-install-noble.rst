@@ -3,7 +3,7 @@ Install Ubuntu
 
 .. code-block:: bash
 
-  debootstrap jammy /mnt
+  debootstrap noble /mnt
 
 Copy files into the new install
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -62,20 +62,17 @@ Configure ``apt``. Use other mirrors if you prefer.
   cat <<EOF > /etc/apt/sources.list
   # Uncomment the deb-src entries if you need source packages
 
-  deb http://archive.ubuntu.com/ubuntu/ jammy main restricted universe multiverse
-  # deb-src http://archive.ubuntu.com/ubuntu/ jammy main restricted universe multiverse
+  deb http://archive.ubuntu.com/ubuntu/ noble main restricted universe multiverse
+  # deb-src http://archive.ubuntu.com/ubuntu/ noble main restricted universe multiverse
 
-  deb http://archive.ubuntu.com/ubuntu/ jammy-updates main restricted universe multiverse
-  # deb-src http://archive.ubuntu.com/ubuntu/ jammy-updates main restricted universe multiverse
+  deb http://archive.ubuntu.com/ubuntu/ noble-updates main restricted universe multiverse
+  # deb-src http://archive.ubuntu.com/ubuntu/ noble-updates main restricted universe multiverse
 
-  deb http://archive.ubuntu.com/ubuntu/ jammy-security main restricted universe multiverse
-  # deb-src http://archive.ubuntu.com/ubuntu/ jammy-security main restricted universe multiverse
+  deb http://archive.ubuntu.com/ubuntu/ noble-security main restricted universe multiverse
+  # deb-src http://archive.ubuntu.com/ubuntu/ noble-security main restricted universe multiverse
 
-  deb http://archive.ubuntu.com/ubuntu/ jammy-backports main restricted universe multiverse
-  # deb-src http://archive.ubuntu.com/ubuntu/ jammy-backports main restricted universe multiverse
-
-  deb http://archive.canonical.com/ubuntu/ jammy partner
-  # deb-src http://archive.canonical.com/ubuntu/ jammy partner
+  deb http://archive.ubuntu.com/ubuntu/ noble-backports main restricted universe multiverse
+  # deb-src http://archive.ubuntu.com/ubuntu/ noble-backports main restricted universe multiverse
   EOF
 
 Update the repository cache and system
@@ -107,3 +104,7 @@ Configure packages to customize local and console properties
 .. note::
 
   You should always enable the `en_US.UTF-8` locale because some programs require it.
+
+.. seealso::
+
+  Any additional software should be selected and installed at this point. For a normal desktop experience, install the `ubuntu-desktop` meta package.

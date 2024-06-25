@@ -4,4 +4,5 @@ Ubuntu
 .. toctree::
   :titlesonly:
 
-  ubuntu/uefi
+  ubuntu/jammy-uefi
+  ubuntu/noble-uefi
