@@ -59,6 +59,7 @@ redirects = {
     "guides/general/remote-access": "../../general/remote-access.html",
     "guides/general/tailscale": "../../general/tailscale.html",
     "guides/general/uefi-booting": "../../general/uefi-booting.html",
+    "guides/ubuntu/uefi": "guides/ubuntu.html",
 }
 
 # -- Options for HTML output -------------------------------------------------
