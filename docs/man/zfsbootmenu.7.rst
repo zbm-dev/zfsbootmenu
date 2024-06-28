@@ -176,8 +176,17 @@ Deprecated Parameters
 
 .. _zfs-properties:
 
-ZFS Properties
-==============
+ZFS Pool Properties
+===================
+
+The following properties can be set at the pool level to control boot behavior.
+
+**bootfs**
+
+  A dataset that will be considered the default boot environment if the pool is the first to be imported by ZFSBootMenu.
+
+ZFS Dataset Properties
+======================
 
 The following properties can be set at any level of the boot-environment hierarchy to control boot behavior.
 
