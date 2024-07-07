@@ -107,4 +107,5 @@ Configure packages to customize local and console properties
 
 .. seealso::
 
-  Any additional software should be selected and installed at this point. For a normal desktop experience, install the `ubuntu-desktop` meta package.
+  Any additional software should be selected and installed at this point. A basic debootstrap installation is very
+  limited, lacking several packages that might be expected from an interactive installation.
