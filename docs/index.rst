@@ -170,11 +170,10 @@ configurations.
 Easily Deployed and Extensively Configurable
 --------------------------------------------
 
-Each release includes pre-generated boot images, based on Void Linux, that should work for the majority of users. Images
-are distributed for ``x86_64`` platforms both as monolithic UEFI applications as well a separate kernel an initramfs
-image that are suitable for use on both UEFI and legacy BIOS systems. Users of other platforms or that require custom
-configurations can build local images, running the ZFSBootMenu image generator either in a host installation or in the
-controlled environment of an OCI (Docker) container.
+Each release includes pre-generated boot images, based on Void Linux, that should work for the majority of users. These
+images are available for ``x86_64`` UEFI and legacy BIOS systems in the form of an EFI executable or a kernel and
+initramfs. Users of other platforms or that require custom configurations can build local images, running the
+ZFSBootMenu image generator either in a host installation or in the controlled environment of an OCI (Docker) container.
 
 Modern UEFI platforms provide a wide range of :doc:`options for launching ZFSBootmenu </general/uefi-booting>`.
 For legacy BIOS systems, ``syslinux`` is a convenient choice. A
