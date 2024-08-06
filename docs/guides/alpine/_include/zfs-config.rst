@@ -6,7 +6,7 @@ Install ZFS
 
 .. code-block::
 
-  apk add zfs zfs-lts 
+  apk add zfs zfs-lts zfs-scripts
   rc-update add zfs-import sysinit
   rc-update add zfs-mount sysinit
 
