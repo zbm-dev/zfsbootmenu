@@ -174,6 +174,10 @@ The following properties can be set at the pool level to control boot behavior.
 
   A dataset that will be considered the default boot environment if the pool is the first to be imported by ZFSBootMenu.
 
+.. note::
+
+  This must be set for automatic booting to function. When no **bootfs** property is detected, ZFSBootMenu will always display a selection menu.
+
 ZFS Dataset Properties
 ======================
 
