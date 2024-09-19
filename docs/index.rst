@@ -206,7 +206,7 @@ an EFI stub loader, which is typically included with
 
 Most or all of these software components may be available as packages in your distribution.
 
-Locally created ZFSBootMenu images use your your regular system kernel, ZFS drivers and user-space utilities. The
+Locally created ZFSBootMenu images use your regular system kernel, ZFS drivers and user-space utilities. The
 ZFSBootMenu image is constructed using standard Linux initramfs generators. ZFSBootMenu is known to work and is
 explicitly supported with:
 
