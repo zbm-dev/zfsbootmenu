@@ -14,6 +14,25 @@ error() {
   exit 1
 }
 
+update_zfs() {
+  local packages zpkg
+
+  packages=()
+  for zpkg in zfs libzfs zfs-lts libzfs-lts; do
+    xbps-query -p pkgname "${zpkg}" >/dev/null 2>&1 || continue
+    packages+=( "${zpkg}" )
+  done
+
+  [ "${#packages[@]}" -ge 1 ] || return 0
+  xbps-install -uy "${packages[@]}"
+}
+
+update_xbps() {
+  [ -n "${XBPS_UPDATE_COMPLETE}" ] && return 0
+  readonly XBPS_UPDATE_COMPLETE="yes"
+  xbps-install -Suy xbps || error "failed to update xbps"
+}
+
 usage() {
   cat <<EOF
 Usage: $0 [options]
@@ -38,8 +57,18 @@ Usage: $0 [options]
      (Ignored if /zbm already contains a ZFSBootMenu tree)
 
   -u
-    Update all Void packages, except kernels and zfs, in the container
-    (Specify more than once to attempt kernel and zfs updates as well)
+    Update Void packages in the container
+    (Kernel and ZFS packages will be ignored)
+
+  -k <series>
+    Install the specified Void kernel series, headers and all
+    components necessary to build ZFS modules for the series
+
+    The <series> argument takes the form "X.Y" for a major
+    version X and minor version Y.
+
+  -z
+    Update the ZFS package when installing kernels with -k
 
   -V
      Do not attempt to update the version recorded in the source tree
@@ -73,27 +102,16 @@ hold_kern_zfs() {
   done
 }
 
-update_packages() {
-  case "${1,,}" in
-    full) ;;
-    *) hold_kern_zfs ;;
-  esac
-
-  # Attempt to update xbps first
-  xbps-install -Syu xbps || return 1
-
-  # Update all other packages
-  xbps-install -Syu || return 1
-}
-
 PACKAGES=()
 CONFIGEVALS=()
 GENARGS=()
 
 UPDATE=
+UPDATE_ZFS=
+KERN_SERIES=
 SKIP_VERSIONING=
 
-while getopts "hb:o:t:e:p:uV" opt; do
+while getopts "hb:o:t:e:p:k:uzV" opt; do
   case "${opt}" in
     b)
       BUILDROOT="${OPTARG}"
@@ -111,11 +129,13 @@ while getopts "hb:o:t:e:p:uV" opt; do
       CONFIGEVALS+=( "${OPTARG}" )
       ;;
     u)
-      if [ -n "${UPDATE}" ]; then
-        UPDATE="full"
-      else
-        UPDATE="yes"
-      fi
+      UPDATE="yes"
+      ;;
+    k)
+      KERN_SERIES="${OPTARG}"
+      ;;
+    z)
+      UPDATE_ZFS="yes"
       ;;
     V)
       SKIP_VERSIONING="yes"
@@ -152,12 +172,37 @@ fi
 
 # Update packages, if desired
 if [ -n "${UPDATE}" ]; then
-  update_packages "${UPDATE}" || error "failed to update packages"
+  update_xbps
+  hold_kern_zfs
+  xbps-install -uy || error "failed to update packages"
+  xbps-query -H | xargs -r xbps-pkgdb -m unhold
 fi
 
 if [ "${#PACKAGES[@]}" -gt 0 ]; then
   # Install all requested packages
-  xbps-install -Sy "${PACKAGES[@]}" || error "failed to install requested packages"
+  update_xbps
+  xbps-install -y "${PACKAGES[@]}" || error "failed to install requested packages"
+fi
+
+if [ -n "${KERN_SERIES}" ]; then
+  update_xbps
+
+  if [ -n "${UPDATE_ZFS}" ]; then
+    update_zfs || error "failed to update ZFS packages"
+  fi
+
+  # Install dkms and the requested kernel series
+  xbps-install -uy dkms "linux${KERN_SERIES}" "linux${KERN_SERIES}-headers" \
+    || error "failed to install requested kernel series"
+
+  # Force a reconfigure to ensure the driver is build
+  xbps-reconfigure -f zfs
+
+  # Override kernel version to match the requested series by default
+  CONFIGEVALS=(
+    ".Kernel.Version = \"${KERN_SERIES}.*\""
+    "${CONFIGEVALS[@]}"
+  )
 fi
 
 # If a custom rc.pre.d exists, run every executable file therein
