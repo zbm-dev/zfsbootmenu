@@ -320,7 +320,7 @@ one of the members of the ZFSBootMenu project. This personal key is also availab
 
 .. note::
 
-  On some distributions, ``gpg`` may instead by ``gpg2``.
+  On some distributions, ``gpg`` may instead be ``gpg2``.
 
 ..
   vim: softtabstop=2 shiftwidth=2 textwidth=120
