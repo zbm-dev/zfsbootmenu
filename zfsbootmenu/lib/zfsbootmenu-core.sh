@@ -1993,24 +1993,33 @@ zreport() {
   colorize white "System Report\n\n"
 
   (
-    VERSION="unknown"
-    PRETTY_NAME="ZFSBootMenu"
+    ZBM_VERSION="unknown"
+    ZBM_PRETTY_NAME="ZFSBootMenu"
+    INITRD_VERSION="unknown initramfs"
     UNAME="$( uname -srm )"
 
     # shellcheck disable=SC1091
     [ -f /etc/zbm-release ] && source /etc/zbm-release
 
     if [[ "${VERSION}" =~ dev$ ]]; then
-      VERSION="$( colorize red "${VERSION}" )"
+      ZBM_VERSION="$( colorize red "${VERSION}" )"
     else
-      VERSION="$( colorize green "${VERSION}" )"
+      ZBM_VERSION="$( colorize green "${VERSION}" )"
     fi
 
     if [[ "${PRETTY_NAME}" == "ZFSBootMenu" ]]; then
-      PRETTY_NAME="$( colorize orange ZFS )$( colorize lightgray BootMenu )"
+      ZBM_PRETTY_NAME="$( colorize orange ZFS )$( colorize lightgray BootMenu )"
     fi
 
-    echo -e "${PRETTY_NAME} ${VERSION} (${UNAME})"
+    if [ -f "/VERSION" ] ; then
+      read -r INITRD_VERSION < /VERSION
+      INITRD_VERSION="mkinitcpio ${INITRD_VERSION}"
+    elif [ -f /etc/initrd-release ] ; then
+      source /etc/initrd-release
+      [ -n "${DRACUT_VERSION}" ] && INITRD_VERSION="Dracut ${DRACUT_VERSION}"
+    fi
+
+    echo -e "${ZBM_PRETTY_NAME} ${ZBM_VERSION} with ${INITRD_VERSION} and ${UNAME}"
   )
 
   colorize orange "\n>> ZFSBootMenu commandline\n"
