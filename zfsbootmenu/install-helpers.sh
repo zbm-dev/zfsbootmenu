@@ -192,7 +192,7 @@ zbm_install_symlink() {
 
   # Attempt to install the target of the symlink
   local rpath
-  if rpath="$(realpath -f "${1}")"; then
+  if rpath="$(readlink -f "${1}")"; then
     if [ -e "${rpath}" ] && [ ! -L "${rpath}" ]; then
       zbm_install_file "${rpath}" "$(dirname "${src}")/${dest}" || return 1
     fi
