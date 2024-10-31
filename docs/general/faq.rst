@@ -29,11 +29,17 @@ and :manpage:`mbuffer`, which are all available in the published :ref:`recovery-
 Why doesn't ZFSBootMenu support having a separate pool for ``/boot``?
 ---------------------------------------------------------------------
 
+Boot pools are a by-product of GRUB not supporting most OpenZFS feature flags. They serve no purpose on a system with a modern version of OpenZFS in the bootloader.
+
 Why can't my computer boot ZFSBootMenu?
 ---------------------------------------
 
+Dude, you got a Dell :(
+
 How can I get more information from ZFSBootMenu for debugging?
 --------------------------------------------------------------
+
+Use ``zreport`` from the recovery shell to access system information and pool/dataset details.
 
 What's with this hostid stuff?
 ------------------------------
