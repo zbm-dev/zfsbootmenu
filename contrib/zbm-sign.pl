@@ -20,6 +20,8 @@
 #       DeleteUnsigned: false
 #       SignMethod: sbctl
 #       KeyDir: /etc/sbkeys
+#       KeyFileName: DB.key
+#       CrtFileName: DB.crt
 #
 # The configuration keys should be self-explanatory.
 
@@ -48,6 +50,8 @@ my $ESP    = $Global->{BootMountPoint};
 
 my $SecureBoot     = $config->{SecureBoot} or die "No config found, please edit /etc/zfsbootmenu/config.yaml";
 my $KeyDir         = $SecureBoot->{KeyDir};
+my $KeyFileName    = $SecureBoot->{KeyFileName};
+my $CrtFileName    = $SecureBoot->{CrtFileName};
 my $DeleteUnsigned = $SecureBoot->{DeleteUnsigned};
 my $SignBackups    = $SecureBoot->{SignBackup};
 $SignMethod = $SecureBoot->{SignMethod};
@@ -56,9 +60,9 @@ opendir my $ZBM_dir, $ZBM
   or die "Cannot open ZBM dir: $ZBM";
 
 if ($SignBackups) {
-  @EFIBins = grep { !/signed\.efi$/i and /\.efi/i } readdir $ZBM_dir;
+  @EFIBins = sort grep { !/signed\.efi$/i and /\.efi/i } readdir $ZBM_dir;
 } else {
-  @EFIBins = grep { !/signed\.efi$/i and !/backup/i and /\.efi/i } readdir $ZBM_dir;
+  @EFIBins = sort grep { !/signed\.efi$/i and !/backup/i and /\.efi/i } readdir $ZBM_dir;
 }
 
 say "Found: @EFIBins";
@@ -72,17 +76,14 @@ for (@EFIBins) {
   if ( $SignMethod eq "sbctl" ) {
     system "sbctl sign $ZBM/$_";
   } elsif ( $SignMethod eq "sbsign" ) {
-    $Unsigned = substr( $_, 0, -4 );
-    system "sbsign --key $KeyDir/DB.key --cert $KeyDir/DB.crt $ZBM/$_ --output $ZBM/$Unsigned-signed.efi";
+    my $verify_output = "sbverify --cert $KeyDir/$CrtFileName $ZBM/$_ 2>&1";
+    if ( $verify_output =~ /Signature verification OK/ ) {
+      say "File $_ is already signed.";
+      next;
+    }
+    system "sbsign --key $KeyDir/$KeyFileName --cert $KeyDir/$CrtFileName $ZBM/$_ --output $ZBM/$_";
   } else {
     die "Sign method $SignMethod not valid.";
-  }
-
-  if ( $DeleteUnsigned && $SignMethod eq "sbctl" ) {
-    say "sbctl signs in place, not deleting $_";
-  } elsif ( $DeleteUnsigned && $SignMethod ne "sbctl" ) {
-    say "Deleting unsigned $_";
-    system "rm $ZBM/$_";
   }
 }
 print "---------- FINISHED ----------\n";
