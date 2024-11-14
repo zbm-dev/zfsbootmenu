@@ -18,9 +18,8 @@
 #     SecureBoot:
 #       SignBackup: true
 #       SignMethod: sbctl
-#       KeyDir: /etc/sbkeys
-#       KeyFileName: DB.key
-#       CrtFileName: DB.crt
+#       KeyFileName: /etc/sbkeys/DB.key
+#       CrtFileName: /etc/sbkeys/DB.crt
 #
 # The configuration keys should be self-explanatory.
 
@@ -48,7 +47,6 @@ my $Global = $config->{Global};
 my $ESP    = $Global->{BootMountPoint};
 
 my $SecureBoot     = $config->{SecureBoot} or die "No config found, please edit /etc/zfsbootmenu/config.yaml";
-my $KeyDir         = $SecureBoot->{KeyDir};
 my $KeyFileName    = $SecureBoot->{KeyFileName};
 my $CrtFileName    = $SecureBoot->{CrtFileName};
 my $SignBackups    = $SecureBoot->{SignBackup};
@@ -74,12 +72,12 @@ for (@EFIBins) {
   if ( $SignMethod eq "sbctl" ) {
     system "sbctl sign $ZBM/$_";
   } elsif ( $SignMethod eq "sbsign" ) {
-    my $verify_output = "sbverify --cert $KeyDir/$CrtFileName $ZBM/$_ 2>&1";
+    my $verify_output = "sbverify --cert $CrtFileName $ZBM/$_ 2>&1";
     if ( $verify_output =~ /Signature verification OK/ ) {
       say "File $_ is already signed.";
       next;
     }
-    system "sbsign --key $KeyDir/$KeyFileName --cert $KeyDir/$CrtFileName $ZBM/$_ --output $ZBM/$_";
+    system "sbsign --key $KeyFileName --cert $CrtFileName $ZBM/$_ --output $ZBM/$_";
   } else {
     die "Sign method $SignMethod not valid.";
   }
