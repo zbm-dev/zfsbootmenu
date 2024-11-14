@@ -17,7 +17,6 @@
 #
 #     SecureBoot:
 #       SignBackup: true
-#       DeleteUnsigned: false
 #       SignMethod: sbctl
 #       KeyDir: /etc/sbkeys
 #       KeyFileName: DB.key
@@ -52,7 +51,6 @@ my $SecureBoot     = $config->{SecureBoot} or die "No config found, please edit 
 my $KeyDir         = $SecureBoot->{KeyDir};
 my $KeyFileName    = $SecureBoot->{KeyFileName};
 my $CrtFileName    = $SecureBoot->{CrtFileName};
-my $DeleteUnsigned = $SecureBoot->{DeleteUnsigned};
 my $SignBackups    = $SecureBoot->{SignBackup};
 $SignMethod = $SecureBoot->{SignMethod};
 
