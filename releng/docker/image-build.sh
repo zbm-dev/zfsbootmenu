@@ -36,6 +36,14 @@ usage() {
 	   Include the specified Void Linux package in the image
 	   (One package per argument; may be repeated as needed)
 	
+	-A <arch>:
+	   Build the container for the specified architecture. Building images
+       for non-native architectures may require qemu-user and binfmt-support.
+	
+	   Default: x86_64, i686, and aarch64
+	   Supported architectures: x86_64, i686, aarch64
+	
+	   (One architecture per argument; may be repeated as needed)
 	
 	ARGUMENTS
 	
@@ -46,6 +54,95 @@ usage() {
 	   ZFSBootMenu commit hash, tag or branch name used by
 	   default to build ZFSBootMenu images (default: master)
 	EOF
+}
+
+translate_arch() {
+  case "${1}" in
+    x86_64)
+      echo "amd64"
+      ;;
+    i686)
+      echo "386"
+      ;;
+    aarch64)
+      echo "arm64"
+      ;;
+    *)
+      echo "ERROR: '${1}' does not appear to be a valid architecture"
+      exit 1
+      ;;
+  esac
+}
+
+build_container() {
+  local arch="${1}"
+
+  maintainer="ZFSBootMenu Team, https://zfsbootmenu.org"
+  container="$(buildah from --arch "${arch}" ghcr.io/void-linux/void-glibc-full:latest)"
+
+  buildah config --label author="${maintainer}" "${container}"
+
+  # Favor custom repositories
+  for repo in "${host_repos[@]}" "${web_repos[@]}"; do
+    buildah run "${container}" sh -c "cat >> /etc/xbps.d/00-custom-repos.conf" <<-EOF
+	repository=${repo}
+	EOF
+  done
+
+  # Make sure image is up to date
+  buildah run "${host_mounts[@]}" "${container}" xbps-install -Syu xbps
+  buildah run "${host_mounts[@]}" "${container}" xbps-install -Syu
+
+  # Add extra packages, as desired
+  if [ "${#extra_pkgs[@]}" -gt 0 ]; then
+    echo "INFO: adding extra Void packages: ${extra_pkgs[*]}"
+    # shellcheck disable=SC2086
+    buildah run "${host_mounts[@]}" "${container}" xbps-install -y "${extra_pkgs[@]}"
+  fi
+
+  # Prefer an LTS version over whatever Void thinks is current
+  buildah run "${container}" sh -c "cat > /etc/xbps.d/10-nolinux.conf" <<-EOF
+	ignorepkg=linux
+	ignorepkg=linux-headers
+	EOF
+
+  # Prevent initramfs kernel hooks from being installed
+  buildah run "${container}" sh -c "cat > /etc/xbps.d/15-noinitramfs.conf" <<-EOF
+	noextract=/usr/libexec/mkinitcpio/*
+	noextract=/usr/libexec/dracut/*
+	EOF
+
+  # Install ZFSBootMenu dependencies and components necessary to build images
+  buildah run "${host_mounts[@]}" "${container}" \
+    sh -c 'xbps-query -Rp run_depends zfsbootmenu | xargs xbps-install -y'
+
+  buildah run "${host_mounts[@]}" "${container}" \
+    xbps-install -y "${kern_series[@]}" "${kern_headers[@]}" \
+    git zstd systemd-boot-efistub curl yq-go bash kbd \
+    dracut mkinitcpio dracut-network gptfdisk iproute2 iputils parted \
+    curl dosfstools e2fsprogs efibootmgr cryptsetup openssh util-linux kpartx
+
+  # Remove headers and development toolchain, but keep binutils for objcopy
+  buildah run "${container}" sh -c 'echo "ignorepkg=dkms" > /etc/xbps.d/10-nodkms.conf'
+  buildah run "${container}" xbps-pkgdb -m manual binutils
+  buildah run "${container}" xbps-remove -Roy dkms "${kern_headers[@]}"
+
+  # Record a commit hash if one is available
+  if [ -n "${zbm_commit_hash}" ]; then
+    echo "${zbm_commit_hash}" | \
+      buildah run "${container}" sh -c 'cat > /etc/zbm-commit-hash'
+  fi
+
+  buildah copy "${container}" "${ZBM_BUILDER}" /build-init.sh
+  buildah run "${container}" chmod 755 /build-init.sh
+
+  buildah config \
+    --workingdir / \
+    --entrypoint '[ "/build-init.sh" ]' \
+    --cmd '[ ]' \
+    "${container}"
+
+  buildah commit --manifest "${tag##*/}" --rm "${container}" "${tag}"
 }
 
 set -o errexit
@@ -61,7 +158,9 @@ host_repos=()
 
 web_repos=()
 
-while getopts "hr:R:k:p:" opt; do
+archs=()
+
+while getopts "hr:R:k:p:A:" opt; do
   case "${opt}" in
     r)
       target="/pkgs/${#host_repos[@]}"
@@ -86,6 +185,9 @@ while getopts "hr:R:k:p:" opt; do
       ;;
     p)
       extra_pkgs+=( "${OPTARG}" )
+      ;;
+    A)
+      archs+=( "$(translate_arch "${OPTARG}")" )
       ;;
     h)
       usage
@@ -117,7 +219,8 @@ fi
 
 # Use default Void repo when nothing was specified
 if [ "${#web_repos[@]}" -lt 1 ]; then
-  web_repos=( "https://repo-fastly.voidlinux.org/current" )
+  web_repos=( "https://repo-fastly.voidlinux.org/current"
+              "https://repo-fastly.voidlinux.org/current/aarch64" )
 fi
 
 # Use default kernel series when nothing was specified
@@ -125,7 +228,12 @@ if [ "${#kern_series[@]}" -lt 1 ]; then
   kern_series=( "linux5.10" "linux5.15" "linux6.1" )
 fi
 
-# Populate the correspoding headers list
+# Use host arch when nothing was specified
+if [ "${#archs[@]}" -lt 1 ]; then
+  archs=( "$(translate_arch "$(uname -m)")")
+fi
+
+# Populate the corresponding headers list
 kern_headers=()
 for _kern in "${kern_series[@]}"; do
   kern_headers+=( "${_kern}-headers" )
@@ -141,69 +249,12 @@ if [ ! -r "${ZBM_BUILDER}" ]; then
   exit 1
 fi
 
-maintainer="ZFSBootMenu Team, https://zfsbootmenu.org"
-container="$(buildah from ghcr.io/void-linux/void-glibc-full:latest)"
+manifest="$(buildah manifest create --amend "${tag##*/}")"
 
-buildah config --label author="${maintainer}" "${container}"
-
-# Favor custom repositories
-for repo in "${host_repos[@]}" "${web_repos[@]}"; do
-  buildah run "${container}" sh -c "cat >> /etc/xbps.d/00-custom-repos.conf" <<-EOF
-	repository=${repo}
-	EOF
+for arch in "${archs[@]}"; do
+  build_container "$arch" &
 done
 
-# Make sure image is up to date
-buildah run "${host_mounts[@]}" "${container}" xbps-install -Syu xbps
-buildah run "${host_mounts[@]}" "${container}" xbps-install -Syu
+wait
 
-# Add extra packages, as desired
-if [ "${#extra_pkgs[@]}" -gt 0 ]; then
-  echo "INFO: adding extra Void packages: ${extra_pkgs[*]}"
-  # shellcheck disable=SC2086
-  buildah run "${host_mounts[@]}" "${container}" xbps-install -y "${extra_pkgs[@]}"
-fi
-
-# Prefer an LTS version over whatever Void thinks is current
-buildah run "${container}" sh -c "cat > /etc/xbps.d/10-nolinux.conf" <<-EOF
-	ignorepkg=linux
-	ignorepkg=linux-headers
-EOF
-
-# Prevent initramfs kernel hooks from being installed
-buildah run "${container}" sh -c "cat > /etc/xbps.d/15-noinitramfs.conf" <<-EOF
-	noextract=/usr/libexec/mkinitcpio/*
-	noextract=/usr/libexec/dracut/*
-EOF
-
-# Install ZFSBootMenu dependencies and components necessary to build images
-buildah run "${host_mounts[@]}" "${container}" \
-  sh -c 'xbps-query -Rp run_depends zfsbootmenu | xargs xbps-install -y'
-
-buildah run "${host_mounts[@]}" "${container}" \
-  xbps-install -y "${kern_series[@]}" "${kern_headers[@]}" \
-  git zstd systemd-boot-efistub curl yq-go bash kbd \
-  dracut mkinitcpio dracut-network gptfdisk iproute2 iputils parted \
-  curl dosfstools e2fsprogs efibootmgr cryptsetup openssh util-linux kpartx
-
-# Remove headers and development toolchain, but keep binutils for objcopy
-buildah run "${container}" sh -c 'echo "ignorepkg=dkms" > /etc/xbps.d/10-nodkms.conf'
-buildah run "${container}" xbps-pkgdb -m manual binutils
-buildah run "${container}" xbps-remove -Roy dkms "${kern_headers[@]}"
-
-# Record a commit hash if one is available
-if [ -n "${zbm_commit_hash}" ]; then
-  echo "${zbm_commit_hash}" | \
-    buildah run "${container}" sh -c 'cat > /etc/zbm-commit-hash'
-fi
-
-buildah copy "${container}" "${ZBM_BUILDER}" /build-init.sh
-buildah run "${container}" chmod 755 /build-init.sh
-
-buildah config \
-  --workingdir / \
-  --entrypoint '[ "/build-init.sh" ]' \
-  --cmd '[ ]' \
-  "${container}"
-
-buildah commit --rm "${container}" "${tag}"
+echo "built image with manifest: ${manifest}"
