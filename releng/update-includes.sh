@@ -13,5 +13,5 @@ for style in release recovery; do
     for item in "${installs[@]}"; do
       echo "* ``$item``"
     done
-  ) > docs/guides/_include/${style}.rst
+  ) > docs/general/_include/${style}.rst
 done
