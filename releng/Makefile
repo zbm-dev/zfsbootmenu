@@ -3,7 +3,7 @@
 SUDO          ?= sudo
 INSTALLOPTS   ?= -Su
 
-VOID_PKGS     = buildah podman git github-cli signify
+VOID_PKGS     = buildah podman git github-cli signify python3-rst2ansi
 
 .PHONY: help setup-void clean-void
 
