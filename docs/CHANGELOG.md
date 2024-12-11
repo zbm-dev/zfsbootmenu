@@ -1,5 +1,81 @@
 # Changelog
 
+## ZFSBootMenu v3.0.0 (2024-01-26)
+
+ZFSBootMenu v3.0.0 collects several bug fixes and refinements to the user experience within the loader as well as the process of creating images.
+
+Binary images are built with OpenZFS 2.3.0 and Linux 6.1, 6.6 and 6.12.
+
+### New features
+
+The ZFSBootMenu initialization process, previously encapsulated in a monolithic function run once at boot, has been split into independent parts. The initialization process is now easier to customize, because additional initialization scripts can be interleaved with the system process. Furthermore, execution of individual components is now easy to track, and ZFSBootMenu uses this facility to ensure that each initialization script is run only once. The main `zfsbootmenu` process uses this guarantee to retry initialization whenever it is launched, rather than assuming that all initialization was successfully completed at boot. In particular, this can be helpful for remote connections when the initialization process (*e.g.*, pool imports) require manual intervention that may not have been completed on the console.
+
+UEFI systems will benefit from several enhancements. Image creation should now include kernel modules necessary to mount VFAT filesystems, which ensures that external ZFSBootMenu hooks installed on an EFI system partition will always be loadable. On systems that support it, ZFSBootMenu now provides users with an option to reboot into EFI firmware.
+
+A new kernel argument, `zbm.waitfor`, allows the specification of devices that must be present before ZFSBootMenu will attempt to boot pools. This may be useful, for example, to ensure that encryption keys on external devices are present for automatic unlocking.
+
+### Fixes
+
+The `zsnapshot` utility provided in the recovery environment now verifies that a specified filesystem is actually ZFS. When invoked without a filesystem argument, a menu of candidate filesystems will be presented.
+
+Handling of symbolic links in the install helper and in the initramfs creation modules ensure that helpful aliases like `zbm` and `reboot` will be available in images generated with dracut as well as mkinitcpio.
+
+Console initialization that was previously done only in dracut images is now done in mkinitcpio images.
+
+ZFSBootMenu will print the kernel and boot environment it is attempting to boot immediately before it invokes `kexec`, which removes ambiguity about unexpected hangs in the boot process.
+
+When building custom images, the `generate-zbm` utility now properly ignores kernels for which it cannot determine a version either from the kernel contents or the file name.
+
+The ZFSBootMenu build container better handles multiple kernel versions. A new `-k` option allows users to specify any kernel series offered by Void Linux, and the container will ensure that all components are necessary to build the ZFS kernel module for that series.
+
+### Significant commits in this release
+
+* b5fb075 - early-setup.d/: create generic hook, console-init now dracut only (Zach Dykstra)
+* ed2272c - zfsbootmenu: print bootenv and kernel just before kexec (Zach Dykstra)
+* 3ee4f29 - bin/generate-zbm: require at least one kernel version value (Zach Dykstra)
+* db78c98 - dracut: explicitly require the bash module (Zach Dykstra)
+* 693b64a - install-helpers.sh: fix realpath -> readlink (Andrew J. Hesford)
+* dbb23f1 - init.d/50-import-pools: tailor text if using a binary release (Zach Dykstra)
+* 6eebde0 - lib/zfsbootmenu-core.sh: add initramfs generator to zreport (Zach Dykstra)
+* 9f5e426 - releng/docker/build-init.sh: make it easier to customize kernel versions (Andrew J. Hesford)
+* 6075572 - docs/index: fix repeated word. (Érico Nogueira)
+* b1c12af - docs/guides/alpine/: add zfs-scripts to packages installed (camckay)
+* 074d83b - zfsbootmenu-ui.sh: fix typo in fallback message (zenodotus280)
+* d48408b - *: remove execute bit on files not intended for execution (Andrew J. Hesford)
+* 4231230 - install-tree.sh: use tar to capture symlinks properly (Andrew J. Hesford)
+* 9a6e7dc - docs/guides/fedora: update to Workstation 40 (Kevin K.)
+* b7124bb - contrib: add megaraid_sas unbind script (Zach Dykstra)
+* 1b496a6 - contrib: remove system hook, clean up docs (Zach Dykstra)
+* 1a6c694 - zfsbootmenu/install-helpers.sh: preserve relative symlinks (Andrew J. Hesford)
+* 14e4c1d - docs/general/container-building: fix InitCPIOHookDirs parent key (Bojan Petrović)
+* dc755a8 - docs/guides/alpine: include nvme initramfs module (eli)
+* 08dda60 - zfsbootmenu: add modal power menu on main screen (classabbyamp)
+* 29fb17e - zfsbootmenu/lib/zfsbootmenu-ui.sh: add modal prompt (classabbyamp)
+* 02d3755 - zfsbootmenu/bin/reboot: add reboot-to-uefi functionality (classabbyamp)
+* 2994512 - zfsbootmenu: attempt initialization if necessary (Andrew J. Hesford)
+* 1538998 - lib/zfsbootmenu-core: allow timed_prompt to delay indefinitely (Andrew J. Hesford)
+* e3b1ff3 - init: split initialization into quasi-idempotent parts (Andrew J. Hesford)
+* 5b61ab9 - bin/generate-zbm: support including a splash image in unified EFI bundles (classabbyamp)
+* 4a034be - *: prefer systemd-boot stub to gummiboot (classabbyamp)
+* 3b34348 - releng/tag-release.sh: no longer ship zbm-kcl as a release asset (Zach Dykstra)
+* 96c4d5e - zfsbootmenu-ui: fix new populate_be_list for encrypted filesystems (Andrew J. Hesford)
+* dae859d - releng/version.sh: fix git-based version detection (Andrew J. Hesford)
+* c83f534 - zsnapshots: allow filesystem selection when no argument is specified (Andrew J. Hesford)
+* cd7d55d - zfs-chroot: remove PROMPT_COMMAND from chroot env (Zach Dykstra)
+* cd37f6a - zfsbootmenu-core: discard stderr on zfs/zpool cmds (Zach Dykstra)
+* 2611f36 - zfsbootmenu: clean up main loop (Zach Dykstra)
+* 0f87c5f - docs: fix curl arguments in container-example (Winston Hoy)
+* 98f7dac - zfsbootmenu: generalize zbm.import_delay as zbm.retry_delay (Zach Dykstra)
+* 075cba0 - zfsbootmenu: add zbm.waitfor argument handler (Zach Dykstra)
+* ad127f3 - recovery shell: stop double printing errors on first launch (Zach Dykstra)
+* 4868300 - install-helpers.sh: fix date template syntax (Fermín Olaiz)
+* aa8654b - zfsbootmenu logs: remove alias, fix header with alt name (Zach Dykstra)
+* f9b3f70 - recovery shell: print zerrors since the last command was executed (Zach Dykstra)
+* 3ac3466 - recovery image: remove broken cryptsetup (Zach Dykstra)
+* fd4d012 - recovery shell: ESP-related tooling (Zach Dykstra)
+* 14d8554 - zsnapshots: check if input is a valid ZFS filesystem (Zach Dykstra)
+* be37517 - 20-console-autosize.sh: respect mkinitcpio consolefont (Zach Dykstra)
+
 ## ZFSBootMenu v2.3.0 (2023-12-12)
 
 ZFSBootMenu v2.3.0 introduces a few new capabilities and refactors some existing features.
