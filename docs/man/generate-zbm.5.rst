@@ -120,7 +120,7 @@ EFI
 
 **Stub**
 
-  The path to the EFI stub loader used to boot the unified bundle. If not set, a default of either ``/usr/lib/systemd/boot/efi/linuxx64.efi.stub`` or ``/usr/lib/gummiboot/linuxx64.efi.stub`` is assumed.
+  The path to the EFI stub loader used to boot the unified bundle. If not set, a default of ``/usr/lib/systemd/boot/efi/linuxx64.efi.stub`` is assumed.
 
 **SplashImage**
 
