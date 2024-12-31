@@ -609,6 +609,9 @@ sub kernelVersion {
     }
   }
 
+  # Kernel is unusable if no version could be detected
+  return if ( not nonempty $filever and not nonempty $namever );
+
   # If only one is defined, that's the version
   unless ( nonempty $filever ) {
     Log("No version found in kernel strings, using $namever from path $kernel");
