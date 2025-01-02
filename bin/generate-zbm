@@ -38,7 +38,7 @@ sub createInitramfs;
 sub createUEFIBundle;
 sub execute;
 sub safeCopy;
-sub nonempty;
+sub has_value;
 sub cleanupMount;
 sub enabled;
 sub maxRevision;
@@ -184,7 +184,7 @@ if ( $runConf{usecpio} and not defined $runConf{cpio_hookd} ) {
 
 # Ensure our bootloader partition is mounted
 $runConf{umount_on_exit} = 0;
-if ( nonempty $config{Global}{BootMountPoint} ) {
+if ( has_value $config{Global}{BootMountPoint} ) {
   my $mounted = 0;
 
   my @output = execute(qq(mountpoint $config{Global}{BootMountPoint}));
@@ -205,7 +205,7 @@ if ( nonempty $config{Global}{BootMountPoint} ) {
   }
 }
 
-if ( nonempty $config{Global}{PreHooksDir} and -d $config{Global}{PreHooksDir} ) {
+if ( has_value $config{Global}{PreHooksDir} and -d $config{Global}{PreHooksDir} ) {
   while ( my $hook = <$config{Global}{PreHooksDir}/*> ) {
     next unless -x $hook;
     Log("Processing hook: $hook");
@@ -220,27 +220,27 @@ my $dir     = File::Temp->newdir();
 my $tempdir = $dir->dirname;
 
 # Config file may provide some default values for command-line args
-if ( nonempty $config{Kernel}{Path} and !nonempty $runConf{kernel} ) {
+if ( has_value $config{Kernel}{Path} and !has_value $runConf{kernel} ) {
   $runConf{kernel} = $config{Kernel}{Path};
 }
-if ( nonempty $config{Kernel}{Prefix} and !nonempty $runConf{kernel_prefix} ) {
+if ( has_value $config{Kernel}{Prefix} and !has_value $runConf{kernel_prefix} ) {
   $runConf{kernel_prefix} = $config{Kernel}{Prefix};
 }
 
-if ( nonempty $config{Kernel}{Version} and !nonempty $runConf{kernel_version} ) {
+if ( has_value $config{Kernel}{Version} and !has_value $runConf{kernel_version} ) {
   $runConf{kernel_version} = $config{Kernel}{Version};
   $runConf{kernel_version} =~ s/%current\b/%{current}/i;
 }
 
-if ( nonempty $config{Global}{Version} and !nonempty $runConf{version} ) {
+if ( has_value $config{Global}{Version} and !has_value $runConf{version} ) {
   $runConf{version} = $config{Global}{Version};
 }
 
-if ( nonempty $config{Kernel}{CommandLine} and !nonempty $runConf{cmdline} ) {
+if ( has_value $config{Kernel}{CommandLine} and !has_value $runConf{cmdline} ) {
   $runConf{cmdline} = $config{Kernel}{CommandLine};
 }
 
-if ( nonempty $runConf{version} ) {
+if ( has_value $runConf{version} ) {
   $runConf{version} =~ s/%current\b/%{current}/i;
   $runConf{version} =~ s/%\{current\}/$VERSION/i;
 } else {
@@ -248,7 +248,7 @@ if ( nonempty $runConf{version} ) {
 }
 
 # Map "%current" kernel version to output of `uname r`
-if ( nonempty $runConf{kernel_version} and $runConf{kernel_version} =~ /%\{current\}/i ) {
+if ( has_value $runConf{kernel_version} and $runConf{kernel_version} =~ /%\{current\}/i ) {
   my @uname  = execute(qw(uname -r));
   my $status = pop(@uname);
   unless ( $status eq 0 and scalar @uname ) {
@@ -259,7 +259,7 @@ if ( nonempty $runConf{kernel_version} and $runConf{kernel_version} =~ /%\{curre
   $runConf{kernel_version} =~ s/%\{current\}/$uname[0]/i;
 }
 
-if ( nonempty $runConf{kernel} ) {
+if ( has_value $runConf{kernel} ) {
 
   # Make sure the provided kernel file exists
   unless ( -f $runConf{kernel} ) {
@@ -269,12 +269,12 @@ if ( nonempty $runConf{kernel} ) {
 } else {
 
   # Try to determine a kernel file when one was not provided
-  if ( nonempty $runConf{kernel_version} ) {
+  if ( has_value $runConf{kernel_version} ) {
     my $exactVersion;
     ( $runConf{kernel}, $exactVersion ) = versionedKernel $runConf{kernel_version};
 
     # Make sure a kernel was found
-    unless ( nonempty $runConf{kernel} ) {
+    unless ( has_value $runConf{kernel} ) {
       print "Unable to find file for kernel version $runConf{kernel_version}\n";
       exit 1;
     }
@@ -286,7 +286,7 @@ if ( nonempty $runConf{kernel} ) {
 
   } else {
     $runConf{kernel} = latestKernel;
-    unless ( nonempty $runConf{kernel} ) {
+    unless ( has_value $runConf{kernel} ) {
       print "Unable to find latest kernel; specify version or path manually\n";
       exit 1;
     }
@@ -294,22 +294,22 @@ if ( nonempty $runConf{kernel} ) {
 }
 
 # Try to determine kernel_prefix or kernel_version if necessary
-unless ( nonempty $runConf{kernel_version} ) {
+unless ( has_value $runConf{kernel_version} ) {
 
   # Kernel version comes from either file name or internal strings
   $runConf{kernel_version} = kernelVersion( $runConf{kernel} );
-  unless ( nonempty $runConf{kernel_version} ) {
+  unless ( has_value $runConf{kernel_version} ) {
     printf "Unable to determine kernel version from %s\n", $runConf{kernel};
     exit 1;
   }
 }
 
-unless ( nonempty $runConf{kernel_prefix} ) {
+unless ( has_value $runConf{kernel_prefix} ) {
 
   # Prefix is basename of file, less any "-<version>" suffix
   $runConf{kernel_prefix} = basename( $runConf{kernel} );
   $runConf{kernel_prefix} =~ s/-\Q$runConf{kernel_version}\E$//;
-  unless ( nonempty $runConf{kernel_prefix} ) {
+  unless ( has_value $runConf{kernel_prefix} ) {
     printf "Unable to determine kernel prefix from %s\n", $runConf{kernel};
     exit 1;
   }
@@ -498,7 +498,7 @@ if ( enabled $config{Components} ) {
   printf "Created kernel image %s\n",    $kernel_target;
 }
 
-if ( nonempty $config{Global}{PostHooksDir} and -d $config{Global}{PostHooksDir} ) {
+if ( has_value $config{Global}{PostHooksDir} and -d $config{Global}{PostHooksDir} ) {
   while ( my $hook = <$config{Global}{PostHooksDir}/*> ) {
     next unless -x $hook;
     Log("Processing hook: $hook");
@@ -596,10 +596,10 @@ sub kernelVersion {
       my $ver = $1;
 
       # First version match is always the file version
-      $filever = $ver unless ( nonempty $filever );
+      $filever = $ver unless ( has_value $filever );
 
       # When there is no version from the file name, we have a match
-      last unless ( nonempty $namever );
+      last unless ( has_value $namever );
 
       # A version that equals the file version supersedes the first match
       if ( $namever eq $ver ) {
@@ -610,15 +610,15 @@ sub kernelVersion {
   }
 
   # Kernel is unusable if no version could be detected
-  return if ( not nonempty $filever and not nonempty $namever );
+  return if ( !has_value $filever and !has_value $namever );
 
   # If only one is defined, that's the version
-  unless ( nonempty $filever ) {
+  unless ( has_value $filever ) {
     Log("No version found in kernel strings, using $namever from path $kernel");
     return $namever;
   }
 
-  unless ( nonempty $namever ) {
+  unless ( has_value $namever ) {
     Log("No version found in path $kernel, using $filever from kernel strings");
     return $filever;
   }
@@ -638,7 +638,7 @@ EOF
   return $namever;
 }
 
-# Given a sections size, calculate where the next section should be placed, 
+# Given a sections size, calculate where the next section should be placed,
 # while respecting the stub alignment value
 sub increaseBundleOffset {
   my ( $step, $offset, $alignment ) = @_;
@@ -647,7 +647,7 @@ sub increaseBundleOffset {
   return $offset;
 }
 
-# Adds the commands necessary to put another section into the EFI bundle, 
+# Adds the commands necessary to put another section into the EFI bundle,
 # and then calculates where the bundle offset has been moved to
 sub addBundleSection {
   my ( $cmds, $secname, $filename, $offset, $alignment ) = @_;
@@ -676,7 +676,7 @@ sub createUEFIBundle {
 
   my $uefi_stub;
 
-  if ( nonempty $config{EFI}{Stub} ) {
+  if ( has_value $config{EFI}{Stub} ) {
     $uefi_stub = $config{EFI}{Stub};
     unless ( -f $uefi_stub ) {
       print "UEFI stub loader '$uefi_stub' does not exist\n";
@@ -726,7 +726,7 @@ sub createUEFIBundle {
     exit 1;
   }
 
-  # Determine initial UKI offset value by grabbing the size and VMA of 
+  # Determine initial UKI offset value by grabbing the size and VMA of
   # the last section of the EFI stub.
   @cmd = qw(objdump -w -h);
   push( @cmd, $uefi_stub );
@@ -755,7 +755,7 @@ sub createUEFIBundle {
     $uki_offset = addBundleSection( \@cmd, ".osrel", "/etc/os-release", $uki_offset, $uki_alignment );
   }
 
-  if ( nonempty $runConf{cmdline} ) {
+  if ( has_value $runConf{cmdline} ) {
     my $cmdline = join( '/', $imagedir, "cmdline.txt" );
 
     open( my $fh, '>', $cmdline );
@@ -765,7 +765,8 @@ sub createUEFIBundle {
     $uki_offset = addBundleSection( \@cmd, ".cmdline", $cmdline, $uki_offset, $uki_alignment );
   }
 
-  if ( nonempty $config{EFI}{SplashImage} and -f $config{EFI}{SplashImage} ) {
+  if ( has_value $config{EFI}{SplashImage} and -f $config{EFI}{SplashImage} ) {
+
     # only supported with systemd-boot's efistub,
     # but gummiboot doesn't care if the section exists
     $uki_offset = addBundleSection( \@cmd, ".splash", $config{EFI}{SplashImage}, $uki_offset, $uki_alignment );
@@ -774,7 +775,7 @@ sub createUEFIBundle {
   $uki_offset = addBundleSection( \@cmd, ".initrd", $initramfs, $uki_offset, $uki_alignment );
 
   # Add the kernel last, so that it can decompress without overflowing other sections
-  $uki_offset = addBundleSection( \@cmd, ".linux",  $kernel,    $uki_offset, $uki_alignment );
+  $uki_offset = addBundleSection( \@cmd, ".linux", $kernel, $uki_offset, $uki_alignment );
 
   push( @cmd, ( $uefi_stub, $output_file ) );
 
@@ -887,7 +888,7 @@ sub safeCopy {
   return 1;
 }
 
-sub nonempty {
+sub has_value {
   my $item = shift;
   return ( defined $item and length $item );
 }
