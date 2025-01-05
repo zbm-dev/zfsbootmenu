@@ -423,6 +423,8 @@ kexec_kernel() {
   # Run teardown hooks, if they exist
   env "${hook_envs[@]}" /libexec/zfsbootmenu-run-hooks "teardown.d"
 
+  echo -e "\nBooting $( colorize yellow "${kernel}" ) for $( colorize cyan "${fs}" ) ...\n"
+
   if ! output="$( kexec -e -i 2>&1 )"; then
     zerror "kexec -e -i failed!"
     zerror "${output}"
