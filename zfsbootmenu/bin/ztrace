@@ -5,7 +5,7 @@ cleanup() {
 }
 
 # Unusable for now with busybox-provided dmesg/less
-if ! dmesg -T --time-format reltime -f user -l 7 >/dev/null 2>&1 ; then
+if ! dmesg --time-format reltime -f user -l 7 >/dev/null 2>&1 ; then
   exit 0
 fi
 
@@ -41,4 +41,4 @@ while read -r line ; do
     c="${o}"
   done
 
-done < <( dmesg -T --time-format reltime -f user -l 7 ) | less -R -S +G -M --use-color
+done < <( dmesg --time-format reltime -f user -l 7 ) | less -R -S +G -M --use-color
