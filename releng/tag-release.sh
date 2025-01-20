@@ -140,7 +140,6 @@ mkdir -p "releng/assets/${release}"
 
 asset_dir="$( realpath -e "releng/assets/${release}" )"
 asset_files=()
-assets=()
 
 # Create binary assets
 if ! releng/make-binary.sh "${release}"; then
@@ -153,18 +152,20 @@ if ! releng/sign-assets.sh "${release}"; then
 fi
 
 for style in release recovery; do
-  assets+=( "zfsbootmenu-${style}-${arch}-v${release}-vmlinuz.EFI" )
-  assets+=( "zfsbootmenu-${style}-${arch}-v${release}.tar.gz" )
-done
+  asset_base="zfsbootmenu-${style}-${arch}-v${release}"
+  for f in "${asset_dir}/${asset_base}"*.EFI; do
+    [ -f "${f}" ] || error "ERROR: missing EFI ${style} asset"
+    asset_files+=( "${f}" )
+  done
 
-for asset in "${assets[@]}" ; do
-  f="${asset_dir}/${asset}"
-  [ -f "${f}" ] || error "ERROR: missing release asset ${f}"
-  asset_files+=( "${f}" )
+  for f in "${asset_dir}/${asset_base}"*.tar.gz; do
+    [ -f "${f}" ] || error "ERROR: missing component ${style} asset"
+    asset_files+=( "${f}" )
+  done
 done
 
 for f in sha256.{txt,sig}; do
-  [ -f "${asset_dir}/${f}" ] || error "ERROR: missng sum file ${asset_dir}/${f}"
+  [ -f "${asset_dir}/${f}" ] || error "ERROR: missing sum file ${asset_dir}/${f}"
   asset_files+=( "${asset_dir}/${f}" )
 done
 
