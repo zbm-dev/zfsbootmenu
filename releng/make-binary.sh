@@ -59,52 +59,71 @@ else
   mkdir -p "${assets}"
 fi
 
+kernels="$(podman run --rm --entrypoint /bin/sh "${buildtag}" -c \
+  "xbps-query -p pkgver -s '^linux[0-9]+\.[0-9]+' --regex \
+    | sed 's/: .*//' | xargs -n1 xbps-uhelper getpkgversion | sort | uniq")" || kernels=
+
 for style in release recovery; do
   echo "Building style: ${style}"
 
   # Always start with a fresh configuration tree
   mkdir -p "${buildtmp}/build/dracut.conf.d" || error "cannot create config tree"
 
-  # Make sure there is an output directory for this asset style
-  zbmtriplet="zfsbootmenu-${style}-${arch}-v${release}"
-  outdir="${buildtmp}/${zbmtriplet}"
-  mkdir -p "${outdir}" || error "cannot create output directory"
-
   # Copy style-specific configuration components in place;
   # build container sets up standard configuration elements
   cp "./etc/zfsbootmenu/${style}.yaml" "${buildtmp}/build/config.yaml"
   cp "./etc/zfsbootmenu/${style}.conf.d/"*.conf "${buildtmp}/build/dracut.conf.d"
 
-  # In addition to common mounts which expose source repo and build configs,
-  # make sure a writable output directory is available for this style and
-  # build the EFI bundle if it is supported for this arch
-  if ! podman run --rm \
-      "${volmounts[@]}" -v "${outdir}:/out" \
-      "${buildtag}" -o /out -e ".EFI.Enabled = ${BUILD_EFI}"; then
-    error "failed to create image"
-  fi
+  # Make sure there is an output directory for this asset style
+  zbmtriplet="zfsbootmenu-${style}-${arch}-v${release}"
 
-  # EFI file is currently only built on x86_64
-  if [ "${BUILD_EFI}" = "true" ]; then
-    if ! cp "${outdir}/vmlinuz.EFI" "${assets}/${zbmtriplet}-vmlinuz.EFI"; then
-      error "failed to copy UEFI bundle"
+  outdir="${buildtmp}/${zbmtriplet}"
+  mkdir -p "${outdir}" || error "cannot create output directory"
+
+  for kern in ${kernels}; do
+    kern_args=()
+    if [ -n "${kern}" ]; then
+      echo "Building style ${style} for kernel ${kern}"
+      kern_args=( "--" "--kver" "${kern}" )
     fi
-    rm -f "${outdir}/vmlinuz.EFI"
-  fi
 
-  have_components=
-  for f in "${outdir}"/*; do
-    [ -e "${f}" ] || continue
-    have_components="yes"
-    break
+    # In addition to common mounts which expose source repo and build configs,
+    # make sure a writable output directory is available for this style and
+    # build the EFI bundle if it is supported for this arch
+    if ! podman run --rm \
+        "${volmounts[@]}" -v "${outdir}:/out" \
+        "${buildtag}" -o /out -e ".EFI.Enabled = ${BUILD_EFI}" "${kern_args[@]}"; then
+      error "failed to create image"
+    fi
+
+    if [ "${BUILD_EFI}" = "true" ]; then
+      # If EFI file was produced, copy it
+      efibase="${zbmtriplet}-vmlinuz"
+      [ -n "${kern}" ] && efibase="${efibase}-${kern}"
+      if ! cp "${outdir}/vmlinuz.EFI" "${assets}/${efibase}.EFI"; then
+        error "failed to copy UEFI bundle"
+      fi
+      rm -f "${outdir}/vmlinuz.EFI"
+    fi
+
+    have_components=
+    for f in "${outdir}"/*; do
+      [ -e "${f}" ] || continue
+      have_components="yes"
+      break
+    done
+
+    if [ -n "${have_components}" ]; then
+      # If components were produced, archive them
+      tarbase="${zbmtriplet}"
+      [ -n "${kern}" ] && tarbase="${tarbase}-${kern}"
+      ( cd "${buildtmp}" && \
+        tar -czvf "${assets}/${tarbase}.tar.gz" "${zbmtriplet}"
+      ) || error "failed to pack components"
+    fi
+
+    rm -f "${outdir}/*"
   done
-
-  if [ -n "${have_components}" ]; then
-    # If components were produced, archive them
-    ( cd "${buildtmp}" && \
-      tar -czvf "${assets}/${zbmtriplet}.tar.gz" "${zbmtriplet}"
-    ) || error "failed to pack components"
-  fi
 
   # Clean up the style-specific build components
   rm -rf "${buildtmp}/build" "${outdir}"
