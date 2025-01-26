@@ -77,3 +77,8 @@
 
     Reboot the system using a SysRq magic
     invocation.
+
+  [1mfirmware-setup[0m
+
+    Reboot the system into the UEFI Firmware Setup
+    interface (if available).

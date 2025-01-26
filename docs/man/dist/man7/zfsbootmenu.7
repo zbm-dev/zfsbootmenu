@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "ZFSBOOTMENU" "7" "2023-12-12" "" "ZFSBootMenu"
+.TH "ZFSBOOTMENU" "7" "2025-01-26" "" "ZFSBootMenu"
 .SH NAME
 zfsbootmenu \- System Integration
 .SH SYNOPSIS
@@ -72,10 +72,10 @@ If a literal \fI!!\fP has been appended to the pool name, ZFSBootMenu will insis
 .UNINDENT
 .UNINDENT
 .sp
-\fBzbm.import_delay=<time>\fP
+\fBzbm.retry_delay=<time>\fP
 .INDENT 0.0
 .INDENT 3.5
-Should ZFSBootMenu fail to successfully import any pool, it will repeat import attempts indefinitely until at least one pool can be imported or the user chooses to drop to a recovery shell. Each subsequent attempt will proceed after a delay of \fB<time>\fP seconds. When \fB<time>\fP is unspecified or is anything other than a positive integer, a default value of 5 seconds will be used.
+This option determines the interval between repeated attempts of required steps. When \fB<time>\fP is unspecified or is anything other than a positive integer, a default value of 5 seconds will be used. Should ZFSBootMenu fail to successfully import any pool, it will repeat import attempts indefinitely until at least one pool can be imported or the user chooses to drop to a recovery shell. Additionally, should any required devices be configured via \fBzbm.wait_for\fP, device checks will repeat on this interval.
 .UNINDENT
 .UNINDENT
 .sp
@@ -119,11 +119,9 @@ Setting \fIspl.spl_hostid\fP to a non\-zero value on the kernel commandline will
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 echo 0 > /sys/module/spl/parameters/spl_hostid
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -196,23 +194,19 @@ The \fIhookspec\fP parameter takes the form
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 device//path
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
-where \fIdevice\fP is either a regular device node (e.g., \fI/dev/sda\fP) or other partition identifier recognized by \fBmount(8)\fP (e.g., \fILABEL=<label>\fP o \fIUUID=<uuid>\fP). The \fIpath\fP component following \fI//\fP represents the location of a directory with respect to the root of the filesystem on \fIdevice\fP\&. For example, if a partition with a UUID of \fIDEAD\-BEEF\fP is mounted at \fI/boot/efi\fP on a running system and the hook root should refer to the path
+where \fIdevice\fP is either a regular device node (e.g., \fI/dev/sda\fP) or other partition identifier recognized by \fB\X'tty: link https://man.voidlinux.org/mount.8'\fI\%mount(8)\fP\X'tty: link'\fP (e.g., \fILABEL=<label>\fP o \fIUUID=<uuid>\fP). The \fIpath\fP component following \fI//\fP represents the location of a directory with respect to the root of the filesystem on \fIdevice\fP\&. For example, if a partition with a UUID of \fIDEAD\-BEEF\fP is mounted at \fI/boot/efi\fP on a running system and the hook root should refer to the path
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 /boot/efi/EFI/zfsbootmenu/hooks,
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -220,11 +214,9 @@ the corresponding hook specification should be
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 zbm.hookroot=UUID=DEAD\-BEEF//EFI/zfsbootmenu/hooks
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -241,11 +233,9 @@ Override the kernel command line passed in to all boot environments. Double quot
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 zbm.kcl_override=\(dqsome alternate set=\(aqof arguments\(aq\(dq
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .UNINDENT
@@ -264,6 +254,20 @@ Skip execution of any early\-setup, setup, load\-key, boot\-selection or teardow
 .INDENT 0.0
 .INDENT 3.5
 Enable automatic font resizing of the kernel console to normalize the apparent resolution for both low resolution and high resolution displays. This option is enabled by default.
+.UNINDENT
+.UNINDENT
+.sp
+\fBzbm.wait_for=device,device,...\fP
+.INDENT 0.0
+.INDENT 3.5
+Ensure that one or more devices are present before starting the pool import process. Devices may be specified as full paths to device nodes (\fIe.g.\fP, \fB/dev/sda\fP or \fB/dev/disk/by\-id/wwn\-0x500a07510ee65912\fP) or, for convenience, as a typed indicator of the form \fBTYPE=VALUE\fP, which will be expanded internally as
+.INDENT 0.0
+.INDENT 3.5
+\fB/dev/disk/by\-TYPE/VALUE\fP
+.UNINDENT
+.UNINDENT
+.sp
+The use of full device paths other than descendants of \fB/dev/disk/\fP is fragile and should be avoided. The delay interval between device checks can be controlled by \fBzbm.retry_delay\fP\&.
 .UNINDENT
 .UNINDENT
 .SS Deprecated Parameters
@@ -295,7 +299,31 @@ Deprecated; use \fBzbm.import_policy=force\fP\&.
 Deprecated; use \fBzbm.import_policy=force\fP\&.
 .UNINDENT
 .UNINDENT
-.SH ZFS PROPERTIES
+.sp
+\fBzbm.import_delay\fP
+.INDENT 0.0
+.INDENT 3.5
+Deprecated; use \fBzbm.retry_delay\fP
+.UNINDENT
+.UNINDENT
+.SH ZFS POOL PROPERTIES
+.sp
+The following properties can be set at the pool level to control boot behavior.
+.sp
+\fBbootfs\fP
+.INDENT 0.0
+.INDENT 3.5
+A dataset that will be considered the default boot environment if the pool is the first to be imported by ZFSBootMenu.
+.UNINDENT
+.UNINDENT
+.sp
+\fBNOTE:\fP
+.INDENT 0.0
+.INDENT 3.5
+This must be set for automatic booting to function. When no \fBbootfs\fP property is detected, ZFSBootMenu will always display a selection menu.
+.UNINDENT
+.UNINDENT
+.SH ZFS DATASET PROPERTIES
 .sp
 The following properties can be set at any level of the boot\-environment hierarchy to control boot behavior.
 .sp
@@ -315,13 +343,11 @@ A list of command\-line arguments passed to the kernel selected by ZFSBootMenu f
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 zfs set org.zfsbootmenu:commandline=\(dqzfs.zfs_arc_max=8589934592\(dq zroot
 zfs set org.zfsbootmenu:commandline=\(dq%{parent} elevator=noop\(dq zroot/ROOT
 zfs set org.zfsbootmenu:commandline=\(dqloglevel=7 %{parent}\(dq zroot/ROOT/be
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -329,11 +355,9 @@ will cause ZFSBootMenu to interpret the kernel command\-line for \fIzroot/ROOT/b
 .INDENT 0.0
 .INDENT 3.5
 .sp
-.nf
-.ft C
+.EX
 loglevel=7 zfs.zfs_arc_max=8589934592 elevator=noop
-.ft P
-.fi
+.EE
 .UNINDENT
 .UNINDENT
 .sp
@@ -528,10 +552,10 @@ In general, it is not possible to cleanly abort a boot attempt from boot\-select
 .UNINDENT
 .SH SEE ALSO
 .sp
-\fI\%generate\-zbm(5)\fP \fI\%generate\-zbm(8)\fP \fBdracut.conf(5)\fP \fBmkinitcpio.conf(5)\fP
+\fI\%generate\-zbm(5)\fP \fI\%generate\-zbm(8)\fP \fB\X'tty: link https://man.voidlinux.org/dracut.conf.5'\fI\%dracut.conf(5)\fP\X'tty: link'\fP \fB\X'tty: link https://man.voidlinux.org/mkinitcpio.conf.5'\fI\%mkinitcpio.conf(5)\fP\X'tty: link'\fP
 .SH AUTHOR
 ZFSBootMenu Team <https://github.com/zbm-dev/zfsbootmenu>
 .SH COPYRIGHT
-2019 Zach Dykstra, 2020-2023 ZFSBootMenu Team
+2019 Zach Dykstra, 2020-2024 ZFSBootMenu Team
 .\" Generated by docutils manpage writer.
 .

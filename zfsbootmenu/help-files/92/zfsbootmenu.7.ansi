@@ -41,13 +41,15 @@
         If a literal [33m!![0m has been appended to the pool name, ZFSBootMenu will insist on
         successfully importing the named pool and no others.
 
-    [1mzbm.import_delay=<time>[0m
+    [1mzbm.retry_delay=<time>[0m
 
-      Should ZFSBootMenu fail to successfully import any pool, it will repeat import
-      attempts indefinitely until at least one pool can be imported or the user
-      chooses to drop to a recovery shell. Each subsequent attempt will proceed after
-      a delay of [1m<time>[0m seconds. When [1m<time>[0m is unspecified or is anything other than
-      a positive integer, a default value of 5 seconds will be used.
+      This option determines the interval between repeated attempts of required steps. When
+      [1m<time>[0m is unspecified or is anything other than a positive integer, a default
+      value of 5 seconds will be used. Should ZFSBootMenu fail to successfully import
+      any pool, it will repeat import attempts indefinitely until at least one pool
+      can be imported or the user chooses to drop to a recovery shell. Additionally,
+      should any required devices be configured via [1mzbm.wait_for[0m, device checks will
+      repeat on this interval.
 
     [1mzbm.import_policy[0m
 
@@ -197,6 +199,19 @@
       resolution for both low resolution and high resolution displays. This option is
       enabled by default.
 
+    [1mzbm.wait_for=device,device,...[0m
+
+      Ensure that one or more devices are present before starting the pool import process.
+      Devices may be specified as full paths to device nodes ([33me.g.[0m, [1m/dev/sda[0m or
+      [1m/dev/disk/by-id/wwn-0x500a07510ee65912[0m) or, for convenience, as a typed
+      indicator of the form [1mTYPE=VALUE[0m, which will be expanded internally as
+
+        [1m/dev/disk/by-TYPE/VALUE[0m
+
+      The use of full device paths other than descendants of [1m/dev/disk/[0m is fragile and
+      should be avoided. The delay interval between device checks can be controlled by
+      [1mzbm.retry_delay[0m.
+
     [1mDeprecated Parameters[0m
 
       [1mtimeout[0m
@@ -215,7 +230,25 @@
 
         Deprecated; use [1mzbm.import_policy=force[0m.
 
-  [1mZFS Properties[0m
+      [1mzbm.import_delay[0m
+
+        Deprecated; use [1mzbm.retry_delay[0m
+
+  [1mZFS Pool Properties[0m
+
+    The following properties can be set at the pool level to control boot behavior.
+
+    [1mbootfs[0m
+
+      A dataset that will be considered the default boot environment if the pool is the
+      first to be imported by ZFSBootMenu.
+
+    [1mNote[0m
+
+      This must be set for automatic booting to function. When no [1mbootfs[0m property is
+      detected, ZFSBootMenu will always display a selection menu.
+
+  [1mZFS Dataset Properties[0m
 
     The following properties can be set at any level of the boot-environment hierarchy to
     control boot behavior.

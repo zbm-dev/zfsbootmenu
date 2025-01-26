@@ -8,7 +8,6 @@
 * /bin/mkfs.vfat
 * /bin/mkfs.ext4
 * /bin/efibootmgr
-* /bin/cryptsetup
 * /bin/ip
 * /bin/curl
 * /bin/dhclient

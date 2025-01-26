@@ -66,3 +66,7 @@
   [33m[MOD+L][0m [1mview logs[0m
 
     View logs, as indicated by [33m[!][0m. The indicator will be yellow for warning conditions and red for errors.
+
+  [33m[MOD+X][0m [1mpower menu[0m
+
+    Show menu with options to shutdown, reboot, or reboot to UEFI firmware setup (if available).
