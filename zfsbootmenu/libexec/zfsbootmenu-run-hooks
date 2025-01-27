@@ -42,6 +42,7 @@ for _hook in "/libexec/hooks/${hook_stage}"/*; do
   if [ "${ONE_SHOT_HOOKS}" -eq 1 ] >/dev/null 2>&1; then
     zinfo "Disabling hook after execution: ${_hook}"
     chmod 000 "${_hook}"
+    mv "${_hook}" "${_hook}.completed"
   fi
 done
 

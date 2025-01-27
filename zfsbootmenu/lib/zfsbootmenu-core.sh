@@ -2029,13 +2029,20 @@ zreport() {
 
   colorize orange "\n>> Enabled hooks\n"
   for hook in /libexec/hooks/*.d/*; do
-    [ -x "${hook}" ] && echo "* $( colorize green "${hook}")"
+    ENABLED=
+    if [[ "${hook}" =~ \.completed$ ]] ; then
+      hook="${hook//.completed/ (run once, completed)}"
+      ENABLED=1
+    fi
+    [ -x "${hook}" ] && ENABLED=1
+    [ -n "${ENABLED}" ] && echo "* $( colorize green "${hook}")"
   done
 
   colorize orange "\n>> Disabled hooks\n"
   for hook in /libexec/hooks/*.d/*; do
     [ -f "${hook}" ] || continue
     [ -x "${hook}" ] && continue
+    [[ "${hook}" =~ \.completed$ ]] && continue
     echo "* $( colorize red "${hook}")"
   done
 
