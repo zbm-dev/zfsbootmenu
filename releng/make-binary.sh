@@ -77,15 +77,15 @@ for style in release recovery; do
   # Make sure there is an output directory for this asset style
   zbmtriplet="zfsbootmenu-${style}-${arch}-v${release}"
 
-  outdir="${buildtmp}/${zbmtriplet}"
-  mkdir -p "${outdir}" || error "cannot create output directory"
-
   for kern in ${kernels}; do
     kern_args=()
     if [ -n "${kern}" ]; then
       echo "Building style ${style} for kernel ${kern}"
       kern_args=( "--" "--kver" "${kern}" )
     fi
+
+    outdir="${buildtmp}/${zbmtriplet}"
+    mkdir -p "${outdir}" || error "cannot create output directory"
 
     # In addition to common mounts which expose source repo and build configs,
     # make sure a writable output directory is available for this style and
@@ -122,9 +122,9 @@ for style in release recovery; do
       ) || error "failed to pack components"
     fi
 
-    rm -f "${outdir}/*"
+    rm -rf "${outdir}"
   done
 
   # Clean up the style-specific build components
-  rm -rf "${buildtmp}/build" "${outdir}"
+  rm -rf "${buildtmp}/build"
 done
