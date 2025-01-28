@@ -1281,7 +1281,7 @@ timed_prompt() {
         delay="${OPTARG:-0}"
         if [ "${delay}" -gt 0 ] >/dev/null 2>&1; then
           :
-        elif [ "${delay}" -le 0 ] >/dev/null 2>&1; then
+        elif [ "${delay}" -lt 0 ] >/dev/null 2>&1; then
           delay="30"
           infinite="yes"
         else
