@@ -61,7 +61,7 @@ fi
 
 kernels="$(podman run --rm --entrypoint /bin/sh "${buildtag}" -c \
   "xbps-query -p pkgver -s '^linux[0-9]+\.[0-9]+' --regex \
-    | sed 's/: .*//' | xargs -n1 xbps-uhelper getpkgversion | sort | uniq")" || kernels=
+    | sed -e 's/^linux//' -e 's/-.*//' | sort | uniq")" || kernels=
 
 for style in release recovery; do
   echo "Building style: ${style}"
@@ -81,7 +81,7 @@ for style in release recovery; do
     kern_args=()
     if [ -n "${kern}" ]; then
       echo "Building style ${style} for kernel ${kern}"
-      kern_args=( "--" "--kver" "${kern}" )
+      kern_args=( "--" "--kver" "${kern}.*" )
     fi
 
     outdir="${buildtmp}/${zbmtriplet}"
@@ -98,11 +98,17 @@ for style in release recovery; do
 
     if [ "${BUILD_EFI}" = "true" ]; then
       # If EFI file was produced, copy it
-      efibase="${zbmtriplet}-vmlinuz"
-      [ -n "${kern}" ] && efibase="${efibase}-${kern}"
-      if ! cp "${outdir}/vmlinuz.EFI" "${assets}/${efibase}.EFI"; then
+      if [ -n "${kern}" ]; then
+        efifile="${zbmtriplet}-linux${kern}.EFI"
+      else
+        efifile="${zbmtriplet}-vmlinuz.EFI"
+      fi
+
+      if ! cp "${outdir}/vmlinuz.EFI" "${assets}/${efifile}"; then
         error "failed to copy UEFI bundle"
       fi
+
+      # Remove it so it won't be included in component tarballs
       rm -f "${outdir}/vmlinuz.EFI"
     fi
 
@@ -115,13 +121,18 @@ for style in release recovery; do
 
     if [ -n "${have_components}" ]; then
       # If components were produced, archive them
-      tarbase="${zbmtriplet}"
-      [ -n "${kern}" ] && tarbase="${tarbase}-${kern}"
+      if [ -n "${kern}" ]; then
+        tarball="${zbmtriplet}-linux${kern}.tar.gz"
+      else
+        tarball="${zbmtriplet}.tar.gz"
+      fi
+
       ( cd "${buildtmp}" && \
-        tar -czvf "${assets}/${tarbase}.tar.gz" "${zbmtriplet}"
+        tar -czvf "${assets}/${tarball}" "${zbmtriplet}"
       ) || error "failed to pack components"
     fi
 
+    # Clean up the output directory for the next kernel, if needed
     rm -rf "${outdir}"
   done
 
