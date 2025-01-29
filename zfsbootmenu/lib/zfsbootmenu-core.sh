@@ -1263,7 +1263,7 @@ has_resume_device() {
 }
 
 # getopts arguments:
-# -d  prompt countdown/delay; non-positive values will wait forever
+# -d  prompt countdown/delay; negative values will wait forever
 # -p  prompt with countdown timer (use %0.Xd as a placeholder for time)
 # -m+ message to be printed above the prompt, usable multiple times
 # -r  message to be prefixed with [RETURN] (accept)
@@ -1284,6 +1284,8 @@ timed_prompt() {
         elif [ "${delay}" -lt 0 ] >/dev/null 2>&1; then
           delay="30"
           infinite="yes"
+        elif [ "${delay}" -eq 0 ] >/dev/null 2>&1; then
+          return 0
         else
           zdebug "delay argument for timed_prompt is not numeric"
           return 0
