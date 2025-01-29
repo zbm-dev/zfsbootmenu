@@ -1,6 +1,17 @@
 # Changelog
 
-## ZFSBootMenu v3.0.0 (2024-01-26)
+## ZFSBootMenu v3.0.1 (2025-01-29)
+
+ZFSBootMenu v3.0.1 includes fixes for two issues. The `zbm.skip` and `zbm.timeout=0` arguments are now correctly handled, breaking the infinite loop on countdown prompts. Hooks listed in the System Report help section correctly indicate if they're enabled or not, and now show if they've run once.
+
+Binary images are built with OpenZFS 2.3.0 and Linux 6.1, 6.6 and 6.12.
+
+### Significant commits in this release
+
+* ff7c935 zfsbootmenu-core.sh: fix instant timed prompts (Zach Dykstra)
+* 849207e zreport: handle hooks that run once and are completed (Zach Dykstra)
+
+## ZFSBootMenu v3.0.0 (2025-01-26)
 
 ZFSBootMenu v3.0.0 collects several bug fixes and refinements to the user experience within the loader as well as the process of creating images.
 
