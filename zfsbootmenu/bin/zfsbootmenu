@@ -28,7 +28,7 @@ unset src sources
 mkdir -p "${BASE:=/zfsbootmenu}"
 
 while [ ! -e "${BASE}/initialized" ]; do
-  if ! timed_prompt -d 0 \
+  if ! timed_prompt -d -1 \
       -m "$( colorize red "ZFSBootMenu must be initialized to continue" )" \
       -r "initialize" \
       -e "abort     "; then
