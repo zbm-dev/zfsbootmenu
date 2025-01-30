@@ -26,12 +26,11 @@ if ! command -v signify >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! pass show zfsbootmenu/signpass >/dev/null 2>&1; then
-  echo "ERROR: pass command does not provide passphrase for signify key"
-  exit 1
+if [ -z "${ZBM_SIGN_PASS}" ] ; then
+  read -s -p "Sign key passphrase: " ZBM_SIGN_PASS
 fi
 
-if ! pass show zfsbootmenu/signpass | \
+if ! echo "${ZBM_SIGN_PASS}" | \
       signify -S -s "${signkey}" -x "${assets}/sha256.sig" \
         -e -s "${signkey}" -m "${assets}/sha256.txt"; then
   echo "ERROR: failed to sign checksum file"
