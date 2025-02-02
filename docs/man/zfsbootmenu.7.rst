@@ -248,6 +248,28 @@ By default, ZFSBootMenu only shows boot environments with the property *mountpoi
 
   When **org.zfsbootmenu:keysource** is a mountable ZFS filesystem, before prompting for a passphrase when *keylocation* is not set to *prompt*, ZFSBootMenu will attempt to mount **<filesystem>** (unlocking that, if necessary) and search for the key file within **<filesystem>**. When **<filesystem>** specifies a *mountpoint* property that is not *none* or *legacy*, the specified mount point will be stripped (if possible) from the beginning of any *keylocation* property to attempt to identify a key at the point where it would normally be mounted. If no file exists at the stripped path (or the *mountpoint* specifies *none* or *legacy*), keys will be sought at the full path of *keylocation* relative to **<filesystem>**. If a key is found at either location, it will be copied to the initramfs. The copy in the initramfs will be used to decrypt the original boot environment. Copied keys are retained until ZFSBootMenu boots an environment, so a single password prompt can be sufficient to unlock several pools with the same *keysource* or prevent prompts from reappearing when the pool must be exported and reimported (for example, to alter boot parameters from within ZFSBootMenu).
 
+**org.zfsbootmenu:devicetree=<devicetree file definition>**
+
+  If specified, this provides the path to a device-tree file that will be loaded when ZFSBootMenu loads and boots an environment. The path may be relative or absolute.
+
+  Absolute paths may contain a template placeholder, *%{kernel}*, that will be replaced with the version of the kernel that will be booted.
+
+  Relative paths are interpreted as children of the path */boot/dtbs/dtbs-%{kernel}/*, a well-known location used by Void Linux (and possibly other distributions) to store device-tree files for installed kernels. The placeholder *%{kernel}* in the implicit prefix behaves as the template placeholder in an absolute path. An explicit template placeholder is not supported in relative paths.
+
+  Whether relative or absolute, the device-tree path is always interpreted within the environment to be booted.
+
+  **/templated/path/to/%{kernel}/platform.dtb**
+
+    The value *%{kernel}* in the property will be replaced with the kernel version that is to be launched from the boot environment.
+
+  **short/path/platform.dtb**
+
+    This value is appended to */boot/dtbs/dtbs-%{kernel}/*, a well-known path used by Void Linux and possibly other distributions.
+
+  **/absolute/path/to/platform.dtb**
+
+    This is the absolute path to a device tree file, regardless of the kernel that is to be launched.
+
 .. _zbm-dracut-options:
 .. _zbm-mkinitcpio-options:
 

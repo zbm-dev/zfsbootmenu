@@ -15,6 +15,7 @@ use File::stat;
 use File::Path qw(make_path remove_tree);
 use File::Glob qw(:globally :nocase);
 use Sort::Versions;
+use Config;
 use bigint qw(hex);
 
 use Pod::Usage qw(pod2usage);
@@ -684,10 +685,12 @@ sub createUEFIBundle {
     }
   } else {
 
-    # For now, default stub locations are x86_64 only
-    my @uefi_stub_defaults = qw(
-      /usr/lib/systemd/boot/efi/linuxx64.efi.stub
-    );
+    my @uefi_stub_defaults;
+    if ( $Config{archname} =~ m/x86_64/ ) {
+      push( @uefi_stub_defaults, '/usr/lib/systemd/boot/efi/linuxx64.efi.stub' );
+    } elsif ( $Config{archname} =~ m/aarch64/ ) {
+      push( @uefi_stub_defaults, '/usr/lib/systemd/boot/efi/linuxaa64.efi.stub' );
+    }
 
     foreach my $stubloc (@uefi_stub_defaults) {
       if ( -f $stubloc ) {
@@ -769,6 +772,39 @@ sub createUEFIBundle {
     # only supported with systemd-boot's efistub,
     # but gummiboot doesn't care if the section exists
     $uki_offset = addBundleSection( \@cmd, ".splash", $config{EFI}{SplashImage}, $uki_offset, $uki_alignment );
+  }
+
+  if ( has_value $config{EFI}{DeviceTree} ) {
+    my $dtb_try;
+
+    if ( $config{EFI}{DeviceTree} =~ m,^/, ) {
+      if ( $config{EFI}{DeviceTree} =~ m/\Q%{kernel}/ ) {
+
+        # Possibly a templated file path
+        $dtb_try = $config{EFI}{DeviceTree};
+        $dtb_try =~ s/\Q%{kernel}/$runConf{kernel_version}/;
+      } else {
+
+        # Possibly an absolute path to a file
+        $dtb_try = $config{EFI}{DeviceTree};
+      }
+    } else {
+
+      # Possibly a partial path
+      $dtb_try = sprintf( "/boot/dtbs/dtbs-%s/%s", $runConf{kernel_version}, $config{EFI}{DeviceTree} );
+    }
+
+    if ( has_value $dtb_try ) {
+      if ( -f $dtb_try ) {
+        $uki_offset = addBundleSection( \@cmd, ".dtb", $dtb_try, $uki_offset, $uki_alignment );
+      } else {
+        printf "EFI.DeviceTree key set to '%s', file not found at '%s'\n", $config{EFI}{DeviceTree}, $dtb_try;
+        exit 1;
+      }
+    } else {
+      printf "EFI.DeviceTree key set to '%s', but no DeviceTree file could be found\n", $config{EFI}{DeviceTree};
+      exit 1;
+    }
   }
 
   $uki_offset = addBundleSection( \@cmd, ".initrd", $initramfs, $uki_offset, $uki_alignment );
