@@ -351,6 +351,7 @@ mount_zfs() {
 
 kexec_kernel() {
   local selected fs kernel initramfs output hook_envs
+  local dtb_prop dtb_try dtb_file kver
 
   selected="${1}"
   if [ -z "${selected}" ]; then
@@ -390,8 +391,38 @@ kexec_kernel() {
   cli_args="$( load_be_cmdline "${fs}" )"
   root_prefix="$( find_root_prefix "${fs}" "${mnt}" )"
 
+  dtb_prop="$( zfs get -H -o value org.zfsbootmenu:devicetree "${fs}" 2>/dev/null )"
+  if [ -n "${dtb_prop}" ] && [ "${dtb_prop}" != '-' ] ; then
+    zdebug "devicetree property set to '${dtb_prop}'"
+
+    kver="${kernel#"${kernel%%-*}"-}"
+
+    if [ "${dtb_prop:0:1}" = "/" ] ; then
+      if [[ "${dtb_prop}" =~ %\{kernel\} ]] ; then
+        # possibly a templated absolute path to a file
+        dtb_try="${mnt}${dtb_prop//%\{kernel\}/${kver}}"
+      else
+        # possibly an absolute path to a file
+        dtb_try="${mnt}${dtb_prop}"
+      fi
+    else
+      # possibly a suffix to a well-known path
+      dtb_try="${mnt}/boot/dtbs/dtbs-${kver}/${dtb_prop}"
+    fi
+
+    if [ -n "${dtb_try}" ] && [ -f "${dtb_try}" ] ; then
+      zdebug "devicetree file exists: '${dtb_try}'"
+      dtb_file="${dtb_try}"
+    else
+      zdebug "devicetree file missing: '${dtb_try}'"
+    fi
+  else
+    zdebug "no devicetree property set"
+  fi
+
   if ! output="$( kexec -a -l "${mnt}${kernel}" \
     --initrd="${mnt}${initramfs}" \
+    ${dtb_file:+--dtb="${dtb_file}"} \
     --command-line="${root_prefix}${fs} ${cli_args}" 2>&1 )"
   then
     zerror "unable to load ${mnt}${kernel} and ${mnt}${initramfs} into memory"
@@ -2019,6 +2050,7 @@ zreport() {
       read -r INITRD_VERSION < /VERSION
       INITRD_VERSION="mkinitcpio ${INITRD_VERSION}"
     elif [ -f /etc/initrd-release ] ; then
+      # shellcheck disable=SC1091
       source /etc/initrd-release
       [ -n "${DRACUT_VERSION}" ] && INITRD_VERSION="Dracut ${DRACUT_VERSION}"
     fi

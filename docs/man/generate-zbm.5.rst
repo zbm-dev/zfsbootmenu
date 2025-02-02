@@ -126,6 +126,14 @@ EFI
 
   The path to a bitmap image file (BMP) to use as a splash image before ZFSBootMenu loads. Only works if using systemd-boot's EFI stub loader. The ZFSBootMenu logo is available in BMP format at ``/usr/share/examples/zfsbootmenu/splash.bmp``.
 
+**DeviceTree**
+
+  The path to a device-tree file that, when specified, will be embedded in the EFI bundle. The path may be relative or absolute.
+
+  Absolute paths may contain a template placeholder, *%{kernel}*, that will be replaced with the kernel version that *generate-zbm* builds into the EFI bundle.
+
+  Relative paths are interpreted as children of the path */boot/dtbs/dtbs-%{kernel}/*, a well-known location used by Void Linux (and possibly other distributions) to store device-tree files for installed kernels. The placeholder *%{kernel}* in the implicit prefix behaves as the template placeholder in an absolute path. An explicit template placeholder is not supported in relative paths.
+
 EXAMPLE
 =======
 
