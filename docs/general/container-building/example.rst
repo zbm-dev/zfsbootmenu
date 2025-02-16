@@ -241,24 +241,15 @@ Make sure that the build container installs the packages necessary to provide ``
 
   echo "BUILD_ARGS+=( -p dropbear -p psmisc )" >> /etc/zfsbootmenu/zbm-builder.conf
 
-Finally, add a "terraform" script to link the expected ``/etc/dropbear`` directory to that in the build directory::
+Finally, add a "terraform" script to copy contents to the expected ``/etc/dropbear`` directory from the build directory::
 
   cat > /etc/zfsbootmenu/rc.d/dropbear <<EOF
   #!/bin/sh
 
   [ -d /build/dropbear ] || exit 0
 
-  if [ -d /etc/dropbear ] && [ ! -L /etc/dropbear ]; then
-      if ! rmdir /etc/dropbear; then
-          echo "ERROR: failed to remove existing /etc/dropbear directory"
-          exit 1
-      fi
-  fi
-
-  if ! ln -Tsf /build/dropbear /etc/dropbear; then
-      echo "ERROR: failed to make /etc/dropbear symlink"
-      exit 1
-  fi
+  mkdir -p /etc/dropbear
+  cp -R /build/dropbear/* /etc/dropbear/
   EOF
 
   chmod 755 /etc/zfsbootmenu/rc.d/dropbear
