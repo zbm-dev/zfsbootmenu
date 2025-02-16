@@ -232,7 +232,7 @@ unavailble in the container. Instead, simply copy a desired ``authorized_keys`` 
 ``/etc/zfsbootmenu/dropbear/root_key``. Alternatively, dynamism can be preserved by relying on bind-mounting a specific
 ``authorized_keys`` file into the build container::
 
-  echo "RUNTIME_ARGS+=( -v /home/${dropbear_user}/.ssh/authorized_keys:/authorized_keys:ro ) >> /etc/zfsbootmenu/zbm-builder.conf
+  echo "RUNTIME_ARGS+=( -v /home/${dropbear_user}/.ssh/authorized_keys:/authorized_keys:ro )" >> /etc/zfsbootmenu/zbm-builder.conf
   ln -s /authorized_keys /etc/zfsbootmenu/dropbear/root_key
 
 Replace ``${dropbear_user}`` with the desired user whose ``authorized_keys`` file should govern access to ZFSBootMenu.
