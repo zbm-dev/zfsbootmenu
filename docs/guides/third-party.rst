@@ -8,7 +8,6 @@ The following links are not hosted by ZFSBootMenu, but may provide useful inform
 Arch Linux
 ----------
 
-* `Arch Wiki: Using ZFSBootMenu for UEFI <https://wiki.archlinux.org/title/Install_Arch_Linux_on_ZFS#Using_ZFSBootMenu_for_UEFI>`_
 * `Arch User Repository: ZFSBootMenu <https://aur.archlinux.org/packages/zfsbootmenu>`_
 * `Arch User Repository: ZFSBootMenu EFI binaries <https://aur.archlinux.org/packages/zfsbootmenu-efi-bin>`_
 
