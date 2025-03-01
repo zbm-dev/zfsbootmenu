@@ -35,6 +35,10 @@ usage() {
 	EOF
 }
 
+check_zfs_fs() {
+  zfs list -o name -H "$1" >/dev/null 2>&1
+}
+
 zerror() {
   echo "ERROR: $*" >&2
 }
@@ -478,8 +482,8 @@ efi_mode=
 kcl_reader=( "raw_kcl_zfs" "${input}" )
 kcl_writer=( "save_kcl_zfs" "${output}" )
 
-if ! zfs list -o name -H "${input}" >/dev/null 2>&1; then
-  # When input is not a ZFS filesystem, treat it as an EFI executable
+if [ "${input}" = "-" ] || [ -f "${input}" ]; then
+  # When input is stdin or a file, assume it is an EFI executable
   efi_mode=yes
 
   if ! TEMP_EFI="$(mktemp)"; then
@@ -499,25 +503,19 @@ if ! zfs list -o name -H "${input}" >/dev/null 2>&1; then
     fi
 
     input="${TEMP_EFI}"
-  else
-    if [ ! -r "${input}" ]; then
-      zerror "KCL source is not a ZFS filesystem or EFI executable"
-      exit 1
-    fi
-
-    if ! cp "${input}" "${TEMP_EFI}"; then
+  elif ! cp "${input}" "${TEMP_EFI}"; then
       zerror "failed to copy EFI executable '${input}' to workspace"
       exit 1
-    fi
   fi
 
   kcl_reader=( "raw_kcl_efi" "${TEMP_EFI}" )
   kcl_writer=( "save_kcl_efi" "${TEMP_EFI}" )
-elif [ "${output}" != "${input}" ]; then
-  if ! zfs list -o name -H "${output}" >/dev/null 2>&1; then
-    zerror "KCL destination is not a ZFS filesystem"
-    exit 1
-  fi
+elif ! check_zfs_fs "${input}"; then
+  zerror "KCL source is not a ZFS filesystem or EFI executable"
+  exit 1
+elif [ "${output}" != "${input}" ] && ! check_zfs_fs "${output}"; then
+  zerror "KCL destination is not a ZFS filesystem"
+  exit 1
 fi
 
 if ! TEMP_KCL="$(mktemp)"; then
