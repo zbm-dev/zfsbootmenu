@@ -214,7 +214,7 @@ Rather than creating keys (and optional configuration) in ``/etc/dropbear``, cre
 
   ## Not strictly required; see note below
   for keytype in rsa ecdsa ed25519; do
-      dropbearkey -t "${keytype}" -f "/etc/dropbear/dropbear_${keytype}_host_key"
+      dropbearkey -t "${keytype}" -f "/etc/zfsbootmenu/dropbear/dropbear_${keytype}_host_key"
   done
 
   ## If desired
