@@ -171,22 +171,60 @@ Specific alterations are noted below.
 Configuring Basic Network Access
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Commands to fetch and unpack the ``mkinitcpio-rclocal`` module and create an ``/etc/zfsbootmenu/initcpio/rc.local``
-script still apply as described to containerized builds. Subsequent ``sed`` and ``echo`` commands that write to
-``/etc/zfsbootmenu/mkinitcpio.conf`` should be ignored because this file should not exist. Instead, create a
-configuration snippet that will add network configuration to the ZFSBootMenu image::
+With :doc:`mkinitcpio <mkinitcpio>`, network access can be realized in several ways.
 
-  cat > /etc/zfsbootmenu/mkinitcpio.conf.d/network.conf <<EOF
-  BINARIES+=(ip dhclient dhclient-script)
-  HOOKS+=(rclocal)
-  rclocal_hook="/build/initcpio/rc.local"
-  EOF
+The `mkinitcpio-nfs-utils <https://repology.org/project/mkinitcpio-nfs-utils>`_ package
+provides a ``net`` module that allows the initramfs to parse ``ip=`` kernel command-line parameters.
 
-.. note::
+If a static IP configuration is sufficient, the `mkinitcpio-rclocal <https://github.com/ahesford/mkinitcpio-rclocal>`_
+module, which allows user scripts to be injected at several points in the initramfs boot process, provides a simple
+mechanism for configuring a network interface.
 
-  If a static IP address will be configured, it is acceptable to leave ``dhclient`` and ``dhclient-script`` out of the
-  ``BINARIES`` array.
+.. tabs::
 
+  .. group-tab:: mkinitcpio-nfs-utils
+
+    Make sure that the build container installs the package necessary to provide the ``net`` module::
+
+      echo "BUILD_ARGS+=( -p mkinitcpio-nfs-utils )" >> /etc/zfsbootmenu/zbm-builder.conf
+
+    Then, ensure that the ``net`` module is installed and run in the ZBM image.
+    ``/etc/zfsbootmenu/mkinitcpio.conf`` should not be created or edited manually. Instead, create a configuration
+    snippet that will add network configuration to the ZFSBootMenu image::
+
+      echo "HOOKS+=(net)"  >> /etc/zfsbootmenu/mkinitcpio.conf.d/network.conf
+
+    Next, add an ``ip=`` parameter to ZFSBootMenu's kernel command-line. If you use another boot loader to start
+    ZFSBootMenu, *e.g.* rEFInd or syslinux, this can be accomplished by configuring that loader. If booting the EFI
+    bundle directly, this can be accomplished by configuring it in ``/etc/zfsbootmenu/config.yaml``, for example:
+
+    .. code-block:: yaml
+
+      Kernel:
+        CommandLine: "zfsbootmenu ro quiet loglevel=0 nomodeset ip=:::::eth0:dhcp"
+
+    .. note::
+      For more details about the possible values for the ``ip=`` parameter, see the `net module documentation
+      <https://wiki.archlinux.org/title/Mkinitcpio#Using_net>`_.
+
+  .. group-tab:: mkinitcpio-rclocal
+
+    Commands to fetch and unpack the ``mkinitcpio-rclocal`` module and create an ``/etc/zfsbootmenu/initcpio/rc.local``
+    script still apply as described to containerized builds. Subsequent ``sed`` and ``echo`` commands that write to
+    ``/etc/zfsbootmenu/mkinitcpio.conf`` should be ignored because this file should not exist. Instead, create a
+    configuration snippet that will add network configuration to the ZFSBootMenu image::
+    
+      cat > /etc/zfsbootmenu/mkinitcpio.conf.d/network.conf <<EOF
+      BINARIES+=(ip dhclient dhclient-script)
+      HOOKS+=(rclocal)
+      rclocal_hook="/build/initcpio/rc.local"
+      EOF
+    
+    .. note::
+    
+      If a static IP address will be configured, it is acceptable to leave ``dhclient`` and ``dhclient-script`` out of the
+      ``BINARIES`` array.
+    
 Next, edit ``/etc/zfsbootmenu/config.yaml`` to add a hook directory configuration telling `mkinitcpio` where to find
 custom modules:
 
