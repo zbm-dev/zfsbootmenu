@@ -30,15 +30,6 @@ produce an unversioned ``zfsbootmenu.EFI``; if the generator detects an existing
 directory, it will make a single backup of that file as ``zfsbootmenu-backup.EFI`` before overwriting it. A simple
 kernel command-line is specified and may be overridden as necessary.
 
-For some systems, it is necessary to tear down USB devices before ZFSBootMenu launches a boot environment. Even when
-this is not needed, it is generally harmless. The ZFSBootMenu repository offers a
-:zbm:`teardown hook <contrib/xhci-teardown.sh>` for this purpose, and it is possible to instruct ``mkinitcpio`` to
-include this teardown hook straight from the version of ZFSBootMenu inside the container::
-
-  mkdir -p /etc/zfsbootmenu/mkinitcpio.conf.d
-  echo "zfsbootmenu_teardown=( /zbm/contrib/xhci-teardown.sh )" \
-      > /etc/zfsbootmenu/mkinitcpio.conf.d/teardown.conf
-
 The default ``mkinitcpio.conf`` in the container, which should generally not be overridden, will source all files in
 ``/etc/zfsbootmenu/mkinitcpio.conf.d``.
 
