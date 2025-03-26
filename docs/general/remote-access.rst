@@ -113,7 +113,8 @@ Enabling Network Access
           cp /tmp/mkinitcpio-rclocal-master/rclocal_install /etc/zfsbootmenu/initcpio/install/rclocal
           rm -r /tmp/mkinitcpio-rclocal-master
 
-        Next, create an ``rc.local`` script that can be run within the mkinitcpio image to configure the ``eth0`` interface::
+        Next, create an ``rc.local`` script that can be run within the mkinitcpio image to configure the ``eth0`` interface
+        with a static IP::
 
           cat > /etc/zfsbootmenu/initcpio/rc.local <<RCEOF
           #!/bin/sh
@@ -140,6 +141,15 @@ Enabling Network Access
           If your Ethernet interface is called something other than ``eth0`` or your static IP configuration is different,
           adjust the script as needed.
 
+        If you'd like ZBM to configure the networking automatically via DHCP, you can instead create the following script::
+
+          cat > /etc/zfsbootmenu/initcpio/rc.local <<EOF
+          #!/bin/sh
+
+          # Retrieve and set network configuration from DHCP server
+          dhclient
+          EOF
+
         To ensure that the ``rclocal`` module is installed and run in the ZBM image, either append ``rclocal`` to the array
         defined on the ``HOOKS`` line in ``/etc/zfsbootmenu/mkinitcpio.conf`` or run::
 
@@ -149,10 +159,15 @@ Enabling Network Access
 
           echo 'rclocal_hook=/etc/zfsbootmenu/initcpio/rc.local' >> /etc/zfsbootmenu/mkinitcpio.conf
 
-        Finally, make sure to include the ``ip`` executable in your initramfs image by manually adding ``ip`` to the
-        ``BINARIES`` array in ``/etc/zfsbootmenu/mkinitcpio.conf`` or by running::
+        Finally, make sure to include the ``ip`` executable in your initramfs image by manually adding ``ip dhclient dhclient-script``
+        to the ``BINARIES`` array in ``/etc/zfsbootmenu/mkinitcpio.conf`` or by running::
 
-          sed -e '/BINARIES=/a BINARIES+=(ip)' -i /etc/zfsbootmenu/mkinitcpio.conf
+          sed -e '/BINARIES=/a BINARIES+=(ip dhclient dhclient-script)' -i /etc/zfsbootmenu/mkinitcpio.conf
+
+        .. note::
+
+          If a static IP address will be configured, it is acceptable to leave ``dhclient`` and ``dhclient-script`` out of the
+          ``BINARIES`` array.
 
 
 Unless you've taken steps not described here, the network-enabled ZFSBootMenu image will not advertise itself via
