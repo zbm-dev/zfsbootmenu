@@ -159,8 +159,8 @@ Enabling Network Access
 
           echo 'rclocal_hook=/etc/zfsbootmenu/initcpio/rc.local' >> /etc/zfsbootmenu/mkinitcpio.conf
 
-        Finally, make sure to include the ``ip`` executable in your initramfs image by manually adding ``ip dhclient dhclient-script``
-        to the ``BINARIES`` array in ``/etc/zfsbootmenu/mkinitcpio.conf`` or by running::
+        Finally, make sure to include the necessary executables in your initramfs image by manually adding
+        ``ip dhclient dhclient-script`` to the ``BINARIES`` array in ``/etc/zfsbootmenu/mkinitcpio.conf`` or by running::
 
           sed -e '/BINARIES=/a BINARIES+=(ip dhclient dhclient-script)' -i /etc/zfsbootmenu/mkinitcpio.conf
 
