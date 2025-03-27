@@ -137,8 +137,10 @@ Enabling Network Access
 
         .. note::
 
-          If your Ethernet interface is called something other than ``eth0`` or your static IP configuration is different,
-          adjust the script as needed.
+          If your Ethernet interface is called something other than ``eth0`` or your IP configuration is different,
+          adjust the script as needed. For example, automatic configuration via DHCP may be performed by simply
+          invoking ``dhclient`` from ``rc.local``. Be sure to add the executables ``dhclient`` and ``dhclient-script`` to
+          the ``BINARIES`` array of ``/etc/zfsbootmenu/mkinitcpio.conf`` if they will be used for dynamic configuration.
 
         To ensure that the ``rclocal`` module is installed and run in the ZBM image, either append ``rclocal`` to the array
         defined on the ``HOOKS`` line in ``/etc/zfsbootmenu/mkinitcpio.conf`` or run::
