@@ -20,17 +20,18 @@ These options are set on the kernel command line when booting the initramfs or U
 
 **zbm.prefer**
 
-  ZFSBootMenu will attempt to import as many pools as possible to identify boot environments and will, by default, look for the *bootfs* property on the first imported pool (sorted alphabetically) to select the default boot environment. This option controls this behavior.
+  ZFSBootMenu attempts to import all detected pools by default, with the *bootfs* property on the first pool (sorted alphabetically) used to select the default boot environment. Providing a *pool* name for this parameter will override the pool import order. Providing a *dataset* for this parameter will override both the pool import order and the default boot environment.
 
-  **zbm.prefer=<pool>**
 
-    The simplest form attempts to import **<pool>** before any other pool. The *bootfs* value from this pool will control the default boot environment.
+  **zbm.prefer=<pool|dataset>**
 
-  **zbm.prefer=<pool>!**
+    The simplest form attempts to import **<pool>** or the pool component of a **<dataset>** before any other pool. If a *dataset* is provided, that will be used as the boot environment if it exists.
+
+  **zbm.prefer=<pool|dataset>!**
 
     If a literal *!* has been appended to the pool name, ZFSBootMenu will insist on successfully importing the named pool before attempting to import any others.
 
-  **zbm.prefer=<pool>!!**
+  **zbm.prefer=<pool|dataset>!!**
 
     If a literal *!!* has been appended to the pool name, ZFSBootMenu will insist on successfully importing the named pool and no others.
 

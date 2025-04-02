@@ -28,6 +28,7 @@ export menu_timeout='${menu_timeout}'
 export loglevel='${loglevel}'
 export zbm_prefer_pool='${zbm_prefer_pool}'
 export zbm_require_pool='${zbm_require_pool}'
+export zbm_prefer_bootfs='${zbm_prefer_bootfs}'
 export default_hostid=00bab10c
 export zbm_sort='${zbm_sort}'
 export zbm_set_hostid='${zbm_set_hostid}'
