@@ -1,6 +1,13 @@
 ZFS Configuration
 -----------------
 
+Install ZFS and kernel
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block::
+
+  apk add --no-interactive linux-lts-zfs-bin
+
 Configure initramfs-tools
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -17,10 +24,3 @@ Configure initramfs-tools
     .. code-block::
 
       echo "UMASK=0077" > /etc/initramfs-tools/conf.d/umask.conf
-
-Install ZFS and kernel
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. code-block::
-
-  apk add --no-interactive linux-lts-zfs-bin
