@@ -16,6 +16,7 @@ Configure initramfs-tools
 
     .. code-block::
 
+      mkdir -p /etc/initramfs-tools/conf.d
       echo "UMASK=0077" > /etc/initramfs-tools/conf.d/umask.conf
 
 Install ZFS and kernel
