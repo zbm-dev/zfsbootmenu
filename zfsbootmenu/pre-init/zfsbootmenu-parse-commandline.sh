@@ -219,35 +219,41 @@ if kcl_override=$( get_zbm_arg zbm.kcl_override ) ; then
   zinfo "overriding all BE KCLs with: '$( kcl_assemble < "${BASE}/cmdline" )'"
 fi
 
-zbm_prefer_pool=
-if zbm_prefer_pool=$( get_zbm_arg zbm.prefer ) ; then
-  # shellcheck disable=SC2034
-  zbm_prefer_pool="${zbm_prefer_pool%%/*}"
-  zinfo "preferring ${zbm_prefer_pool} for bootfs"
-fi
-
 zbm_wait_for_devices=
 if zbm_wait_for_devices=$( get_zbm_arg zbm.wait_for ) ; then
   zinfo "system will wait for ${zbm_wait_for_devices}"
 fi
 
-# pool! : this pool must be imported before all others
-# pool!!: this pool, and no others, must be imported
+zbm_prefer_bootfs=
+zbm_require_pool=
+if zbm_prefer=$( get_zbm_arg zbm.prefer ) ; then
 
-# shellcheck disable=SC2034
-case "${zbm_prefer_pool}" in
-  *!!)
-    zbm_require_pool="only"
-    zbm_prefer_pool="${zbm_prefer_pool%!!}"
-    ;;
-  *!)
-    zbm_require_pool="yes"
-    zbm_prefer_pool="${zbm_prefer_pool%!}"
-    ;;
-  *)
-    zbm_require_pool=""
-    ;;
-esac
+  # strip the modifiers and set zbm_require_pool as needed
+  # shellcheck disable=SC2034
+  case "${zbm_prefer}" in
+    *!!)
+      zbm_require_pool="only"
+      zbm_prefer="${zbm_prefer%!!}"
+      zinfo "will only attempt to import ${zbm_prefer%%/*}"
+      ;;
+    *!)
+      zbm_require_pool="yes"
+      zbm_prefer="${zbm_prefer%!}"
+      zinfo "requiring pool ${zbm_prefer%%/*}"
+      ;;
+    *)
+      zbm_require_pool=
+      ;;
+  esac
+
+  zbm_prefer_pool="${zbm_prefer%%/*}"
+
+  # zbm_prefer looks like it could be a dataset, use it as the bootfs value
+  if [ "${zbm_prefer_pool}" != "${zbm_prefer}" ]; then
+    # shellcheck disable=SC2034
+    zbm_prefer_bootfs="${zbm_prefer}"
+  fi
+fi
 
 # Make sure Dracut is happy that we have a root
 
