@@ -1,16 +1,31 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
-_mnt=()
-
 cleanup() {
-  for _fs in "${_mnt[@]}"; do
-    umount "${_fs}" || zerror "unable to unmount ${_fs}"
-  done
+  local mounts mp mp_re depth filesystem
+
+  if [ -n "${mountpoint}" ]; then
+    if ! umount -R "${mountpoint}" >/dev/null 2>&1 ; then
+      # thanks, busybox
+      mounts=()
+      mp_re="^${mountpoint}"
+
+      # shellcheck disable=SC2034
+      while read -r skip mp skip skip ; do
+        if [[ "${mp}" =~ ${mp_re} ]]; then
+          depth="${mp//[!\/]/}"
+          mounts+=( "${#depth},${mp}" )
+        fi
+      done < /proc/self/mounts
+
+      while IFS=$'\n' read -r filesystem; do
+        umount "${filesystem#*,}" || zerror "unable to unmount ${filesystem#*,}"
+      done <<<"$( printf '%s\n' "${mounts[@]}" | sort -n -k1 -r )"
+    fi
+  fi
 
   mount_efivarfs
 
-  _mnt=()
   trap - HUP INT QUIT ABRT EXIT
 }
 
@@ -48,6 +63,8 @@ fi
 tput reset
 tput clear
 
+trap cleanup HUP INT QUIT ABRT EXIT
+
 if ! mountpoint="$( allow_rw=yes mount_zfs "${selected}" )"; then
   zerror "failed to mount ${selected}"
   exit 1
@@ -64,37 +81,24 @@ fi
 
 notices+=( "$(colorize white "*" ) $( colorize orange "${selected}" ) is mounted ${writemode}" )
 
-# Track submounts so we know how to clean up on exit
-trap cleanup HUP INT QUIT ABRT EXIT
-_mnt=( "${mountpoint}" )
-
 zdebug "mounted ${selected} to ${mountpoint}"
 
-mount -B /tmp "${mountpoint}/tmp" \
-  && _mnt=( "${mountpoint}/tmp" "${_mnt[@]}" )
-
-mount -t proc proc "${mountpoint}/proc" \
-  && _mnt=( "${mountpoint}/proc" "${_mnt[@]}" )
-
-mount -t sysfs sys "${mountpoint}/sys" \
-  && _mnt=( "${mountpoint}/sys" "${_mnt[@]}" )
-
-mount -B /dev "${mountpoint}/dev" \
-  && _mnt=( "${mountpoint}/dev" "${_mnt[@]}" )
+mount -B /tmp "${mountpoint}/tmp"
+mount -t proc proc "${mountpoint}/proc"
+mount -t sysfs sys "${mountpoint}/sys"
+mount -B /dev "${mountpoint}/dev"
 
 
 if mount_efivarfs "${efivarmode}" ; then
   efivarfs="${mountpoint}/sys/firmware/efi/efivars"
-  mount_efivarfs "${efivarmode}" "${efivarfs}" \
-    && _mnt=( "${efivarfs}" "${_mnt[@]}" )
+  mount_efivarfs "${efivarmode}" "${efivarfs}"
 
   notices+=( "\n$(colorize white "*" ) $( colorize orange "efivarfs" ) is mounted ${writemode}" )
 fi
 
 # Not all /dev filesystems have /dev/pts
 [ -d "${mountpoint}/dev/pts" ] \
-  && mount -t devpts pts "${mountpoint}/dev/pts" \
-  && _mnt=( "${mountpoint}/dev/pts" "${_mnt[@]}" )
+  && mount -t devpts pts "${mountpoint}/dev/pts"
 
 _SHELL=
 if [ -x "${mountpoint}/bin/bash" ] \
