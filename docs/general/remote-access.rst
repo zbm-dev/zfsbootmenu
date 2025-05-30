@@ -178,18 +178,32 @@ into the image. However, there are two problems with this:
    format.
 
 To create dedicated host keys in the proper format, decide on a location, for example ``/etc/dropbear``, and create the
-new keys::
+new keys:
 
-  mkdir -p /etc/dropbear
-  for keytype in rsa ecdsa ed25519; do
-      dropbearkey -t "${keytype}" -f "/etc/dropbear/dropbear_${keytype}_host_key"
-  done
+.. tabs::
 
-.. note::
-  The dracut module expects to install RSA and ECDSA keys, so at minimum those keys should be created.
-  The mkinitcpio module supports RSA, ECDSA, and ED25519 keys.
+  .. group-tab:: Dracut
 
-  Not all versions of ``dropbear`` support ED25519 keys, so it is fine if the ED25519 key fails to generate.
+      The dracut module expects to install RSA and ECDSA keys, so at least these keys should be created. 
+      The ``dracut-crypt-ssh`` module forces the use of the ``dropbearconvert`` utility during creation of the initramfs
+      image to convert OpenSSH keys into the format used by ``dropbear``. Care must be taken to ensure that OpenSSH keys
+      are created in the PEM format expected by ``dropbearconvert``::
+        
+        mkdir -p /etc/dropbear
+        for keytype in rsa ecdsa ed25519; do
+          ssh-keygen -g -N "" -m PEM -t "${keytype}" -f "/etc/dropbear/ssh_host_${keytype}_key"
+        done
+
+  .. group-tab:: mkinitcpio
+
+For mkinitcpio, generate keys for all supported types::
+        
+        mkdir -p /etc/dropbear
+        for keytype in rsa ecdsa ed25519; do
+          dropbearkey -t "${keytype}" -f "/etc/dropbear/dropbear_${keytype}_host_key"
+        done
+        
+        Not all versions of ``dropbear`` support ED25519 keys, so it is fine if creation of the ED25519 key fails.
 
 The Dracut and mkinitcpio dropbear modules do not allow for password authentication over SSH; instead key-based
 authentication is forced. The authorized keys for dropbear can be configured by putting an `authorized_keys file
@@ -208,7 +222,7 @@ realized by symlinking your user's ``authorized_keys`` file::
       # Enable dropbear ssh server and pull in network configuration args
       add_dracutmodules+=" crypt-ssh "
       install_optional_items+=" /etc/cmdline.d/dracut-network.conf "
-      # Copy system keys for consistent access
+      # Use pre-generated keys for consistent access
       dropbear_rsa_key=/etc/dropbear/ssh_host_rsa_key
       dropbear_ecdsa_key=/etc/dropbear/ssh_host_ecdsa_key
       dropbear_acl=/etc/dropbear/root_key
