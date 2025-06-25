@@ -1,3 +1,6 @@
+NOTE: As an alternative use the automated `Alpinebox installer <https://github.com/psy0rz/alpinebox>`__. It implements this guide and more.
+
+
 UEFI
 ====
 
