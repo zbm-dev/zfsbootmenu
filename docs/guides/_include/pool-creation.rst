@@ -16,7 +16,7 @@ Create the zpool
        -O xattr=sa \
        -O relatime=on \
        -o autotrim=on \
-       -o compatibility=openzfs-2.1-linux \
+       -o compatibility=openzfs-2.2-linux \
        -m none zroot "$POOL_DEVICE"
 
   .. group-tab:: Encrypted
@@ -37,7 +37,7 @@ Create the zpool
        -O keylocation=file:///etc/zfs/zroot.key \
        -O keyformat=passphrase \
        -o autotrim=on \
-       -o compatibility=openzfs-2.1-linux \
+       -o compatibility=openzfs-2.2-linux \
        -m none zroot "$POOL_DEVICE"
 
     .. note::
@@ -56,6 +56,6 @@ Create the zpool
 
 .. note::
 
-  The option ``-o compatibility=openzfs-2.1-linux`` is a conservative choice. It can be omitted or otherwise adjusted to match your specific system needs.
+  The option ``-o compatibility=openzfs-2.2-linux`` is a conservative choice. It can be omitted or otherwise adjusted to match your specific system needs.
 
   Binary releases of ZFSBootMenu are generally built with the latest stable release of ZFS. Future releases of ZFSBootMenu may therefore support newer feature sets. Check project release notes prior to updating or removing ``compatibility`` options and upgrading your system pool.
