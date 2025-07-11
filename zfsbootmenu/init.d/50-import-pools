@@ -105,17 +105,25 @@ if [ "${unsupported}" -ne 0 ]; then
 fi
 unset unsupported
 
-# Attempt to find the bootfs property
-# shellcheck disable=SC2086
-while read -r _bootfs; do
-  if [ "${_bootfs}" = "-" ]; then
-    BOOTFS=
+if [ -n "${zbm_prefer_bootfs}" ]; then
+  if is_zfs_filesystem "${zbm_prefer_bootfs}" ; then
+    BOOTFS="${zbm_prefer_bootfs}"
   else
-    BOOTFS="${_bootfs}"
-    break
+    zerror "bootfs value '${zbm_prefer_bootfs}' not a ZFS dataset"
   fi
-done <<<"$( zpool list -H -o bootfs "${zbm_prefer_pool:---}" )"
-unset _bootfs
+else
+  # Attempt to find the bootfs property
+  # shellcheck disable=SC2086
+  while read -r _bootfs; do
+    if [ "${_bootfs}" = "-" ]; then
+      BOOTFS=
+    else
+      BOOTFS="${_bootfs}"
+      break
+    fi
+  done <<<"$( zpool list -H -o bootfs "${zbm_prefer_pool:---}" )"
+  unset _bootfs
+fi
 
 if [ -n "${BOOTFS}" ]; then
   export BOOTFS
