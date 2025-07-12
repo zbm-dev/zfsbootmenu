@@ -67,6 +67,7 @@
   :hidden:
 
   guides/void-linux
+  guides/almalinux
   guides/alpine
   guides/chimera
   guides/debian
