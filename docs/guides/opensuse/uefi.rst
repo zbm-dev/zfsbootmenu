@@ -1,5 +1,5 @@
-Leap 15.5 UEFI
-==============
+OpenSUSE Leap (UEFI)
+====================
 
 .. |distribution| replace:: leap
 
