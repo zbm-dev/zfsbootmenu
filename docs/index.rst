@@ -67,12 +67,12 @@
   :hidden:
 
   guides/void-linux
-  guides/alpine
-  guides/chimera
-  guides/debian
-  guides/fedora
-  guides/opensuse
-  guides/ubuntu
+  guides/alpine/uefi
+  guides/chimera/uefi
+  guides/debian/uefi
+  guides/fedora/uefi
+  guides/opensuse/uefi
+  guides/ubuntu/uefi
   guides/third-party
 
 .. toctree::
