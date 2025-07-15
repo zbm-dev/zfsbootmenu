@@ -1,5 +1,5 @@
-UEFI
-====
+Void Linux (UEFI)
+=================
 
 .. |distribution| replace:: void
 

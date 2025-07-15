@@ -1,5 +1,5 @@
-Bookworm (12) UEFI
-==================
+Debian (UEFI)
+=============
 
 .. |distribution| replace:: debian
 

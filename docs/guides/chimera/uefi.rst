@@ -1,5 +1,5 @@
-UEFI
-====
+Chimera Linux (UEFI)
+====================
 
 .. |distribution| replace:: Chimera
 

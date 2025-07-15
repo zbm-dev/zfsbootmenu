@@ -1,5 +1,5 @@
-UEFI
-====
+Alpine Linux (UEFI)
+===================
 
 .. |distribution| replace:: alpine
 

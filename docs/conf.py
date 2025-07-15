@@ -50,6 +50,11 @@ extlinks = {
 redirects = {
     # source : target
     "guides/binary-releases": "../../general/binary-releases.html",
+    "guides/alpine": "../../guides/alpine/uefi.html",
+    "guides/chimera": "../../guides/chimera/uefi.html",
+    "guides/debian": "../../guides/debian/uefi.html",
+    "guides/debian/bookworm-uefi": "../../guides/debian/uefi.html",
+    "guides/fedora": "../../guides/fedora/uefi.html",
     "guides/general/bootenvs-and-you": "../../general/bootenvs-and-you.html",
     "guides/general/container-building": "../../general/container-building.html",
     "guides/general/container-example": "../../general/container-building/example.html",
@@ -59,7 +64,10 @@ redirects = {
     "guides/general/remote-access": "../../general/remote-access.html",
     "guides/general/tailscale": "../../general/tailscale.html",
     "guides/general/uefi-booting": "../../general/uefi-booting.html",
-    "guides/ubuntu/uefi": "guides/ubuntu.html",
+    "guides/opensuse": "../../guides/opensuse/uefi.html",
+    "guides/ubuntu": "../../guides/ubuntu/uefi.html",
+    "guides/ubuntu/jammy-uefi": "../../guides/ubuntu/uefi.html",
+    "guides/ubuntu/noble-uefi": "../../guides/ubuntu/uefi.html",
 }
 
 # -- Options for HTML output -------------------------------------------------

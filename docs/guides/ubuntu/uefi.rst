@@ -1,5 +1,5 @@
-Noble (24.04) UEFI
-==================
+Ubuntu (UEFI)
+=============
 
 .. |distribution| replace:: ubuntu
 
