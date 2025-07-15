@@ -1,5 +1,5 @@
-Workstation 40 UEFI
-===================
+Fedora Workstation (UEFI)
+=========================
 
 .. |distribution| replace:: fedora
 

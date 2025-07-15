@@ -1,5 +1,5 @@
-SYSLINUX MBR
-============
+Void Linux (SYSLINUX MBR)
+=========================
 
 .. |distribution| replace:: void
 
