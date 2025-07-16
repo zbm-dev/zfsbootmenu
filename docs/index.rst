@@ -67,6 +67,7 @@
   :hidden:
 
   guides/void-linux
+  guides/almalinux/uefi
   guides/alpine/uefi
   guides/chimera/uefi
   guides/debian/uefi
