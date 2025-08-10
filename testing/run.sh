@@ -302,7 +302,7 @@ if ((FLAME)) ; then
   [ -e "${FIFO}.out" ] || mkfifo "${FIFO}.out"
   [ -e "${FIFO}.in" ] || mkfifo "${FIFO}.in"
 
-  #shellcheck disable=SC2034
+  #shellcheck disable=SC1064,SC1065,SC2034
   coproc perf_data ( sed 's,^.*\(trapdebug*\),\1,g' < "${FIFO}.out" > "${TESTDIR}/perfdata.log" )
   trap cleanup EXIT INT TERM
 
