@@ -66,6 +66,8 @@ if ! mnt="$( mount_zfs "${base_fs}" )" ; then
 fi
 
 zdebug "executing: zfs diff -F -H ${snapshot} ${diff_target}"
+
+# shellcheck disable=SC1064,SC1065
 coproc zfs_diff ( zfs diff -F -H "${snapshot}" "${diff_target}" )
 
 # Bash won't use an FD referenced in a variable on the left side of a pipe
