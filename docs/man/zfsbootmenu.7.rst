@@ -190,6 +190,10 @@ The following properties can be set at the pool level to control boot behavior.
 
   This must be set for automatic booting to function. When no **bootfs** property is detected, ZFSBootMenu will always display a selection menu.
 
+**org.zfsbootmenu:readonly**
+
+  When set to any value other than *-* or *off*, ZFSBootMenu operations which require the pool to be imported read-write will fail.
+
 ZFS Dataset Properties
 ======================
 

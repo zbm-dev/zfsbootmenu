@@ -1522,7 +1522,7 @@ is_writable() {
 # returns: 0 on success, 1 on failure
 
 set_rw_pool() {
-  local pool ret
+  local pool ret roflag prohibited
 
   pool="${1}"
   if [ -z "${pool}" ]; then
@@ -1547,8 +1547,21 @@ set_rw_pool() {
 
   zdebug "${pool} is not already writable"
 
+  roflag="$( zpool get -H -o value org.zfsbootmenu:readonly "${pool}" 2>/dev/null )" || return 1
+  zdebug "${pool} org.zfsbootmenu:readonly property: ${roflag}"
+
+  if [ "${roflag}" != "-" ] && [ "${roflag}" != "off" ] ; then
+    zerror "read-write operation for '${pool}' prohibited - org.zfsbootmenu:readonly set to ${roflag}"
+    prohibited=yes
+  fi
+
   if grep -q "${pool}" "${BASE}/degraded" >/dev/null 2>&1; then
     zdebug "prohibited: ${BASE}/degraded is set"
+    zerror "read-write operation for '${pool}' prohibited - pool marked as degraded"
+    prohibited=yes
+  fi
+
+  if [ -n "${prohibited}" ]; then
     timed_prompt -d 10 \
       -m "$( colorize red "Operation prohibited" )" \
       -m "Pool '$( colorize cyan "${pool}" )' cannot be imported $( colorize red "read-write" )"
