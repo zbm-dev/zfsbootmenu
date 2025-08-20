@@ -34,9 +34,9 @@ Install required packages
 
   source /etc/os-release
 
-  dnf install -y https://zfsonlinux.org/epel/zfs-release-2-3$(rpm --eval "%{dist}").noarch.rpm
+  dnf install -y https://zfsonlinux.org/epel/zfs-release-2-8$(rpm --eval "%{dist}").noarch.rpm
   dnf install -y epel-release
-  dnf install -y kernel kernel-devel sudo console-setup efibootmgr langpacks-en dosfstools
+  dnf install -y kernel kernel-devel sudo efibootmgr langpacks-en dosfstools
   dnf install -y zfs zfs-dracut
   dnf reinstall -y kernel-core
 
@@ -54,4 +54,4 @@ Regenerate initramfs
 
 .. note::
 
-  Ignore any messages about "findmnt".
+  Ignore any messages about "findmnt" or "syslog".

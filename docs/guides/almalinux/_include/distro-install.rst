@@ -1,6 +1,21 @@
 Install Alma 
 --------------
 
+Mount kernel virtual filesystems (proc, sysfs, dev, devpts)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+  mkdir /mnt/proc /mnt/sys /mnt/dev /mnt/dev/pts
+  mount -t proc proc /mnt/proc
+  mount -t sysfs sys /mnt/sys
+  mount -B /dev /mnt/dev
+  mount -t devpts pts /mnt/dev/pts
+
+
+Install Minimal Base
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. parsed-literal::
 
   dnf --installroot=/mnt --releasever=\ |releasever| -y groupinstall "Minimal Install"
@@ -31,8 +46,4 @@ Chroot into the new OS
 
 .. code-block:: bash
 
-  mount -t proc proc /mnt/proc
-  mount -t sysfs sys /mnt/sys
-  mount -B /dev /mnt/dev
-  mount -t devpts pts /mnt/dev/pts
   chroot /mnt /bin/bash

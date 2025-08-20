@@ -10,7 +10,7 @@ Set hostname
   hostname > /etc/hostname
 
 Fix SELinux filesystem labels
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block::
 
