@@ -2,7 +2,7 @@ AlmaLinux (UEFI)
 ================
 
 .. |distribution| replace:: almalinux
-.. |releasever| replace:: 9
+.. |releasever| replace:: 10
 
 .. contents:: Contents
   :depth: 2
@@ -13,11 +13,11 @@ This guide can be used to install AlmaLinux onto a single disk with or without Z
 
 It assumes the following:
 
-* Your system uses UEFI to boot
+* Your system uses UEFI to boot, you may need to disable secureboot
 * Your system is x86_64
 * You're mildly comfortable with ZFS, EFI and discovering system facts on your own (``lsblk``, ``dmesg``, ``gdisk``, ...)
 
-Download `AlmaLinux 9 Live <https://repo.almalinux.org/almalinux/9/live/x86_64/AlmaLinux-9-latest-x86_64-Live-XFCE.iso>`_
+Download `AlmaLinux 10 Live <https://repo.almalinux.org/almalinux/10/live/x86_64/AlmaLinux-10-latest-x86_64-Live-GNOME.iso>`_
 , write it to a USB drive and boot your system in EFI mode.
 
 .. include:: ../_include/efi-boot-check.rst

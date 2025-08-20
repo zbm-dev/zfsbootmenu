@@ -10,5 +10,4 @@ Install all packages required to build a ZFSBootMenu image on Alma:
     perl-boolean \
     git \
     fzf \
-    mbuffer \
     kexec-tools
