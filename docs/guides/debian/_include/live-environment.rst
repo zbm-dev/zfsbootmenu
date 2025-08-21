@@ -16,8 +16,8 @@ Configure and update APT
 .. code-block::
 
   cat <<EOF > /etc/apt/sources.list
-  deb http://deb.debian.org/debian bullseye main contrib
-  deb-src http://deb.debian.org/debian bullseye main contrib
+  deb http://deb.debian.org/debian/ trixie main non-free-firmware contrib
+  deb-src http://deb.debian.org/debian/ trixie main non-free-firmware contrib
   EOF
   apt update
 
