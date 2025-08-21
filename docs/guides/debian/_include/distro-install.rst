@@ -3,10 +3,10 @@ Install Debian
 
 .. code-block:: bash
 
-  debootstrap bullseye /mnt
+  debootstrap trixie /mnt
 
 Copy files into the new install
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tabs::
 
@@ -55,22 +55,20 @@ Set a root password
 
   passwd
 
-Configure ``apt``. Use other mirrors if you prefer.
+Configure ``apt`` sources
 
 .. code-block:: bash
 
   cat <<EOF > /etc/apt/sources.list
-  deb http://deb.debian.org/debian bullseye main contrib
-  deb-src http://deb.debian.org/debian bullseye main contrib
+  deb http://deb.debian.org/debian/ trixie main non-free-firmware contrib
+  deb-src http://deb.debian.org/debian/ trixie main non-free-firmware contrib
 
-  deb http://deb.debian.org/debian-security bullseye-security main contrib
-  deb-src http://deb.debian.org/debian-security/ bullseye-security main contrib
+  deb http://deb.debian.org/debian-security trixie-security main non-free-firmware contrib
+  deb-src http://deb.debian.org/debian-security/ trixie-security main non-free-firmware contrib
 
-  deb http://deb.debian.org/debian bullseye-updates main contrib
-  deb-src http://deb.debian.org/debian bullseye-updates main contrib
-
-  deb http://deb.debian.org/debian bullseye-backports main contrib
-  deb-src http://deb.debian.org/debian bullseye-backports main contrib
+  # trixie-updates, to get updates before a point release is made;
+  deb http://deb.debian.org/debian trixie-updates main non-free-firmware contrib
+  deb-src http://deb.debian.org/debian trixie-updates main non-free-firmware contrib
   EOF
 
 Update the repository cache
