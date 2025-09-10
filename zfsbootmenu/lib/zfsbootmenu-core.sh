@@ -427,7 +427,7 @@ kexec_kernel() {
   then
     zerror "unable to load ${mnt}${kernel} and ${mnt}${initramfs} into memory"
     zerror "${output}"
-    umount "${mnt}"
+    recursive_umount "${mnt}"
     timed_prompt -d 10 \
       -m "$( colorize red 'Unable to load kernel or initramfs into memory' )" \
       -m "$( colorize orange "${mnt}${kernel}" )" \
@@ -2278,3 +2278,40 @@ is_zfs_filesystem() {
 
   return 1
 }
+
+# arg1: mount point
+# returns: 0 if everything was unmounted, 1 if not
+
+recursive_umount() {
+  local mounts mountpoint mp skip mp_re depth filesystem ret
+
+  mountpoint="${1}"
+  if [ -z "${mountpoint}" ]; then
+    zerror "mountpoint undefined"
+    return 1
+  fi
+
+  umount -R "${mountpoint}" >/dev/null 2>&1 && return 0
+
+  ret=0
+  mounts=()
+  mp_re="^${mountpoint}"
+
+  # shellcheck disable=SC2034
+  while read -r skip mp skip skip ; do
+    if [[ "${mp}" =~ ${mp_re} ]]; then
+      depth="${mp//[!\/]/}"
+      mounts+=( "${#depth},${mp}" )
+    fi
+  done < /proc/self/mounts
+
+  while IFS=$'\n' read -r filesystem; do
+    if ! umount "${filesystem#*,}" >/dev/null 2>&1 ; then
+      zerror "unable to unmount ${filesystem#*,}"
+      ret=1
+    fi
+  done <<<"$( printf '%s\n' "${mounts[@]}" | sort -n -k1 -r )"
+
+  return ${ret}
+}
+
