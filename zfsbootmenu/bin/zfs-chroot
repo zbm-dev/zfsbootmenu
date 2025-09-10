@@ -2,28 +2,7 @@
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
 cleanup() {
-  local mounts mp skip mp_re depth filesystem
-
-  if [ -n "${mountpoint}" ]; then
-    if ! umount -R "${mountpoint}" >/dev/null 2>&1 ; then
-      # thanks, busybox
-      mounts=()
-      mp_re="^${mountpoint}"
-
-      # shellcheck disable=SC2034
-      while read -r skip mp skip skip ; do
-        if [[ "${mp}" =~ ${mp_re} ]]; then
-          depth="${mp//[!\/]/}"
-          mounts+=( "${#depth},${mp}" )
-        fi
-      done < /proc/self/mounts
-
-      while IFS=$'\n' read -r filesystem; do
-        umount "${filesystem#*,}" || zerror "unable to unmount ${filesystem#*,}"
-      done <<<"$( printf '%s\n' "${mounts[@]}" | sort -n -k1 -r )"
-    fi
-  fi
-
+  [ -n "${mountpoint}" ] && recursive_umount "${mountpoint}"
   mount_efivarfs
 
   trap - HUP INT QUIT ABRT EXIT
