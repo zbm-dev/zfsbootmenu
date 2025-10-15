@@ -35,6 +35,15 @@ if [ ${loglevel:-4} -eq 7 ] ; then
   )
 fi
 
+if [ -n "${HAS_RAW}" ]; then
+  fuzzy_default_options+=(
+    "--raw"
+    "--bind" '"result:best"'
+    "--bind" '"up:up-match"'
+    "--bind" '"down:down-match"'
+  )
+fi
+
 export FUZZYSEL=fzf
 export PREVIEW_HEIGHT=2
 export FZF_DEFAULT_OPTS="${fuzzy_default_options[*]}"

@@ -99,6 +99,14 @@ create_zbm_conf() {
     has_border=1
   fi
 
+  # Check if fuzzy finder supports --raw flag
+  # Added in fzf 0.66.0
+
+  local has_raw
+  if echo "abc" | fzf -f "abc" --raw --exit-0 >/dev/null 2>&1; then
+    has_raw=1
+  fi
+
   local has_column
   if command -v column >/dev/null 2>&1 ; then
     has_column=1
@@ -132,6 +140,7 @@ create_zbm_conf() {
 	export HAS_DISABLED="${has_disabled}"
 	export HAS_BORDER="${has_border}"
 	export HAS_COLUMN="${has_column}"
+	export HAS_RAW="${has_raw}"
 	export ZBM_BUILDSTYLE="${ZBM_BUILDSTYLE}"
 	export ZBM_RELEASE_BUILD="${zfsbootmenu_release_build}"
 	EOF
