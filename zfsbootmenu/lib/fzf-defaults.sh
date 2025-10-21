@@ -38,6 +38,9 @@ fi
 if [ -n "${HAS_RAW}" ]; then
   fuzzy_default_options+=(
     "--raw"
+    "--gutter-raw"  '" "'
+    "--pointer" '">"'
+    "--marker" '"*"'
     "--bind" '"result:best"'
     "--bind" '"up:up-match"'
     "--bind" '"down:down-match"'
