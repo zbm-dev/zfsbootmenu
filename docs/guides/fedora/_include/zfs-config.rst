@@ -44,7 +44,7 @@ Finally, install the ``dracut`` module necessary for importing pools at boot tim
 
   dnf install -y zfs-dracut
 
-  dnf config-manager --enable updates
+  dnf config-manager setopt updates.enabled=1
 
 
 Regenerate initramfs
