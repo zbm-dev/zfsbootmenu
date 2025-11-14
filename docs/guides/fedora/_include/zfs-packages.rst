@@ -8,14 +8,18 @@ Disable the ``updates`` repository to ensure that the correct kernel headers are
 
 .. code-block::
 
-  dnf config-manager --disable updates
+  dnf config-manager setopt updates.enabled=0
 
 Install kernel headers and the OpenZFS package.
+
+.. note::
+
+  Refer to the `list of available zfs-release RPMs <https://github.com/zfsonlinux/zfsonlinux.github.com/tree/master/fedora>`_.
 
 .. code-block::
 
   dnf --releasever=${VERSION_ID} install -y \
-    https://zfsonlinux.org/fedora/zfs-release-2-5$(rpm --eval "%{dist}").noarch.rpm
+    https://zfsonlinux.org/fedora/zfs-release-3-0$(rpm --eval "%{dist}").noarch.rpm
 
   dnf install -y https://dl.fedoraproject.org/pub/fedora/linux/releases/${VERSION_ID}/Everything/x86_64/os/Packages/k/kernel-devel-$(uname -r).rpm
 
