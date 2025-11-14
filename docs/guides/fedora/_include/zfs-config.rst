@@ -30,26 +30,22 @@ Configure Dracut to load ZFS support
 Install required packages
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code-block::
+As in the live environment, import useful variables to describe the system.
+
+.. code-block:: bash
 
   source /etc/os-release
 
-  rpm -e --nodeps zfs-fuse
+.. include:: ./_include/zfs-packages.rst
 
-  dnf config-manager --disable updates
+Finally, install the ``dracut`` module necessary for importing pools at boot time and re-enable the ``updates`` repository.
 
-  dnf install -y https://dl.fedoraproject.org/pub/fedora/linux/releases/${VERSION_ID}/Everything/x86_64/os/Packages/k/kernel-devel-$(uname -r).rpm
+.. code-block::
 
-  dnf --releasever=${VERSION_ID} install -y \
-    https://zfsonlinux.org/fedora/zfs-release-2-5$(rpm --eval "%{dist}").noarch.rpm
-
-  dnf install -y zfs zfs-dracut
+  dnf install -y zfs-dracut
 
   dnf config-manager --enable updates
 
-.. note::
-
-  The ``updates`` repository is temporarily disabled to ensure that the correct kernel-headers package can be located and installed.
 
 Regenerate initramfs
 ~~~~~~~~~~~~~~~~~~~~
