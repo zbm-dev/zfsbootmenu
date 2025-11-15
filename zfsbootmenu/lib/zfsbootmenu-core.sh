@@ -1706,6 +1706,12 @@ be_keysource() {
     return 1;
   fi
 
+  if ! be_has_encroot "${keysrc}" >/dev/null 2>&1; then
+    zwarn "keysource ${keysrc} for ${fs} is not encrypted; ignoring"
+    echo ""
+    return 1;
+  fi
+
   echo "${keysrc}"
   return 0
 }
