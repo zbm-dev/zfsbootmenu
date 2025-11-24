@@ -41,7 +41,7 @@ body:
     attributes:
       label: ZFSBootMenu kernel version
       description: Kernel version used in ZFSBootMenu image
-      placeholder: 6.1
+      placeholder: 6.1.x
     validations:
       required: true
   - id: distribution
