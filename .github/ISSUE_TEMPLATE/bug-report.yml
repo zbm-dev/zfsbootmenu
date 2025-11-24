@@ -7,6 +7,9 @@ body:
       value: >
         ### This form is for bug reports only. Questions and feature requests are part of Discussions.
         Wrap text output and commands with triple backticks (```) for proper formatting.
+
+        ### Before submitting a bug report for a binary release, please try release files with different kernels.
+        This can often alleviate some issues.
   - id: zfsbootmenu_source
     type: dropdown
     attributes:
@@ -28,7 +31,15 @@ body:
     attributes:
       label: ZFSBootMenu version
       description: ZFSBootMenu version or commit sha
-      placeholder: 2.3.0
+      placeholder: 3.0.1
+    validations:
+      required: true
+  - id: zfsbootmenu_kernel_version
+    type: input
+    attributes:
+      label: ZFSBootMenu kernel version
+      description: Kernel version used in ZFSBootMenu image
+      placeholder: 6.1
     validations:
       required: true
   - id: distribution
