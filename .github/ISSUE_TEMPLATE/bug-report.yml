@@ -7,7 +7,9 @@ body:
       value: >
         ### This form is for bug reports only. Questions and feature requests are part of Discussions.
         Wrap text output and commands with triple backticks (```) for proper formatting.
-
+  - type: markdown
+    attributes:
+      value: >
         ### Before submitting a bug report for a binary release, please try release files with different kernels.
         This can often alleviate some issues.
   - id: zfsbootmenu_source
