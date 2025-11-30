@@ -1013,7 +1013,7 @@ find_root_prefix() {
             echo "root=zfs:"
             break
             ;;
-          arch|artix)
+          arch|artix|cachyos)
             echo "zfs="
             break
             ;;
