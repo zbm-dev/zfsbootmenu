@@ -7,8 +7,9 @@
 
 # shellcheck disable=SC2016
 fuzzy_default_options=(
-  "--ansi" "--no-clear" "--cycle" "--color=16"
+  "--ansi" "--no-clear" "--cycle"
   "--layout=reverse-list" "--inline-info" "--tac"
+  "--color='base16,current-fg:red,selected-fg:magenta'"
   "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
   "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
   "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
@@ -35,7 +36,7 @@ if [ ${loglevel:-4} -eq 7 ] ; then
   )
 fi
 
-if [ -n "${HAS_RAW}" ]; then
+if [ -n "${HAS_RAW}" ] && is_efi_system ; then
   fuzzy_default_options+=(
     "--raw"
     "--gutter-raw"  '" "'
