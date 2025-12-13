@@ -16,12 +16,11 @@ LABEL org.opencontainers.image.authors="ZFSBootMenu Team, https://zfsbootmenu.or
 
 ARG XBPS_REPOS="https://repo-fastly.voidlinux.org/current"
 
-# Include the specified Void Linux kernel series in the image; kernel
-# series take the form linux<major>.<minor>
+# Include the specified Void Linux kernel series in the image;
+# kernel series take the form linux<major>.<minor>
 #
-# Default: linux5.10 linux5.15 linux6.1
 # (multiple entries must be seperated by spaces)
-ARG KERNELS="linux5.10 linux5.15 linux6.1"
+ARG KERNELS="linux6.6 linux6.12 linux6.18"
 # Update repos and install kernels and base dependencies.
 
 # Run the following within an external cache (/var/cache/xbps) for the
