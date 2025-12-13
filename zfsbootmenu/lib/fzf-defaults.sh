@@ -9,7 +9,7 @@
 fuzzy_default_options=(
   "--ansi" "--no-clear" "--cycle"
   "--layout=reverse-list" "--inline-info" "--tac"
-  "--color='base16,current-fg:red,selected-fg:magenta'"
+  "--color='16,current-fg:red,selected-fg:magenta'"
   "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
   "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
   "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
