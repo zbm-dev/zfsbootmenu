@@ -1,5 +1,71 @@
 # Changelog
 
+## ZFSBootMenu v3.1.0 (2026-01-01)
+
+ZFSBootMenu v3.1.0 includes fixes, additional platform tooling and feature enhancements. 
+
+Binary images are built with OpenZFS 2.4.0 and Linux 6.6, 6.12 and 6.18 series kernels. 
+
+### New features
+
+`aarch64` and device tree support has been added to both `generate-zbm` and the bootloader process. A UEFI image for compatible `aarch64` systems, such as the Lenovo X13s, can now be built.
+
+The `zbm.prefer` kernel argument has been extended to understand datasets as well as pools. When a dataset value is passed to `zbm.prefer`, that dataset will override any `bootfs` value, if set, for that pool.
+
+`org.zfsbootmenu:readonly` is now an understood *pool* property. ZFSBootMenu will refuse to import the pool *read/write* when the property is set to any value other than `-` or `off`. Since ZFSBootMenu is unable to detect encrypted hibernate images, this property can be set as a fail-safe on those systems.
+
+When available, ZFSBootMenu will use new `fzf` features to improve readability when filtering long lists, e.g. when searching for a specific snapshot.
+
+### Fixes
+
+Systems identifying themselves as CachyOS will now have the correct root argument set on the environments kernel command line.
+
+Any dataset defined by `org.zfsbootmenu:keysource` must now be an encrypted dataset, or else the property will be ignored. This dataset, by design, must hold encryption keys; it should not effectively be world-readable.
+
+Filesystems manually mounted inside a boot environment chroot are now unmounted on exit. This corrects an error inhibiting access to the environment until a reboot or manual corrections took place.
+
+`zbm-kcl` can now correctly distinguish between a dataset and an EFI file for certain operations.
+
+Installation guides provided by ZFSBootMenu will now recommend ZFS 2.3 as the default pool compatability setting, now that ZFS 2.3.x is the long term support release provided by OpenZFS.
+
+Multiple new contributors provided documentation updates and fixes. Thanks @FingerlessGlov3s, @ckenna, @aptalca, @woodsb02, @zipcode!
+
+### Significant commits in this release
+* e4c1a0e zfsbootmenu: fix fzf color spec for the ancient ones (Andrew J. Hesford)
+* 0d96299 zfsbootmenu: look less bad on BIOS consoles (Zach Dykstra)
+* b80ac54 zfsbootmenu: add and use recursive_umount function (Zach Dykstra)
+* d63a844 docs/guides/fedora: use DNF5 syntax and update ZFS RPM packages (Ben Woods)
+* 455c50c zfsbootmenu-core.sh: do not cache unencrypted keysources (Andrew J. Hesford)
+* d76b38b zfsbootmenu: pair CachyOS and mkinitcpio for root= (Zach Dykstra)
+* 0ef53d5 github: try to force parsing as a string (Zach Dykstra)
+* dfdc704 github: move version text to new block (Zach Dykstra)
+* f38c983 github: update default version, add new kernel version field, help text (Zach Dykstra)
+* 89bb1d5 docs/guides/fedora: move package installation to reusable template (Andrew J. Hesford)
+* c552142 zfsbootmenu: look less bad on the console (Zach Dykstra)
+* b8b534e zfsbootmenu: use fzf --raw when available (Zach Dykstra)
+* ca3a81b dracut: exclude clevis due to missing systemd module (zip)
+* 754d337 docs/guides/debian: Debian Trixie (FingerlessGloves)
+* 5b6fa96 docs/guides/almalinux: AlmaLinux 10 is here (FingerlessGloves)
+* 29e0743 zfsbootmenu: add org.zfsbootmenu:readonly gate (Zach Dykstra)
+* f616019 zfsbootmenu: extend zbm.prefer to set bootfs (Zach Dykstra)
+* 932d725 shellcheck: fix warnings from 0.11.0 (Zach Dykstra)
+* aece6fe docs/guides/almalinux: add AlmaLinux 9 guide (FingerlessGloves)
+* fd56dad docs/guides: collapse layers of indirection for single-purpose guides (Andrew J. Hesford)
+* 19e7618 docs/guides/: recommend openzfs-2.2-linux pool compatibility (Zach Dykstra)
+* 318cf23 docs: dracut-crypt-ssh keys name and format fix (JkktBkkt)
+* 6905048 zfs-chroot: unmount everything under chroot mountpoint (Zach Dykstra)
+* 28a2db9 docs/guides/chimera: ensure initramfs-tools config directory exists (Andrew J. Hesford)
+* 54bbde2 docs: mention use of dhclient with mkinitcpio-rclocal for DHCP (Andrew J. Hesford)
+* fc9721e docs: fix dropbear path in containerized build example (Chris Kenna)
+* c77d5f4 Remove obsolete section on xhci-teardown from docs (aptalca)
+* 9ed49ad aarch64 support: efi stub and devicetree selection (Zach Dykstra)
+* c6ce98c bin/zbm-kcl: fix detection of EFI files (Andrew J. Hesford)
+* 1130cc9 docs/: remove dead Arch wiki link (Zach Dykstra)
+* 51d9697 docs: typo fix in instructions (aptalca)
+* 4e716eb docs: copy dropbear keys and config instead of symlink (aptalca)
+* f1c873a docs: we made it to 2025 somehow (Zach Dykstra)
+* 4f5fff1 sign-assets.sh: add manual passphrase input option (Zach Dykstra)
+
 ## ZFSBootMenu v3.0.1 (2025-01-29)
 
 ZFSBootMenu v3.0.1 includes fixes for two issues. The `zbm.skip` and `zbm.timeout=0` arguments are now correctly handled, breaking the infinite loop on countdown prompts. Hooks listed in the System Report help section correctly indicate if they're enabled or not, and now show if they've run once.
