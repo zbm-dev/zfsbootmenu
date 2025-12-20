@@ -12,7 +12,7 @@ Binary images are built with OpenZFS 2.4.0 and Linux 6.6, 6.12 and 6.18 series k
 
 The `zbm.prefer` kernel argument has been extended to understand datasets as well as pools. When a dataset value is passed to `zbm.prefer`, that dataset will override any `bootfs` value, if set, for that pool.
 
-`org.zfsbootmenu:readyonly` is now an understood *pool* property. ZFSBootMenu will refuse to import the pool *read/write* when the property is set to any value other than `-` or `off`. Since ZFSBootMenu is unable to detect encrypted hibernate images, this property can be set as a fail-safe on those systems.
+`org.zfsbootmenu:readonly` is now an understood *pool* property. ZFSBootMenu will refuse to import the pool *read/write* when the property is set to any value other than `-` or `off`. Since ZFSBootMenu is unable to detect encrypted hibernate images, this property can be set as a fail-safe on those systems.
 
 When available, ZFSBootMenu will use new `fzf` features to improve readability when filtering long lists, e.g. when searching for a specific snapshot.
 
