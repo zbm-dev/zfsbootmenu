@@ -7,9 +7,8 @@
 
 # shellcheck disable=SC2016
 fuzzy_default_options=(
-  "--ansi" "--no-clear" "--cycle"
+  "--ansi" "--no-clear" "--cycle" "--color=16"
   "--layout=reverse-list" "--inline-info" "--tac"
-  "--color='16,current-fg:red,selected-fg:magenta'"
   "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
   "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
   "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
@@ -26,13 +25,9 @@ if [ -n "${HAS_BORDER}" ]; then
   )
 fi
 
-# shellcheck disable=SC2016,SC2086
-if [ ${loglevel:-4} -eq 7 ] ; then
+if [ -n "${HAS_COLORS}" ]; then
   fuzzy_default_options+=(
-    "--bind" '"alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
-    "--bind" '"ctrl-t:execute[ /sbin/ztrace > ${control_term} ]"'
-    "--bind" '"ctrl-alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
-    "--bind" '"f12:execute[ /libexec/zfunc emergency_shell \"debugging shell\" > ${control_term} ]"'
+    "--color='current-fg:red,selected-fg:magenta'"
   )
 fi
 
@@ -45,6 +40,16 @@ if [ -n "${HAS_RAW}" ] && is_efi_system ; then
     "--bind" '"result:best"'
     "--bind" '"up:up-match"'
     "--bind" '"down:down-match"'
+  )
+fi
+
+# shellcheck disable=SC2016,SC2086
+if [ ${loglevel:-4} -eq 7 ] ; then
+  fuzzy_default_options+=(
+    "--bind" '"alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
+    "--bind" '"ctrl-t:execute[ /sbin/ztrace > ${control_term} ]"'
+    "--bind" '"ctrl-alt-t:execute[ /sbin/ztrace > ${control_term} ]"'
+    "--bind" '"f12:execute[ /libexec/zfunc emergency_shell \"debugging shell\" > ${control_term} ]"'
   )
 fi
 

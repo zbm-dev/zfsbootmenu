@@ -99,9 +99,15 @@ create_zbm_conf() {
     has_border=1
   fi
 
+  # Check if fuzzy finder supports optional --color arguments
+  # Added in fzf 0.52.0
+  local has_colors
+  if echo "abc" | fzf -f "abc" --color='current-fg:red,selected-fg:magenta' --exit-0 >/dev/null 2>&1; then
+    has_colors=1
+  fi
+
   # Check if fuzzy finder supports --raw flag
   # Added in fzf 0.66.0
-
   local has_raw
   if echo "abc" | fzf -f "abc" --raw --exit-0 >/dev/null 2>&1; then
     has_raw=1
@@ -140,6 +146,7 @@ create_zbm_conf() {
 	export HAS_DISABLED="${has_disabled}"
 	export HAS_BORDER="${has_border}"
 	export HAS_COLUMN="${has_column}"
+	export HAS_COLORS="${has_colors}"
 	export HAS_RAW="${has_raw}"
 	export ZBM_BUILDSTYLE="${ZBM_BUILDSTYLE}"
 	export ZBM_RELEASE_BUILD="${zfsbootmenu_release_build}"
