@@ -27,7 +27,7 @@ level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
 .in \\n[rst2man-indent\\n[rst2man-indent-level]]u
 ..
-.TH "ZFSBOOTMENU" "7" "2025-01-29" "" "ZFSBootMenu"
+.TH "ZFSBOOTMENU" "7" "2026-01-01" "" "ZFSBootMenu"
 .SH NAME
 zfsbootmenu \- System Integration
 .SH SYNOPSIS
@@ -47,23 +47,23 @@ When creating an initramfs or UEFI bundle, the \fI/etc/hostid\fP from the system
 \fBzbm.prefer\fP
 .INDENT 0.0
 .INDENT 3.5
-ZFSBootMenu will attempt to import as many pools as possible to identify boot environments and will, by default, look for the \fIbootfs\fP property on the first imported pool (sorted alphabetically) to select the default boot environment. This option controls this behavior.
+ZFSBootMenu attempts to import all detected pools by default, with the \fIbootfs\fP property on the first pool (sorted alphabetically) used to select the default boot environment. Providing a \fIpool\fP name for this parameter will override the pool import order. Providing a \fIdataset\fP for this parameter will override both the pool import order and the default boot environment.
 .sp
-\fBzbm.prefer=<pool>\fP
+\fBzbm.prefer=<pool|dataset>\fP
 .INDENT 0.0
 .INDENT 3.5
-The simplest form attempts to import \fB<pool>\fP before any other pool. The \fIbootfs\fP value from this pool will control the default boot environment.
+The simplest form attempts to import \fB<pool>\fP or the pool component of a \fB<dataset>\fP before any other pool. If a \fIdataset\fP is provided, that will be used as the boot environment if it exists.
 .UNINDENT
 .UNINDENT
 .sp
-\fBzbm.prefer=<pool>!\fP
+\fBzbm.prefer=<pool|dataset>!\fP
 .INDENT 0.0
 .INDENT 3.5
 If a literal \fI!\fP has been appended to the pool name, ZFSBootMenu will insist on successfully importing the named pool before attempting to import any others.
 .UNINDENT
 .UNINDENT
 .sp
-\fBzbm.prefer=<pool>!!\fP
+\fBzbm.prefer=<pool|dataset>!!\fP
 .INDENT 0.0
 .INDENT 3.5
 If a literal \fI!!\fP has been appended to the pool name, ZFSBootMenu will insist on successfully importing the named pool and no others.
@@ -323,6 +323,13 @@ A dataset that will be considered the default boot environment if the pool is th
 This must be set for automatic booting to function. When no \fBbootfs\fP property is detected, ZFSBootMenu will always display a selection menu.
 .UNINDENT
 .UNINDENT
+.sp
+\fBorg.zfsbootmenu:readonly\fP
+.INDENT 0.0
+.INDENT 3.5
+When set to any value other than \fI\-\fP or \fIoff\fP, ZFSBootMenu operations which require the pool to be imported read\-write will fail.
+.UNINDENT
+.UNINDENT
 .SH ZFS DATASET PROPERTIES
 .sp
 The following properties can be set at any level of the boot\-environment hierarchy to control boot behavior.
@@ -407,6 +414,40 @@ If specified, this provides the name of the ZFS filesystem from which keys for a
 Normally, when ZFSBootMenu attempts to load encryption keys for a boot environment, it will attempt to look for a key file at the path specified by the \fIkeylocation\fP property on the \fIencryptionroot\fP for that boot environment. If that file does not exist, and \fIkeyformat=passphrase\fP is set for the \fIencryptionroot\fP (or \fIkeylocation=prompt\fP), ZFSBootMenu will prompt for a passphrase to unlock the boot environment. These passphrases entered are not cached by default.
 .sp
 When \fBorg.zfsbootmenu:keysource\fP is a mountable ZFS filesystem, before prompting for a passphrase when \fIkeylocation\fP is not set to \fIprompt\fP, ZFSBootMenu will attempt to mount \fB<filesystem>\fP (unlocking that, if necessary) and search for the key file within \fB<filesystem>\fP\&. When \fB<filesystem>\fP specifies a \fImountpoint\fP property that is not \fInone\fP or \fIlegacy\fP, the specified mount point will be stripped (if possible) from the beginning of any \fIkeylocation\fP property to attempt to identify a key at the point where it would normally be mounted. If no file exists at the stripped path (or the \fImountpoint\fP specifies \fInone\fP or \fIlegacy\fP), keys will be sought at the full path of \fIkeylocation\fP relative to \fB<filesystem>\fP\&. If a key is found at either location, it will be copied to the initramfs. The copy in the initramfs will be used to decrypt the original boot environment. Copied keys are retained until ZFSBootMenu boots an environment, so a single password prompt can be sufficient to unlock several pools with the same \fIkeysource\fP or prevent prompts from reappearing when the pool must be exported and reimported (for example, to alter boot parameters from within ZFSBootMenu).
+.UNINDENT
+.UNINDENT
+.sp
+\fBorg.zfsbootmenu:devicetree=<devicetree file definition>\fP
+.INDENT 0.0
+.INDENT 3.5
+If specified, this provides the path to a device\-tree file that will be loaded when ZFSBootMenu loads and boots an environment. The path may be relative or absolute.
+.sp
+Absolute paths may contain a template placeholder, \fI%{kernel}\fP, that will be replaced with the version of the kernel that will be booted.
+.sp
+Relative paths are interpreted as children of the path \fI/boot/dtbs/dtbs\-%{kernel}/\fP, a well\-known location used by Void Linux (and possibly other distributions) to store device\-tree files for installed kernels. The placeholder \fI%{kernel}\fP in the implicit prefix behaves as the template placeholder in an absolute path. An explicit template placeholder is not supported in relative paths.
+.sp
+Whether relative or absolute, the device\-tree path is always interpreted within the environment to be booted.
+.sp
+\fB/templated/path/to/%{kernel}/platform.dtb\fP
+.INDENT 0.0
+.INDENT 3.5
+The value \fI%{kernel}\fP in the property will be replaced with the kernel version that is to be launched from the boot environment.
+.UNINDENT
+.UNINDENT
+.sp
+\fBshort/path/platform.dtb\fP
+.INDENT 0.0
+.INDENT 3.5
+This value is appended to \fI/boot/dtbs/dtbs\-%{kernel}/\fP, a well\-known path used by Void Linux and possibly other distributions.
+.UNINDENT
+.UNINDENT
+.sp
+\fB/absolute/path/to/platform.dtb\fP
+.INDENT 0.0
+.INDENT 3.5
+This is the absolute path to a device tree file, regardless of the kernel that is to be launched.
+.UNINDENT
+.UNINDENT
 .UNINDENT
 .UNINDENT
 .SH OPTIONS FOR DRACUT AND MKINITCPIO
@@ -556,6 +597,6 @@ In general, it is not possible to cleanly abort a boot attempt from boot\-select
 .SH AUTHOR
 ZFSBootMenu Team <https://github.com/zbm-dev/zfsbootmenu>
 .SH COPYRIGHT
-2019 Zach Dykstra, 2020-2024 ZFSBootMenu Team
+2019 Zach Dykstra, 2020-2025 ZFSBootMenu Team
 .\" Generated by docutils manpage writer.
 .

@@ -18,21 +18,22 @@
 
     [1mzbm.prefer[0m
 
-      ZFSBootMenu will attempt to import as many pools as possible to identify boot environments and will, by default, look for the
-      [33mbootfs[0m property on the first imported pool (sorted alphabetically) to select the default boot environment. This option
-      controls this behavior.
+      ZFSBootMenu attempts to import all detected pools by default, with the [33mbootfs[0m property on the first pool (sorted
+      alphabetically) used to select the default boot environment. Providing a [33mpool[0m name for this parameter will override the
+      pool import order. Providing a [33mdataset[0m for this parameter will override both the pool import order and the default boot
+      environment.
 
-      [1mzbm.prefer=<pool>[0m
+      [1mzbm.prefer=<pool|dataset>[0m
 
-        The simplest form attempts to import [1m<pool>[0m before any other pool. The [33mbootfs[0m value from this pool will control the default
-        boot environment.
+        The simplest form attempts to import [1m<pool>[0m or the pool component of a [1m<dataset>[0m before any other pool. If a [33mdataset[0m is
+        provided, that will be used as the boot environment if it exists.
 
-      [1mzbm.prefer=<pool>![0m
+      [1mzbm.prefer=<pool|dataset>![0m
 
         If a literal [33m![0m has been appended to the pool name, ZFSBootMenu will insist on successfully importing the named pool before
         attempting to import any others.
 
-      [1mzbm.prefer=<pool>!![0m
+      [1mzbm.prefer=<pool|dataset>!![0m
 
         If a literal [33m!![0m has been appended to the pool name, ZFSBootMenu will insist on successfully importing the named pool and no
         others.
@@ -214,6 +215,10 @@
       This must be set for automatic booting to function. When no [1mbootfs[0m property is detected, ZFSBootMenu will always display a
       selection menu.
 
+    [1morg.zfsbootmenu:readonly[0m
+
+      When set to any value other than [33m-[0m or [33moff[0m, ZFSBootMenu operations which require the pool to be imported read-write will fail.
+
   [1mZFS Dataset Properties[0m
 
     The following properties can be set at any level of the boot-environment hierarchy to control boot behavior.
@@ -286,6 +291,34 @@
       keys are retained until ZFSBootMenu boots an environment, so a single password prompt can be sufficient to unlock
       several pools with the same [33mkeysource[0m or prevent prompts from reappearing when the pool must be exported and reimported
       (for example, to alter boot parameters from within ZFSBootMenu).
+
+    [1morg.zfsbootmenu:devicetree=<devicetree file definition>[0m
+
+      If specified, this provides the path to a device-tree file that will be loaded when ZFSBootMenu loads and boots an
+      environment. The path may be relative or absolute.
+
+      Absolute paths may contain a template placeholder, [33m%{kernel}[0m, that will be replaced with the version of the kernel that will
+      be booted.
+
+      Relative paths are interpreted as children of the path [33m/boot/dtbs/dtbs-%{kernel}/[0m, a well-known location used by Void Linux
+      (and possibly other distributions) to store device-tree files for installed kernels. The placeholder [33m%{kernel}[0m in the
+      implicit prefix behaves as the template placeholder in an absolute path. An explicit template placeholder is not
+      supported in relative paths.
+
+      Whether relative or absolute, the device-tree path is always interpreted within the environment to be booted.
+
+      [1m/templated/path/to/%{kernel}/platform.dtb[0m
+
+        The value [33m%{kernel}[0m in the property will be replaced with the kernel version that is to be launched from the boot
+        environment.
+
+      [1mshort/path/platform.dtb[0m
+
+        This value is appended to [33m/boot/dtbs/dtbs-%{kernel}/[0m, a well-known path used by Void Linux and possibly other distributions.
+
+      [1m/absolute/path/to/platform.dtb[0m
+
+        This is the absolute path to a device tree file, regardless of the kernel that is to be launched.
 
   [1mOptions for dracut and mkinitcpio[0m
 

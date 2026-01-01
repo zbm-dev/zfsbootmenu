@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-our $VERSION = '3.0.1+dev';
+our $VERSION = '3.1.0';
 
 use Getopt::Long qw(:config no_ignore_case auto_version);
 use Pod::Usage   qw(pod2usage);
