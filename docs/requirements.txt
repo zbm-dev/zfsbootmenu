@@ -1,4 +1,4 @@
-sphinx
+sphinx<9.0
 sphinx-reredirects
 sphinx-tabs
 sphinx-book-theme
