@@ -138,7 +138,7 @@ in ``EFI.ImageDir``.
 Booting the Bundled Executable
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The `efibootmgr`_ utility provides a means to configure your firmware to
+The `efibootmgr <https://github.com/rhboot/efibootmgr>`_ utility provides a means to configure your firmware to
 boot the bundled executable. For example::
 
   efibootmgr -c -d /dev/sda -p 1 -L "ZFSBootMenu" -l '\EFI\VOID\VMLINUZ.EFI'
