@@ -2068,10 +2068,16 @@ zreport() {
     if [ -f "/VERSION" ] ; then
       read -r INITRD_VERSION < /VERSION
       INITRD_VERSION="mkinitcpio ${INITRD_VERSION}"
+    # legacy dracut
     elif [ -f /etc/initrd-release ] ; then
       # shellcheck disable=SC1091
       source /etc/initrd-release
       [ -n "${DRACUT_VERSION}" ] && INITRD_VERSION="Dracut ${DRACUT_VERSION}"
+    # dracut-ng
+    elif [ -f /usr/lib/initrd-release ] ; then
+      # shellcheck disable=SC1091
+      source /usr/lib/initrd-release
+      [ -n "${VERSION_ID}" ] && INITRD_VERSION="Dracut ${VERSION_ID}"
     fi
 
     echo -e "${ZBM_PRETTY_NAME} ${ZBM_VERSION} with ${INITRD_VERSION} and ${UNAME}"
