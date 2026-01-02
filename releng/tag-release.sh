@@ -55,6 +55,16 @@ if ! command -v gh >/dev/null 2>&1; then
   error "ERROR: github-cli is required to tag releases"
 fi
 
+# If jq is available, ensure gh is authenticated
+if command -v jq >/dev/null 2>&1; then
+  jqargs=( '.hosts["github.com"][] | select(.state == "success" and .active == true)' )
+  if ! gh auth status --json hosts | jq -e "${jqargs[@]}" >/dev/null 2>&1; then
+    error "ERROR: gh does not appear authenticated; run gh auth and try again"
+  fi
+else
+  echo "NOTICE: install jq to verify gh authentication before tagging"
+fi
+
 # Make sure the tag has a leading "v"
 tag="v${release}"
 
@@ -193,11 +203,33 @@ if ! git push; then
   error "ERROR: failed to push to default branch; release aborted"
 fi
 
-if ! gh release create "${tag}" "${prerelease[@]}" \
-    --target "${release_branch}" -F "${relnotes}" \
-    -t "ZFSBootMenu ${tag}" "${asset_files[@]}"; then
-  error "ERROR: release creation failed"
-fi
+gh_release_args=(
+  release create "${tag}" "${prerelease[@]}"
+  --target "${release_branch}" -F "${relnotes}"
+  -t "ZFSBootMenu ${tag}" "${asset_files[@]}"
+)
+
+while ! gh "${gh_release_args[@]}"; do
+  printf "ERROR: FAILED TO CREATE RELEASE ON GITHUB\n  COMMAND: gh"
+  printf " %q" "${gh_release_args[@]}"
+  printf "\n"
+
+  cat <<-ERRPROMPT
+	Decide how to respond:
+	- Type 'CONTINUE' to proceed as if the release were created
+	- Type 'ABORT' to terminate immediately
+	- Press ENTER or type any other text to retry
+	ERRPROMPT
+
+  printf "> "
+
+  read -r err_response _
+  case "${err_response,,}" in
+    abort) error "ERROR: terminated by user request" ;;
+    continue) break ;;
+    *) ;;
+  esac
+done
 
 echo "Pushed and tagged release ${release}"
 
