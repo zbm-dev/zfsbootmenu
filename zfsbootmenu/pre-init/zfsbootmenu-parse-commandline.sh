@@ -127,6 +127,23 @@ else
   zinfo "defaulting menu timeout to ${menu_timeout}"
 fi
 
+# zbm.ssh_timeout= sets how long to wait for SSH login before auto-boot
+# Only relevant when dropbear/SSH is enabled in the image
+# shellcheck disable=SC2034
+zbm_ssh_timeout=0
+if ssh_timeout=$( get_zbm_arg zbm.ssh_timeout ) ; then
+  if [ "${ssh_timeout}" -ge 0 ] >/dev/null 2>&1; then
+    zbm_ssh_timeout="${ssh_timeout}"
+    if [ "${zbm_ssh_timeout}" -gt 0 ]; then
+      zinfo "SSH timeout set to ${zbm_ssh_timeout} seconds"
+    else
+      zinfo "SSH timeout disabled"
+    fi
+  else
+    zwarn "invalid SSH timeout: '${ssh_timeout}', disabling SSH timeout"
+  fi
+fi
+
 if zbm_retry_delay=$( get_zbm_arg zbm.retry_delay zbm.import_delay ) && [ "${zbm_retry_delay:-0}" -gt 0 ] 2>/dev/null ; then
   # Again, this validates that zbm_retry_delay is numeric in addition to logging
   zinfo "import/waitfor retry delay is ${zbm_retry_delay} seconds"

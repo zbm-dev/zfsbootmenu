@@ -56,6 +56,143 @@ esac
 
 unset ZFSBOOTMENU_CONSOLE
 
+# SSH connection timeout: wait for SSH login before auto-boot
+# If zbm_ssh_timeout is positive, wait that many seconds for an SSH login
+# If someone logs in via SSH, the lock file will be created and we skip auto-boot
+# shellcheck disable=SC2154
+if [ "${zbm_ssh_timeout:-0}" -gt 0 ]; then
+  echo "[SSH] Waiting for network..."
+  
+  # Wait for network to come up (max 10 seconds)
+  _net_wait=0
+  while [ "${_net_wait}" -lt 10 ]; do
+    if ip -4 addr show scope global 2>/dev/null | grep -q 'inet '; then
+      _ip_addr=$( ip -4 addr show scope global 2>/dev/null | grep 'inet ' | head -1 | awk '{print $2}' )
+      echo "[SSH] Network up: ${_ip_addr}"
+      break
+    fi
+    echo "[SSH] Waiting for IP... (${_net_wait}/10)"
+    sleep 1
+    _net_wait=$(( _net_wait + 1 ))
+  done
+  
+  if [ "${_net_wait}" -ge 10 ]; then
+    echo "[SSH] WARN: Network not ready after 10s"
+  fi
+  unset _net_wait _ip_addr
+  
+  # Check if dropbear is running (SSH server)
+  if pgrep -x dropbear >/dev/null 2>&1; then
+    # Get port from config (using sed instead of cut for busybox compatibility)
+    _db_port=$( sed -n "s/.*dropbear_port='\([^']*\)'.*/\1/p" /etc/crypt-ssh.conf 2>/dev/null )
+    echo "[SSH] Dropbear running on port ${_db_port:-222}"
+    
+    # Show all interfaces with IPs (to verify multi-NIC)
+    echo "[SSH] Interfaces with IPs:"
+    ip -4 addr show scope global 2>/dev/null | grep -E 'inet |^[0-9]+:' | while read line; do
+      echo "[SSH]   $line"
+    done
+    
+    # Check if dropbear is actually listening (try multiple methods)
+    if command -v ss >/dev/null 2>&1; then
+      _listen=$( ss -tlnp 2>/dev/null | grep ":${_db_port:-222}" )
+      echo "[SSH] Listening: ${_listen:-NOT LISTENING!}"
+    elif command -v netstat >/dev/null 2>&1; then
+      _listen=$( netstat -tlnp 2>/dev/null | grep ":${_db_port:-222}" )
+      echo "[SSH] Listening: ${_listen:-NOT LISTENING!}"
+    elif [ -f /proc/net/tcp ]; then
+      # Fallback: check /proc/net/tcp directly (port in hex, :0016 = 22, :00DE = 222)
+      _hex_port=$( printf '%04X' "${_db_port:-222}" )
+      if grep -q ":${_hex_port} " /proc/net/tcp 2>/dev/null; then
+        echo "[SSH] Listening: yes (verified via /proc/net/tcp)"
+      else
+        echo "[SSH] Listening: NOT FOUND in /proc/net/tcp!"
+      fi
+    else
+      echo "[SSH] Cannot verify listening (no ss/netstat/proc)"
+    fi
+    
+    echo "[SSH] Waiting ${zbm_ssh_timeout}s for SSH connection..."
+    zinfo "Waiting ${zbm_ssh_timeout}s for SSH connection..."
+    
+    # Clean up any stale ssh_connected marker from previous boot
+    rm -f "${BASE}/ssh_connected" 2>/dev/null || true
+    
+    _ssh_waited=0
+    _ssh_connected=0
+    while [ "${_ssh_waited}" -lt "${zbm_ssh_timeout}" ]; do
+      # Check if someone has SSH'd in - multiple detection methods:
+      
+      # Method 1: Check for active lock file (created when zfsbootmenu runs)
+      if [ -e "${BASE}/active" ]; then
+        echo "[SSH] ZBM active file detected!"
+        zinfo "SSH session detected via active file, cancelling auto-boot timeout"
+        _ssh_connected=1
+        break
+      fi
+      
+      # Method 2: Check for ssh_connected marker
+      if [ -e "${BASE}/ssh_connected" ]; then
+        echo "[SSH] SSH connected marker found!"
+        _ssh_connected=1
+        break
+      fi
+      
+      # Method 3: Count dropbear processes (more than 1 means someone connected)
+      # When a connection comes in, dropbear forks a child process
+      _db_count=$( pgrep -c -x dropbear 2>/dev/null || echo 0 )
+      if [ "${_db_count}" -gt 1 ]; then
+        echo "[SSH] Login detected! (${_db_count} dropbear processes)"
+        zinfo "SSH login detected, cancelling auto-boot timeout"
+        # Create a marker to indicate SSH user has control
+        : > "${BASE}/ssh_connected"
+        _ssh_connected=1
+        break
+      fi
+      
+      sleep 1
+      _ssh_waited=$(( _ssh_waited + 1 ))
+      
+      # Show countdown every 5 seconds
+      if [ $(( _ssh_waited % 5 )) -eq 0 ]; then
+        echo "[SSH] Waiting... ${_ssh_waited}/${zbm_ssh_timeout}s"
+      fi
+    done
+    
+    # If SSH user connected, wait until they disconnect (don't run ZBM on console)
+    if [ "${_ssh_connected}" -eq 1 ]; then
+      echo "[SSH] User connected via SSH, console waiting..."
+      echo "[SSH] Console will resume when SSH session ends"
+      # Wait until the SSH session ends (check both files and dropbear process count)
+      while true; do
+        # If active file exists, ZBM is running via SSH
+        [ -e "${BASE}/active" ] && { sleep 2; continue; }
+        # If ssh_connected marker exists and more than 1 dropbear, still connected
+        if [ -e "${BASE}/ssh_connected" ]; then
+          _db_count=$( pgrep -c -x dropbear 2>/dev/null || echo 0 )
+          if [ "${_db_count}" -gt 1 ]; then
+            sleep 2
+            continue
+          fi
+          # SSH disconnected, clean up marker
+          rm -f "${BASE}/ssh_connected" 2>/dev/null || true
+        fi
+        # Both files gone, SSH user disconnected
+        break
+      done
+      echo "[SSH] SSH session ended, console resuming control"
+    elif [ "${_ssh_waited}" -ge "${zbm_ssh_timeout}" ]; then
+      echo "[SSH] Timeout expired, no SSH connection"
+      zinfo "SSH timeout expired (${zbm_ssh_timeout}s), stopping dropbear and proceeding with auto-boot"
+      # Stop dropbear to prevent late SSH connections from interfering with auto-boot
+      pkill -x dropbear 2>/dev/null || true
+    fi
+    unset _ssh_waited _db_count _ssh_connected
+  else
+    zinfo "SSH timeout configured but dropbear not running, skipping"
+  fi
+fi
+
 # If BOOTFS is not empty display the fast boot menu
 # shellcheck disable=SC2154
 if [ "${menu_timeout}" -ge 0 ] && [ -n "${BOOTFS}" ]; then

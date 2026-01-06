@@ -36,6 +36,7 @@ export zbm_retry_delay='${zbm_retry_delay}'
 export zbm_hook_root='${zbm_hook_root}'
 export zbm_wait_for_devices='${zbm_wait_for_devices}'
 export control_term='${control_term}'
+export zbm_ssh_timeout='${zbm_ssh_timeout}'
 # END additions by zfsbootmenu-preinit.sh
 EOF
 
