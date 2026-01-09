@@ -169,7 +169,7 @@ draw_be() {
       ${HAS_BORDER:+--preview-label-pos=2:bottom} \
       ${HAS_BORDER:+--preview-label="$( colorize orange " ${preview_label} " )"} \
       --header="${header}" --preview-window="up:${PREVIEW_HEIGHT}${HAS_BORDER:+,border-sharp}" \
-      --preview="/libexec/zfsbootmenu-preview {} '${BOOTFS}'" < "${env}" )"; then
+      --preview="/libexec/zfsbootmenu-preview -b '${BOOTFS}' {}" < "${env}" )"; then
     return 1
   fi
 
@@ -217,7 +217,7 @@ draw_kernel() {
       --prompt "${benv} > " --tac --delimiter=$'\t' --with-nth=2 \
       --header="${header}" ${HAS_BORDER:+--border-label="$( global_header )"} \
       ${expects} ${expects//alt-/ctrl-} ${expects//alt-/ctrl-alt-} \
-      --preview="/libexec/zfsbootmenu-preview '${benv}' '${BOOTFS}'"  \
+      --preview="/libexec/zfsbootmenu-preview -b '${BOOTFS}' -k {2} '${benv}'"  \
       --preview-window="up:${PREVIEW_HEIGHT}${HAS_BORDER:+,border-sharp}" < "${_kernels}" )"; then
     return 1
   fi
@@ -321,7 +321,7 @@ draw_snapshots() {
         --bind="ctrl-alt-d:execute[ /libexec/zfsbootmenu-diff {+} ]${HAS_REFRESH:++refresh-preview}" \
         ${HAS_BORDER:+--preview-label-pos=${preview_offset:+${preview_offset}}bottom} \
         ${HAS_BORDER:+--preview-label="${context}"} \
-        --preview="/libexec/zfsbootmenu-preview '${benv}' '${BOOTFS}' ${LEGACY_CONTEXT:+\"${context}\"}" \
+        --preview="/libexec/zfsbootmenu-preview -b '${BOOTFS}' ${LEGACY_CONTEXT:+-c \"${context}\"} '${benv}'"  \
         --preview-window="up:$(( PREVIEW_HEIGHT + ${LEGACY_CONTEXT:-0} ))${HAS_BORDER:+,border-sharp}" <<<"${snapshots}" )"
   then
     return 1
@@ -651,7 +651,7 @@ populate_be_list() {
   ret=1
   for fs in "${candidates[@]}"; do
     # Remove any existing cmdline cache
-    rm -f "$( be_location "${fs}" )/cmdline"
+    rm -f "$( kernel_kcl_cache "${fs}" "default" )"
 
     # Unlock if necessary
     load_key "${fs}" || continue

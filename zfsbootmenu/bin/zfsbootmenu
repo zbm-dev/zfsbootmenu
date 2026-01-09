@@ -258,10 +258,13 @@ while true; do
       tput clear
       tput cnorm
 
-      echo ""
-      /libexec/zfsbootmenu-preview "${selected_be}" "${BOOTFS}"
+      IFS=$'\t' read -r _ kernel _ <<< "$( select_kernel "${selected_be}" || echo $'-\t-\t-' )"
+      [ "${kernel}" = "-" ] && kernel=""
 
-      BE_ARGS="$( load_be_cmdline "${selected_be}" )"
+      echo ""
+      /libexec/zfsbootmenu-preview -b "${BOOTFS}" -k "${kernel}" "${selected_be}"
+
+      BE_ARGS="$( load_be_cmdline "${selected_be}" "${kernel}" )"
       while IFS= read -r line; do
         def_args="${line}"
       done <<< "${BE_ARGS}"

@@ -7,12 +7,28 @@ source /etc/zfsbootmenu.conf >/dev/null 2>&1 || exit 1
 source /lib/kmsg-log-lib.sh >/dev/null 2>&1 || exit 1
 source /lib/zfsbootmenu-core.sh >/dev/null 2>&1 || exit 1
 
-ENV="${1}"
-BOOTFS="${2}"
+BOOTFS=""
+KERNEL=""
+CONTEXT=""
 
-# shellcheck disable=SC2034
-IFS=$'\t' read -r _fs selected_kernel _initramfs <<<"$( select_kernel "${ENV}" || echo "- missing -" )"
-selected_kernel="${selected_kernel##*/}"
+while getopts "b:c:k:" opt; do
+  case "${opt}" in
+    b) BOOTFS="${OPTARG}" ;;
+    c) CONTEXT="${OPTARG}" ;;
+    k) KERNEL="${OPTARG}" ;;
+    *) ;;
+  esac
+done
+
+shift $((OPTIND - 1))
+
+ENV="${1}"
+
+if [ -z "${KERNEL}" ]; then
+  # shellcheck disable=SC2034
+  read -r _ KERNEL _ <<< "$( select_kernel "${ENV}" || echo $'-\t-\t-' )"
+  [ "${KERNEL}" = "-" ] && KERNEL=""
+fi
 
 if [ "${BOOTFS}" = "${ENV}" ]; then
   _EXTRAS+=( "default," )
@@ -31,9 +47,10 @@ else
   _COLOR="green"
 fi
 
-selected_arguments="$( center_string "$( load_be_cmdline "${ENV}" )" )"
+selected_arguments="$( center_string "$( load_be_cmdline "${ENV}" "${KERNEL}" )" )"
 
-selected_env_str="$( center_string "${ENV} (${_EXTRAS[*]}) - ${selected_kernel}" )"
+KERNEL="${KERNEL##*/}"
+selected_env_str="$( center_string "${ENV} (${_EXTRAS[*]}) - ${KERNEL:-missing}" )"
 
 # colorize doesn't automatically add a newline
 if [ -f "${BASE}/have_errors" ]; then
@@ -47,7 +64,6 @@ fi
 colorize "${_COLOR}" "${selected_env_str}\n"
 echo "${selected_arguments}"
 
-if [ -n "${3}" ]; then
-  context="$( center_string "${3}" )"
-  colorize "orange" "${context}"
+if [ -n "${CONTEXT}" ]; then
+  colorize "orange" "$( center_string "${CONTEXT}" )"
 fi
