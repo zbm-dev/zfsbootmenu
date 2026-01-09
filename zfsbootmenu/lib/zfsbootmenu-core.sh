@@ -329,7 +329,7 @@ mount_zfs() {
   fi
 
   # zfsutil is required for non-legacy mounts and omitted for legacy mounts or snapshots
-  if [ "$(zfs get -H -o value mountpoint "${fs}")" = "legacy" ] || is_snapshot "${fs}" ; then
+  if [ "$( zfs get -H -o value mountpoint "${fs}" )" = "legacy" ] || is_snapshot "${fs}" ; then
     zdebug "mounting ${fs} at ${mnt} (${rwo})"
     mount -o "${rwo}" -t zfs "${fs}" "${mnt}"
     ret=$?
@@ -388,7 +388,7 @@ kexec_kernel() {
     ZBM_SELECTED_MOUNTPOINT="${mnt}" \
     /libexec/zfsbootmenu-run-hooks "boot-sel.d"
 
-  cli_args="$( load_be_cmdline "${fs}" )"
+  cli_args="$( load_be_cmdline "${fs}" "${kernel}" )"
   root_prefix="$( find_root_prefix "${fs}" "${mnt}" )"
 
   dtb_prop="$( zfs get -H -o value org.zfsbootmenu:devicetree "${fs}" 2>/dev/null )"
@@ -866,7 +866,7 @@ find_be_initramfs() {
 
 find_be_kernels() {
   local fs mnt
-  local kpath ipath kernel_records
+  local kpath ipath kernel_records kcl_path
 
   fs="${1}"
   if [ -z "${fs}" ]; then
@@ -885,6 +885,13 @@ find_be_kernels() {
   kernel_records="${mnt%/*}/kernels"
   : > "${kernel_records}"
 
+  # Clear any existing KCL cache before enumerating kernels
+  if kcl_path="$( kernel_kcl_cache "${fs}" "." )"; then
+    kcl_path="${kcl_path%/..kcl}"
+    mkdir -p "${kcl_path}"
+    rm -f "${kcl_path}"/*.kcl
+  fi
+
   # Look for kernels and matching initramfs, sorted in version order
   while read -r kpath; do
     # Strip mount point from path
@@ -899,6 +906,12 @@ find_be_kernels() {
       printf "%s\t%s\t%s\n" "${fs}" "${kpath}" "${ipath}" >> "${kernel_records}"
     else
       zdebug "kernel ${mnt}${kpath} has no initramfs"
+    fi
+
+    if [ -r "${mnt}/${kpath}.kcl" ]; then
+      if kcl_path="$( kernel_kcl_cache "${fs}" "${kpath}" )"; then
+        cp "${mnt}/${kpath}.kcl" "${kcl_path}"
+      fi
     fi
   done <<<"$(
     for k in "${mnt}/boot"/{{vm,}linu{x,z},kernel}{,-*}; do
@@ -1060,11 +1073,42 @@ validate_cmdline_cache() {
 }
 
 # arg1: ZFS filesystem
+# arg2: optional path to kernel
+# prints: path to kernel-specific KCL cache
+# returns: 0 on success
+
+kernel_kcl_cache() {
+  local fs kernel
+
+  fs="${1}"
+  if [ -z "${fs}" ]; then
+    zerror "filesystem is undefined"
+    return 1
+  fi
+
+  kernel="${2}"
+  if [ -z "${kernel}" ]; then
+    zdebug "no kernel specified for ${fs}"
+    return 1
+  fi
+
+  # Flatten the kernel hierarchy for the kcl cache
+  # - Replace "/" with ":", but change literal ":" to "::" to avoid ambiguity
+  kernel="${kernel#/}"
+  kernel="${kernel//:/::}"
+  kernel="${kernel//\//:}"
+
+  echo "$( be_location "${fs}" )/kcl/${kernel}.kcl"
+  return 0
+}
+
+# arg1: ZFS filesystem
+# arg2: optional kernel to select
 # prints: kernel command line arguments
 # returns: nothing
 
 load_be_cmdline() {
-  local fs args spl_hostid kcl cache rems adds
+  local fs kern_kcl args spl_hostid kcl cache rems adds
 
   fs="${1}"
   if [ -z "${fs}" ]; then
@@ -1073,7 +1117,13 @@ load_be_cmdline() {
   fi
   zdebug "fs set to ${fs}"
 
-  cache="$( be_location "${fs}" )/cmdline"
+  # Ignore a pre-existing cache if a kernel-specific command-line is specified
+  [ -n "${2}" ] && kern_kcl="$( kernel_kcl_cache "${fs}" "${2}" )"
+  if [ -r "${kern_kcl}" ]; then
+    zdebug "found kernel KCL ${kern_kcl} on ${fs}, ignoring KCL cache"
+  else
+    cache="$( kernel_kcl_cache "${fs}" "default" )"
+  fi
 
   if [ -r "${BASE}/cmdline" ]; then
     # Always prefer a user-entered KCL
@@ -1093,8 +1143,9 @@ load_be_cmdline() {
   # Nothing is added by default
   adds=()
 
-  # In all other cases, build and attempt to cache the KCL
-  args="$(read_kcl_prop "${fs}" | kcl_tokenize && exit "${PIPESTATUS[0]}" )" || args=""
+  args="$( read_kcl_value "${fs}" "${kern_kcl}" )" || args=""
+  args="$( kcl_tokenize <<< "${args}" )" || args=""
+
   # Use a very basic default KCL if none is specified
   [ -n "${args}" ] || args="quiet loglevel=4"
 
@@ -1125,10 +1176,13 @@ load_be_cmdline() {
     adds+=( "${spl_hostid}" )
   fi
 
-  # Write the cached command line, if possible
-  zdebug "caching KCL for ${fs} at ${cache}"
   args="$( kcl_suppress "${rems[@]}" <<< "${args}" | kcl_append "${adds[@]}" )"
-  printf "%s\n" "${args}" > "${cache}"
+
+  if [ -n "${cache}" ]; then
+    # Write the cached command line, if possible
+    zdebug "caching KCL for ${fs} at ${cache}"
+    printf "%s\n" "${args}" > "${cache}"
+  fi
 
   kcl="$( kcl_assemble <<< "${args}" )"
   zdebug "assembled commandline: '${kcl}'"
@@ -1794,7 +1848,7 @@ cache_key() {
   fi
 
   relkeyloc=""
-  if ksmount="$(zfs get -o value -H mountpoint "${keysrc}" 2>/dev/null )"; then
+  if ksmount="$( zfs get -o value -H mountpoint "${keysrc}" 2>/dev/null )"; then
     case "${ksmount}" in
       none|legacy)
         zdebug "no discernable mountpoint for ${keysrc}, using only absolute key path"
@@ -2010,8 +2064,8 @@ emergency_shell() {
   cat <<-EOF
 	$( colorize green "emergency shell")${1:+: $1}
 
-	type '$(colorize red "help")' for online documentation
-	type '$( colorize red "exit")' to return to ZFSBootMenu
+	type '$( colorize red "help" )' for online documentation
+	type '$( colorize red "exit" )' to return to ZFSBootMenu
 
 	EOF
 
@@ -2185,7 +2239,7 @@ is_mountpoint() {
     return
   fi
 
-  if ! mount_path="$(readlink -f "${1}")"; then
+  if ! mount_path="$( readlink -f "${1}" )"; then
     zerror "parent of ${1} does not exist"
     return 1
   fi
@@ -2197,7 +2251,7 @@ is_mountpoint() {
 
   # shellcheck disable=SC2034
   while read -r dev path opts; do
-    path="$(readlink -f "${path}")" || continue
+    path="$( readlink -f "${path}" )" || continue
     [ "${path}" = "${mount_path}" ] && return 0
   done < /proc/self/mounts
 

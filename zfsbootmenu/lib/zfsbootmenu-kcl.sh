@@ -102,6 +102,42 @@ read_kcl_prop() {
   return 0
 }
 
+# arg1: ZFS filesystem
+# arg2: path to command-line file (need not exist)
+# prints: value of command line, with %{parent} expanded from ZFS property
+# returns: 0 on success
+
+read_kcl_value() {
+  local zfsbe kclfile args par_args
+
+  zfsbe="${1}"
+  if [ -z "${zfsbe}" ]; then
+    zerror "zfsbe is undefined"
+    return 1
+  fi
+
+  kclfile="${2}"
+
+  # If there is no KCL file, just read the property
+  if [ ! -r "${kclfile}" ]; then
+    read_kcl_prop "${zfsbe}"
+    return
+  fi
+
+  # Otherwise, read the file...
+  read -r args < "${kclfile}"
+  if ! [[ "${args}" =~ "%{parent}" ]]; then
+    zdebug "no parent reference in ${kclfile} on ${zfsbe}"
+    echo "${args}"
+    return 0
+  fi
+
+  # ...and expand any %{parent} reference from the property
+  par_args="$( read_kcl_prop "${zfsbe}" )" || par_args=""
+  echo "${args//%\{parent\}/${par_args}}"
+  return 0
+}
+
 # arg1..argN: keys (and, optionally, associated value) to suppress from KCL
 # prints: tokenized KCL [read from stdin] with suppressed arguments removed
 

@@ -47,7 +47,7 @@ if [ -z "${fs}" ]; then
         ${HAS_BORDER:+--preview-label-pos=2:bottom} \
         ${HAS_BORDER:+--preview-label="$( colorize orange " ${preview_label} " )"} \
         --preview-window="up:${PREVIEW_HEIGHT}${HAS_BORDER:+,border-sharp}" \
-        --preview="/libexec/zfsbootmenu-preview {} '${BOOTFS}'" <<< "${candidates}"
+        --preview="/libexec/zfsbootmenu-preview -b '${BOOTFS}' {}" <<< "${candidates}"
   )"; then
     tput clear
     exit 0;
