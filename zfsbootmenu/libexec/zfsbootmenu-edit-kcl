@@ -1,0 +1,55 @@
+#!/bin/bash
+# vim: softtabstop=2 shiftwidth=2 expandtab
+
+# shellcheck disable=SC1091
+source /lib/profiling-lib.sh >/dev/null 2>&1 || true
+source /etc/zfsbootmenu.conf >/dev/null 2>&1 || exit 1
+source /lib/kmsg-log-lib.sh >/dev/null 2>&1 || exit 1
+source /lib/zfsbootmenu-core.sh >/dev/null 2>&1 || exit 1
+
+BOOTFS=""
+KERNEL=""
+
+while getopts "b:k:" opt; do
+  case "${opt}" in
+    b) BOOTFS="${OPTARG}" ;;
+    k) KERNEL="${OPTARG}" ;;
+    *) ;;
+  esac
+done
+
+shift $((OPTIND - 1))
+
+ENV="${1}"
+
+if [ -z "${KERNEL}" ]; then
+  # shellcheck disable=SC2034
+  read -r _ KERNEL _ <<< "$( select_kernel "${ENV}" || echo $'-\t-\t-' )"
+  [ "${KERNEL}" = "-" ] && KERNEL=""
+fi
+
+# Clear the screen for the prompt
+tput clear
+tput cnorm
+
+# Draw the header for this environment and kernel
+echo ""
+/libexec/zfsbootmenu-preview -b "${BOOTFS}" -k "${KERNEL}" "${ENV}"
+
+# Load the existing command line as the default
+BE_ARGS="$( load_be_cmdline "${ENV}" "${KERNEL}" )" || BE_ARGS=""
+while IFS= read -r line; do
+  default_args="${line}"
+done <<< "${BE_ARGS}"
+
+cat <<EOF
+
+ENTER A NEW KERNEL COMMAND LINE
+  - Interrupt with Ctrl+C or specify an empty line to cancel input
+  - Any "root=" arguments will be ignored
+EOF
+
+cmdline="$( /libexec/zfsbootmenu-input "${default_args}" )" || cmdline=""
+[ -n "${cmdline}" ] || exit 1
+
+kcl_tokenize <<< "${cmdline}" | kcl_suppress root > "${BASE}/cmdline"
