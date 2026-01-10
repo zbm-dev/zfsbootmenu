@@ -145,6 +145,9 @@ while true; do
         "mod-u")
           set_default_kernel "${fs}"
           ;;
+        "mod-e")
+          /libexec/zfsbootmenu-edit-kcl -b "${BOOTFS}" -k "${kpath}" "${fs}"
+          ;;
         "left")
           key="mod-s"
           BE_SELECTED=1
@@ -255,26 +258,7 @@ while true; do
       tput cnorm
       ;;
     "mod-e")
-      tput clear
-      tput cnorm
-
-      IFS=$'\t' read -r _ kernel _ <<< "$( select_kernel "${selected_be}" || echo $'-\t-\t-' )"
-      [ "${kernel}" = "-" ] && kernel=""
-
-      echo ""
-      /libexec/zfsbootmenu-preview -b "${BOOTFS}" -k "${kernel}" "${selected_be}"
-
-      BE_ARGS="$( load_be_cmdline "${selected_be}" "${kernel}" )"
-      while IFS= read -r line; do
-        def_args="${line}"
-      done <<< "${BE_ARGS}"
-
-      echo -e "\nNew kernel command line (root= arguments will be ignored)"
-      cmdline="$( /libexec/zfsbootmenu-input "${def_args}" )"
-
-      if [ -n "${cmdline}" ] ; then
-        kcl_tokenize <<< "${cmdline}" | kcl_suppress root > "${BASE}/cmdline"
-      fi
+      /libexec/zfsbootmenu-edit-kcl -b "${BOOTFS}" "${selected_be}"
       ;;
     "mod-t")
       [ -f "${BASE}/cmdline" ] && rm "${BASE}/cmdline"

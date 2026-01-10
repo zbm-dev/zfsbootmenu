@@ -203,15 +203,15 @@ draw_kernel() {
   zdebug "using kernels file: ${_kernels}"
 
   header="$( column_wrap "\
-^[RETURN] boot:[ESCAPE] back
-^[CTRL+D] set default:[CTRL+U] unset default
-^[CTRL+L] view logs:[CTRL+H] help" \
+^[RETURN] boot:[CTRL+E] edit kcl:[ESCAPE] back
+^[CTRL+D] set default::[CTRL+U] unset default
+^[CTRL+L] view logs::[CTRL+H] help" \
 "\
 ^[RETURN] boot
 ^[CTRL+D] set default
 ^[CTRL+H] help" )"
 
-  expects="--expect=alt-d,alt-u,left,right"
+  expects="--expect=alt-d,alt-u,alt-e,left,right"
 
   if ! selected="$( HELP_SECTION=kernel-management ${FUZZYSEL} \
       --prompt "${benv} > " --tac --delimiter=$'\t' --with-nth=2 \
