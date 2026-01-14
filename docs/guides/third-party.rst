@@ -15,3 +15,8 @@ Gentoo
 ------
 
 * `Gentoo Wiki: root on ZFS <https://wiki.gentoo.org/wiki/ZFS/rootfs>`_
+
+NixOS
+-----
+
+* `Sirn Thanabulpong: ZFSBootMenu on NixOS <https://grid.in.th/2024/12/zfsbootmenu_on_nixos/>`_
