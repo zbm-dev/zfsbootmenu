@@ -15,6 +15,7 @@ use File::stat;
 use File::Path qw(make_path remove_tree);
 use File::Glob qw(:globally :nocase);
 use Sort::Versions;
+use IPC::Cmd qw(can_run);
 use Config;
 use bigint qw(hex);
 
@@ -125,6 +126,13 @@ if ( defined $runConf{enable} ) {
 unless ( $config{Global}{ManageImages} ) {
   print "ManageImages not enabled, no action taken\n";
   exit;
+}
+
+if ( enabled $config{EFI} ) {
+  unless (can_run('objdump'))  {
+    print "required binary 'objdump' not found, unable to proceed'";
+    exit;
+  }
 }
 
 unless ( defined $runConf{usecpio} ) {
