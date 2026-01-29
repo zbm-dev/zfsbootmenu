@@ -1,8 +1,6 @@
 Third-Party Resources
 =====================
 
-The `ZFSBootMenu Wiki <https://github.com/zbm-dev/zfsbootmenu/wiki>`_ hosts several user-contributed guides.
-
 The following links are not hosted by ZFSBootMenu, but may provide useful information.
 
 Arch Linux
