@@ -351,7 +351,7 @@ mount_zfs() {
 
 kexec_kernel() {
   local selected fs kernel initramfs output hook_envs
-  local dtb_prop dtb_try dtb_file kver
+  local dtb_prop dtb_try dtb_file kver try load_success
 
   selected="${1}"
   if [ -z "${selected}" ]; then
@@ -420,11 +420,22 @@ kexec_kernel() {
     zdebug "no devicetree property set"
   fi
 
-  if ! output="$( kexec -a -l "${mnt}${kernel}" \
-    --initrd="${mnt}${initramfs}" \
-    ${dtb_file:+--dtb="${dtb_file}"} \
-    --command-line="${root_prefix}${fs} ${cli_args}" 2>&1 )"
-  then
+  load_success=
+
+  # shellcheck disable=SC2034
+  for try in 1 2 ; do
+    if output="$( kexec -a -l "${mnt}${kernel}" \
+          --initrd="${mnt}${initramfs}" \
+          ${dtb_file:+--dtb="${dtb_file}"} \
+          --command-line="${root_prefix}${fs} \
+          ${cli_args}" 2>&1 )"
+    then
+      load_success=1
+      break
+    fi
+  done
+
+  if [ -z "${load_success}" ]; then
     zerror "unable to load ${mnt}${kernel} and ${mnt}${initramfs} into memory"
     zerror "${output}"
     recursive_umount "${mnt}"
@@ -456,13 +467,13 @@ kexec_kernel() {
 
   echo -e "\nBooting $( colorize yellow "${kernel}" ) for $( colorize cyan "${fs}" ) ...\n"
 
-  if ! output="$( kexec -e -i 2>&1 )"; then
-    zerror "kexec -e -i failed!"
-    zerror "${output}"
-    timed_prompt -d 10 \
-      -m "$( colorize red "kexec run of ${kernel} failed!" )"
-    return 1
-  fi
+  output="$( kexec -e -i 2>&1 )"
+
+  # If we ever reach this, it means our kexec failed
+  zerror "kexec -e -i failed!"
+  zerror "${output}"
+  timed_prompt -d 10 -m "$( colorize red "kexec run of ${kernel} failed!" )"
+  return 1
 }
 
 # arg1: snapshot name
