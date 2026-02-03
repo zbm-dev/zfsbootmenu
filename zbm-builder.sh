@@ -86,8 +86,7 @@ OPTIONS:
 
 For more information, see documentation at
 
-  https://github.com/zbm-dev/zfsbootmenu/blob/master/README.md
-  https://github.com/zbm-dev/zfsbootmenu/blob/master/docs/BUILD.md
+  https://docs.zfsbootmenu.org/
 EOF
 }
 
