@@ -6,7 +6,7 @@ Adjust the mirror, libc, and package selection as you see fit.
 .. code-block::
 
   XBPS_ARCH=x86_64 xbps-install \
-    -S -R https://mirrors.servercentral.com/voidlinux/current \
+    -S -R https://mirrors.summithq.com/voidlinux/current \
     -r /mnt base-system
 
 Copy our files into the new install
