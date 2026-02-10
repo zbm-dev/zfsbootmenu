@@ -37,8 +37,8 @@ Dependencies
 ------------
 
 To build ZFSBootMenu images from a build container, either `podman <https://podman.io>`_ or
-`docker <https://www.docker.com>`_ is required. The development team prefers ``podman``, but ``docker`` may generally be
-substituted without consequence.
+`docker <https://www.docker.com>`_ is required. The development team prefers ``podman``, but ``docker`` or a
+compatible container utility may generally be substituted without consequence.
 
 If a custom build container is desired, `buildah <https://buildah.io>`_ and ``podman`` are generally required. A
 :zbm:`Dockerfile <releng/docker/Dockerfile>` is provided for convenience, but feature parity with the ``buildah``

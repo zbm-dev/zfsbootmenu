@@ -38,7 +38,9 @@ OPTIONS:
      Specify the path to a configuration file that will be sourced
      (Default: \${BUILD_DIRECTORY}/zbm-builder.conf, if it exists)
 
-  -d Force use of docker instead of podman
+  -d <container-frontend>
+     Use the specified front-end utility to launch the build container
+     (Default: podman if available, docker otherwise)
 
   -M <argument>
      Provide a comma-separated list of options to use for volume
@@ -119,7 +121,7 @@ else
   PODMAN="docker"
 fi
 
-CMDOPTS="b:dhi:l:L:c:M:O:HR"
+CMDOPTS="b:d:hi:l:L:c:M:O:HR"
 
 # First pass to get build directory and configuration file
 while getopts "${CMDOPTS}" opt; do
@@ -166,7 +168,7 @@ while getopts "${CMDOPTS}" opt; do
     b|c|h)
       ;;
     d)
-      PODMAN=docker
+      PODMAN="${OPTARG}"
       ;;
     i)
       BUILD_IMG="${OPTARG}"
@@ -202,7 +204,7 @@ done
 shift $((OPTIND-1))
 
 if ! command -v "${PODMAN}" >/dev/null 2>&1; then
-  echo "ERROR: this script requires podman or docker"
+  echo "ERROR: ${PODMAN} not found; use '-d' to specify a container front-end"
   exit 1
 fi
 
