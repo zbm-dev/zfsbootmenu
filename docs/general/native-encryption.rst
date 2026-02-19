@@ -3,7 +3,7 @@ Native Encryption
 
 ZFSBootMenu can import pools or filesystems with native encryption enabled. If your boot environments are not encrypted
 but, for example, ``/home`` is, you will not receive a decryption prompt during boot. To ensure that you can decrypt
-your pool to load the kernel and initramfs, you'll need to you have the filesystem parameters configured correctly.
+your pool to load the kernel and initramfs, you'll need to have the filesystem parameters configured correctly.
 
 It's critical that ``keyformat`` is set to ``passphrase``, otherwise you'll be unable to enter the correct value in the
 bootloader. OpenZFS currently supports only one key, but in a way which ZFSBootMenu can exploit: if you configure the
