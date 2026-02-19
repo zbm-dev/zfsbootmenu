@@ -109,9 +109,8 @@ governs the creation of bundled UEFI executables. The default configuration disa
 The remaining keys in the ``EFI`` section allow control over where and how UEFI bundles are created:
 
 * ``ImageDir`` is the location where the bundle will be written, and should generally be a subdirectory of the ``EFI``
-  subdirectory of your EFI system partition. The default, ``/boot/efi/EFI/void``, is fine if the ESP is mounted at
-  ``/boot/efi`` (and you are either running Void Linux or don't care if the directory name matches your distribution
-  name).
+  subdirectory of your EFI system partition. The default, ``/boot/efi/EFI/zbm``, is fine if the ESP is mounted at
+  ``/boot/efi``.
 * ``Versions`` controls whether UEFI bundles include a version and revision number in their name and, if so, how many
   prior versioned executables are retained. Because the firmware is not automatically reconfigured to boot the latest
   version after runs of ``generate-zbm``, it is probably best to disabling ``Versions`` by setting its value to ``false``
