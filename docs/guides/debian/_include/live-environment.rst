@@ -33,7 +33,7 @@ Install helpers
 .. code-block::
 
   apt install debootstrap gdisk dkms linux-headers-$(uname -r)
-  apt install zfsutils-linux
+  apt install zfsutils-linux zfs-dkms
 
 .. include:: ../_include/zgenhostid.rst
 
