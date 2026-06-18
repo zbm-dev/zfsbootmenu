@@ -1,5 +1,7 @@
 #!/bin/bash
 
+: ${SED:=sed}
+
 # Clone ZFSBootMenu and install
 ( cd / && git clone https://github.com/zbm-dev/zfsbootmenu.git )
 ( cd /zfsbootmenu && make install )
@@ -11,7 +13,7 @@ fi
 
 # Adjust the configuration for convenient builds
 if [ -f /etc/zfsbootmenu/config.yaml ]; then
-  sed -e 's/Versions:.*/Versions: false/' \
+  $SED -e 's/Versions:.*/Versions: false/' \
       -e 's/ManageImages:.*/ManageImages: true/' \
       -e 's@ImageDir:.*@ImageDir: /zfsbootmenu/build@' \
       -e '/BootMountPoint:/d' -i /etc/zfsbootmenu/config.yaml
@@ -19,16 +21,16 @@ if [ -f /etc/zfsbootmenu/config.yaml ]; then
   # Build the EFI executable if the stub is available
   for stubdir in /usr/lib/systemd/boot/efi /usr/lib/gummiboot; do
     [ -r "${stubdir}/linuxx64.efi.stub" ] || continue
-    sed -e 's/Enabled:.*/Enabled: true/' -i /etc/zfsbootmenu/config.yaml
+    $SED -e 's/Enabled:.*/Enabled: true/' -i /etc/zfsbootmenu/config.yaml
     break
   done
 
   case "${INITCPIO,,}" in
     yes|y|on|1)
-      sed -e "s/InitCPIO:.*/InitCPIO: true/" -i /etc/zfsbootmenu/config.yaml
+      $SED -e "s/InitCPIO:.*/InitCPIO: true/" -i /etc/zfsbootmenu/config.yaml
       ;;
     no|n|off|0)
-      sed -e "s/InitCPIO:.*/InitCPIO: false/" -i /etc/zfsbootmenu/config.yaml
+      $SED -e "s/InitCPIO:.*/InitCPIO: false/" -i /etc/zfsbootmenu/config.yaml
       ;;
   esac
 fi

@@ -7,6 +7,9 @@ INITCPIODIR=$(PREFIX)/lib/initcpio
 MANDIR=$(PREFIX)/share/man
 BINDIR=$(PREFIX)/bin
 EXAMPLES=$(PREFIX)/share/examples/zfsbootmenu
+SED?=sed
+
+export SED
 
 .PHONY: install core dracut initcpio zbm-release show-version
 

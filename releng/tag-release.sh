@@ -1,6 +1,8 @@
 #!/bin/bash
 # vim: softtabstop=2 shiftwidth=2 expandtab
 
+: ${SED:=sed}
+
 error () {
   echo "$@"
   exit 1
@@ -14,7 +16,7 @@ fi
 
 # Validate release
 # shellcheck  disable=SC2001
-if [ -n "$(echo "${release}" | sed 's/[0-9][A-Za-z0-9_.-]*$//')" ]; then
+if [ -n "$(echo "${release}" | $SED 's/[0-9][A-Za-z0-9_.-]*$//')" ]; then
   error "ERROR: release must start with a number and contain [A-Za-z0-9_.-]"
 fi
 
@@ -75,7 +77,7 @@ fi
 echo "Will tag release version ${release} as ${tag}"
 
 # update version in documentation
-sed -i "s/^release = '.*'\$/release = '${release}'/" docs/conf.py
+$SED -i "s/^release = '.*'\$/release = '${release}'/" docs/conf.py
 
 # Synchronize man pages with POD documentation
 if [ ! -x releng/rst2help.sh ]; then
@@ -180,7 +182,7 @@ for f in sha256.{txt,sig}; do
 done
 
 # github-cli does not automatically strip header that hub uses for a title
-sed -i '1,/^$/d' "${relnotes}"
+$SED -i '1,/^$/d' "${relnotes}"
 
 echo "Release ${release} ready to push and tag"
 while true; do
