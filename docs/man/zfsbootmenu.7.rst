@@ -207,21 +207,7 @@ The following properties can be set at any level of the boot-environment hierarc
 
 **org.zfsbootmenu:commandline**
 
-  A list of command-line arguments passed to the kernel selected by ZFSBootMenu for final boot. The special keyword *%{parent}* will be recursively expanded to the value of **org.zfsbootmenu:commandline** at the parent of the boot environment. Thus, for example,
-
-  .. code-block::
-
-    zfs set org.zfsbootmenu:commandline="zfs.zfs_arc_max=8589934592" zroot
-    zfs set org.zfsbootmenu:commandline="%{parent} elevator=noop" zroot/ROOT
-    zfs set org.zfsbootmenu:commandline="loglevel=7 %{parent}" zroot/ROOT/be
-
-  will cause ZFSBootMenu to interpret the kernel command-line for *zroot/ROOT/be* as
-
-  .. code-block::
-
-    loglevel=7 zfs.zfs_arc_max=8589934592 elevator=noop
-
-  Never set the *root=* argument; ZFSBootMenu always sets this option based on the selected boot environment.
+  A list of command-line arguments to be passed to any kernel in this environment that does not have an associated per-kernel argument file. Refer to **Passing Kernel Command Lines to Boot Environments** for details.
 
 **org.zfsbootmenu:active**
 
@@ -315,7 +301,45 @@ Deprecated Options
 
   Deprecated; place teardown hooks in the directory *${zfsbootmenu_hook_root}/teardown.d*.
 
+.. _bootenv_kcl:
+
+Passing Kernel Command Lines to Boot Environments
+=================================================
+
+An online editor within ZFSBootMenu allows the user to provide a one-time command line that will be passed to the kernel of the selected boot environment. However, changes passed at boot time are not retained for subsequent boots. To specify options that will be used with every boot, two mechanisms exist: the **org.zfsbootmenu:commandline** dataset property that will apply to all kernels within the boot environment, or a per-kernel file that sits along the kernel to which it applies.
+
+The **org.zfsbootmenu:commandline** property is the generally preferred mechanism for specifying command-line arguments to kernels. Using standard inheritance rules for ZFS properties, common arguments can be applied at a higher level in the dataset hierarchy; this enables multiple related boot environments to share a common set of arguments. Per-environment customization of a common command line is made possible with the special keyword *%{parent}* in the property. When loading the command-line arguments for the dataset that represents a particular boot environment, the *%{parent}%* keyword will be recursively expanded to the value of **org.zfsbootmenu:commandline** at the parent of the dataset. Thus, for example,
+
+  .. code-block::
+
+    zfs set org.zfsbootmenu:commandline="zfs.zfs_arc_max=8589934592" zroot
+    zfs set org.zfsbootmenu:commandline="%{parent} elevator=noop" zroot/ROOT
+    zfs set org.zfsbootmenu:commandline="loglevel=7 %{parent}" zroot/ROOT/be
+
+will cause ZFSBootMenu to interpret the kernel command-line for *zroot/ROOT/be* as
+
+  .. code-block::
+
+    loglevel=7 zfs.zfs_arc_max=8589934592 elevator=noop
+
+If per-kernel arguments are required, a file containing the command line may be placed alongside its associated kernel, with a name that exactly matches the kernel except for the addition of a *.kcl* extension. Thus, for example, the command-line file
+
+  .. code-block::
+
+    /boot/vmlinuz-6.18.36_1.kcl
+
+will provide arguments for the kernel
+
+  .. code-block::
+
+    /boot/vmlinuz-6.18.36_1
+
+if that kernel exists and is usable by ZFSBootMenu. Within the command-line file, the special keyword *%{parent}* will be substituted with the command line derived from the **org.zfsbootmenu:commandline** property on the dataset containing the file, recursively expanded as described above.
+
+**NOTE**: Never set the *root=* argument in any argument list; ZFSBootMenu always sets this option based on the selected boot environment.
+
 .. _user-hooks:
+
 
 User Hooks
 ==========
