@@ -71,7 +71,6 @@
   guides/alpine/uefi
   guides/chimera/uefi
   guides/debian/uefi
-  guides/fedora/uefi
   guides/opensuse/uefi
   guides/ubuntu/uefi
   guides/third-party
