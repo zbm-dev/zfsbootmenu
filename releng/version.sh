@@ -68,7 +68,7 @@ detect_version() (
   if [ -r "${genzbm}" ]; then
     # shellcheck disable=SC2016
     if verline="$(grep 'our $VERSION[[:space:]]*=' "${genzbm}")"; then
-      version="$(echo "${verline}" | head -n1 | sed -e "s/.*=[[:space:]]*['\"]//" -e "s/['\"].*//")" || version=""
+      version="$(echo "${verline}" | head -n1 | ${SED} -e "s/.*=[[:space:]]*['\"]//" -e "s/['\"].*//")" || version=""
       if [ -n "${version}" ]; then
         echo "${version}"
         return 0
@@ -103,9 +103,11 @@ update_version() {
   # Update generate-zbm
   if [ -w bin/generate-zbm ]; then
     echo "Updating bin/generate-zbm"
-    sed -e "s/our \$VERSION.*/our \$VERSION = '${version}';/" -i bin/generate-zbm
+    ${SED} -e "s/our \$VERSION.*/our \$VERSION = '${version}';/" -i bin/generate-zbm
   fi
 }
+
+: ${SED:=sed}
 
 version=
 update=
