@@ -527,8 +527,11 @@ sub versionedKernel {
     # Otherwise, try to glob
     my @kernels = sort versioncmp glob($pattern);
 
-    next unless @kernels;
-    return pop @kernels, false;
+    foreach my $candidate (@kernels) {
+      if ( -f $candidate ) {
+        return $candidate, false;
+      }
+    }
   }
 
   return;
