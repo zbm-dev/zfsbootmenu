@@ -1788,7 +1788,7 @@ be_keysource() {
 
 cache_key() {
   local fs mnt ret mutex keycache
-  local ksmount relkeyloc keypath keylocation keyfile keydir keysrc
+  local ksmount relkeyloc keypath keylocation keyfile keydir keysrc keydest
 
   fs="${1}"
   if [ -z "${fs}" ]; then
@@ -1898,6 +1898,14 @@ cache_key() {
     zdebug "no key found at ${keysrc}:${keyfile}"
   fi
 
+  if ! keypath="$( readlink -f "${keypath}" )"; then
+    keypath=""
+    zdebug "failed to canonicalize key location ${keysrc}:${keyfile}"
+  elif ! [[ "${keypath}" == "${mnt}/"* ]]; then
+    keypath=""
+    zdebug "key file ${keyfile} is not a proper child of ${keysrc}"
+  fi
+
   ret=1
   if [ -n "${keypath}" ]; then
     # Cache target is always full path below fs cache root
@@ -1906,7 +1914,13 @@ cache_key() {
       mkdir -p "${keycache}/${keydir}"
     fi
 
-    if cp "${keypath}" "${keycache}/${keyfile}"; then
+    if ! keydest="$( readlink -f "${keycache}/${keyfile}" )"; then
+      keydest=""
+      zdebug "failed to canonicalize key destination ${keycache}/${keyfile}"
+    elif ! [[ "${keydest}" == "${keycache}/"* ]]; then
+      keydest=""
+      zdebug "key destination ${keydest} is no a proper child of ${keycache}"
+    elif cp "${keypath}" "${keydest}"; then
       zdebug "copied key ${keypath} to ${keycache}/${keyfile}"
       ret=0
     else
