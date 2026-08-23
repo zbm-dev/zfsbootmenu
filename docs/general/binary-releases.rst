@@ -9,6 +9,8 @@ include the built-in EFI stub and may be directly bootable (provided the UEFI im
 arguments, including the path to the associated initramfs image, to the kernel) or loaded by a boot manager. In
 addition, the separate components may be booted by any standard BIOS boot loader (*e.g.*, syslinux) on legacy hardware.
 
+.. _release-images:
+
 Release images
 ~~~~~~~~~~~~~~
 
@@ -19,6 +21,8 @@ recommended for normal system operation.
 The extra tooling includes:
 
 .. include:: _include/release.rst
+
+.. _recovery-images:
 
 Recovery images
 ~~~~~~~~~~~~~~~
