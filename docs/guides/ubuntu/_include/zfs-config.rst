@@ -6,7 +6,7 @@ Install required packages
 
 .. code-block::
 
-  apt install dosfstools zfs-initramfs zfsutils-linux
+  apt install dosfstools dracut zfs-dracut zfsutils-linux
 
 Enable systemd ZFS services
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -18,7 +18,7 @@ Enable systemd ZFS services
   systemctl enable zfs-mount
   systemctl enable zfs-import.target
 
-Configure ``initramfs-tools``
+Configure ``dracut``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. tabs::
@@ -31,7 +31,7 @@ Configure ``initramfs-tools``
 
     .. code-block::
 
-      echo "UMASK=0077" > /etc/initramfs-tools/conf.d/umask.conf
+      echo 'install_items+=" /etc/zfs/zroot.key "' > /etc/dracut.conf.d/zfskey.conf
 
     .. note::
 
@@ -43,4 +43,4 @@ Rebuild the initramfs
 
 .. code-block::
 
-  update-initramfs -c -k all
+  dracut --force --regenerate-all
