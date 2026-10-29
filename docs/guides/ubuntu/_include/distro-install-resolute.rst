@@ -3,7 +3,7 @@ Install Ubuntu
 
 .. code-block:: bash
 
-  debootstrap noble /mnt
+  debootstrap resolute /mnt
 
 Copy files into the new install
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -59,20 +59,19 @@ Configure ``apt``. Use other mirrors if you prefer.
 
 .. code-block:: bash
 
-  cat <<EOF > /etc/apt/sources.list
-  # Uncomment the deb-src entries if you need source packages
+  cat <<EOF > /etc/apt/sources.list.d/ubuntu.sources
+  Types: deb
+  URIs: http://archive.ubuntu.com/ubuntu/
+  Suites: resolute resolute-updates resolute-backports
+  Components: main restricted universe multiverse
+  Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
-  deb http://archive.ubuntu.com/ubuntu/ noble main restricted universe multiverse
-  # deb-src http://archive.ubuntu.com/ubuntu/ noble main restricted universe multiverse
+  Types: deb
+  URIs: http://security.ubuntu.com/ubuntu/
+  Suites: resolute-security
+  Components: main restricted universe multiverse
+  Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
 
-  deb http://archive.ubuntu.com/ubuntu/ noble-updates main restricted universe multiverse
-  # deb-src http://archive.ubuntu.com/ubuntu/ noble-updates main restricted universe multiverse
-
-  deb http://archive.ubuntu.com/ubuntu/ noble-security main restricted universe multiverse
-  # deb-src http://archive.ubuntu.com/ubuntu/ noble-security main restricted universe multiverse
-
-  deb http://archive.ubuntu.com/ubuntu/ noble-backports main restricted universe multiverse
-  # deb-src http://archive.ubuntu.com/ubuntu/ noble-backports main restricted universe multiverse
   EOF
 
 Update the repository cache and system
