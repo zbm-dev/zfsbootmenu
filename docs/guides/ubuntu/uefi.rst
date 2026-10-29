@@ -19,9 +19,12 @@ It assumes the following:
 * Your system is x86_64
 * You're mildly comfortable with ZFS, EFI and discovering system facts on your own (``lsblk``, ``dmesg``, ``gdisk``, ...)
 
-Download the latest `Ubuntu Desktop Noble (24.04) Live image <https://ubuntu.com/download/desktop/>`_, write it to a USB drive and
+Download the latest `Ubuntu Desktop Noble (26.04) Live image <https://ubuntu.com/download/desktop/>`_, write it to a USB drive and
 boot your system in EFI mode. You can use the server installation media if you want, although instructions are provided for
 installation using the desktop installer live session.
+
+This guide targets Ubuntu 26.04, which uses dracut by default.
+Earlier versions of this guide used initramfs-tools.
 
 .. include:: _include/live-environment.rst
 
@@ -35,7 +38,7 @@ installation using the desktop installer live session.
 
 .. include:: ../_include/update-devices.rst
 
-.. include:: _include/distro-install-noble.rst
+.. include:: _include/distro-install-resolute.rst
 
 .. include:: _include/zfs-config.rst
 
