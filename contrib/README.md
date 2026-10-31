@@ -32,6 +32,9 @@ review the scripts themselves for more thorough descriptions of their use.
   they're available after a kexec. This is patterned after the XHCI teardown
   script.
 
+- `nicer-passphrase-prompt.sh` - This "load-key" hook will provide a nicer
+  passphrase prompt than the default ZFS one.
+
 - `remote-ssh-build.sh` - This is a standalone script intended to wrap the
   `zbm-builder.sh` image-builder script, incorporating a dropbear SSH server,
   host keys and an `authorized_keys` file that permit remote access and pool
