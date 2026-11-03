@@ -47,6 +47,8 @@
   :includehidden:
   :hidden:
 
+  general/faq
+  general/hardware-quirks
   general/binary-releases
   general/bootenvs-and-you
   general/container-building
