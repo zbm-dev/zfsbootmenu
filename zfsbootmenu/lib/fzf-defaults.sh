@@ -12,9 +12,9 @@ fuzzy_default_options=(
   "--bind" '"alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
   "--bind" '"ctrl-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
   "--bind" '"ctrl-alt-h:execute[ /libexec/zfsbootmenu-help -L ${HELP_SECTION:-main-screen} 1>/dev/null ]"'
-  "--bind" "\"alt-l:execute[ /bin/zlogtail 1>/dev/null ]${HAS_REFRESH:++refresh-preview}\""
-  "--bind" "\"ctrl-l:execute[ /bin/zlogtail 1>/dev/null ]${HAS_REFRESH:++refresh-preview}\""
-  "--bind" "\"ctrl-alt-l:execute[ /bin/zlogtail 1>/dev/null ]${HAS_REFRESH:++refresh-preview}\""
+  "--bind" "\"alt-l:execute[ /zbm/bin/zlogtail 1>/dev/null ]${HAS_REFRESH:++refresh-preview}\""
+  "--bind" "\"ctrl-l:execute[ /zbm/bin/zlogtail 1>/dev/null ]${HAS_REFRESH:++refresh-preview}\""
+  "--bind" "\"ctrl-alt-l:execute[ /zbm/bin/zlogtail 1>/dev/null ]${HAS_REFRESH:++refresh-preview}\""
 )
 
 if [ -n "${HAS_BORDER}" ]; then

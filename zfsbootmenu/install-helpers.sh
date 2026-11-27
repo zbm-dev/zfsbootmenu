@@ -274,7 +274,7 @@ install_zbm_core() {
   local cdir cfile ret
 
   ret=0
-  for cdir in lib libexec bin; do
+  for cdir in lib libexec zbm/bin; do
     for cfile in "${zfsbootmenu_module_root}/${cdir}"/*; do
       zbm_install_file "${cfile}" "/${cdir}/${cfile##*/}" || ret=$?
     done

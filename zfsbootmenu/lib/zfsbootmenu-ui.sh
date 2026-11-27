@@ -541,11 +541,11 @@ takeover() {
 
     zinfo "Stopping active zfsbootmenu with a PID of ${pid}"
 
-    # Trip the USR1 handler in /bin/zfsbootmenu - 'exit 0'
+    # Trip the USR1 handler in /zbm/bin/zfsbootmenu - 'exit 0'
     zdebug "sending USR1 to ${parent}"
     kill -USR1 "${parent}"
 
-    # find the last child process of the active /bin/zfsbootmenu
+    # find the last child process of the active /zbm/bin/zfsbootmenu
     while child="$( find_child_pid "${parent}" )" ; do
       if [ -n "${child}" ] ; then
         parent=${child}
