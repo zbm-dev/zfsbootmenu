@@ -88,6 +88,6 @@ fi
 
 # Otherwise, just continue to launch ZFSBootMenu forever
 while true; do
-  [ -x /bin/zfsbootmenu ] && /bin/zfsbootmenu
+  [ -x /zbm/bin/zfsbootmenu ] && /zbm/bin/zfsbootmenu
   emergency_shell
 done
